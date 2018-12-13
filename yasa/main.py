@@ -9,7 +9,8 @@ from scipy.fftpack import next_fast_len
 from mne.filter import filter_data, resample
 from scipy.interpolate import interp1d, interp2d
 
-__all__ = ['spindles_detect', 'stft_power', 'moving_transform']
+__all__ = ['spindles_detect', 'stft_power', 'moving_transform',
+           'get_bool_vector']
 
 
 #############################################################################
@@ -274,6 +275,35 @@ def _index_to_events(x):
     for k in range(x.shape[0]):
         index = np.append(index, np.arange(x[k, 0], x[k, 1] + 1))
     return index.astype(int)
+
+
+def get_bool_vector(data, sf, sp):
+    """Return a Boolean vector given the original data and sf and
+    a YASA's detection dataframe.
+
+    Parameters
+    ----------
+    data : array_like
+        Single-channel EEG data.
+    sf : float
+        Sampling frequency of the data.
+    sp : pandas DataFrame
+        YASA's detection dataframe returned by the spindles_detect function.
+
+    Returns
+    -------
+    bool_vector : array
+        Array of bool indicating for each sample in data if this sample is
+        part of a spindle (True) or not (False).
+    """
+    data = np.asarray(data)
+    assert isinstance(sp, pd.DataFrame)
+    assert 'Start' in sp.keys()
+    assert 'End' in sp.keys()
+    idx_sp = _index_to_events(sp[['Start', 'End']].values * sf)
+    bool_spindles = np.zeros(data.size, dtype=int)
+    bool_spindles[idx_sp] = 1
+    return bool_spindles
 
 #############################################################################
 # MAIN FUNCTIONS
