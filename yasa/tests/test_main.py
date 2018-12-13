@@ -27,7 +27,7 @@ class TestStringMethods(unittest.TestCase):
         x = np.asarray([4, 5, 7, 8, 5, 6], dtype=np.float64)
         y = np.asarray([1, 5, 4, 6, 8, 5], dtype=np.float64)
 
-        assert _corr(x, y) == np.corrcoef(x, y)[0][1]
+        np.testing.assert_almost_equal(_corr(x, y), np.corrcoef(x, y)[0][1])
         assert _covar(x, y) == np.cov(x, y)[0][1]
         assert _rms(x) == np.sqrt(np.mean(np.square(x)))
 
