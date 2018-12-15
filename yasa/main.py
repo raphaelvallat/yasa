@@ -1,5 +1,5 @@
 """
-YASA main functions
+YASA main functions.
 """
 import numpy as np
 import pandas as pd
@@ -108,7 +108,7 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
     beg[beg < 0] = 0
     end = ((idx + halfdur) * sf).astype(int)
     end[end > last] = last
-    t = np.vstack((end, beg)).mean(0) / sf
+    t = np.column_stack((beg, end)).mean(1) / sf
 
     if method == 'covar':
         def func(x, y):

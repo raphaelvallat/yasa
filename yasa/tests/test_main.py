@@ -8,7 +8,8 @@ import numpy as np
 from itertools import product
 from mne.filter import filter_data
 from yasa.main import (_corr, _covar, _rms, moving_transform, stft_power,
-                       _index_to_events, get_bool_vector, spindles_detect)
+                       _index_to_events, get_bool_vector,
+                       _events_distance_fill, spindles_detect)
 
 # Load data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -44,6 +45,15 @@ class TestStringMethods(unittest.TestCase):
         out = get_bool_vector(data, sf, sp_params)
         assert out.size == data.size
         assert np.unique(out).size == 2
+
+    def test_events_distance_fill(self):
+        """Test functions _events_distance_fill"""
+        a = np.array([4, 5, 6, 7, 10, 11, 12, 13, 20, 21, 22, 100, 102])
+        good = np.array([4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                         17, 18, 19, 20, 21, 22, 100, 101, 102])
+        # Events that are less than 100 ms apart (i.e. 10 points at 100 Hz sf)
+        out = _events_distance_fill(a, 100, 100)
+        np.testing.assert_equal(good, out)
 
     def test_moving_transform(self):
         """Test moving_transform"""
