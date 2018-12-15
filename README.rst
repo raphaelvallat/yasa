@@ -1,17 +1,22 @@
 .. -*- mode: rst -*-
 
-.. image:: https://img.shields.io/github/license/raphaelvallat/yasa.svg
-  :target: https://github.com/raphaelvallat/yasa/blob/master/LICENSE
+.. .. image:: https://img.shields.io/github/license/raphaelvallat/yasa.svg
+..   :target: https://github.com/raphaelvallat/yasa/blob/master/LICENSE
+..
+.. .. image:: https://travis-ci.org/raphaelvallat/yasa.svg?branch=master
+..     :target: https://travis-ci.org/raphaelvallat/yasa
 
-.. image:: https://travis-ci.org/raphaelvallat/yasa.svg?branch=master
-    :target: https://travis-ci.org/raphaelvallat/yasa
-
-----------------
+.. ----------------
 
 YASA
 ====
 
-YASA (*Yet Another Spindle Algorithm*) is a fast and data-agnostic sleep spindles detection algorithm in Python.
+YASA (*Yet Another Spindle Algorithm*) is a fast and data-agnostic sleep spindles detection algorithm written in Python 3.
+
+The algorithm behind YASA is largely inspired by the method described in [Lacourse2018]_.
+
+.. [Lacourse2018] Lacourse, K., Delfrate, J., Beaudry, J., Peppard, P., Warby, S.C., 2018. A sleep spindle detection algorithm that emulates human expert spindle scoring. J. Neurosci. Methods. https://doi.org/10.1016/j.jneumeth.2018.08.014
+
 
 Installation
 ~~~~~~~~~~~~
@@ -25,12 +30,19 @@ Installation
 
 **Dependencies**
 
-- numpy
-- scipy
-- pandas
-- mne
-- numba
-- matplotlib
+- numpy>=1.14
+- scipy>=1.1.0
+- pandas>=0.23,
+- mne>=0.17.0
+- numba>=0.39.0
+
+Examples
+========
+
+Please refer to `notebooks/spindles_detection.ipynb <notebooks/spindles_detection.ipynb>`_ for an example on how to use YASA as well as a step-by-step description of the algorithm.
+
+.. figure::  notebooks/detection.png
+   :align:   center
 
 Development
 ===========
