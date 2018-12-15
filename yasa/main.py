@@ -118,7 +118,7 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
         def func(x, y):
             return _corr(x, y)
 
-    elif method == 'rms':
+    else:
         def func(x):
             return _rms(x)
 
@@ -183,8 +183,7 @@ def stft_power(data, sf, window=4, step=.1, band=(0.5, 30), interp=True,
     assert step <= window
     assert band[0] < band[1]
 
-    if step == 0:
-        step = 1 / sf
+    step = 1 / sf if step == 0 else step
 
     # Define STFT parameters
     nperseg = int(window * sf)

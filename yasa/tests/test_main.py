@@ -8,7 +8,7 @@ import numpy as np
 from itertools import product
 from mne.filter import filter_data
 from yasa.main import (_corr, _covar, _rms, moving_transform, stft_power,
-                       spindles_detect)
+                       _index_to_events, get_bool_vector, spindles_detect)
 
 # Load data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -30,6 +30,20 @@ class TestStringMethods(unittest.TestCase):
         np.testing.assert_almost_equal(_corr(x, y), np.corrcoef(x, y)[0][1])
         assert _covar(x, y) == np.cov(x, y)[0][1]
         assert _rms(x) == np.sqrt(np.mean(np.square(x)))
+
+    def test_index_to_events(self):
+        """Test functions _index_to_events"""
+        a = np.array([[3, 6], [8, 12], [14, 20]])
+        good = [3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20]
+        out = _index_to_events(a)
+        np.testing.assert_equal(good, out)
+
+    def test_get_bool_vector(self):
+        """Test functions get_bool_vector"""
+        sp_params = spindles_detect(data, sf)
+        out = get_bool_vector(data, sf, sp_params)
+        assert out.size == data.size
+        assert np.unique(out).size == 2
 
     def test_moving_transform(self):
         """Test moving_transform"""
@@ -92,6 +106,3 @@ class TestStringMethods(unittest.TestCase):
         assert t.size == data.size
         assert max(f) == 16
         assert min(f) == 11
-
-# if __name__ == '__main__':
-#     unittest.main()
