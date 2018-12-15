@@ -364,6 +364,15 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.3, 2.5),
     assert freq_sp[0] < freq_sp[1]
     assert freq_broad[0] < freq_broad[1]
 
+    if 'abs_pow' not in thresh.keys():
+        thresh['abs_pow'] = 1.25
+    if 'rel_pow' not in thresh.keys():
+        thresh['rel_pow'] = 0.20
+    if 'rms' not in thresh.keys():
+        thresh['rms'] = 95
+    if 'corr' not in thresh.keys():
+        thresh['corr'] = 0.69
+
     # Downsample to 100 Hz
     if sf >= 200:
         fac = 100 / sf
@@ -467,14 +476,20 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.3, 2.5),
         sp_rms[i] = _rms(sp_det)  # Root mean square
         sp_abs[i] = np.mean(abs_pow_log[sp[i]])  # Mean absolute power
         sp_rel[i] = np.mean(rel_pow[sp[i]])  # Mean relative power
-        sp_freq[i] = np.median(inst_freq[sp[i]])  # Median frequency
+        # Average frequency based on the Hilbert analytical signal
+        sp_inst_freq = inst_freq[sp[i]]
+        sp_freq[i] = np.median(sp_inst_freq[sp_inst_freq > 0])
         thresh = np.percentile(idx_sum[sp[i]], 75)
         sp_conf[i] = 'high' if thresh == 4 else 'medium'
 
         # Number of oscillations
-        peaks, peaks_params = signal.find_peaks(sp_det, distance=distance,
+        peaks, peaks_params = signal.find_peaks(sp_det,
+                                                distance=distance,
                                                 prominence=(None, None))
         sp_osc[i] = len(peaks)
+
+        # Frequency: faster alternative to the Hilbert transform
+        # sp_freq[i] = sf / np.mean(np.diff(peaks))
 
         # Symmetry index
         sp_sym[i] = peaks[peaks_params['prominences'].argmax()] / sp_det.size
