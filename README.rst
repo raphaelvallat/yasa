@@ -17,7 +17,6 @@ The algorithm behind YASA is largely inspired by the method described in [Lacour
 
 .. [Lacourse2018] Lacourse, K., Delfrate, J., Beaudry, J., Peppard, P., Warby, S.C., 2018. A sleep spindle detection algorithm that emulates human expert spindle scoring. J. Neurosci. Methods. https://doi.org/10.1016/j.jneumeth.2018.08.014
 
-
 Installation
 ~~~~~~~~~~~~
 
@@ -36,8 +35,18 @@ Installation
 - mne>=0.17.0
 - numba>=0.39.0
 
+.. NOTE::
+   Several functions of YASA are written using `Numba <http://numba.pydata.org/>`_, a just-in-time compiler for Python. This allows to greatly speed up the computation time (typically a few seconds for a full night recording).
+
 Examples
 ========
+
+Typical use:
+
+.. code-block:: python
+
+  import yasa
+  yasa.spindles_detect(data, sf)
 
 Please refer to `notebooks/spindles_detection.ipynb <notebooks/spindles_detection.ipynb>`_ for an example on how to use YASA as well as a step-by-step description of the algorithm.
 
