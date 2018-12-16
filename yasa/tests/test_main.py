@@ -88,6 +88,11 @@ class TestStringMethods(unittest.TestCase):
         print(sp_params.round(2))
         assert spindles_detect(data, sf).shape[0] == 2
 
+        # Test with custom thresholds
+        spindles_detect(data, sf, thresh={'rel_pow': 0.25})
+        spindles_detect(data, sf, thresh={'rms': 15})
+        spindles_detect(data, sf, thresh={'rel_pow': 0.25, 'corr': 12})
+
         # Now load other data
         for i, (s, b, d, m) in enumerate(prod_args):
             spindles_detect(data_n3, sf_n3, freq_sp=s, duration=d,
@@ -112,6 +117,7 @@ class TestStringMethods(unittest.TestCase):
 
         f, t, _ = stft_power(data, sf, window=4, step=.1, band=(11, 16),
                              interp=True, norm=False)
+
         assert f[1] - f[0] == 0.25
         assert t.size == data.size
         assert max(f) == 16
