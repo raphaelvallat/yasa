@@ -8,8 +8,8 @@ import numpy as np
 from itertools import product
 from mne.filter import filter_data
 from yasa.main import (_corr, _covar, _rms, moving_transform, stft_power,
-                       _index_to_events, get_bool_vector,
-                       _events_distance_fill, spindles_detect)
+                       _index_to_events, get_bool_vector, trimbothstd,
+                       _merge_close, spindles_detect)
 
 # Load data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -46,13 +46,13 @@ class TestStringMethods(unittest.TestCase):
         assert out.size == data.size
         assert np.unique(out).size == 2
 
-    def test_events_distance_fill(self):
-        """Test functions _events_distance_fill"""
+    def test_merge_close(self):
+        """Test functions _merge_close"""
         a = np.array([4, 5, 6, 7, 10, 11, 12, 13, 20, 21, 22, 100, 102])
         good = np.array([4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
                          17, 18, 19, 20, 21, 22, 100, 101, 102])
         # Events that are less than 100 ms apart (i.e. 10 points at 100 Hz sf)
-        out = _events_distance_fill(a, 100, 100)
+        out = _merge_close(a, 100, 100)
         np.testing.assert_equal(good, out)
 
     def test_moving_transform(self):
@@ -90,17 +90,19 @@ class TestStringMethods(unittest.TestCase):
 
         # Test with custom thresholds
         spindles_detect(data, sf, thresh={'rel_pow': 0.25})
-        spindles_detect(data, sf, thresh={'rms': 15})
-        spindles_detect(data, sf, thresh={'rel_pow': 0.25, 'corr': 12})
+        spindles_detect(data, sf, thresh={'rms': 1.25})
+        spindles_detect(data, sf, thresh={'rel_pow': 0.25, 'corr': .60})
 
         # Now load other data
-        for i, (s, b, d, m) in enumerate(prod_args):
-            spindles_detect(data_n3, sf_n3, freq_sp=s, duration=d,
-                            freq_broad=b, min_distance=m)
+        with self.assertWarns(UserWarning):
+            spindles_detect(data_n3, sf_n3)
 
-        assert spindles_detect(data_n3, sf_n3) is None
+        # Ensure that the two warnings are tested
+        with self.assertWarns(UserWarning):
+            sp = spindles_detect(data_n3, sf_n3, thresh={'corr': .95})
+        assert sp is None
 
-    def stft_power(self):
+    def test_stft_power(self):
         """Test function stft_power
         """
         window = [2, 4]
@@ -122,3 +124,9 @@ class TestStringMethods(unittest.TestCase):
         assert t.size == data.size
         assert max(f) == 16
         assert min(f) == 11
+
+    def test_trimbothstd(self):
+        """Test function trimbothstd
+        """
+        x = [4, 5, 7, 0, 18, 6, 7, 8, 9, 10]
+        assert trimbothstd(x) < np.std(x, ddof=1)

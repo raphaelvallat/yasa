@@ -1,6 +1,7 @@
 """
 YASA main functions.
 """
+import warnings
 import numpy as np
 import pandas as pd
 from numba import jit
@@ -21,10 +22,18 @@ __all__ = ['spindles_detect', 'stft_power', 'moving_transform',
 @jit('float64(float64[:], float64[:])', nopython=True)
 def _corr(x, y):
     """Fast Pearson correlation."""
+    n = x.size
     mx, my = x.mean(), y.mean()
-    xm, ym = x - mx, y - my
-    r_num = (xm * ym).sum()
-    r_den = np.sqrt((xm**2).sum()) * np.sqrt((ym**2).sum())
+    xm2s, ym2s, r_num = 0, 0, 0
+    for i in range(n):
+        xm = x[i] - mx
+        ym = y[i] - my
+        r_num += (xm * ym)
+        xm2s += xm**2
+        ym2s += ym**2
+    r_d1 = np.sqrt(xm2s)
+    r_d2 = np.sqrt(ym2s)
+    r_den = r_d1 * r_d2
     return r_num / r_den
 
 
@@ -33,15 +42,23 @@ def _covar(x, y):
     """Fast Covariance."""
     n = x.size
     mx, my = x.mean(), y.mean()
-    xm, ym = x - mx, y - my
-    cov = (xm * ym).sum()
+    cov = 0
+    for i in range(n):
+        xm = x[i] - mx
+        ym = y[i] - my
+        cov += (xm * ym)
     return cov / (n - 1)
 
 
 @jit('float64(float64[:])', nopython=True)
 def _rms(x):
     """Fast root mean square."""
-    return np.sqrt((x**2).mean())
+    n = x.size
+    ms = 0
+    for i in range(n):
+        ms += x[i]**2
+    ms /= n
+    return np.sqrt(ms)
 
 #############################################################################
 # HELPER FUNCTIONS
@@ -213,7 +230,41 @@ def stft_power(data, sf, window=2, step=.1, band=(1, 30), interp=True,
     return f, t, Sxx
 
 
-def _events_distance_fill(index, min_distance_ms, sf):
+def trimbothstd(x, cut=0.025):
+    """
+    Slices off a proportion of items from both ends of an array and then
+    compute the sample standard deviation.
+
+    Slices off the passed proportion of items from both ends of the passed
+    array (i.e., with `cut` = 0.1, slices leftmost 10% **and**
+    rightmost 10% of scores). The trimmed values are the lowest and
+    highest ones.
+    Slices off less if proportion results in a non-integer slice index (i.e.,
+    conservatively slices off`proportiontocut`).
+
+    Parameters
+    ----------
+    x : 1D np.array
+        Input array.
+    cut : float
+        Proportion (in range 0-1) of total data to trim of each end.
+        Default is 0.025, i.e. 2.5% lowest and 2.5% highest values are removed.
+
+    Returns
+    -------
+    trimmedstd : float
+        Sample standard deviation of the trimmed array.
+    """
+    x = np.asarray(x)
+    n = x.size
+    lowercut = int(cut * n)
+    uppercut = n - lowercut
+    atmp = np.partition(x, (lowercut, uppercut - 1))
+    sl = slice(lowercut, uppercut)
+    return atmp[sl].std(ddof=1)
+
+
+def _merge_close(index, min_distance_ms, sf):
     """Merge events that are too close in time.
 
     Parameters
@@ -304,27 +355,26 @@ def get_bool_vector(data, sf, sp):
     return bool_spindles
 
 #############################################################################
-# MAIN FUNCTIONS
+# MAIN FUNCTION
 #############################################################################
 
 
-def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2.5),
+def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
                     freq_broad=(1, 30), min_distance=500,
-                    thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 10}):
-    """Spindles detection using a custom algorithm based on
-    Lacourse et al. 2018.
+                    thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5}):
+    """Spindles detection.
 
     Parameters
     ----------
     data : array_like
-        Single-channel data
+        Single-channel data. Unit must be uV.
     sf : float
         Sampling frequency of the data in Hz.
     freq_sp : tuple or list
         Spindles frequency range. Default is 11 to 16 Hz.
     duration : tuple or list
         The minimum and maximum duration of the spindles.
-        Default is 0.4 to 2.5 seconds.
+        Default is 0.4 to 2 seconds.
     freq_broad : tuple or list
         Broad band frequency of interest.
         Default is 1 to 30 Hz.
@@ -336,7 +386,7 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2.5),
 
             'rel_pow' : Relative power (= power ratio freq_sp / freq_broad).
             'corr' : Pearson correlation coefficient.
-            'rms' : Root mean square
+            'rms' : Mean(RMS) + 1.5 * STD(RMS).
 
     Returns
     -------
@@ -353,6 +403,10 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2.5),
             'Frequency' : Median frequency (in Hz)
             'Oscillations' : Number of oscillations (peaks)
             'Symmetry' : Symmetry index, ranging from 0 to 1
+
+    Notes
+    -----
+    For better results, apply this detection only on artefact-free NREM sleep.
     """
     # Safety check
     data = np.asarray(data)
@@ -364,7 +418,7 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2.5),
     if 'corr' not in thresh.keys():
         thresh['corr'] = 0.65
     if 'rms' not in thresh.keys():
-        thresh['rms'] = 10
+        thresh['rms'] = 1.5
 
     # Downsample to 100 Hz
     if sf > 100:
@@ -379,9 +433,12 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2.5),
                        verbose=0)
 
     # If freq_sp is not too narrow, we add and remove 1 Hz to adjust the
-    # FIR filter transition band
+    # FIR filter frequency response. The width of the transition band is set
+    # to 1.5 Hz on each side, meaning that for freq_sp = (11, 16 Hz), the -6 dB
+    # point is located at 11.25 and 15.75 Hz.
     trans = 1 if freq_sp[1] - freq_sp[0] > 3 else 0
     data_sigma = filter_data(data, sf, freq_sp[0] + trans, freq_sp[1] - trans,
+                             l_trans_bandwidth=1.5, h_trans_bandwidth=1.5,
                              method='fir', verbose=0)
 
     # Compute the pointwise relative power using interpolated STFT
@@ -403,12 +460,13 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2.5),
     inst_phase = np.angle(analytic)
     inst_pow = np.square(np.abs(analytic))
     # inst_freq = sf / 2pi * 1st-derivative of the phase of the analytic signal
-    inst_freq = (sf / (2 * np.pi) * np.diff(inst_phase))
+    inst_freq = (sf / (2 * np.pi) * np.ediff1d(inst_phase))
 
     # Let's define the thresholds
+    thresh_rms = mrms.mean() + thresh['rms'] * trimbothstd(mrms, cut=0.025)
     idx_rel_pow = (rel_pow >= thresh['rel_pow']).astype(int)
     idx_mcorr = (mcorr >= thresh['corr']).astype(int)
-    idx_mrms = (mrms >= thresh['rms']).astype(int)
+    idx_mrms = (mrms >= thresh_rms).astype(int)
     idx_sum = (idx_rel_pow + idx_mcorr + idx_mrms).astype(int)
 
     # For debugging
@@ -428,17 +486,15 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2.5),
 
     # If no events are found, return an empty dataframe
     if not len(where_sp):
-        print('No spindle were found in data. Returning None.')
+        warnings.warn('No spindles were found in data. Returning None.')
         return None
 
     # Merge events that are too close
     if min_distance is not None and min_distance > 0:
-        where_sp = _events_distance_fill(where_sp, min_distance, sf)
-
-    # Extract start and end of each spindles
-    sp = np.split(where_sp, np.where(np.diff(where_sp) != 1)[0] + 1)
+        where_sp = _merge_close(where_sp, min_distance, sf)
 
     # Extract start, end, and duration of each spindle
+    sp = np.split(where_sp, np.where(np.diff(where_sp) != 1)[0] + 1)
     idx_start_end = np.array([[k[0], k[-1]] for k in sp]) / sf
     sp_start, sp_end = idx_start_end.T
     sp_dur = sp_end - sp_start
@@ -448,7 +504,7 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2.5),
 
     # If no events of good duration are found, return an empty dataframe
     if all(~good_dur):
-        print('No spindle were found in data. Returning None.')
+        warnings.warn('No spindles were found in data. Returning None.')
         return None
 
     # Initialize empty variables
