@@ -1,5 +1,17 @@
 """
-YASA main functions.
+YASA (Yet Another Spindle Algorithm) is a fast and data-agnostic sleep
+spindles detection algorithm written in Python 3.
+
+The algorithm behind YASA is largely inspired by the method described in:
+
+Lacourse, K., Delfrate, J., Beaudry, J., Peppard, P., Warby, S.C., 2018.
+A sleep spindle detection algorithm that emulates human expert spindle scoring.
+J. Neurosci. Methods. https://doi.org/10.1016/j.jneumeth.2018.08.014
+
+- Author: Raphael Vallat (www.raphaelvallat.com)
+- Creation date: December 2018
+- GitHub: https://github.com/raphaelvallat/yasa
+- License: BSD 3-Clause License
 """
 import warnings
 import numpy as np

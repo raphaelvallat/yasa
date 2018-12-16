@@ -1,7 +1,5 @@
 """
-Test the functions in the detection.py file.
-
-To execute, type the following command in your terminal:
+Test the functions in the yasa/main.py file.
 """
 import unittest
 import numpy as np
