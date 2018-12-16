@@ -451,7 +451,7 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2.5),
         print('No spindle were found in data. Returning None.')
         return None
 
-    # Extract the peak-to-peak amplitude and frequency
+    # Initialize empty variables
     n_sp = len(sp)
     sp_amp = np.zeros(n_sp)
     sp_freq = np.zeros(n_sp)
@@ -462,6 +462,8 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2.5),
     sp_rel = np.zeros(n_sp)
 
     # Number of oscillations (= number of peaks separated by at least 60 ms)
+    # --> 60 ms because 1000 ms / 16 Hz = 62.5 ms, in other words, at 16 Hz,
+    # peaks are separated by 62.5 ms. At 11 Hz, peaks are separated by 90 ms.
     distance = 60 * sf / 1000
 
     for i in np.arange(len(sp))[good_dur]:
