@@ -177,11 +177,13 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
     Parameters
     ----------
     data : array_like
-        Single-channel data
+        Single-channel data.
+    sf : float
+        Sampling frequency of the data.
     window : int
         Window size in seconds for STFT.
         2 or 4 seconds are usually a good default.
-        Higher values = higher frequency resolution.
+        Higher values = higher frequency resolution = lower time resolution.
     step : int
         Step in seconds for the STFT.
         A step of 0.2 second (200 ms) is usually a good default.
@@ -189,7 +191,7 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
         If step == nperseg, no overlap (fastest)
         Higher values = higher precision = slower computation.
     band : tuple or None
-        Broad band frequency of interest.
+        Broad band frequency range.
         Default is 1 to 30 Hz.
     interp : boolean
         If True, a cubic interpolation is performed to ensure that the output
@@ -225,7 +227,7 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
 
     # Compute STFT and remove the last epoch
     f, t, Sxx = signal.stft(data, sf, nperseg=nperseg, noverlap=noverlap,
-                            detrend='constant', padded=True)
+                            detrend=False, padded=True)
 
     # Let's keep only the frequency of interest
     if band is not None:
@@ -270,7 +272,7 @@ def trimbothstd(x, cut=0.025):
 
     Returns
     -------
-    trimmedstd : float
+    trimmed_std : float
         Sample standard deviation of the trimmed array.
     """
     x = np.asarray(x)
