@@ -51,7 +51,7 @@ Installation
 Several functions of YASA are written using `Numba <http://numba.pydata.org/>`_, a just-in-time compiler for Python. This allows to greatly speed up the computation time (typically a few seconds for a full night recording).
 
 Examples
-========
+~~~~~~~~
 
 Please refer to `notebooks/spindles_detection.ipynb <notebooks/spindles_detection.ipynb>`_ for an example on how to use YASA as well as a step-by-step description of the algorithm.
 
@@ -76,7 +76,7 @@ Please refer to `notebooks/spindles_detection.ipynb <notebooks/spindles_detectio
    :align:   center
 
 Development
-===========
+~~~~~~~~~~~
 
 YASA was created and is maintained by `Raphael Vallat <https://raphaelvallat.com>`_. Contributions are more than welcome so feel free to contact me, open an issue or submit a pull request!
 
