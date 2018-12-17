@@ -20,7 +20,7 @@ from numba import jit
 from scipy import signal
 from scipy.fftpack import next_fast_len
 from mne.filter import filter_data, resample
-from scipy.interpolate import interp1d, interp2d
+from scipy.interpolate import interp1d, RectBivariateSpline
 
 __all__ = ['spindles_detect', 'stft_power', 'moving_transform',
            'get_bool_vector']
@@ -170,7 +170,7 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
     return t, out
 
 
-def stft_power(data, sf, window=2, step=.1, band=(1, 30), interp=True,
+def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
                norm=False):
     """Compute the pointwise power via STFT and interpolation.
 
@@ -184,7 +184,7 @@ def stft_power(data, sf, window=2, step=.1, band=(1, 30), interp=True,
         Higher values = higher frequency resolution.
     step : int
         Step in seconds for the STFT.
-        A step of 0.1 second (100 ms) is usually a good default.
+        A step of 0.2 second (200 ms) is usually a good default.
         If step == 0, overlap at every sample (slowest)
         If step == nperseg, no overlap (fastest)
         Higher values = higher precision = slower computation.
@@ -206,6 +206,12 @@ def stft_power(data, sf, window=2, step=.1, band=(1, 30), interp=True,
         Time vector
     Sxx : ndarray
         Power in the specified frequency bins of shape (f, t)
+
+    Notes
+    -----
+    2D Interpolation is done using `scipy.interpolate.RectBivariateSpline`
+    which is much faster than `scipy.interpolate.interp2d` for a rectangular
+    grid. The default is to use a bivariate spline with 3 degrees.
     """
     # Safety check
     data = np.asarray(data)
@@ -232,9 +238,9 @@ def stft_power(data, sf, window=2, step=.1, band=(1, 30), interp=True,
 
     # Interpolate
     if interp:
-        func = interp2d(t, f, Sxx, kind='cubic')
+        func = RectBivariateSpline(f, t, Sxx)
         t = np.arange(data.size) / sf
-        Sxx = func(t, f)
+        Sxx = func(f, t)
 
     if norm:
         sum_pow = Sxx.sum(0).reshape(1, -1)
@@ -296,7 +302,7 @@ def _merge_close(index, min_distance_ms, sf):
 
     Notes
     -----
-    Original code from the Visbrain package.
+    Original code imported from the Visbrain package.
     """
     # Convert min_distance_ms
     min_distance = min_distance_ms / 1000. * sf
@@ -330,7 +336,7 @@ def _index_to_events(x):
 
     Notes
     -----
-    Original code from the Visbrain package.
+    Original code imported from the Visbrain package.
     """
     index = np.array([])
     for k in range(x.shape[0]):
@@ -421,7 +427,7 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
     For better results, apply this detection only on artefact-free NREM sleep.
     """
     # Safety check
-    data = np.asarray(data)
+    data = np.asarray(data, dtype=np.float64)
     assert freq_sp[0] < freq_sp[1]
     assert freq_broad[0] < freq_broad[1]
 
@@ -454,10 +460,20 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
                              method='fir', verbose=0)
 
     # Compute the pointwise relative power using interpolated STFT
-    f, _, Sxx = stft_power(data, sf, window=2, step=.1, band=freq_broad,
-                           norm=True)
+    # Here we use a step of 200 ms to speed up the computation.
+    f, t, Sxx = stft_power(data, sf, window=2, step=.2, band=freq_broad,
+                           interp=False, norm=True)
     idx_sigma = np.logical_and(f >= freq_sp[0], f <= freq_sp[1])
     rel_pow = Sxx[idx_sigma].sum(0)
+
+    # Let's interpolate `rel_pow` to get one value per sample
+    # Note that we could also have use the `interp=True` in the `stft_power`
+    # function, however 2D interpolation is much slower than
+    # 1D interpolation.
+    func = interp1d(t, rel_pow, kind='cubic', bounds_error=False,
+                    fill_value=0)
+    t = np.arange(data.size) / sf
+    rel_pow = func(t)
 
     # Now we apply moving RMS and correlation on the sigma-filtered signal
     _, mcorr = moving_transform(data_sigma, data, sf, window=.3, step=.1,
