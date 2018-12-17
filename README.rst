@@ -2,6 +2,9 @@
 
 |
 
+.. image:: https://badge.fury.io/py/yasa.svg
+    :target: https://badge.fury.io/py/yasa
+
 .. image:: https://img.shields.io/badge/python-3.6-blue.svg
     :target: https://www.python.org/downloads/release/python-360/
 
@@ -33,10 +36,7 @@ Installation
 
 .. code-block:: shell
 
-  git clone https://github.com/raphaelvallat/yasa.git yasa/
-  cd yasa/
-  pip install -r requirements.txt
-  python setup.py develop
+  pip install --upgrade yasa
 
 **Dependencies**
 
