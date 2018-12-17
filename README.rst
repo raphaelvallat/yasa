@@ -20,6 +20,9 @@
 .. image:: https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/raphaelvallat/yasa
 
+.. image:: https://zenodo.org/badge/161560926.svg
+   :target: https://zenodo.org/badge/latestdoi/161560926
+
 ----------------
 
 YASA
@@ -83,3 +86,11 @@ YASA was created and is maintained by `Raphael Vallat <https://raphaelvallat.com
 To see the code or report a bug, please visit the `GitHub repository <https://github.com/raphaelvallat/yasa>`_.
 
 Note that this program is provided with NO WARRANTY OF ANY KIND.
+
+Citation
+~~~~~~~~
+
+To cite YASA, please use the Zenodo DOI:
+
+.. image:: https://zenodo.org/badge/161560926.svg
+   :target: https://zenodo.org/badge/latestdoi/161560926
