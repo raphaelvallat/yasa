@@ -1,12 +1,20 @@
 .. -*- mode: rst -*-
 
-.. .. image:: https://img.shields.io/github/license/raphaelvallat/yasa.svg
-..   :target: https://github.com/raphaelvallat/yasa/blob/master/LICENSE
-..
-.. .. image:: https://travis-ci.org/raphaelvallat/yasa.svg?branch=master
-..     :target: https://travis-ci.org/raphaelvallat/yasa
+|
 
-.. ----------------
+.. image:: https://img.shields.io/github/license/raphaelvallat/yasa.svg
+  :target: https://github.com/raphaelvallat/yasa/blob/master/LICENSE
+
+.. image:: https://travis-ci.org/raphaelvallat/yasa.svg?branch=master
+    :target: https://travis-ci.org/raphaelvallat/yasa
+
+.. image:: https://ci.appveyor.com/api/projects/status/4ua0pwy62jhpd9mx?svg=true
+    :target: https://ci.appveyor.com/project/raphaelvallat/yasa
+
+.. image:: https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/raphaelvallat/yasa
+
+----------------
 
 YASA
 ====
