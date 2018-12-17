@@ -2,8 +2,11 @@
 
 |
 
+.. image:: https://img.shields.io/badge/python-3.6-blue.svg
+    :target: https://www.python.org/downloads/release/python-360/
+
 .. image:: https://img.shields.io/github/license/raphaelvallat/yasa.svg
-  :target: https://github.com/raphaelvallat/yasa/blob/master/LICENSE
+    :target: https://github.com/raphaelvallat/yasa/blob/master/LICENSE
 
 .. image:: https://travis-ci.org/raphaelvallat/yasa.svg?branch=master
     :target: https://travis-ci.org/raphaelvallat/yasa
@@ -12,7 +15,7 @@
     :target: https://ci.appveyor.com/project/raphaelvallat/yasa
 
 .. image:: https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/raphaelvallat/yasa
+    :target: https://codecov.io/gh/raphaelvallat/yasa
 
 ----------------
 
