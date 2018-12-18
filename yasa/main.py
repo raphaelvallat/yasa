@@ -329,7 +329,7 @@ def _index_to_events(x):
     Parameters
     ----------
     x : array_like
-        2D array of indicies.
+        2D array of indices.
 
     Returns
     -------
@@ -571,7 +571,9 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
                                                 prominence=(None, None))
         sp_osc[i] = len(peaks)
 
-        # Frequency: faster alternative to the Hilbert transform
+        # For frequency and amplitude, we can also optionally use these
+        # faster alternatives. If we use them, we do not need to compute the
+        # Hilbert transform of the filtered signal.
         # sp_freq[i] = sf / np.mean(np.diff(peaks))
         # sp_amp[i] = peaks_params['prominences'].max()
 
