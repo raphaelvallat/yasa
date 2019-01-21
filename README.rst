@@ -65,6 +65,8 @@ Please refer to `notebooks/spindles_detection.ipynb <notebooks/spindles_detectio
   import yasa
   yasa.spindles_detect(data, sf)
 
+The result of the detection is a pandas DataFrame
+
 .. table:: Output
    :widths: auto
 
@@ -75,7 +77,37 @@ Please refer to `notebooks/spindles_detection.ipynb <notebooks/spindles_detectio
   13.16  13.86        0.70        99.32  24.19        2.84        0.31        12.23               8        0.35
 =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
 
+which can then be easily used to plot the detected spindles
+
 .. figure::  notebooks/detection.png
+   :align:   center
+
+**Interactive visualization with Visbrain**
+
+Yasa can also be used in combination with the `Sleep <http://visbrain.org/sleep.html>`_ module of the `Visbrain visualization suite <http://visbrain.org/index.html>`_. That way, the result of the spindles detection can easily be displayed and checked in an interactive graphical user interface. To do so, load Visbrain using the following python file (make sure to update the path to your own data).
+
+.. code-block:: python
+
+  from visbrain.gui import Sleep
+  from yasa import spindles_detect
+
+  sl = Sleep(data='PATH/TO/EEGFILE')
+
+  def fcn_spindle(data, sf, time, hypno):
+      """Replace Visbrain built-in spindles detection by YASA algorithm.
+      See http://visbrain.org/sleep.html#use-your-own-detections-in-sleep
+      """
+      sp = spindles_detect(data, sf, freq_sp=(11, 16),
+                           duration=(0.5, 2), freq_broad=(1, 30),
+                           thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5})
+      return (sp[['Start', 'End']].values * sf).astype(int)
+
+  sl.replace_detections('spindle', fcn_spindle)
+  sl.show()
+
+Then navigate to the *Detection* tab of the quick setting panel and click on *Apply* to run a spindles detection on the specified channel.
+
+.. figure::  visbrain.PNG
    :align:   center
 
 Development
