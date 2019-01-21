@@ -84,7 +84,7 @@ which can then be easily used to plot the detected spindles
 
 **Interactive visualization with Visbrain**
 
-Yasa can also be used in combination with the `Sleep <http://visbrain.org/sleep.html>`_ module of the `Visbrain visualization suite <http://visbrain.org/index.html>`_. That way, the result of the spindles detection can easily be displayed and checked in an interactive graphical user interface. To do so, load Visbrain using the following python file (make sure to update the path to your own data).
+YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.html>`_ module of the `Visbrain visualization suite <http://visbrain.org/index.html>`_. That way, the result of the spindles detection can easily be displayed and checked in an interactive graphical user interface. To do so, load Visbrain using the following python file (make sure to update *'PATH/TO/EEGFILE'*).
 
 .. code-block:: python
 
@@ -105,9 +105,9 @@ Yasa can also be used in combination with the `Sleep <http://visbrain.org/sleep.
   sl.replace_detections('spindle', fcn_spindle)
   sl.show()
 
-Then navigate to the *Detection* tab of the quick setting panel and click on *Apply* to run a spindles detection on the specified channel.
+Then navigate to the *Detection* tab and click on *Apply* to run the YASA algorithm on the specified channel.
 
-.. figure::  visbrain.PNG
+.. figure::  visbrain.png
    :align:   center
 
 Development
