@@ -107,7 +107,7 @@ YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.
 
 Then navigate to the *Detection* tab and click on *Apply* to run the YASA algorithm on the specified channel.
 
-.. figure::  visbrain.png
+.. figure::  visbrain.PNG
    :align:   center
 
 Development
