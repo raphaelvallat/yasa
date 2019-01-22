@@ -20,8 +20,8 @@
 .. image:: https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/raphaelvallat/yasa
 
-.. image:: https://zenodo.org/badge/161560926.svg
-   :target: https://zenodo.org/badge/latestdoi/161560926
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg
+   :target: https://doi.org/10.5281/zenodo.2370600
 
 ----------------
 
@@ -149,5 +149,5 @@ Citation
 
 To cite YASA, please use the Zenodo DOI:
 
-.. image:: https://zenodo.org/badge/161560926.svg
-   :target: https://zenodo.org/badge/latestdoi/161560926
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg
+   :target: https://doi.org/10.5281/zenodo.2370600
