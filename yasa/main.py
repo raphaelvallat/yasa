@@ -381,7 +381,8 @@ def get_bool_vector(data, sf, sp):
 
 def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
                     freq_broad=(1, 30), min_distance=500,
-                    thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5}):
+                    thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
+                    remove_outliers=False):
     """Spindles detection.
 
     Parameters
@@ -407,6 +408,14 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
             'rel_pow' : Relative power (= power ratio freq_sp / freq_broad).
             'corr' : Pearson correlation coefficient.
             'rms' : Mean(RMS) + 1.5 * STD(RMS).
+    remove_outliers : boolean
+        If True, YASA will automatically detect and remove outliers spindles
+        using an Isolation Forest (implemented in the scikit-learn package).
+        The outliers detection is performed on all the spindles
+        parameters with the exception of the 'Start' and 'End' columns.
+        YASA uses a random seed (42) to ensure reproducible results.
+        Note that this step will only be applied if there are more than 50
+        detected spindles in the first place. Default to False.
 
     Returns
     -------
@@ -592,4 +601,18 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
                  'Oscillations': sp_osc,
                  'Symmetry': sp_sym}
 
-    return pd.DataFrame.from_dict(sp_params)[good_dur]
+    df_sp = pd.DataFrame.from_dict(sp_params)[good_dur].reset_index(drop=True)
+
+    # We need at least 50 detected spindles to apply the Isolation Forest.
+    if remove_outliers and df_sp.shape[0] >= 50:
+        from sklearn.ensemble import IsolationForest
+        ilf = IsolationForest(behaviour='new', contamination='auto',
+                              max_samples='auto', verbose=0, random_state=42)
+
+        outliers = ilf.fit_predict(df_sp[df_sp.columns.difference(['Start',
+                                                                   'End'])])
+        outliers[outliers == -1] = 0
+        # Remove outliers from DataFrame
+        df_sp = df_sp[outliers.astype(bool)].reset_index(drop=True)
+
+    return df_sp

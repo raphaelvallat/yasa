@@ -48,6 +48,7 @@ Installation
 - pandas>=0.23,
 - mne>=0.17.0
 - numba>=0.39.0
+- scikit-learn>=0.20
 
 **Note**
 
@@ -58,7 +59,8 @@ Examples
 
 Please refer to `notebooks/spindles_detection.ipynb <notebooks/spindles_detection.ipynb>`_ for an example on how to use YASA as well as a step-by-step description of the algorithm.
 
-**Typical use**
+Typical use
+-----------
 
 .. code-block:: python
 
@@ -82,7 +84,8 @@ which can then be easily used to plot the detected spindles
 .. figure::  notebooks/detection.png
    :align:   center
 
-**Interactive visualization with Visbrain**
+Interactive visualization with Visbrain
+---------------------------------------
 
 YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.html>`_ module of the `Visbrain visualization suite <http://visbrain.org/index.html>`_. That way, the result of the spindles detection can easily be displayed and checked in an interactive graphical user interface. To do so, load Visbrain using the following python file (make sure to update *'PATH/TO/EEGFILE'*).
 
@@ -107,8 +110,30 @@ YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.
 
 Then navigate to the *Detection* tab and click on *Apply* to run the YASA algorithm on the specified channel.
 
-.. figure::  visbrain.PNG
+.. figure::  images/visbrain.PNG
    :align:   center
+
+
+Outlier rejection
+-----------------
+
+YASA incorporates an optional post-processing step to identify and remove pseudo (fake) spindles.
+The method is based on a machine-learning algorithm (the `Isolation Forest <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html>`_, implemented in the `scikit-learn <https://scikit-learn.org/stable/index.html>`_ package),
+which uses the spindles parameters (e.g. amplitude, duration, frequency, etc) as input features to identify "abnormal" spindles.
+
+To activate this post-processing step, simply use:
+
+.. code-block:: python
+
+  import yasa
+  yasa.spindles_detect(data, sf, remove_outliers=True)
+
+As an example, the performance of YASA were compared on a ~8 hours recording in an healthy young adults. As shown below, the initial detection - i.e. without the outlier rejection - returned 840 spindles.
+After outlier removal, the number of spindles was down to 710, meaning that 130 spindles were considered outliers and removed from the dataframe.
+
+.. figure::  images/spindles_outlier_rejection.png
+   :align:   center
+
 
 Development
 ~~~~~~~~~~~

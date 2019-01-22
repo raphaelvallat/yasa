@@ -22,7 +22,8 @@ INSTALL_REQUIRES = [
     'matplotlib>=3.0.2',
     'seaborn>=0.9.0',
     'mne>=0.17.0',
-    'numba>=0.39.0'
+    'numba>=0.39.0',
+    'scikit-learn>=0.20'
 ]
 
 PACKAGES = [

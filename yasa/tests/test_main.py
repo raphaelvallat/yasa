@@ -17,6 +17,9 @@ data_sigma = filter_data(data, sf, 12, 15, method='fir', verbose=0)
 data_n3 = np.loadtxt('notebooks/data_N3_no-spindles_30sec_100Hz.txt')
 sf_n3 = 100
 
+data_full = np.load('notebooks/data_full_Cz_6hrs_100Hz.npz').get('data')
+sf_full = 100
+
 
 class TestStringMethods(unittest.TestCase):
 
@@ -99,6 +102,10 @@ class TestStringMethods(unittest.TestCase):
         with self.assertWarns(UserWarning):
             sp = spindles_detect(data_n3, sf_n3, thresh={'corr': .95})
         assert sp is None
+
+        # Now we try with the isolation forest on the full recording
+        sp = spindles_detect(data_full, sf_full, remove_outliers=True)
+        assert sp.shape[0] > 100
 
     def test_stft_power(self):
         """Test function stft_power
