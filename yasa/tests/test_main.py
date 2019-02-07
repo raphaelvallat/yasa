@@ -1,13 +1,14 @@
 """
 Test the functions in the yasa/main.py file.
 """
+import pytest
 import unittest
 import numpy as np
 from itertools import product
 from mne.filter import filter_data
 from yasa.main import (_corr, _covar, _rms, moving_transform, stft_power,
                        _index_to_events, get_bool_vector, trimbothstd,
-                       _merge_close, spindles_detect)
+                       _merge_close, spindles_detect, spindles_detect_multi)
 
 # Load data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -17,7 +18,9 @@ data_sigma = filter_data(data, sf, 12, 15, method='fir', verbose=0)
 data_n3 = np.loadtxt('notebooks/data_N3_no-spindles_30sec_100Hz.txt')
 sf_n3 = 100
 
-data_full = np.load('notebooks/data_full_Cz_6hrs_100Hz.npz').get('data')
+file_full = np.load('notebooks/data_full_6hrs_100Hz_Cz+Fz+Pz.npz')
+data_full = file_full.get('data')
+chan_full = file_full.get('chan')
 sf_full = 100
 
 
@@ -95,17 +98,63 @@ class TestStringMethods(unittest.TestCase):
         spindles_detect(data, sf, thresh={'rel_pow': 0.25, 'corr': .60})
 
         # Now load other data
-        with self.assertWarns(UserWarning):
+        with self.assertLogs('yasa', level='WARNING'):
             spindles_detect(data_n3, sf_n3)
 
         # Ensure that the two warnings are tested
-        with self.assertWarns(UserWarning):
+        with self.assertLogs('yasa', level='WARNING'):
             sp = spindles_detect(data_n3, sf_n3, thresh={'corr': .95})
         assert sp is None
 
+        # Test with wrong data amplitude (1)
+        with self.assertLogs('yasa', level='ERROR'):
+            sp = spindles_detect(data_n3 / 1e6, sf_n3)
+        assert sp is None
+
+        # Test with wrong data amplitude (2)
+        with self.assertLogs('yasa', level='ERROR'):
+            sp = spindles_detect(data_n3 * 1e6, sf_n3)
+        assert sp is None
+
+        # Test with a random array
+        with self.assertLogs('yasa', level='ERROR'):
+            sp = spindles_detect(np.random.random(size=1000), sf_n3)
+        assert sp is None
+
         # Now we try with the isolation forest on the full recording
-        sp = spindles_detect(data_full, sf_full, remove_outliers=True)
+        with self.assertLogs('yasa', level='INFO'):
+            sp = spindles_detect(data_full[1, :], sf_full,
+                                 remove_outliers=True)
         assert sp.shape[0] > 100
+
+        with pytest.raises(AssertionError):
+            sp = spindles_detect(data_full, sf_full)
+
+    def test_spindles_detect_multi(self):
+        """Test spindles_detect_multi"""
+        sp = spindles_detect_multi(data_full, sf_full, chan_full)
+        sp_no_out = spindles_detect_multi(data_full, sf_full, chan_full,
+                                          remove_outliers=True)
+        sp_multi = spindles_detect_multi(data_full, sf_full, chan_full,
+                                         multi_only=True)
+        assert sp_multi.shape[0] < sp.shape[0]
+        assert sp_no_out.shape[0] < sp.shape[0]
+        bv = get_bool_vector(data_full, sf_full, sp)
+        assert bv.shape[0] == len(chan_full)
+
+        # Now we replace one channel with no spindle / bad data
+        data_full[1, :] = np.random.random(data_full.shape[1])
+
+        # Test where data.shape[0] != len(chan)
+        with pytest.raises(AssertionError):
+            spindles_detect_multi(data_full, sf_full, chan_full[:-1])
+
+        # Test with only bad channels
+        data_full[0, :] = np.random.random(data_full.shape[1])
+        data_full[2, :] = np.random.random(data_full.shape[1])
+        with self.assertLogs('yasa', level='WARNING'):
+            sp = spindles_detect_multi(data_full, sf_full, chan_full)
+            assert sp is None
 
     def test_stft_power(self):
         """Test function stft_power

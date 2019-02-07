@@ -13,7 +13,7 @@ J. Neurosci. Methods. https://doi.org/10.1016/j.jneumeth.2018.08.014
 - GitHub: https://github.com/raphaelvallat/yasa
 - License: BSD 3-Clause License
 """
-import warnings
+import logging
 import numpy as np
 import pandas as pd
 from numba import jit
@@ -22,8 +22,13 @@ from scipy.fftpack import next_fast_len
 from mne.filter import filter_data, resample
 from scipy.interpolate import interp1d, RectBivariateSpline
 
-__all__ = ['spindles_detect', 'stft_power', 'moving_transform',
-           'get_bool_vector']
+logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s',
+                    datefmt='%d-%b-%y %H:%M:%S')
+
+logger = logging.getLogger('yasa')
+
+__all__ = ['spindles_detect', 'spindles_detect_multi', 'stft_power',
+           'moving_transform', 'get_bool_vector']
 
 
 #############################################################################
@@ -114,6 +119,11 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
         Time vector
     out : np.array
         Transformed signal
+
+    Notes
+    -----
+    This function was inspired by the `transform_signal` function of the
+    Wonambi package (https://github.com/wonambi-python/wonambi).
     """
     # Safety checks
     assert method in ['covar', 'corr', 'rms']
@@ -250,7 +260,7 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
     return f, t, Sxx
 
 
-def trimbothstd(x, cut=0.025):
+def trimbothstd(x, cut=0.10):
     """
     Slices off a proportion of items from both ends of an array and then
     compute the sample standard deviation.
@@ -268,7 +278,7 @@ def trimbothstd(x, cut=0.025):
         Input array.
     cut : float
         Proportion (in range 0-1) of total data to trim of each end.
-        Default is 0.025, i.e. 2.5% lowest and 2.5% highest values are removed.
+        Default is 0.10, i.e. 10% lowest and 10% highest values are removed.
 
     Returns
     -------
@@ -369,9 +379,24 @@ def get_bool_vector(data, sf, sp):
     assert isinstance(sp, pd.DataFrame)
     assert 'Start' in sp.keys()
     assert 'End' in sp.keys()
-    idx_sp = _index_to_events(sp[['Start', 'End']].values * sf)
-    bool_spindles = np.zeros(data.size, dtype=int)
-    bool_spindles[idx_sp] = 1
+    bool_spindles = np.zeros(data.shape, dtype=int)
+
+    # For multi-channel detection
+    multi = False
+    if 'Channel' in sp.keys():
+        chan = sp['Channel'].unique()
+        n_chan = chan.size
+        if n_chan > 1:
+            multi = True
+
+    if multi:
+        for c in chan:
+            sp_chan = sp[sp['Channel'] == c]
+            idx_sp = _index_to_events(sp_chan[['Start', 'End']].values * sf)
+            bool_spindles[sp_chan['IdxChannel'].iloc[0], idx_sp] = 1
+    else:
+        idx_sp = _index_to_events(sp[['Start', 'End']].values * sf)
+        bool_spindles[idx_sp] = 1
     return bool_spindles
 
 #############################################################################
@@ -439,8 +464,23 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
     """
     # Safety check
     data = np.asarray(data, dtype=np.float64)
+    if data.ndim == 2:
+        data = np.squeeze(data)
+    assert data.ndim == 1, 'Wrong data dimension. Please pass 1D data.'
     assert freq_sp[0] < freq_sp[1]
     assert freq_broad[0] < freq_broad[1]
+
+    # Check data amplitude
+    data_trimstd = trimbothstd(data, cut=0.10)
+    data_ptp = np.ptp(data)
+    logger.info('Number of samples in data = %i', data.size)
+    logger.info('Sampling frequency = %.2f Hz', sf)
+    logger.info('Data duration = %.2f seconds', data.size / sf)
+    logger.info('Trimmed standard deviation of data = %.4f uV', data_trimstd)
+    logger.info('Peak-to-peak amplitude of data = %.4f uV', data_ptp)
+    if not(1 < data_trimstd < 1e3 or 1 < data_ptp < 1e6):
+        logger.error('Wrong data amplitude. Unit must be uV. Returning None.')
+        return None
 
     if 'rel_pow' not in thresh.keys():
         thresh['rel_pow'] = 0.20
@@ -452,6 +492,7 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
     # Downsample to 100 Hz
     if sf > 100:
         fac = 100 / sf
+        logger.info('Downsampling by a factor of %.2f', 1 / fac)
         data = resample(data, up=fac, down=1.0, npad='auto', axis=-1,
                         window='boxcar', n_jobs=1, pad='reflect_limited',
                         verbose=False)
@@ -502,16 +543,22 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
     inst_freq = (sf / (2 * np.pi) * np.ediff1d(inst_phase))
 
     # Let's define the thresholds
-    thresh_rms = mrms.mean() + thresh['rms'] * trimbothstd(mrms, cut=0.025)
+    thresh_rms = mrms.mean() + thresh['rms'] * trimbothstd(mrms, cut=0.10)
+    # Avoid too high threshold caused by Artefacts / Motion during Wake.
+    thresh_rms = min(thresh_rms, 10)
     idx_rel_pow = (rel_pow >= thresh['rel_pow']).astype(int)
     idx_mcorr = (mcorr >= thresh['corr']).astype(int)
     idx_mrms = (mrms >= thresh_rms).astype(int)
     idx_sum = (idx_rel_pow + idx_mcorr + idx_mrms).astype(int)
 
     # For debugging
-    # print('Rel pow', np.sum(idx_rel_pow))
-    # print('Corr', np.sum(idx_mcorr))
-    # print('RMS', np.sum(idx_mrms))
+    logger.info('Moving RMS threshold = %.3f', thresh_rms)
+    logger.info('Number of supra-theshold samples for relative power = %i',
+                idx_rel_pow.sum())
+    logger.info('Number of supra-theshold samples for moving correlation = %i',
+                idx_mcorr.sum())
+    logger.info('Number of supra-theshold samples for moving RMS = %i',
+                idx_mrms.sum())
 
     # The detection using the three thresholds tends to underestimate the
     # real duration of the spindle. To overcome this, we compute a soft
@@ -525,7 +572,7 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
 
     # If no events are found, return an empty dataframe
     if not len(where_sp):
-        warnings.warn('No spindles were found in data. Returning None.')
+        logger.warning('No spindles were found in data. Returning None.')
         return None
 
     # Merge events that are too close
@@ -543,7 +590,7 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
 
     # If no events of good duration are found, return an empty dataframe
     if all(~good_dur):
-        warnings.warn('No spindles were found in data. Returning None.')
+        logger.warning('No spindles were found in data. Returning None.')
         return None
 
     # Initialize empty variables
@@ -609,10 +656,89 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
         ilf = IsolationForest(behaviour='new', contamination='auto',
                               max_samples='auto', verbose=0, random_state=42)
 
-        outliers = ilf.fit_predict(df_sp[df_sp.columns.difference(['Start',
-                                                                   'End'])])
-        outliers[outliers == -1] = 0
+        good = ilf.fit_predict(df_sp[df_sp.columns.difference(['Start',
+                                                               'End'])])
+        good[good == -1] = 0
+        logger.info('%i outliers were removed.', (good == 0).sum())
         # Remove outliers from DataFrame
-        df_sp = df_sp[outliers.astype(bool)].reset_index(drop=True)
+        df_sp = df_sp[good.astype(bool)].reset_index(drop=True)
 
+    logger.info('%i spindles were found in data.', df_sp.shape[0])
     return df_sp
+
+
+def spindles_detect_multi(data, sf, ch_names, multi_only=False, **kwargs):
+    """Multi-channel spindles detection.
+
+    Parameters
+    ----------
+    data : array_like
+        Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
+        If you used MNE to load the data, you should pass `raw._data * 1e6`.
+    sf : float
+        Sampling frequency of the data in Hz.
+        If you used MNE to load the data, you should pass `raw.info['sfreq']`.
+    ch_names : list of str
+        Channel names.
+        If you used MNE to load the data, you should pass `raw.ch_names`.
+    multi_only : boolean
+        Define the behavior of the multi-channel detection. If True, only
+        spindles that are present on at least two channels are kept. If False,
+        no selection is applied and the output is just a concatenation of the
+        single-channel detection dataframe. Default is False.
+    **kwargs
+        Keywords arguments that are passed to the `spindles_detect` function.
+
+    Returns
+    -------
+    sp_params : pd.DataFrame
+        Pandas DataFrame::
+
+            'Start' : Start time of each detected spindles (in seconds)
+            'End' : End time (in seconds)
+            'Duration' : Duration (in seconds)
+            'Amplitude' : Amplitude (in uV)
+            'RMS' : Root-mean-square (in uV)
+            'AbsPower' : Median absolute power (in log10 uV^2)
+            'RelPower' : Median relative power (ranging from 0 to 1, in % uV^2)
+            'Frequency' : Median frequency (in Hz)
+            'Oscillations' : Number of oscillations (peaks)
+            'Symmetry' : Symmetry index, ranging from 0 to 1
+            'Channel' : Channel name
+            'IdxChannel' : Integer index of channel in data
+    """
+    # Safety check
+    data = np.asarray(data, dtype=np.float64)
+    assert data.ndim == 2
+    assert data.shape[0] < data.shape[1]
+    n_chan = data.shape[0]
+    assert isinstance(ch_names, (list, np.ndarray))
+    if len(ch_names) != n_chan:
+        raise AssertionError('ch_names must have same length as data.shape[0]')
+
+    # Single channel detection
+    df = pd.DataFrame()
+    for i in range(n_chan):
+        df_chan = spindles_detect(data[i, :], sf, **kwargs)
+        if df_chan is not None:
+            df_chan['Channel'] = ch_names[i]
+            df_chan['IdxChannel'] = i
+            df = df.append(df_chan, ignore_index=True)
+        else:
+            logger.warning('No spindles were found in channel %s.',
+                           ch_names[i])
+
+    # If no spindles were detected, return None
+    if df.empty:
+        logger.warning('No spindles were found in data. Returning None.')
+        return None
+
+    # Find spindles that are present on at least two channels
+    if multi_only and df['Channel'].unique().size > 1:
+        # We round to the nearest second
+        idx_good = np.logical_or(df['Start'].round(0).duplicated(keep=False),
+                                 df['End'].round(0).duplicated(keep=False)
+                                 ).to_list()
+        return df[idx_good].reset_index(drop=True)
+    else:
+        return df

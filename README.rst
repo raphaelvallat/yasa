@@ -28,7 +28,7 @@
 YASA
 ====
 
-YASA (*Yet Another Spindle Algorithm*) is a fast and data-agnostic sleep spindles detection algorithm written in Python 3.
+YASA (*Yet Another Spindle Algorithm*) is a fast, robust, and data-agnostic sleep spindles detection algorithm written in Python 3.
 
 The algorithm behind YASA is largely inspired by the method described in:
 
@@ -57,7 +57,8 @@ Several functions of YASA are written using `Numba <http://numba.pydata.org/>`_,
 Examples
 ~~~~~~~~
 
-Please refer to `notebooks/spindles_detection.ipynb <notebooks/spindles_detection.ipynb>`_ for an example on how to use YASA as well as a step-by-step description of the algorithm.
+1. Please see `notebooks/spindles_detection.ipynb <notebooks/00_spindles_detection.ipynb>`_ for an example on how to use YASA on a **single EEG channel** as well as a **step-by-step description of the algorithm**.
+2. Please see `notebooks/spindles_detection.ipynb <notebooks/01_spindles_detection_multi.ipynb>`_ for an example on how to use YASA on **multi-channel EEG** and **MNE Raw objects**.
 
 Typical use
 -----------
@@ -65,7 +66,8 @@ Typical use
 .. code-block:: python
 
   import yasa
-  yasa.spindles_detect(data, sf)
+  yasa.spindles_detect(data, sf)  # Single channel EEG
+  # yasa.spindles_detect_multi(data, sf, ch_names)  # Multi-channel EEG
 
 The result of the detection is a pandas DataFrame
 
@@ -100,9 +102,7 @@ YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.
       """Replace Visbrain built-in spindles detection by YASA algorithm.
       See http://visbrain.org/sleep.html#use-your-own-detections-in-sleep
       """
-      sp = spindles_detect(data, sf, freq_sp=(11, 16),
-                           duration=(0.5, 2), freq_broad=(1, 30),
-                           thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5})
+      sp = spindles_detect(data, sf)
       return (sp[['Start', 'End']].values * sf).astype(int)
 
   sl.replace_detections('spindle', fcn_spindle)
