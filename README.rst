@@ -57,8 +57,9 @@ Several functions of YASA are written using `Numba <http://numba.pydata.org/>`_,
 Examples
 ~~~~~~~~
 
-1. Please see `notebooks/spindles_detection.ipynb <notebooks/00_spindles_detection.ipynb>`_ for an example on how to use YASA on a **single EEG channel** as well as a **step-by-step description of the algorithm**.
-2. Please see `notebooks/spindles_detection.ipynb <notebooks/01_spindles_detection_multi.ipynb>`_ for an example on how to use YASA on **multi-channel EEG** and **MNE Raw objects**.
+1. Please see `notebooks/00_spindles_detection.ipynb <notebooks/00_spindles_detection.ipynb>`_ to learn how to use YASA on a **single EEG channel** and see a **step-by-step description of the algorithm**.
+2. Please see `notebooks/01_spindles_detection_multi.ipynb <notebooks/01_spindles_detection_multi.ipynb>`_ to learn how to use YASA on **multi-channel EEG** and **MNE Raw objects**.
+3. Please see `notebooks/02_slow_fast_spindles.ipynb <notebooks/02_slow_fast_spindles.ipynb>`_ to learn how to differentiate **slow and fast spindles**.
 
 Typical use
 -----------
@@ -89,7 +90,7 @@ which can then be easily used to plot the detected spindles
 Interactive visualization with Visbrain
 ---------------------------------------
 
-YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.html>`_ module of the `Visbrain visualization suite <http://visbrain.org/index.html>`_. That way, the result of the spindles detection can easily be displayed and checked in an interactive graphical user interface. To do so, load Visbrain using the following python file (make sure to update *'PATH/TO/EEGFILE'*).
+YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.html>`_ module of the `Visbrain visualization suite <http://visbrain.org/index.html>`_. The result of the spindles detection can then easily be displayed and checked in an interactive graphical user interface. To do so, load Visbrain using the following python file (make sure to update *'PATH/TO/EEGFILE'*).
 
 .. code-block:: python
 
