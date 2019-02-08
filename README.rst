@@ -61,6 +61,7 @@ Examples
 2. Please see `notebooks/01_spindles_detection_multi.ipynb <notebooks/01_spindles_detection_multi.ipynb>`_ to learn how to use YASA on **multi-channel EEG** and **MNE Raw objects**.
 3. Please see `notebooks/02_slow_fast_spindles.ipynb <notebooks/02_slow_fast_spindles.ipynb>`_ to learn how to differentiate **slow and fast spindles**.
 4. Please see `notebooks/03_detection_NREM_only.ipynb <notebooks/03_detection_NREM_only.ipynb>`_ to learn how to apply your detection only on **NREM sleep** (and thus improve the acccuracy).
+5. Please see `notebooks/04_run_visbrain.py <notebooks/04_run_visbrain.py>`_ to learn how to use YASA in combination with the **Visbrain graphical user interface**.
 
 Typical uses
 ------------
