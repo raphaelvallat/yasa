@@ -60,15 +60,29 @@ Examples
 1. Please see `notebooks/00_spindles_detection.ipynb <notebooks/00_spindles_detection.ipynb>`_ to learn how to use YASA on a **single EEG channel** and see a **step-by-step description of the algorithm**.
 2. Please see `notebooks/01_spindles_detection_multi.ipynb <notebooks/01_spindles_detection_multi.ipynb>`_ to learn how to use YASA on **multi-channel EEG** and **MNE Raw objects**.
 3. Please see `notebooks/02_slow_fast_spindles.ipynb <notebooks/02_slow_fast_spindles.ipynb>`_ to learn how to differentiate **slow and fast spindles**.
+4. Please see `notebooks/03_detection_NREM_only.ipynb <notebooks/03_detection_NREM_only.ipynb>`_ to learn how to apply your detection only on **NREM sleep** (and thus improve the acccuracy).
 
-Typical use
------------
+Typical uses
+------------
 
 .. code-block:: python
 
   import yasa
-  yasa.spindles_detect(data, sf)  # Single channel EEG
-  # yasa.spindles_detect_multi(data, sf, ch_names)  # Multi-channel EEG
+
+  # 1 - Single-channel simple detection
+  yasa.spindles_detect(data, sf)
+
+  # 2 - Single-channel full command (shows all the default parameters)
+  yasa.spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.4, 2),
+                       freq_broad=(1, 30), min_distance=500, downsample=True,
+                       thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
+                       remove_outliers=False)
+
+  # 3 - Multi-channels detection on NREM sleep only (requires an hypnogram)
+  yasa.spindles_detect_multi(data, sf, ch_names, hypno=hypno)
+
+  # 4 - Multi-channels detection with automatic outlier rejection
+  yasa.spindles_detect_multi(data, sf, ch_names, hypno=hypno, remove_outliers=True)
 
 The result of the detection is a pandas DataFrame
 
@@ -104,6 +118,8 @@ YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.
       See http://visbrain.org/sleep.html#use-your-own-detections-in-sleep
       """
       sp = spindles_detect(data, sf)
+      # Alternatively if you want to apply the detection only on NREM sleep
+      # sp = spindles_detect(data, sf, hypno=hypno)
       return (sp[['Start', 'End']].values * sf).astype(int)
 
   sl.replace_detections('spindle', fcn_spindle)

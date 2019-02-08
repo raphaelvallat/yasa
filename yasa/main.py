@@ -404,8 +404,8 @@ def get_bool_vector(data, sf, sp):
 #############################################################################
 
 
-def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
-                    freq_broad=(1, 30), min_distance=500,
+def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.4, 2),
+                    freq_broad=(1, 30), min_distance=500, downsample=True,
                     thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
                     remove_outliers=False):
     """Spindles detection.
@@ -413,11 +413,22 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
     Parameters
     ----------
     data : array_like
-        Single-channel data. Unit must be uV.
+        Single-channel continuous EEG data. Unit must be uV.
     sf : float
         Sampling frequency of the data in Hz.
+    hypno : array_like
+        Sleep stage vector (hypnogram). If the hypnogram is loaded, the
+        detection will only be applied to NREM sleep epochs (stage 1, 2 and 3),
+        therefore slightly improving the accuracy.
+        hypno MUST be a 1D array of integers with the same size as data and
+        where -1 = Artefact, 0 = Wake, 1 = N1, 2 = N2, 3 = N3, 4 = REM.
+        If you need help loading your hypnogram vector, please read the
+        Visbrain documentation at http://visbrain.org/sleep.
     freq_sp : tuple or list
-        Spindles frequency range. Default is 11 to 16 Hz.
+        Spindles frequency range. Default is 12 to 15 Hz. Please note that YASA
+        uses a FIR filter (implemented in MNE) with a 1.5Hz transition band,
+        which means that for `freq_sp = (12, 15 Hz)`, the -6 dB points are
+        located at 11.25 and 15.75 Hz.
     duration : tuple or list
         The minimum and maximum duration of the spindles.
         Default is 0.4 to 2 seconds.
@@ -427,6 +438,10 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
     min_distance : int
         If two spindles are closer than `min_distance` (in ms), they are
         merged into a single spindles. Default is 500 ms.
+    downsample : boolean
+        If True, downsample the data to 100 Hz to speed up the computation.
+        Note that if the sampling frequency of your data is NOT a multiple of
+        100 Hz (e.g. 256 Hz), then we recommand setting downsample to False.
     thresh : dict
         Detection thresholds::
 
@@ -457,6 +472,7 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
             'Frequency' : Median frequency (in Hz)
             'Oscillations' : Number of oscillations (peaks)
             'Symmetry' : Symmetry index, ranging from 0 to 1
+            'Stage' : Sleep stage (only if hypno was provided)
 
     Notes
     -----
@@ -469,6 +485,20 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
     assert data.ndim == 1, 'Wrong data dimension. Please pass 1D data.'
     assert freq_sp[0] < freq_sp[1]
     assert freq_broad[0] < freq_broad[1]
+    assert isinstance(downsample, bool), 'Downsample must be True or False.'
+
+    # Hypno processing
+    if hypno is not None:
+        hypno = np.asarray(hypno, dtype=int)
+        assert hypno.ndim == 1, 'Hypno must be one dimensional.'
+        assert hypno.size == data.size, 'Hypno must have same size as data.'
+        unique_hypno = np.unique(hypno)
+        logger.info('Number of unique values in hypno = %i', unique_hypno.size)
+        if not any(np.in1d(unique_hypno, [1, 2, 3])):
+            logger.error('No NREM sleep in hypno. Switching to hypno = None')
+            hypno = None
+        else:
+            idx_nrem = np.logical_and(hypno >= 1, hypno < 4)
 
     # Check data amplitude
     data_trimstd = trimbothstd(data, cut=0.10)
@@ -490,24 +520,34 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
         thresh['rms'] = 1.5
 
     # Downsample to 100 Hz
-    if sf > 100:
+    if downsample is True and sf > 100:
         fac = 100 / sf
-        logger.info('Downsampling by a factor of %.2f', 1 / fac)
+        logger.info('Downsampling data by a factor of %.2f', 1 / fac)
         data = resample(data, up=fac, down=1.0, npad='auto', axis=-1,
                         window='boxcar', n_jobs=1, pad='reflect_limited',
                         verbose=False)
         sf = 100
+        # Now try resampling the hypnogram
+        if hypno is not None:
+            if float(1 / fac).is_integer():
+                hypno = hypno[::int(1 / fac)]
+                assert hypno.size == data.size
+                idx_nrem = np.logical_and(hypno >= 1, hypno < 4)
+                logger.info('Seconds of NREM sleep = %.2f',
+                            idx_nrem.sum() / sf)
+            else:
+                logger.error("Cannot downsample hypnogram to 100 Hz. Use"
+                             "downsample = False. Switching to hypno = None")
+                hypno = None
 
     # Bandpass filter
     data = filter_data(data, sf, freq_broad[0], freq_broad[1], method='fir',
                        verbose=0)
 
-    # If freq_sp is not too narrow, we add and remove 1 Hz to adjust the
-    # FIR filter frequency response. The width of the transition band is set
-    # to 1.5 Hz on each side, meaning that for freq_sp = (11, 16 Hz), the -6 dB
-    # point is located at 11.25 and 15.75 Hz.
-    trans = 1 if freq_sp[1] - freq_sp[0] > 3 else 0
-    data_sigma = filter_data(data, sf, freq_sp[0] + trans, freq_sp[1] - trans,
+    # The width of the transition band is set to 1.5 Hz on each side,
+    # meaning that for freq_sp = (12, 15 Hz), the -6 dB points are located at
+    # 11.25 and 15.75 Hz.
+    data_sigma = filter_data(data, sf, freq_sp[0], freq_sp[1],
                              l_trans_bandwidth=1.5, h_trans_bandwidth=1.5,
                              method='fir', verbose=0)
 
@@ -543,13 +583,21 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
     inst_freq = (sf / (2 * np.pi) * np.ediff1d(inst_phase))
 
     # Let's define the thresholds
-    thresh_rms = mrms.mean() + thresh['rms'] * trimbothstd(mrms, cut=0.10)
+    if hypno is None:
+        thresh_rms = mrms.mean() + thresh['rms'] * trimbothstd(mrms, cut=0.10)
+    else:
+        thresh_rms = mrms[idx_nrem].mean() + thresh['rms'] * \
+            trimbothstd(mrms[idx_nrem], cut=0.10)
     # Avoid too high threshold caused by Artefacts / Motion during Wake.
     thresh_rms = min(thresh_rms, 10)
     idx_rel_pow = (rel_pow >= thresh['rel_pow']).astype(int)
     idx_mcorr = (mcorr >= thresh['corr']).astype(int)
     idx_mrms = (mrms >= thresh_rms).astype(int)
     idx_sum = (idx_rel_pow + idx_mcorr + idx_mrms).astype(int)
+
+    # Make sure that we do not detect spindles in REM or Wake if hypno != None
+    if hypno is not None:
+        idx_sum[~idx_nrem] = 0
 
     # For debugging
     logger.info('Moving RMS threshold = %.3f', thresh_rms)
@@ -602,6 +650,7 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
     sp_sym = np.zeros(n_sp)
     sp_abs = np.zeros(n_sp)
     sp_rel = np.zeros(n_sp)
+    sp_sta = np.zeros(n_sp)
 
     # Number of oscillations (= number of peaks separated by at least 60 ms)
     # --> 60 ms because 1000 ms / 16 Hz = 62.5 ms, in other words, at 16 Hz,
@@ -636,6 +685,10 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
         # Symmetry index
         sp_sym[i] = peaks[peaks_params['prominences'].argmax()] / sp_det.size
 
+        # Sleep stage
+        if hypno is not None:
+            sp_sta[i] = hypno[sp[i]][0]
+
     # Create a dictionnary
     sp_params = {'Start': sp_start,
                  'End': sp_end,
@@ -646,18 +699,25 @@ def spindles_detect(data, sf, freq_sp=(11, 16), duration=(0.4, 2),
                  'RelPower': sp_rel,
                  'Frequency': sp_freq,
                  'Oscillations': sp_osc,
-                 'Symmetry': sp_sym}
+                 'Symmetry': sp_sym,
+                 'Stage': sp_sta}
 
     df_sp = pd.DataFrame.from_dict(sp_params)[good_dur].reset_index(drop=True)
+
+    if hypno is None:
+        df_sp.drop(columns=['Stage'], inplace=True)
+    else:
+        df_sp['Stage'] = df_sp['Stage'].astype(int).astype('category')
 
     # We need at least 50 detected spindles to apply the Isolation Forest.
     if remove_outliers and df_sp.shape[0] >= 50:
         from sklearn.ensemble import IsolationForest
+        df_sp_dummies = pd.get_dummies(df_sp)
+        col_keep = df_sp_dummies.columns.difference(['Start', 'End'])
         ilf = IsolationForest(behaviour='new', contamination='auto',
                               max_samples='auto', verbose=0, random_state=42)
 
-        good = ilf.fit_predict(df_sp[df_sp.columns.difference(['Start',
-                                                               'End'])])
+        good = ilf.fit_predict(df_sp_dummies[col_keep])
         good[good == -1] = 0
         logger.info('%i outliers were removed.', (good == 0).sum())
         # Remove outliers from DataFrame
@@ -706,6 +766,7 @@ def spindles_detect_multi(data, sf, ch_names, multi_only=False, **kwargs):
             'Symmetry' : Symmetry index, ranging from 0 to 1
             'Channel' : Channel name
             'IdxChannel' : Integer index of channel in data
+            'Stage' : Sleep stage (only if hypno was provided)
     """
     # Safety check
     data = np.asarray(data, dtype=np.float64)

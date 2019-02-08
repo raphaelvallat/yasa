@@ -5,7 +5,7 @@ import pytest
 import unittest
 import numpy as np
 from itertools import product
-from mne.filter import filter_data
+from mne.filter import filter_data, resample
 from yasa.main import (_corr, _covar, _rms, moving_transform, stft_power,
                        _index_to_events, get_bool_vector, trimbothstd,
                        _merge_close, spindles_detect, spindles_detect_multi)
@@ -15,6 +15,14 @@ data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
 sf = 200
 data_sigma = filter_data(data, sf, 12, 15, method='fir', verbose=0)
 
+# Resample the data to 128 Hz
+fac = 128 / sf
+data_128 = resample(data, up=fac, down=1.0, npad='auto', axis=-1,
+                    window='boxcar', n_jobs=1, pad='reflect_limited',
+                    verbose=False)
+sf_128 = 128
+
+
 data_n3 = np.loadtxt('notebooks/data_N3_no-spindles_30sec_100Hz.txt')
 sf_n3 = 100
 
@@ -22,6 +30,9 @@ file_full = np.load('notebooks/data_full_6hrs_100Hz_Cz+Fz+Pz.npz')
 data_full = file_full.get('data')
 chan_full = file_full.get('chan')
 sf_full = 100
+
+# Load the hypnogram
+hypno_full = np.load('notebooks/data_full_6hrs_100Hz_hypno.npz').get('hypno')
 
 
 class TestStringMethods(unittest.TestCase):
@@ -97,6 +108,24 @@ class TestStringMethods(unittest.TestCase):
         spindles_detect(data, sf, thresh={'rms': 1.25})
         spindles_detect(data, sf, thresh={'rel_pow': 0.25, 'corr': .60})
 
+        # Test with downsampling is False
+        spindles_detect(data, sf, downsample=False)
+
+        # Test with hypnogram
+        spindles_detect(data_full[0, :], sf_full, hypno=hypno_full)
+
+        # Hypnogram with sf = 200 Hz (require downsampling)
+        spindles_detect(data, sf, hypno=np.ones(data.size))
+
+        # Hypnogram with sf = 128 (downsampling is not possible)
+        with self.assertLogs('yasa', level='ERROR'):
+            spindles_detect(data_128, sf_128, hypno=np.ones(data_128.size))
+
+        # Hypnogram with only one unique value
+        with self.assertLogs('yasa', level='ERROR'):
+            sp = spindles_detect(data, sf, hypno=np.zeros(data.size))
+        assert 'Stage' not in sp.keys()
+
         # Now load other data
         with self.assertLogs('yasa', level='WARNING'):
             spindles_detect(data_n3, sf_n3)
@@ -141,6 +170,9 @@ class TestStringMethods(unittest.TestCase):
         assert sp_no_out.shape[0] < sp.shape[0]
         bv = get_bool_vector(data_full, sf_full, sp)
         assert bv.shape[0] == len(chan_full)
+
+        # Test with hypnogram
+        spindles_detect_multi(data_full, sf_full, chan_full, hypno=hypno_full)
 
         # Now we replace one channel with no spindle / bad data
         data_full[1, :] = np.random.random(data_full.shape[1])
