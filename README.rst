@@ -74,7 +74,7 @@ Typical uses
   yasa.spindles_detect(data, sf)
 
   # 2 - Single-channel full command (shows all the default parameters)
-  yasa.spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.4, 2),
+  yasa.spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
                        freq_broad=(1, 30), min_distance=500, downsample=True,
                        thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
                        remove_outliers=False)

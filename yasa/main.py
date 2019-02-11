@@ -404,7 +404,7 @@ def get_bool_vector(data, sf, sp):
 #############################################################################
 
 
-def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.4, 2),
+def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
                     freq_broad=(1, 30), min_distance=500, downsample=True,
                     thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
                     remove_outliers=False):
@@ -431,7 +431,7 @@ def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.4, 2),
         located at 11.25 and 15.75 Hz.
     duration : tuple or list
         The minimum and maximum duration of the spindles.
-        Default is 0.4 to 2 seconds.
+        Default is 0.5 to 2 seconds.
     freq_broad : tuple or list
         Broad band frequency of interest.
         Default is 1 to 30 Hz.
@@ -441,7 +441,8 @@ def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.4, 2),
     downsample : boolean
         If True, downsample the data to 100 Hz to speed up the computation.
         Note that if the sampling frequency of your data is NOT a multiple of
-        100 Hz (e.g. 256 Hz), then we recommand setting downsample to False.
+        100 Hz (e.g. 256 Hz) AND an hypnogram is provided, then downsampling
+        will be skipped to avoid any errors while decimating the hypnogram.
     thresh : dict
         Detection thresholds::
 
@@ -522,23 +523,27 @@ def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.4, 2),
     # Downsample to 100 Hz
     if downsample is True and sf > 100:
         fac = 100 / sf
-        logger.info('Downsampling data by a factor of %.2f', 1 / fac)
-        data = resample(data, up=fac, down=1.0, npad='auto', axis=-1,
-                        window='boxcar', n_jobs=1, pad='reflect_limited',
-                        verbose=False)
-        sf = 100
-        # Now try resampling the hypnogram
-        if hypno is not None:
-            if float(1 / fac).is_integer():
-                hypno = hypno[::int(1 / fac)]
+        ifac = 1 / fac
+        if float(ifac).is_integer():
+            ifac = int(ifac)
+            data = data[::ifac]
+            sf = 100
+            logger.info('Downsampled data by a factor of %i', ifac)
+            if hypno is not None:
+                hypno = hypno[::ifac]
                 assert hypno.size == data.size
                 idx_nrem = np.logical_and(hypno >= 1, hypno < 4)
                 logger.info('Seconds of NREM sleep = %.2f',
                             idx_nrem.sum() / sf)
+        else:
+            if hypno is not None:
+                logger.warning("Cannot downsample hypnogram with a non-integer"
+                               " factor. Skipping downsampling.")
             else:
-                logger.error("Cannot downsample hypnogram to 100 Hz. Use"
-                             "downsample = False. Switching to hypno = None")
-                hypno = None
+                data = resample(data, up=fac, down=1.0, npad='auto', axis=-1,
+                                window='boxcar', n_jobs=1,
+                                pad='reflect_limited', verbose=False)
+                sf = 100
 
     # Bandpass filter
     data = filter_data(data, sf, freq_broad[0], freq_broad[1], method='fir',

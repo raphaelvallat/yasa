@@ -118,7 +118,7 @@ class TestStringMethods(unittest.TestCase):
         spindles_detect(data, sf, hypno=np.ones(data.size))
 
         # Hypnogram with sf = 128 (downsampling is not possible)
-        with self.assertLogs('yasa', level='ERROR'):
+        with self.assertLogs('yasa', level='WARNING'):
             spindles_detect(data_128, sf_128, hypno=np.ones(data_128.size))
 
         # Hypnogram with only one unique value
