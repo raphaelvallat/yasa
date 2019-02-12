@@ -667,7 +667,7 @@ def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
         sp_det = signal.detrend(data[sp[i]], type='linear')
         sp_amp[i] = np.ptp(sp_det)  # Peak-to-peak amplitude
         sp_rms[i] = _rms(sp_det)  # Root mean square
-        sp_rel[i] = np.median(rel_pow[sp[i]])  # Mean relative power
+        sp_rel[i] = np.median(rel_pow[sp[i]])  # Median relative power
 
         # Hilbert-based instantaneous properties
         sp_inst_freq = inst_freq[sp[i]]
