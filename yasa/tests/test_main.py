@@ -111,6 +111,9 @@ class TestStringMethods(unittest.TestCase):
         # Test with downsampling is False
         spindles_detect(data, sf, downsample=False)
 
+        # Non-integer downsampling
+        spindles_detect(data_128, sf_128)
+
         # Test with hypnogram
         spindles_detect(data_full[0, :], sf_full, hypno=hypno_full)
 
