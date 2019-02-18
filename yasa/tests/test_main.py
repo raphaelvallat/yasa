@@ -22,6 +22,13 @@ data_128 = resample(data, up=fac, down=1.0, npad='auto', axis=-1,
                     verbose=False)
 sf_128 = 128
 
+# Resample the data to 150 Hz
+fac = 150 / sf
+data_150 = resample(data, up=fac, down=1.0, npad='auto', axis=-1,
+                    window='boxcar', n_jobs=1, pad='reflect_limited',
+                    verbose=False)
+sf_150 = 150
+
 
 data_n3 = np.loadtxt('notebooks/data_N3_no-spindles_30sec_100Hz.txt')
 sf_n3 = 100
@@ -111,7 +118,7 @@ class TestStringMethods(unittest.TestCase):
         # Test with downsampling is False
         spindles_detect(data, sf, downsample=False)
 
-        # Non-integer downsampling
+        # Power of 2 resampling
         spindles_detect(data_128, sf_128)
 
         # Test with hypnogram
@@ -120,9 +127,9 @@ class TestStringMethods(unittest.TestCase):
         # Hypnogram with sf = 200 Hz (require downsampling)
         spindles_detect(data, sf, hypno=np.ones(data.size))
 
-        # Hypnogram with sf = 128 (downsampling is not possible)
+        # Hypnogram with sf = 150
         with self.assertLogs('yasa', level='WARNING'):
-            spindles_detect(data_128, sf_128, hypno=np.ones(data_128.size))
+            spindles_detect(data_150, sf_150, hypno=np.ones(data_150.size))
 
         # Hypnogram with only one unique value
         with self.assertLogs('yasa', level='ERROR'):

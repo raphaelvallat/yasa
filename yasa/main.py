@@ -18,8 +18,8 @@ import numpy as np
 import pandas as pd
 from numba import jit
 from scipy import signal
+from mne.filter import filter_data
 from scipy.fftpack import next_fast_len
-from mne.filter import filter_data, resample
 from scipy.interpolate import interp1d, RectBivariateSpline
 
 logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s',
@@ -439,10 +439,9 @@ def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
         If two spindles are closer than `min_distance` (in ms), they are
         merged into a single spindles. Default is 500 ms.
     downsample : boolean
-        If True, downsample the data to 100 Hz to speed up the computation.
-        Note that if the sampling frequency of your data is NOT a multiple of
-        100 Hz (e.g. 256 Hz) AND an hypnogram is provided, then downsampling
-        will be skipped to avoid any errors while decimating the hypnogram.
+        If True, the data will be downsampled to 100 Hz or 128 Hz (depending
+        on whether the original sampling frequency is a multiple of 100 or 128,
+        respectively).
     thresh : dict
         Detection thresholds::
 
@@ -520,30 +519,23 @@ def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
     if 'rms' not in thresh.keys():
         thresh['rms'] = 1.5
 
-    # Downsample to 100 Hz
-    if downsample is True and sf > 100:
-        fac = 100 / sf
-        ifac = 1 / fac
-        if float(ifac).is_integer():
-            ifac = int(ifac)
-            data = data[::ifac]
-            sf = 100
-            logger.info('Downsampled data by a factor of %i', ifac)
+    # Check if we can downsample to 100 or 128 Hz
+    if downsample is True and sf > 128:
+        if sf % 100 == 0 or sf % 128 == 0:
+            new_sf = 100 if sf % 100 == 0 else 128
+            fac = int(sf / new_sf)
+            sf = new_sf
+            data = data[::fac]
+            logger.info('Downsampled data by a factor of %i', fac)
             if hypno is not None:
-                hypno = hypno[::ifac]
+                hypno = hypno[::fac]
                 assert hypno.size == data.size
                 idx_nrem = np.logical_and(hypno >= 1, hypno < 4)
                 logger.info('Seconds of NREM sleep = %.2f',
                             idx_nrem.sum() / sf)
         else:
-            if hypno is not None:
-                logger.warning("Cannot downsample hypnogram with a non-integer"
-                               " factor. Skipping downsampling.")
-            else:
-                data = resample(data, up=fac, down=1.0, npad='auto', axis=-1,
-                                window='boxcar', n_jobs=1,
-                                pad='reflect_limited', verbose=False)
-                sf = 100
+            logger.warning("Cannot downsample if sf is not a mutiple of 100 "
+                           "or 128. Skipping downsampling.")
 
     # Bandpass filter
     data = filter_data(data, sf, freq_broad[0], freq_broad[1], method='fir',
