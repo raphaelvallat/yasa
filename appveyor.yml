@@ -1,11 +1,5 @@
 build: false
 
-cache:
-  #- packages
-
-platform:
-    -x64
-
 environment:
   matrix:
     - PYTHON_VERSION: 3.6
@@ -16,8 +10,6 @@ init:
   - "ECHO %PYTHON_VERSION% %MINICONDA% %PYTHON_ARCH%"
 
 install:
-  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-desktop.ps1'))
-  # - ps: $screen_resolution = '1280x800'; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-desktop.ps1'))
   # ------------------- PYTHON ENVIRONNEMENT -------------------
   - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
   - "conda config --set always_yes yes --set changeps1 no"
