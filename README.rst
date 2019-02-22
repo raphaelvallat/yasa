@@ -5,8 +5,8 @@
 .. image:: https://badge.fury.io/py/yasa.svg
     :target: https://badge.fury.io/py/yasa
 
-.. image:: https://img.shields.io/badge/python-3.6-blue.svg
-    :target: https://www.python.org/downloads/release/python-360/
+.. image:: https://img.shields.io/badge/python-3.5%20%7C%203.6%20%7C%203.7-blue.svg
+    :target: https://www.python.org/downloads/
 
 .. image:: https://img.shields.io/github/license/raphaelvallat/yasa.svg
     :target: https://github.com/raphaelvallat/yasa/blob/master/LICENSE
@@ -17,8 +17,8 @@
 .. image:: https://ci.appveyor.com/api/projects/status/4ua0pwy62jhpd9mx?svg=true
     :target: https://ci.appveyor.com/project/raphaelvallat/yasa
 
-.. image:: https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/raphaelvallat/yasa
+.. .. image:: https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg
+..     :target: https://codecov.io/gh/raphaelvallat/yasa
 
 .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg
    :target: https://doi.org/10.5281/zenodo.2370600
@@ -43,6 +43,7 @@ Installation
 
 **Dependencies**
 
+- python>=3.5
 - numpy>=1.14
 - scipy>=1.1.0
 - pandas>=0.23,
