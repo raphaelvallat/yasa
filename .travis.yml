@@ -11,6 +11,7 @@ install:
   - pip install -r requirements.txt
   - pip install -r requirements-test.txt
   - pip install .
+  - export NUMBA_DISABLE_JIT=1  # Disable JIT
 
 script:
   - py.test --cov
@@ -20,4 +21,3 @@ after_success:
 
 notifications:
     email: raphaelvallat9@gmail.com
-    
