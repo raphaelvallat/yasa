@@ -2,28 +2,26 @@ build: false
 
 environment:
   matrix:
+    - PYTHON_VERSION: 3.5
+      MINICONDA: C:\Miniconda3
     - PYTHON_VERSION: 3.6
-      MINICONDA: C:\Miniconda36-x64
-      PYTHON_ARCH: 64
+      MINICONDA: C:\Miniconda3
+    - PYTHON_VERSION: 3.7
+      MINICONDA: C:\Miniconda3
 
 init:
-  - "ECHO %PYTHON_VERSION% %MINICONDA% %PYTHON_ARCH%"
+  - "ECHO %PYTHON_VERSION% %MINICONDA%"
 
 install:
-  # ------------------- PYTHON ENVIRONNEMENT -------------------
   - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
-  - "conda config --set always_yes yes --set changeps1 no"
-  - "conda update -q conda"
-  - "conda info -a"
-  - "conda create -q -n testenv python=%PYTHON_VERSION% numpy scipy matplotlib pip cython"
-  # Activate testing environnement :
-  - "activate testenv"
-  - "python -m pip install --upgrade pip"
-  # Install dependencies :
-  - "pip install pytest mne scikit-learn numba"
-  - "dir"
-  # ------------------- ENTROPY -------------------
-  - "python setup.py develop"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - "conda create -q -n test_env python=%PYTHON_VERSION% numpy scipy"
+  - activate test_env
+  - pip install -r requirements.txt
+  - pip install -r requirements-test.txt
+  - pip install .
 
 test_script:
   - "pytest"
