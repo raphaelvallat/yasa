@@ -28,7 +28,7 @@ logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s',
 logger = logging.getLogger('yasa')
 
 __all__ = ['spindles_detect', 'spindles_detect_multi', 'stft_power',
-           'moving_transform', 'get_bool_vector']
+           'moving_transform', 'get_bool_vector', 'sw_detect']
 
 
 #############################################################################
@@ -260,6 +260,33 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
     return f, t, Sxx
 
 
+def _zerocrossings(x):
+    """Find indices of zero-crossings in a 1D array.
+
+    Parameters
+    ----------
+    x : np.array
+        One dimensional data vector.
+
+    Returns
+    -------
+    idx_zc : np.array
+        Indices of zero-crossings
+
+    Examples
+    --------
+
+        >>> import numpy as np
+        >>> from yasa.main import _zerocrossings
+        >>> a = np.array([4, 2, -1, -3, 1, 2, 3, -2, -5])
+        >>> _zerocrossings(a)
+            array([1, 3, 6], dtype=int64)
+    """
+    pos = x > 0
+    npos = ~pos
+    return ((pos[:-1] & npos[1:]) | (npos[:-1] & pos[1:])).nonzero()[0]
+
+
 def trimbothstd(x, cut=0.10):
     """
     Slices off a proportion of items from both ends of an array and then
@@ -400,7 +427,7 @@ def get_bool_vector(data, sf, sp):
     return bool_spindles
 
 #############################################################################
-# MAIN FUNCTION
+# MAIN FUNCTIONS
 #############################################################################
 
 
@@ -800,3 +827,256 @@ def spindles_detect_multi(data, sf, ch_names, multi_only=False, **kwargs):
         return df[idx_good].reset_index(drop=True)
     else:
         return df
+
+
+def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
+              dur_pos=(0.1, 1), amp_neg=(40, 300), amp_pos=(10, 150),
+              amp_ptp=(75, 400), downsample=True, remove_outliers=False):
+    """Slow-waves detection.
+
+    Parameters
+    ----------
+    data : array_like
+        Single-channel continuous EEG data. Unit must be uV.
+    sf : float
+        Sampling frequency of the data in Hz.
+    hypno : array_like
+        Sleep stage vector (hypnogram). If the hypnogram is loaded, the
+        detection will only be applied to N2 and N3 sleep epochs.
+        ``hypno`` MUST be a 1D array of integers with the same size as data
+        and where -1 = Artefact, 0 = Wake, 1 = N1, 2 = N2, 3 = N3, 4 = REM.
+        If you need help loading your hypnogram vector, please read the
+        Visbrain documentation at http://visbrain.org/sleep.
+    freq_sw : tuple or list
+        Slow wave frequency range. Default is 0.3 to 3.5 Hz. Please note that
+        YASA uses a FIR filter (implemented in MNE) with a 0.2Hz transition
+        band, which means that for `freq_sw = (.3, 3.5 Hz)`, the -6 dB points
+        are located at 0.2 and 3.6 Hz.
+    dur_neg : tuple or list
+        The minimum and maximum duration of the negative deflection of the
+        slow wave. Default is 0.3 to 1.5 second.
+    dur_pos : tuple or list
+        The minimum and maximum duration of the positive deflection of the
+        slow wave. Default is 0.1 to 1 second.
+    amp_neg : tuple or list
+        Absolute minimum and maximum negative trough amplitude of the
+        slow-wave. Default is 40 uV to 300 uV.
+    amp_pos : tuple or list
+        Absolute minimum and maximum positive peak amplitude of the
+        slow-wave. Default is 10 uV to 150 uV.
+    amp_ptp : tuple or list
+        Minimum and maximum peak-to-peak amplitude of the slow-wave.
+        Default is 75 uV to 400 uV.
+    downsample : boolean
+        If True, the data will be downsampled to 100 Hz or 128 Hz (depending
+        on whether the original sampling frequency is a multiple of 100 or 128,
+        respectively).
+    remove_outliers : boolean
+        If True, YASA will automatically detect and remove outliers slow-waves
+        using an Isolation Forest (implemented in the scikit-learn package).
+        The outliers detection is performed on the frequency, amplitude and
+        duration parameters of the detected slow-waves. YASA uses a random seed
+        (42) to ensure reproducible results. Note that this step will only be
+        applied if there are more than 100 detected slow-waves in the first
+        place. Default to False.
+
+    Returns
+    -------
+    sw_params : pd.DataFrame
+        Pandas DataFrame::
+
+            'Start' : Start of each detected slow-wave (in seconds of data)
+            'NegPeak' : Location of the negative peak (in seconds of data)
+            'MidCrossing' : Location of the negative-to-positive zero-crossing
+            'Pospeak' : Location of the positive peak
+            'End' : End time (in seconds)
+            'Duration' : Duration (in seconds)
+            'ValNegPeak' : Amplitude of the negative peak (in uV - filtered)
+            'ValPosPeak' : Amplitude of the positive peak (in uV - filtered)
+            'PTP' : Peak to peak amplitude (ValPosPeak - ValNegPeak)
+            'Slope' : Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec)
+            'Frequency' : Frequency of the slow-wave (1 / ``Duration``)
+            'Stage' : Sleep stage (only if hypno was provided)
+
+    Notes
+    -----
+    For better results, apply this detection only on artefact-free NREM sleep.
+
+    Note that the ``PTP``, ``Slope``, ``ValNegPeak`` and ``ValPosPeak`` are
+    computed on the filtered signal.
+    """
+    # Safety check
+    data = np.asarray(data, dtype=np.float64)
+    if data.ndim == 2:
+        data = np.squeeze(data)
+    assert data.ndim == 1, 'Wrong data dimension. Please pass 1D data.'
+    assert freq_sw[0] < freq_sw[1]
+    assert amp_ptp[0] < amp_ptp[1]
+    assert amp_neg[0] < amp_neg[1]
+    assert amp_pos[0] < amp_pos[1]
+    assert isinstance(downsample, bool), 'Downsample must be True or False.'
+
+    # Hypno processing
+    if hypno is not None:
+        hypno = np.asarray(hypno, dtype=int)
+        assert hypno.ndim == 1, 'Hypno must be one dimensional.'
+        assert hypno.size == data.size, 'Hypno must have same size as data.'
+        unique_hypno = np.unique(hypno)
+        logger.info('Number of unique values in hypno = %i', unique_hypno.size)
+        if not any(np.in1d(unique_hypno, [2, 3])):
+            logger.error('No N2/3 sleep in hypno. Switching to hypno = None')
+            hypno = None
+        else:
+            idx_nrem = np.logical_and(hypno >= 2, hypno < 4)
+
+    # Check data amplitude
+    data_trimstd = trimbothstd(data, cut=0.10)
+    data_ptp = np.ptp(data)
+    logger.info('Number of samples in data = %i', data.size)
+    logger.info('Sampling frequency = %.2f Hz', sf)
+    logger.info('Data duration = %.2f seconds', data.size / sf)
+    logger.info('Trimmed standard deviation of data = %.4f uV', data_trimstd)
+    logger.info('Peak-to-peak amplitude of data = %.4f uV', data_ptp)
+    if not(1 < data_trimstd < 1e3 or 1 < data_ptp < 1e6):
+        logger.error('Wrong data amplitude. Unit must be uV. Returning None.')
+        return None
+
+    # Check if we can downsample to 100 or 128 Hz
+    if downsample is True and sf > 128:
+        if sf % 100 == 0 or sf % 128 == 0:
+            new_sf = 100 if sf % 100 == 0 else 128
+            fac = int(sf / new_sf)
+            sf = new_sf
+            data = data[::fac]
+            logger.info('Downsampled data by a factor of %i', fac)
+            if hypno is not None:
+                hypno = hypno[::fac]
+                assert hypno.size == data.size
+                idx_nrem = np.logical_and(hypno >= 2, hypno < 4)
+                logger.info('Seconds of NREM sleep = %.2f',
+                            idx_nrem.sum() / sf)
+        else:
+            logger.warning("Cannot downsample if sf is not a mutiple of 100 "
+                           "or 128. Skipping downsampling.")
+
+    # Define time vector
+    times = np.arange(data.size) / sf
+
+    # Bandpass filter
+    data_filt = filter_data(data, sf, freq_sw[0], freq_sw[1], method='fir',
+                            verbose=0, l_trans_bandwidth=0.2,
+                            h_trans_bandwidth=0.2)
+
+    # Find peaks in data
+    # Negative peaks with value comprised between -40 to -300 uV
+    idx_neg_peaks, _ = signal.find_peaks(-1 * data_filt, height=amp_neg)
+
+    # Positive peaks with values comprised between 10 to 150 uV
+    idx_pos_peaks, _ = signal.find_peaks(data_filt, height=amp_pos)
+
+    # For each negative peak, we find the closest positive peak
+    pk_sorted = np.searchsorted(idx_pos_peaks, idx_neg_peaks)
+    closest_pos_peaks = idx_pos_peaks[pk_sorted] - idx_neg_peaks
+    closest_pos_peaks = closest_pos_peaks[np.nonzero(closest_pos_peaks)]
+    idx_pos_peaks = idx_neg_peaks + closest_pos_peaks
+
+    # Now we compute the PTP amplitude and keep only the good peaks
+    sw_ptp = np.abs(data_filt[idx_neg_peaks]) + data_filt[idx_pos_peaks]
+    good_ptp = np.logical_and(sw_ptp > amp_ptp[0], sw_ptp < amp_ptp[1])
+    sw_ptp = sw_ptp[good_ptp]
+    idx_neg_peaks = idx_neg_peaks[good_ptp]
+    idx_pos_peaks = idx_pos_peaks[good_ptp]
+
+    # Now we need to check the negative and positive phase duration
+    # For that we need to compute the zero crossings of the filtered signal
+    zero_crossings = _zerocrossings(data_filt)
+    # Find distance to previous and following zc
+    neg_sorted = np.searchsorted(zero_crossings, idx_neg_peaks)
+    previous_neg_zc = zero_crossings[neg_sorted - 1] - idx_neg_peaks
+    following_neg_zc = zero_crossings[neg_sorted] - idx_neg_peaks
+    neg_phase_dur = (np.abs(previous_neg_zc) + following_neg_zc) / sf
+
+    # Distance (in samples) between the positive peaks and the previous and
+    # following zero-crossings
+    pos_sorted = np.searchsorted(zero_crossings, idx_pos_peaks)
+    previous_pos_zc = zero_crossings[pos_sorted - 1] - idx_pos_peaks
+    following_pos_zc = zero_crossings[pos_sorted] - idx_pos_peaks
+    pos_phase_dur = (np.abs(previous_pos_zc) + following_pos_zc) / sf
+
+    # We now compute a set of metrics
+    sw_start = times[idx_neg_peaks + previous_neg_zc]  # Start in time vector
+    sw_end = times[idx_pos_peaks + following_pos_zc]  # End in time vector
+    sw_dur = sw_end - sw_start  # Same as pos_phase_dur + neg_phase_dur
+    sw_midcrossing = times[idx_neg_peaks + following_neg_zc]  # Neg-to-pos zc
+    sw_idx_neg = times[idx_neg_peaks]  # Location of negative peak
+    sw_idx_pos = times[idx_pos_peaks]  # Location of positive peak
+    # Slope between peak trough and midcrossing
+    sw_slope = sw_ptp / (sw_midcrossing - sw_idx_neg)
+    # Hypnogram
+    if hypno is not None:
+        sw_sta = hypno[idx_neg_peaks + previous_neg_zc]
+    else:
+        sw_sta = np.zeros(sw_dur.shape)
+
+    # And we apply a set of thresholds to remove bad slow waves
+    good_sw = np.logical_and.reduce((
+                                    # Data edges
+                                    previous_neg_zc != 0,
+                                    following_neg_zc != 0,
+                                    previous_pos_zc != 0,
+                                    following_pos_zc != 0,
+                                    # Duration criteria
+                                    neg_phase_dur > dur_neg[0],
+                                    neg_phase_dur < dur_neg[1],
+                                    pos_phase_dur > dur_pos[0],
+                                    pos_phase_dur < dur_pos[1],
+                                    # Sanity checks
+                                    sw_midcrossing > sw_start,
+                                    sw_midcrossing < sw_end,
+                                    sw_slope > 0,
+                                    ))
+
+    # Create a dictionnary and then a dataframe (much faster)
+    sw_params = {'Start': sw_start,
+                 'NegPeak': sw_idx_neg,
+                 'MidCrossing': sw_midcrossing,
+                 'PosPeak': sw_idx_pos,
+                 'End': sw_end,
+                 'Duration': sw_dur,
+                 'ValNegPeak': data_filt[idx_neg_peaks],
+                 'ValPosPeak': data_filt[idx_pos_peaks],
+                 'PTP': sw_ptp,
+                 'Slope': sw_slope,
+                 'Frequency': 1 / sw_dur,
+                 'Stage': sw_sta,
+                 }
+
+    df_sw = pd.DataFrame.from_dict(sw_params)[good_sw]
+
+    # Remove all duplicates
+    df_sw.drop_duplicates(subset=['Start'], inplace=True, keep=False)
+    df_sw.drop_duplicates(subset=['End'], inplace=True, keep=False)
+
+    if hypno is None:
+        df_sw.drop(columns=['Stage'], inplace=True)
+    else:
+        df_sw['Stage'] = df_sw['Stage'].astype(int).astype('category')
+        # Keep only N2 and N3
+        df_sw = df_sw[df_sw['Stage'].isin([2, 3])]
+
+    # We need at least 100 detected slow waves to apply the Isolation Forest.
+    if remove_outliers and df_sw.shape[0] >= 100:
+        from sklearn.ensemble import IsolationForest
+        col_keep = ['Duration', 'ValNegPeak', 'ValPosPeak', 'PTP', 'Slope',
+                    'Frequency']
+        ilf = IsolationForest(behaviour='new', contamination='auto',
+                              max_samples='auto', verbose=0, random_state=42)
+
+        good = ilf.fit_predict(df_sw[col_keep])
+        good[good == -1] = 0
+        logger.info('%i outliers were removed.', (good == 0).sum())
+        # Remove outliers from DataFrame
+        df_sw = df_sw[good.astype(bool)]
+
+    logger.info('%i spindles were found in data.', df_sw.shape[0])
+    return df_sw.reset_index(drop=True)

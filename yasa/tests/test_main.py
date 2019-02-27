@@ -8,7 +8,8 @@ from itertools import product
 from mne.filter import filter_data, resample
 from yasa.main import (_corr, _covar, _rms, moving_transform, stft_power,
                        _index_to_events, get_bool_vector, trimbothstd,
-                       _merge_close, spindles_detect, spindles_detect_multi)
+                       _merge_close, spindles_detect, spindles_detect_multi,
+                       _zerocrossings)
 
 # Load data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -226,3 +227,10 @@ class TestStringMethods(unittest.TestCase):
         """
         x = [4, 5, 7, 0, 18, 6, 7, 8, 9, 10]
         assert trimbothstd(x) < np.std(x, ddof=1)
+
+    def test_zerocrossings(self):
+        """Test _zerocrossings
+        """
+        a = np.array([4, 2, -1, -3, 1, 2, 3, -2, -5])
+        idx_zc = _zerocrossings(a)
+        np.testing.assert_equal(idx_zc, [1, 3, 6])
