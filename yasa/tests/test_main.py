@@ -270,4 +270,4 @@ class TestStringMethods(unittest.TestCase):
         # Downsampling
         data_sw_200 = resample(data_sw, up=2)
         sw_detect(data_sw_200, 200,
-                  hypno=2 * np.ones(data_sw.shape, dtype=int))
+                  hypno=2 * np.ones(data_sw_200.shape, dtype=int))
