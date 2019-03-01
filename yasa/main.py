@@ -729,7 +729,7 @@ def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
     df_sp = pd.DataFrame.from_dict(sp_params)[good_dur].reset_index(drop=True)
 
     if hypno is None:
-        df_sp.drop(columns=['Stage'], inplace=True)
+        df_sp = df_sp.drop(columns=['Stage'])
     else:
         df_sp['Stage'] = df_sp['Stage'].astype(int).astype('category')
 
@@ -912,8 +912,6 @@ def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
     assert data.ndim == 1, 'Wrong data dimension. Please pass 1D data.'
     assert freq_sw[0] < freq_sw[1]
     assert amp_ptp[0] < amp_ptp[1]
-    assert amp_neg[0] < amp_neg[1]
-    assert amp_pos[0] < amp_pos[1]
     assert isinstance(downsample, bool), 'Downsample must be True or False.'
 
     # Hypno processing
@@ -974,7 +972,17 @@ def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
     # Positive peaks with values comprised between 10 to 150 uV
     idx_pos_peaks, _ = signal.find_peaks(data_filt, height=amp_pos)
 
-    # For each negative peak, we find the closest positive peak
+    # If no peaks are detected, return None
+    if len(idx_neg_peaks) == 0 or len(idx_pos_peaks) == 0:
+        logger.warning('No peaks were found in data. Returning None.')
+        return None
+
+    # Make sure that the last detected peak is a positive one
+    if idx_pos_peaks[-1] < idx_neg_peaks[-1]:
+        # If not, append a fake positive peak one sample after the last neg
+        idx_pos_peaks = np.append(idx_pos_peaks, idx_neg_peaks[-1] + 1)
+
+    # For each negative peak, we find the closest following positive peak
     pk_sorted = np.searchsorted(idx_pos_peaks, idx_neg_peaks)
     closest_pos_peaks = idx_pos_peaks[pk_sorted] - idx_neg_peaks
     closest_pos_peaks = closest_pos_peaks[np.nonzero(closest_pos_peaks)]
@@ -983,6 +991,12 @@ def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
     # Now we compute the PTP amplitude and keep only the good peaks
     sw_ptp = np.abs(data_filt[idx_neg_peaks]) + data_filt[idx_pos_peaks]
     good_ptp = np.logical_and(sw_ptp > amp_ptp[0], sw_ptp < amp_ptp[1])
+
+    # If good_ptp is all False
+    if all(~good_ptp):
+        logger.warning('No slow-wave with good amplitude. Returning None.')
+        return None
+
     sw_ptp = sw_ptp[good_ptp]
     idx_neg_peaks = idx_neg_peaks[good_ptp]
     idx_pos_peaks = idx_pos_peaks[good_ptp]
@@ -990,6 +1004,12 @@ def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
     # Now we need to check the negative and positive phase duration
     # For that we need to compute the zero crossings of the filtered signal
     zero_crossings = _zerocrossings(data_filt)
+    # Make sure that there is a zero-crossing after the last detected peak
+    if zero_crossings[-1] < max(idx_pos_peaks[-1], idx_neg_peaks[-1]):
+        # If not, append the index of the last peak
+        zero_crossings = np.append(zero_crossings,
+                                   max(idx_pos_peaks[-1], idx_neg_peaks[-1]))
+
     # Find distance to previous and following zc
     neg_sorted = np.searchsorted(zero_crossings, idx_neg_peaks)
     previous_neg_zc = zero_crossings[neg_sorted - 1] - idx_neg_peaks
@@ -1036,6 +1056,10 @@ def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
                                     sw_slope > 0,
                                     ))
 
+    if all(~good_sw):
+        logger.warning('No slow-wave satisfying all criteria. Returning None.')
+        return None
+
     # Create a dictionnary and then a dataframe (much faster)
     sw_params = {'Start': sw_start,
                  'NegPeak': sw_idx_neg,
@@ -1054,11 +1078,11 @@ def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
     df_sw = pd.DataFrame.from_dict(sw_params)[good_sw]
 
     # Remove all duplicates
-    df_sw.drop_duplicates(subset=['Start'], inplace=True, keep=False)
-    df_sw.drop_duplicates(subset=['End'], inplace=True, keep=False)
+    df_sw = df_sw.drop_duplicates(subset=['Start'], keep=False)
+    df_sw = df_sw.drop_duplicates(subset=['End'], keep=False)
 
     if hypno is None:
-        df_sw.drop(columns=['Stage'], inplace=True)
+        df_sw = df_sw.drop(columns=['Stage'])
     else:
         df_sw['Stage'] = df_sw['Stage'].astype(int).astype('category')
         # Keep only N2 and N3

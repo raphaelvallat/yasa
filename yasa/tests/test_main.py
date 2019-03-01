@@ -9,7 +9,7 @@ from mne.filter import filter_data, resample
 from yasa.main import (_corr, _covar, _rms, moving_transform, stft_power,
                        _index_to_events, get_bool_vector, trimbothstd,
                        _merge_close, spindles_detect, spindles_detect_multi,
-                       _zerocrossings)
+                       _zerocrossings, sw_detect)
 
 # Load data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -30,16 +30,15 @@ data_150 = resample(data, up=fac, down=1.0, npad='auto', axis=-1,
                     verbose=False)
 sf_150 = 150
 
-
+# Load an extract of N3 sleep without any spindle
 data_n3 = np.loadtxt('notebooks/data_N3_no-spindles_30sec_100Hz.txt')
 sf_n3 = 100
 
+# Load a full recording and its hypnogram
 file_full = np.load('notebooks/data_full_6hrs_100Hz_Cz+Fz+Pz.npz')
 data_full = file_full.get('data')
 chan_full = file_full.get('chan')
 sf_full = 100
-
-# Load the hypnogram
 hypno_full = np.load('notebooks/data_full_6hrs_100Hz_hypno.npz').get('hypno')
 
 
@@ -234,3 +233,41 @@ class TestStringMethods(unittest.TestCase):
         a = np.array([4, 2, -1, -3, 1, 2, 3, -2, -5])
         idx_zc = _zerocrossings(a)
         np.testing.assert_equal(idx_zc, [1, 3, 6])
+
+    def test_sw_detect(self):
+        """Test function slow-wave detect
+        """
+        # Keep only Fz and during a N3 sleep period with (huge) slow-waves
+        data_sw = data_full[1, 666000:672000].astype(np.float64)
+        hypno_sw = hypno_full[666000:672000]
+
+        # Parameters product testing
+        freq_sw = [(0.3, 3.5), (0.5, 4)]
+        dur_neg = [(0.3, 1.5), [0.1, 2]]
+        dur_pos = [(0.3, 1.5), [0, 1]]
+        amp_neg = [(40, 300), [40, None]]
+        amp_pos = [(10, 150), (0, None)]
+        amp_ptp = [(75, 400), [80, 300]]
+
+        prod_args = product(freq_sw, dur_neg, dur_pos, amp_neg, amp_pos,
+                            amp_ptp)
+
+        for i, (f, dn, dp, an, ap, aptp) in enumerate(prod_args):
+            print((f, dn, dp, an, ap, aptp))
+            sw_detect(data_sw, sf_full, freq_sw=f, dur_neg=dn,
+                      dur_pos=dp, amp_neg=an, amp_pos=ap,
+                      amp_ptp=aptp)
+
+        # With N3 hypnogram
+        sw_detect(data_sw, sf_full, hypno=hypno_sw)
+
+        # With N1
+        sw_detect(data_sw, sf_full, hypno=np.ones(data_sw.shape, dtype=int))
+
+        # With 2D data
+        sw_detect(data_sw[np.newaxis, ...], sf_full)
+
+        # Downsampling
+        data_sw_200 = resample(data_sw, up=2)
+        sw_detect(data_sw_200, 200,
+                  hypno=2 * np.ones(data_sw.shape, dtype=int))
