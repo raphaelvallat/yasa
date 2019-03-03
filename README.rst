@@ -28,11 +28,17 @@
 YASA
 ====
 
-YASA (*Yet Another Spindle Algorithm*) is a fast, robust, and data-agnostic sleep spindles detection algorithm written in Python 3.
+YASA (*Yet Another Spindle Algorithm*) is a fast, robust, and data-agnostic sleep spindles & slow-waves detection algorithm written in Python 3.
 
-The algorithm behind YASA is largely inspired by the method described in:
+The **sleep spindles** algorithm of YASA is largely inspired by the method described in:
 
-Lacourse, K., Delfrate, J., Beaudry, J., Peppard, P., Warby, S.C., 2018. A sleep spindle detection algorithm that emulates human expert spindle scoring. *J. Neurosci. Methods*. https://doi.org/10.1016/j.jneumeth.2018.08.014
+- Lacourse, K., Delfrate, J., Beaudry, J., Peppard, P. & Warby, S. C. (2018). A sleep spindle detection algorithm that emulates human expert spindle scoring. *J. Neurosci. Methods*.
+
+The **slow-waves** detection algorithm is adapted from:
+
+- Massimini, M., Huber, R., Ferrarelli, F., Hill, S. & Tononi, G. (2004). The sleep slow oscillation as a traveling wave. *J. Neurosci.*.
+
+- Carrier, J. et al. (2011). Sleep slow wave changes during the middle years of life. *Eur. J. Neurosci*.
 
 Installation
 ~~~~~~~~~~~~
@@ -61,11 +67,17 @@ Examples
 Notebooks
 ---------
 
-1. Please see `notebooks/00_spindles_detection.ipynb <notebooks/00_spindles_detection.ipynb>`_ to use YASA on a **single EEG channel** and see a **step-by-step description of the algorithm**.
-2. Please see `notebooks/01_spindles_detection_multi.ipynb <notebooks/01_spindles_detection_multi.ipynb>`_ to use YASA on **multi-channel EEG** and **MNE Raw objects**.
-3. Please see `notebooks/02_slow_fast_spindles.ipynb <notebooks/02_slow_fast_spindles.ipynb>`_ to differentiate **slow and fast spindles**.
-4. Please see `notebooks/03_detection_NREM_only.ipynb <notebooks/03_detection_NREM_only.ipynb>`_ to apply your detection only on **NREM sleep** (and thus improve the acccuracy).
-5. Please see `notebooks/04_run_visbrain.py <notebooks/04_run_visbrain.py>`_ to use YASA in combination with the **Visbrain graphical user interface**.
+**Spindles**
+
+1. `notebooks/01_spindles_detection.ipynb <notebooks/00_spindles_detection.ipynb>`_: single-channel spindles detection and step-by-step description of the algorithm.
+2. `notebooks/02_spindles_detection_multi.ipynb <notebooks/01_spindles_detection_multi.ipynb>`_: multi-channel spindles detection using MNE Raw objects.
+3. `notebooks/03_slow_fast_spindles.ipynb <notebooks/02_slow_fast_spindles.ipynb>`_: slow and fast spindles differentiation.
+4. `notebooks/04_detection_NREM_only.ipynb <notebooks/03_detection_NREM_only.ipynb>`_: detection on NREM sleep only.
+5. `notebooks/05_run_visbrain.py <notebooks/04_run_visbrain.py>`_: interactive display with the Visbrain graphical user interface.
+
+**Slow-waves**
+
+6. `notebooks/06_sw_detect.ipynb <notebooks/05_sw_detect.ipynb>`_: single-channel slow-waves detection and step-by-step description of the algorithm.
 
 Typical uses
 ------------
@@ -74,7 +86,9 @@ Typical uses
 
   import yasa
 
-  # 1 - Single-channel simple detection
+  # SLEEP SPINDLES
+  # ==============
+  # 1 - Single-channel spindles detection
   yasa.spindles_detect(data, sf)
 
   # 2 - Single-channel full command (shows all the default parameters)
@@ -89,6 +103,17 @@ Typical uses
   # 4 - Multi-channels detection with automatic outlier rejection
   yasa.spindles_detect_multi(data, sf, ch_names, hypno=hypno, remove_outliers=True)
 
+  # SLOW-WAVES
+  # ==========
+  # 1 - Single-channel slow-wave detection
+  yasa.sw_detect(data, sf)
+
+  # 2 - Single-channel full command
+  # Long version (with all the optional arguments)
+  sw = sw_detect(data, sf, hypno=hypno, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
+                 dur_pos=(0.1, 1), amp_neg=(40, 300), amp_pos=(10, 150),
+                 amp_ptp=(75, 400), downsample=True, remove_outliers=False)
+
 The result of the detection is a `pandas DataFrame <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>`_...
 
 .. table:: Output
@@ -101,7 +126,7 @@ The result of the detection is a `pandas DataFrame <https://pandas.pydata.org/pa
   13.26  13.85        0.59        99.30  24.49        2.82        0.24        12.15               7        0.25
 =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
 
-...that can be easily used to plot the detected spindles
+...that can be easily used to plot the detected spindles / slow-waves.
 
 .. figure::  notebooks/detection.png
    :align:   center
@@ -109,7 +134,7 @@ The result of the detection is a `pandas DataFrame <https://pandas.pydata.org/pa
 Interactive visualization with Visbrain
 ---------------------------------------
 
-YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.html>`_ module of the `Visbrain visualization package <http://visbrain.org/index.html>`_. The result of the spindles detection can then easily be displayed and checked in an interactive graphical user interface. To do so, load Visbrain using the following python file (make sure to update *'PATH/TO/EEGFILE'*).
+YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.html>`_ module of the `Visbrain visualization package <http://visbrain.org/index.html>`_. The result of the detection can then easily be displayed and checked in an interactive graphical user interface. To do so, load Visbrain using the following python file (make sure to update *'PATH/TO/EEGFILE'*).
 
 .. code-block:: python
 
@@ -139,22 +164,17 @@ Then navigate to the *Detection* tab and click on *Apply* to run the YASA algori
 Outlier rejection
 -----------------
 
-YASA incorporates an optional post-processing step to identify and remove pseudo (fake) spindles.
+YASA incorporates an optional post-processing step to identify and remove pseudo (fake) spindles / slow-waves.
 The method is based on a machine-learning algorithm (the `Isolation Forest <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html>`_, implemented in the `scikit-learn <https://scikit-learn.org/stable/index.html>`_ package),
-which uses the spindles parameters (e.g. amplitude, duration, frequency, etc) as input features to identify *aberrant* spindles.
+which uses the spindles parameters (e.g. amplitude, duration, frequency, etc) as input features to identify *aberrant* spindles / slow-waves.
 
 To activate this post-processing step, simply use:
 
 .. code-block:: python
 
   import yasa
-  yasa.spindles_detect(data, sf, remove_outliers=True)
-
-.. As an example, the performance of YASA were compared on a ~8 hours recording in an healthy young adults. As shown below, the initial detection - i.e. without the outlier rejection - returned 840 spindles.
-.. After outlier removal, the number of spindles was down to 710, meaning that 130 spindles were considered outliers and removed from the dataframe.
-..
-.. .. figure::  images/spindles_outlier_rejection.png
-..    :align:   center
+  yasa.spindles_detect(data, sf, remove_outliers=True)  # For spindles
+  yasa.sw_detect(data, sf, remove_outliers=True)  # For slow-waves
 
 
 Development
