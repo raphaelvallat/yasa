@@ -109,8 +109,7 @@ Typical uses
   yasa.sw_detect(data, sf)
 
   # 2 - Single-channel full command
-  # Long version (with all the optional arguments)
-  sw = sw_detect(data, sf, hypno=hypno, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
+  yasa.sw_detect(data, sf, hypno=hypno, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
                  dur_pos=(0.1, 1), amp_neg=(40, 300), amp_pos=(10, 150),
                  amp_ptp=(75, 400), downsample=True, remove_outliers=False)
 
