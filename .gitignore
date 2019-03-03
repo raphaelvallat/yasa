@@ -114,3 +114,6 @@ dmypy.json
 .pyre/
 *.ini
 notebooks/10_catch_errors.ipynb
+
+# Illustrator
+*.ai
