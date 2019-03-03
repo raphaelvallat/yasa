@@ -69,15 +69,15 @@ Notebooks
 
 **Spindles**
 
-1. `notebooks/01_spindles_detection.ipynb <notebooks/00_spindles_detection.ipynb>`_: single-channel spindles detection and step-by-step description of the algorithm.
-2. `notebooks/02_spindles_detection_multi.ipynb <notebooks/01_spindles_detection_multi.ipynb>`_: multi-channel spindles detection using MNE Raw objects.
-3. `notebooks/03_slow_fast_spindles.ipynb <notebooks/02_slow_fast_spindles.ipynb>`_: slow and fast spindles differentiation.
-4. `notebooks/04_detection_NREM_only.ipynb <notebooks/03_detection_NREM_only.ipynb>`_: detection on NREM sleep only.
-5. `notebooks/05_run_visbrain.py <notebooks/04_run_visbrain.py>`_: interactive display with the Visbrain graphical user interface.
+1. `notebooks/01_spindles_detection.ipynb <notebooks/01_spindles_detection.ipynb>`_: single-channel spindles detection and step-by-step description of the algorithm.
+2. `notebooks/02_spindles_detection_multi.ipynb <notebooks/02_spindles_detection_multi.ipynb>`_: multi-channel spindles detection using MNE Raw objects.
+3. `notebooks/03_slow_fast_spindles.ipynb <notebooks/03_slow_fast_spindles.ipynb>`_: slow and fast spindles differentiation.
+4. `notebooks/04_detection_NREM_only.ipynb <notebooks/04_detection_NREM_only.ipynb>`_: detection on NREM sleep only.
+5. `notebooks/05_run_visbrain.py <notebooks/05_run_visbrain.py>`_: interactive display with the Visbrain graphical user interface.
 
 **Slow-waves**
 
-6. `notebooks/06_sw_detect.ipynb <notebooks/05_sw_detect.ipynb>`_: single-channel slow-waves detection and step-by-step description of the algorithm.
+6. `notebooks/06_sw_detect.ipynb <notebooks/06_sw_detect.ipynb>`_: single-channel slow-waves detection and step-by-step description of the algorithm.
 
 Typical uses
 ------------
