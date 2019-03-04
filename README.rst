@@ -32,13 +32,13 @@ YASA (*Yet Another Spindle Algorithm*) is a fast, robust, and data-agnostic slee
 
 The **sleep spindles** algorithm of YASA is largely inspired by the method described in:
 
-- Lacourse, K., Delfrate, J., Beaudry, J., Peppard, P. & Warby, S. C. (2018). A sleep spindle detection algorithm that emulates human expert spindle scoring. *J. Neurosci. Methods*.
+- Lacourse, K., Delfrate, J., Beaudry, J., Peppard, P. & Warby, S. C. (2018). `A sleep spindle detection algorithm that emulates human expert spindle scoring <https://doi.org/10.1016/j.jneumeth.2018.08.014>`_. *J. Neurosci. Methods*.
 
 The **slow-waves** detection algorithm is adapted from:
 
-- Massimini, M., Huber, R., Ferrarelli, F., Hill, S. & Tononi, G. (2004). The sleep slow oscillation as a traveling wave. *J. Neurosci.*.
+- Massimini, M., Huber, R., Ferrarelli, F., Hill, S. & Tononi, G. (2004). `The sleep slow oscillation as a traveling wave <https://doi.org/10.1523/JNEUROSCI.1318-04.2004>`_. *J. Neurosci.*.
 
-- Carrier, J. et al. (2011). Sleep slow wave changes during the middle years of life. *Eur. J. Neurosci*.
+- Carrier, J. et al. (2011). `Sleep slow wave changes during the middle years of life <https://doi.org/10.1111/j.1460-9568.2010.07543.x>`_. *Eur. J. Neurosci*.
 
 Installation
 ~~~~~~~~~~~~
@@ -91,7 +91,7 @@ Typical uses
   # 1 - Single-channel spindles detection
   yasa.spindles_detect(data, sf)
 
-  # 2 - Single-channel full command (shows all the default parameters)
+  # 2 - Single-channel full command (shows all the default implicit parameters)
   yasa.spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
                        freq_broad=(1, 30), min_distance=500, downsample=True,
                        thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
@@ -108,10 +108,11 @@ Typical uses
   # 1 - Single-channel slow-wave detection
   yasa.sw_detect(data, sf)
 
-  # 2 - Single-channel full command
-  yasa.sw_detect(data, sf, hypno=hypno, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
-                 dur_pos=(0.1, 1), amp_neg=(40, 300), amp_pos=(10, 150),
-                 amp_ptp=(75, 400), downsample=True, remove_outliers=False)
+  # 2 - Single-channel full command (shows all the default implicit parameters)
+  yasa.sw_detect(data, sf, hypno=hypno, include=(2, 3), freq_sw=(0.3, 3.5),
+                 dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 300),
+                 amp_pos=(10, 150), amp_ptp=(75, 400), downsample=True,
+                 remove_outliers=False)
 
 The result of the detection is a `pandas DataFrame <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>`_...
 
@@ -146,9 +147,10 @@ YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.
       """Replace Visbrain built-in spindles detection by YASA algorithm.
       See http://visbrain.org/sleep.html#use-your-own-detections-in-sleep
       """
-      sp = spindles_detect(data, sf)
-      # Alternatively if you want to apply the detection only on NREM sleep
-      # sp = spindles_detect(data, sf, hypno=hypno)
+      # Apply on the full recording...
+      # sp = spindles_detect(data, sf)
+      # ...or on NREM sleep only
+      sp = spindles_detect(data, sf, hypno=hypno)
       return (sp[['Start', 'End']].values * sf).astype(int)
 
   sl.replace_detections('spindle', fcn_spindle)
@@ -172,8 +174,8 @@ To activate this post-processing step, simply use:
 .. code-block:: python
 
   import yasa
-  yasa.spindles_detect(data, sf, remove_outliers=True)  # For spindles
-  yasa.sw_detect(data, sf, remove_outliers=True)  # For slow-waves
+  yasa.spindles_detect(data, sf, remove_outliers=True)  # Spindles
+  yasa.sw_detect(data, sf, remove_outliers=True)        # Slow-waves
 
 
 Development

@@ -829,9 +829,10 @@ def spindles_detect_multi(data, sf, ch_names, multi_only=False, **kwargs):
         return df
 
 
-def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
-              dur_pos=(0.1, 1), amp_neg=(40, 300), amp_pos=(10, 150),
-              amp_ptp=(75, 400), downsample=True, remove_outliers=False):
+def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
+              dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 300),
+              amp_pos=(10, 200), amp_ptp=(75, 500), downsample=True,
+              remove_outliers=False):
     """Slow-waves detection.
 
     Parameters
@@ -842,11 +843,16 @@ def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
         Sampling frequency of the data in Hz.
     hypno : array_like
         Sleep stage vector (hypnogram). If the hypnogram is loaded, the
-        detection will only be applied to N2 and N3 sleep epochs.
-        ``hypno`` MUST be a 1D array of integers with the same size as data
-        and where -1 = Artefact, 0 = Wake, 1 = N1, 2 = N2, 3 = N3, 4 = REM.
-        If you need help loading your hypnogram vector, please read the
-        Visbrain documentation at http://visbrain.org/sleep.
+        detection will only be applied to the value defined in
+        ``include`` (default = N2 + N3 sleep). ``hypno`` MUST be a 1D array of
+        integers with the same size as data and where -1 = Artefact, 0 = Wake,
+        1 = N1, 2 = N2, 3 = N3, 4 = REM. If you need help loading your
+        hypnogram vector, please read the Visbrain documentation at
+        http://visbrain.org/sleep.
+    include : tuple or list
+        Values in ``hypno`` that will be included in the mask. The default is
+        (2, 3), meaning that the detection is applied only on N2 and N3 sleep.
+        This has no effect is ``hypno`` is None.
     freq_sw : tuple or list
         Slow wave frequency range. Default is 0.3 to 3.5 Hz. Please note that
         YASA uses a FIR filter (implemented in MNE) with a 0.2Hz transition
@@ -863,10 +869,10 @@ def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
         slow-wave. Default is 40 uV to 300 uV.
     amp_pos : tuple or list
         Absolute minimum and maximum positive peak amplitude of the
-        slow-wave. Default is 10 uV to 150 uV.
+        slow-wave. Default is 10 uV to 200 uV.
     amp_ptp : tuple or list
         Minimum and maximum peak-to-peak amplitude of the slow-wave.
-        Default is 75 uV to 400 uV.
+        Default is 75 uV to 500 uV.
     downsample : boolean
         If True, the data will be downsampled to 100 Hz or 128 Hz (depending
         on whether the original sampling frequency is a multiple of 100 or 128,
@@ -921,11 +927,12 @@ def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
         assert hypno.size == data.size, 'Hypno must have same size as data.'
         unique_hypno = np.unique(hypno)
         logger.info('Number of unique values in hypno = %i', unique_hypno.size)
-        if not any(np.in1d(unique_hypno, [2, 3])):
-            logger.error('No N2/3 sleep in hypno. Switching to hypno = None')
+        assert isinstance(include, (tuple, list)), 'include must be a tuple'
+        assert len(include) >= 1, 'include must have at least one element.'
+        if not any(np.in1d(unique_hypno, include)):
+            logger.error('The values in include are not present in hypno. '
+                         'Switching to hypno = None.')
             hypno = None
-        else:
-            idx_nrem = np.logical_and(hypno >= 2, hypno < 4)
 
     # Check data amplitude
     data_trimstd = trimbothstd(data, cut=0.10)
@@ -950,9 +957,6 @@ def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
             if hypno is not None:
                 hypno = hypno[::fac]
                 assert hypno.size == data.size
-                idx_nrem = np.logical_and(hypno >= 2, hypno < 4)
-                logger.info('Seconds of NREM sleep = %.2f',
-                            idx_nrem.sum() / sf)
         else:
             logger.warning("Cannot downsample if sf is not a mutiple of 100 "
                            "or 128. Skipping downsampling.")
@@ -971,6 +975,15 @@ def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
 
     # Positive peaks with values comprised between 10 to 150 uV
     idx_pos_peaks, _ = signal.find_peaks(data_filt, height=amp_pos)
+
+    # Intersect with sleep stage vector
+    if hypno is not None:
+        mask = np.in1d(hypno, include)
+        idx_mask = np.where(mask)[0]
+        idx_neg_peaks = np.intersect1d(idx_neg_peaks, idx_mask,
+                                       assume_unique=True)
+        idx_pos_peaks = np.intersect1d(idx_pos_peaks, idx_mask,
+                                       assume_unique=True)
 
     # If no peaks are detected, return None
     if len(idx_neg_peaks) == 0 or len(idx_pos_peaks) == 0:
@@ -1085,8 +1098,6 @@ def sw_detect(data, sf, hypno=None, freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5),
         df_sw = df_sw.drop(columns=['Stage'])
     else:
         df_sw['Stage'] = df_sw['Stage'].astype(int).astype('category')
-        # Keep only N2 and N3
-        df_sw = df_sw[df_sw['Stage'].isin([2, 3])]
 
     # We need at least 100 detected slow waves to apply the Isolation Forest.
     if remove_outliers and df_sw.shape[0] >= 100:
