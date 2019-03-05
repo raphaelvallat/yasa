@@ -1,7 +1,7 @@
 [run]
 branch = True
 source = yasa
-include = */yasa/*
+include = yasa/*
 omit =
     */__init__.py
     */setup.py
@@ -11,4 +11,3 @@ omit =
 
 [report]
 show_missing = True
-# sort = Cover
