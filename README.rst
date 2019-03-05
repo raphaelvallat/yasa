@@ -197,7 +197,7 @@ To activate this post-processing step, simply use:
 API
 ---
 
-Check out the API documentation at `html/main.html <html/main.html>`_
+Check out the API documentation at `html/main.html <http://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/main.html>`_.
 
 
 Development
