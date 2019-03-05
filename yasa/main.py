@@ -1152,5 +1152,5 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         # Remove outliers from DataFrame
         df_sw = df_sw[good.astype(bool)]
 
-    logger.info('%i spindles were found in data.', df_sw.shape[0])
+    logger.info('%i slow-waves were found in data.', df_sw.shape[0])
     return df_sw.reset_index(drop=True)

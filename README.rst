@@ -17,8 +17,8 @@
 .. image:: https://ci.appveyor.com/api/projects/status/4ua0pwy62jhpd9mx?svg=true
     :target: https://ci.appveyor.com/project/raphaelvallat/yasa
 
-.. .. image:: https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg
-..     :target: https://codecov.io/gh/raphaelvallat/yasa
+.. image:: https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/raphaelvallat/yasa
 
 .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg
    :target: https://doi.org/10.5281/zenodo.2370600
@@ -60,6 +60,16 @@ Installation
 **Note**
 
 Several functions of YASA are written using `Numba <http://numba.pydata.org/>`_, a just-in-time compiler for Python. This allows to greatly speed up the computation time (typically a few seconds for a full night recording).
+
+**What are the prerequisites for using YASA?**
+
+In order to use YASA, you need:
+
+- Some basic knowledge of Python and especially the `NumPy <https://docs.scipy.org/doc/numpy/user/quickstart.html>`_, `Pandas <https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html>`_ and `MNE <https://martinos.org/mne/stable/index.html>`_ libraries.
+- A Python editor: YASA works best with `Jupyter Lab <https://jupyterlab.readthedocs.io/en/stable/index.html>`_, a web-based interactive user interface.
+- Some EEG data, either already loaded into a NumPy array, or loaded as a raw MNE object (for instance, using the `mne.io.read_raw_edf <https://mne-tools.github.io/stable/generated/mne.io.read_raw_edf.html>`_ function for EDF file.)
+- Optionally, a sleep staging vector (= hypnogram) to run the detections on specific sleep stages. Note that YASA requires that the data and hypnogram have the same sampling frequency.
+
 
 Examples
 ~~~~~~~~
