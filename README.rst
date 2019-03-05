@@ -194,6 +194,12 @@ To activate this post-processing step, simply use:
   yasa.sw_detect(data, sf, remove_outliers=True)        # Slow-waves
 
 
+API
+---
+
+Check out the API documentation at `html/main.html <html/main.html>`_
+
+
 Development
 ~~~~~~~~~~~
 

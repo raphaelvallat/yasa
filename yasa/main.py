@@ -127,7 +127,7 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
         Higher values = higher precision = slower computation.
     method : str
         Transformation to use.
-        Available methods are::
+        Available methods are:
 
             'rms' : root mean square of x
             'corr' : Correlation between x and y
@@ -417,13 +417,14 @@ def get_bool_vector(data, sf, sp):
     sf : float
         Sampling frequency of the data.
     sp : pandas DataFrame
-        YASA's detection dataframe returned by the spindles_detect function.
+        YASA's detection dataframe returned by the `spindles_detect` or
+        `sw_detect` functions.
 
     Returns
     -------
     bool_vector : array
         Array of bool indicating for each sample in data if this sample is
-        part of a spindle (True) or not (False).
+        part of a spindle / slow-wave (True) or not (False).
     """
     data = np.asarray(data)
     assert isinstance(sp, pd.DataFrame)
@@ -513,7 +514,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     Returns
     -------
     sp_params : pd.DataFrame
-        Pandas DataFrame::
+        Pandas DataFrame:
 
             'Start' : Start time of each detected spindles (in seconds)
             'End' : End time (in seconds)
@@ -812,7 +813,7 @@ def spindles_detect_multi(data, sf, ch_names, multi_only=False, **kwargs):
     Returns
     -------
     sp_params : pd.DataFrame
-        Pandas DataFrame::
+        Pandas DataFrame:
 
             'Start' : Start time of each detected spindles (in seconds)
             'End' : End time (in seconds)
@@ -925,7 +926,7 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
     Returns
     -------
     sw_params : pd.DataFrame
-        Pandas DataFrame::
+        Pandas DataFrame:
 
             'Start' : Start of each detected slow-wave (in seconds of data)
             'NegPeak' : Location of the negative peak (in seconds of data)
@@ -1176,7 +1177,7 @@ def sw_detect_multi(data, sf, ch_names, **kwargs):
     Returns
     -------
     sw_params : pd.DataFrame
-        Pandas DataFrame::
+        Pandas DataFrame:
 
             'Start' : Start of each detected slow-wave (in seconds of data)
             'NegPeak' : Location of the negative peak (in seconds of data)
