@@ -11,7 +11,7 @@ from yasa.main import (_corr, _covar, _rms, _slope_lstsq, _detrend,
                        moving_transform, stft_power,
                        _index_to_events, get_bool_vector, trimbothstd,
                        _merge_close, spindles_detect, spindles_detect_multi,
-                       _zerocrossings, sw_detect)
+                       _zerocrossings, sw_detect, sw_detect_multi)
 
 # Load data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -195,7 +195,8 @@ class TestStringMethods(unittest.TestCase):
         assert bv.shape[0] == len(chan_full)
 
         # Test with hypnogram
-        spindles_detect_multi(data_full, sf_full, chan_full, hypno=hypno_full)
+        spindles_detect_multi(data_full, sf_full, chan_full, hypno=hypno_full,
+                              include=2)
 
         # Now we replace one channel with no spindle / bad data
         data_full[1, :] = np.random.random(data_full.shape[1])
@@ -280,7 +281,44 @@ class TestStringMethods(unittest.TestCase):
         # With 2D data
         sw_detect(data_sw[np.newaxis, ...], sf_full)
 
-        # Downsampling
+        # Downsampling with hypnogram
         data_sw_200 = resample(data_sw, up=2)
         sw_detect(data_sw_200, 200,
-                  hypno=2 * np.ones(data_sw_200.shape, dtype=int))
+                  hypno=2 * np.ones(data_sw_200.shape, dtype=int),
+                  include=2)
+
+        # Downsampling without hypnogram
+        data_sw_200 = resample(data_sw, up=2)
+        sw_detect(data_sw_200, 200)
+
+        # Non-integer sampling frequency
+        data_sw_250 = resample(data_sw, up=2.5)
+        sw_detect(data_sw_250, 250)
+
+    def test_sw_detect_multi(self):
+        """Test sw_detect_multi"""
+        data_full = file_full.get('data')
+        sw = sw_detect_multi(data_full, sf_full, chan_full)
+        sw_no_out = sw_detect_multi(data_full, sf_full, chan_full,
+                                    remove_outliers=True)
+        assert sw_no_out.shape[0] < sw.shape[0]
+        bv = get_bool_vector(data_full, sf_full, sw)
+        assert bv.shape[0] == len(chan_full)
+
+        # Test with hypnogram
+        sw_detect_multi(data_full, sf_full, chan_full,
+                        hypno=hypno_full, include=3)
+
+        # Now we replace one channel with no slow-wave / bad data
+        data_full[1, :] = np.random.random(data_full.shape[1])
+
+        # Test where data.shape[0] != len(chan)
+        with pytest.raises(AssertionError):
+            sw_detect_multi(data_full, sf_full, chan_full[:-1])
+
+        # Test with only bad channels
+        data_full[0, :] = np.random.random(data_full.shape[1])
+        data_full[2, :] = np.random.random(data_full.shape[1])
+        with self.assertLogs('yasa', level='WARNING'):
+            sp = sw_detect_multi(data_full, sf_full, chan_full)
+            assert sp is None

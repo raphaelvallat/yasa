@@ -1,15 +1,9 @@
 """
-YASA (Yet Another Spindle Algorithm) is a fast and data-agnostic sleep
-spindles detection algorithm written in Python 3.
-
-The algorithm behind YASA is largely inspired by the method described in:
-
-Lacourse, K., Delfrate, J., Beaudry, J., Peppard, P., Warby, S.C., 2018.
-A sleep spindle detection algorithm that emulates human expert spindle scoring.
-J. Neurosci. Methods. https://doi.org/10.1016/j.jneumeth.2018.08.014
+YASA (Yet Another Spindle Algorithm) is a fast, rosbut and data-agnostic sleep
+spindles and slow-waves detection algorithm written in Python 3.
 
 - Author: Raphael Vallat (www.raphaelvallat.com)
-- Creation date: December 2018
+- Date of creation: December 2018
 - GitHub: https://github.com/raphaelvallat/yasa
 - License: BSD 3-Clause License
 """
@@ -28,7 +22,8 @@ logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s',
 logger = logging.getLogger('yasa')
 
 __all__ = ['spindles_detect', 'spindles_detect_multi', 'stft_power',
-           'moving_transform', 'get_bool_vector', 'sw_detect']
+           'moving_transform', 'get_bool_vector', 'sw_detect',
+           'sw_detect_multi']
 
 
 #############################################################################
@@ -441,8 +436,7 @@ def get_bool_vector(data, sf, sp):
     if 'Channel' in sp.keys():
         chan = sp['Channel'].unique()
         n_chan = chan.size
-        if n_chan > 1:
-            multi = True
+        multi = True if n_chan > 1 else False
 
     if multi:
         for c in chan:
@@ -479,7 +473,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         0 = Wake, 1 = N1, 2 = N2, 3 = N3, 4 = REM. If you need help loading
         your hypnogram vector, please read the Visbrain documentation at
         http://visbrain.org/sleep.
-    include : tuple or list
+    include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
         (1, 2, 3), meaning that the detection is applied on N1, N2 and N3
         sleep. This has no effect is ``hypno`` is None.
@@ -553,7 +547,10 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         assert hypno.size == data.size, 'Hypno must have same size as data.'
         unique_hypno = np.unique(hypno)
         logger.info('Number of unique values in hypno = %i', unique_hypno.size)
-        assert isinstance(include, (tuple, list)), 'include must be a tuple'
+        if isinstance(include, int):
+            include = [include]
+        else:
+            assert isinstance(include, (tuple, list, np.ndarray))
         assert len(include) >= 1, 'include must have at least one element.'
         if not any(np.in1d(unique_hypno, include)):
             logger.error('The values in include are not present in hypno. '
@@ -888,7 +885,7 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         1 = N1, 2 = N2, 3 = N3, 4 = REM. If you need help loading your
         hypnogram vector, please read the Visbrain documentation at
         http://visbrain.org/sleep.
-    include : tuple or list
+    include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
         (2, 3), meaning that the detection is applied only on N2 and N3 sleep.
         This has no effect is ``hypno`` is None.
@@ -966,7 +963,10 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         assert hypno.size == data.size, 'Hypno must have same size as data.'
         unique_hypno = np.unique(hypno)
         logger.info('Number of unique values in hypno = %i', unique_hypno.size)
-        assert isinstance(include, (tuple, list)), 'include must be a tuple'
+        if isinstance(include, int):
+            include = [include]
+        else:
+            assert isinstance(include, (tuple, list, np.ndarray))
         assert len(include) >= 1, 'include must have at least one element.'
         if not any(np.in1d(unique_hypno, include)):
             logger.error('The values in include are not present in hypno. '
@@ -1154,3 +1154,76 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
 
     logger.info('%i slow-waves were found in data.', df_sw.shape[0])
     return df_sw.reset_index(drop=True)
+
+
+def sw_detect_multi(data, sf, ch_names, **kwargs):
+    """Multi-channel slow-waves detection.
+
+    Parameters
+    ----------
+    data : array_like
+        Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
+        If you used MNE to load the data, you should pass `raw._data * 1e6`.
+    sf : float
+        Sampling frequency of the data in Hz.
+        If you used MNE to load the data, you should pass `raw.info['sfreq']`.
+    ch_names : list of str
+        Channel names.
+        If you used MNE to load the data, you should pass `raw.ch_names`.
+    **kwargs
+        Keywords arguments that are passed to the `sw_detect` function.
+
+    Returns
+    -------
+    sw_params : pd.DataFrame
+        Pandas DataFrame::
+
+            'Start' : Start of each detected slow-wave (in seconds of data)
+            'NegPeak' : Location of the negative peak (in seconds of data)
+            'MidCrossing' : Location of the negative-to-positive zero-crossing
+            'Pospeak' : Location of the positive peak
+            'End' : End time (in seconds)
+            'Duration' : Duration (in seconds)
+            'ValNegPeak' : Amplitude of the negative peak (in uV - filtered)
+            'ValPosPeak' : Amplitude of the positive peak (in uV - filtered)
+            'PTP' : Peak to peak amplitude (ValPosPeak - ValNegPeak)
+            'Slope' : Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec)
+            'Frequency' : Frequency of the slow-wave (1 / ``Duration``)
+            'Stage' : Sleep stage (only if hypno was provided)
+            'Channel' : Channel name
+            'IdxChannel' : Integer index of channel in data
+
+    Notes
+    -----
+    For better results, apply this detection only on artefact-free NREM sleep.
+
+    Note that the ``PTP``, ``Slope``, ``ValNegPeak`` and ``ValPosPeak`` are
+    computed on the filtered signal.
+    """
+    # Safety check
+    data = np.asarray(data, dtype=np.float64)
+    assert data.ndim == 2
+    assert data.shape[0] < data.shape[1]
+    n_chan = data.shape[0]
+    assert isinstance(ch_names, (list, np.ndarray))
+    if len(ch_names) != n_chan:
+        raise AssertionError('ch_names must have same length as data.shape[0]')
+
+    # Single channel detection
+    df = pd.DataFrame()
+    for i in range(n_chan):
+        df_chan = sw_detect(data[i, :], sf, **kwargs)
+        if df_chan is not None:
+            df_chan['Channel'] = ch_names[i]
+            df_chan['IdxChannel'] = i
+            df = df.append(df_chan, ignore_index=True)
+        else:
+            logger.warning('No slow-waves were found in channel %s.',
+                           ch_names[i])
+
+    # If no slow-waves were detected, return None
+    if df.empty:
+        logger.warning('No slow-waves were found in data. Returning None.')
+        return None
+
+    return df

@@ -87,7 +87,9 @@ Notebooks
 
 **Slow-waves**
 
-6. `notebooks/06_sw_detect.ipynb <notebooks/06_sw_detect.ipynb>`_: single-channel slow-waves detection and step-by-step description of the algorithm.
+6. `notebooks/06_sw_detection.ipynb <notebooks/06_sw_detection.ipynb>`_: single-channel slow-waves detection and step-by-step description of the algorithm.
+7. `notebooks/07_sw_detection_multi.ipynb <notebooks/07_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection using MNE Raw objects.
+
 
 Typical uses
 ------------
@@ -124,6 +126,9 @@ Typical uses
                  dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 300),
                  amp_pos=(10, 150), amp_ptp=(75, 400), downsample=True,
                  remove_outliers=False)
+
+  # 3 - Multi-channel slow-waves detection on N2 + N3 sleep only (requires an hypnogram)
+  yasa.sw_detect_multi(data, sf, ch_names, hypno=hypno)
 
 The result of the detection is a `pandas DataFrame <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>`_...
 
