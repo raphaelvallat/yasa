@@ -92,16 +92,17 @@ Typical uses
   yasa.spindles_detect(data, sf)
 
   # 2 - Single-channel full command (shows all the default implicit parameters)
-  yasa.spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
-                       freq_broad=(1, 30), min_distance=500, downsample=True,
+  yasa.spindles_detect(data, sf, hypno=None, include=(1, 2, 3),
+                       freq_sp=(12, 15), duration=(0.5, 2), freq_broad=(1, 30),
+                       min_distance=500, downsample=True,
                        thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
                        remove_outliers=False)
 
   # 3 - Multi-channels detection on NREM sleep only (requires an hypnogram)
   yasa.spindles_detect_multi(data, sf, ch_names, hypno=hypno)
 
-  # 4 - Multi-channels detection with automatic outlier rejection
-  yasa.spindles_detect_multi(data, sf, ch_names, hypno=hypno, remove_outliers=True)
+  # 4 - Multi-channels detection on N2 sleep only with automatic outlier rejection
+  yasa.spindles_detect_multi(data, sf, ch_names, hypno=hypno, include=(2), remove_outliers=True)
 
   # SLOW-WAVES
   # ==========

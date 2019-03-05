@@ -77,6 +77,34 @@ def _rms(x):
     ms /= n
     return np.sqrt(ms)
 
+
+@jit('float64(float64[:], float64[:])', nopython=True)
+def _slope_lstsq(x, y):
+    """Slope of a 1D least-squares regression.
+    """
+    n_times = x.shape[0]
+    sx2 = 0
+    sx = 0
+    sy = 0
+    sxy = 0
+    for j in range(n_times):
+        sx2 += x[j] ** 2
+        sx += x[j]
+        sxy += x[j] * y[j]
+        sy += y[j]
+    den = n_times * sx2 - (sx ** 2)
+    num = n_times * sxy - sx * sy
+    return num / den
+
+
+@jit('float64[:](float64[:], float64[:])', nopython=True)
+def _detrend(x, y):
+    """Fast linear detrending.
+    """
+    slope = _slope_lstsq(x, y)
+    intercept = y.mean() - x.mean() * slope
+    return y - (x * slope + intercept)
+
 #############################################################################
 # HELPER FUNCTIONS
 #############################################################################
@@ -431,10 +459,10 @@ def get_bool_vector(data, sf, sp):
 #############################################################################
 
 
-def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
-                    freq_broad=(1, 30), min_distance=500, downsample=True,
-                    thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
-                    remove_outliers=False):
+def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
+                    duration=(0.5, 2), freq_broad=(1, 30), min_distance=500,
+                    downsample=True, thresh={'rel_pow': 0.2, 'corr': 0.65,
+                    'rms': 1.5}, remove_outliers=False):
     """Spindles detection.
 
     Parameters
@@ -445,12 +473,16 @@ def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
         Sampling frequency of the data in Hz.
     hypno : array_like
         Sleep stage vector (hypnogram). If the hypnogram is loaded, the
-        detection will only be applied to NREM sleep epochs (stage 1, 2 and 3),
-        therefore slightly improving the accuracy.
-        hypno MUST be a 1D array of integers with the same size as data and
-        where -1 = Artefact, 0 = Wake, 1 = N1, 2 = N2, 3 = N3, 4 = REM.
-        If you need help loading your hypnogram vector, please read the
-        Visbrain documentation at http://visbrain.org/sleep.
+        detection will only be applied to the value defined in
+        ``include`` (default = N1 + N2 + N3 sleep). ``hypno`` MUST be a 1D
+        array of integers with the same size as data and where -1 = Artefact,
+        0 = Wake, 1 = N1, 2 = N2, 3 = N3, 4 = REM. If you need help loading
+        your hypnogram vector, please read the Visbrain documentation at
+        http://visbrain.org/sleep.
+    include : tuple or list
+        Values in ``hypno`` that will be included in the mask. The default is
+        (1, 2, 3), meaning that the detection is applied on N1, N2 and N3
+        sleep. This has no effect is ``hypno`` is None.
     freq_sp : tuple or list
         Spindles frequency range. Default is 12 to 15 Hz. Please note that YASA
         uses a FIR filter (implemented in MNE) with a 1.5Hz transition band,
@@ -521,11 +553,12 @@ def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
         assert hypno.size == data.size, 'Hypno must have same size as data.'
         unique_hypno = np.unique(hypno)
         logger.info('Number of unique values in hypno = %i', unique_hypno.size)
-        if not any(np.in1d(unique_hypno, [1, 2, 3])):
-            logger.error('No NREM sleep in hypno. Switching to hypno = None')
+        assert isinstance(include, (tuple, list)), 'include must be a tuple'
+        assert len(include) >= 1, 'include must have at least one element.'
+        if not any(np.in1d(unique_hypno, include)):
+            logger.error('The values in include are not present in hypno. '
+                         'Switching to hypno = None.')
             hypno = None
-        else:
-            idx_nrem = np.logical_and(hypno >= 1, hypno < 4)
 
     # Check data amplitude
     data_trimstd = trimbothstd(data, cut=0.10)
@@ -557,12 +590,15 @@ def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
             if hypno is not None:
                 hypno = hypno[::fac]
                 assert hypno.size == data.size
-                idx_nrem = np.logical_and(hypno >= 1, hypno < 4)
-                logger.info('Seconds of NREM sleep = %.2f',
-                            idx_nrem.sum() / sf)
         else:
             logger.warning("Cannot downsample if sf is not a mutiple of 100 "
                            "or 128. Skipping downsampling.")
+
+    # Create sleep stage vector mask
+    if hypno is not None:
+        mask = np.in1d(hypno, include)
+    else:
+        mask = np.ones(data.size, dtype=bool)
 
     # Bandpass filter
     data = filter_data(data, sf, freq_broad[0], freq_broad[1], method='fir',
@@ -610,8 +646,9 @@ def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
     if hypno is None:
         thresh_rms = mrms.mean() + thresh['rms'] * trimbothstd(mrms, cut=0.10)
     else:
-        thresh_rms = mrms[idx_nrem].mean() + thresh['rms'] * \
-            trimbothstd(mrms[idx_nrem], cut=0.10)
+        thresh_rms = mrms[mask].mean() + thresh['rms'] * \
+            trimbothstd(mrms[mask], cut=0.10)
+
     # Avoid too high threshold caused by Artefacts / Motion during Wake.
     thresh_rms = min(thresh_rms, 10)
     idx_rel_pow = (rel_pow >= thresh['rel_pow']).astype(int)
@@ -621,7 +658,7 @@ def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
 
     # Make sure that we do not detect spindles in REM or Wake if hypno != None
     if hypno is not None:
-        idx_sum[~idx_nrem] = 0
+        idx_sum[~mask] = 0
 
     # For debugging
     logger.info('Moving RMS threshold = %.3f', thresh_rms)
@@ -683,7 +720,9 @@ def spindles_detect(data, sf, hypno=None, freq_sp=(12, 15), duration=(0.5, 2),
 
     for i in np.arange(len(sp))[good_dur]:
         # Important: detrend the signal to avoid wrong peak-to-peak amplitude
-        sp_det = signal.detrend(data[sp[i]], type='linear')
+        sp_x = np.arange(data[sp[i]].size, dtype=np.float64)
+        sp_det = _detrend(sp_x, data[sp[i]])
+        # sp_det = signal.detrend(data[sp[i]], type='linear')
         sp_amp[i] = np.ptp(sp_det)  # Peak-to-peak amplitude
         sp_rms[i] = _rms(sp_det)  # Root mean square
         sp_rel[i] = np.median(rel_pow[sp[i]])  # Median relative power
