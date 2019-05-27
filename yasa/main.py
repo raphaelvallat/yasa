@@ -22,7 +22,7 @@ logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s',
 logger = logging.getLogger('yasa')
 
 __all__ = ['spindles_detect', 'spindles_detect_multi', 'stft_power',
-           'moving_transform', 'get_bool_vector', 'sw_detect',
+           'moving_transform', 'get_bool_vector', 'get_sync_sw', 'sw_detect',
            'sw_detect_multi']
 
 
@@ -448,6 +448,95 @@ def get_bool_vector(data, sf, sp):
         idx_sp = _index_to_events(sp[['Start', 'End']].values * sf)
         bool_spindles[idx_sp] = 1
     return bool_spindles
+
+
+def get_sync_sw(data, sf, sw, event='NegPeak', time_before=0.4,
+                time_after=0.8):
+    """Synchronize the timing of detected slow-waves at a specific
+    landmark timepoint.
+
+    This function can be used to plot an average template of the
+    detected slow-waves.
+
+    Parameters
+    ----------
+    data : array_like
+        Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
+        If you used MNE to load the data, you should pass `raw._data * 1e6`.
+    sf : float
+        Sampling frequency of the data in Hz.
+        If you used MNE to load the data, you should pass `raw.info['sfreq']`.
+    sw : pandas DataFrame
+        YASA's detection dataframe returned by the
+        `sw_detect` or `sw_detect_multi` functions.
+    event : str
+        Landmark of the slow-waves to synchronize the timing on.
+        Default is to use the negative peak.
+    time_before : float
+        Time (in seconds) before ``event``.
+    time_after : float
+        Time (in seconds) after ``event``.
+
+    Returns:
+    --------
+    df_sw : pandas DataFrame
+        Pandas DataFrame:
+
+            'Time' : Timing of the events (in seconds)
+            'Event' : Event number
+            'Amplitude' : Raw data for event
+            'Amplitude' : Amplitude (in uV)
+            'Chan' : Channel (only in multi-channel detection)
+    """
+    # Safety checks
+    assert isinstance(data, np.ndarray)
+    assert isinstance(sw, pd.DataFrame)
+    assert isinstance(sf, (int, float))
+    assert event in ['PosPeak', 'NegPeak', 'MidCrossing', 'Start', 'End']
+
+    if 'Channel' in sw.columns:
+        # Multi-channel (recursive call)
+        assert data.ndim > 1, 'Data must be 2D for multi-channel detection.'
+        df_sync = pd.DataFrame()
+        for c, sw_c in sw.groupby('Channel'):
+            idx_chan = sw_c.iloc[0, -1]
+            df_tmp = get_sync_sw(data[idx_chan, :], sf, sw_c.iloc[:, :-2],
+                                 event=event, time_before=time_before,
+                                 time_after=time_after)
+            df_tmp['Channel'] = c
+            df_tmp['IdxChannel'] = idx_chan
+            df_sync = df_sync.append(df_tmp, ignore_index=True)
+    else:
+        # Single-channel
+        assert data.ndim == 1, 'Data must be 1D for single-channel detection.'
+        # Define number of samples before and after the peak
+        assert time_before >= 0
+        assert time_after >= 0
+        N_bef = int(sf * time_before)
+        N_aft = int(sf * time_after)
+        # Convert to integer sample indices in data
+        idx_peak = (sw[event] * sf).astype(int).values[..., np.newaxis]
+
+        def rng(x):
+            """Utility function to create a range before and after
+            a given value."""
+            return np.arange(x - N_bef, x + N_aft + 1)
+
+        # Extract indices, data, and time vector
+        idx = np.apply_along_axis(rng, 1, idx_peak)
+        # We drop the events for which the indices exceed data
+        idx_mask = np.ma.mask_rows(np.ma.masked_outside(idx, 0, data.shape[0]))
+        idx = np.ma.compress_rows(idx_mask)
+        dtsw = data[idx]
+        time = rng(0) / sf
+
+        # Convert to dataframe
+        df_sync = pd.DataFrame(dtsw.T)
+        df_sync['Time'] = time
+        df_sync = df_sync.melt(id_vars='Time', var_name='Event',
+                               value_name='Amplitude')
+    return df_sync
+
 
 #############################################################################
 # MAIN FUNCTIONS

@@ -8,7 +8,7 @@ from itertools import product
 from scipy.signal import detrend
 from mne.filter import filter_data, resample
 from yasa.main import (_corr, _covar, _rms, _slope_lstsq, _detrend,
-                       moving_transform, stft_power,
+                       moving_transform, stft_power, get_sync_sw,
                        _index_to_events, get_bool_vector, trimbothstd,
                        _merge_close, spindles_detect, spindles_detect_multi,
                        _zerocrossings, sw_detect, sw_detect_multi)
@@ -80,6 +80,18 @@ class TestStringMethods(unittest.TestCase):
         out = get_bool_vector(data, sf, sp_params)
         assert out.size == data.size
         assert np.unique(out).size == 2
+
+    def test_get_sync_sw(self):
+        """Test functions get_sync_sw"""
+        sw = sw_detect_multi(data_full, sf_full, chan_full)
+        # Multi-channel with negative slow-wave peak
+        df_sync = get_sync_sw(data_full, sf, sw)
+        assert df_sync['Channel'].nunique() == 3
+        # Single-channel with positive slow-wave peak
+        sw_c = sw[sw['Channel'] == sw.at[0, 'Channel']].iloc[:, :-2]
+        df_sync = get_sync_sw(data_full[0, :], sf_full, sw_c,
+                              event='PosPeak', time_before=0, time_after=2)
+        assert df_sync.shape[1] == 3
 
     def test_merge_close(self):
         """Test functions _merge_close"""

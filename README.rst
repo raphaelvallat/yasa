@@ -89,6 +89,7 @@ Notebooks
 
 6. `notebooks/06_sw_detection.ipynb <notebooks/06_sw_detection.ipynb>`_: single-channel slow-waves detection and step-by-step description of the algorithm.
 7. `notebooks/07_sw_detection_multi.ipynb <notebooks/07_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection using MNE Raw objects.
+8. `notebooks/08_sw_average.ipynb <notebooks/08_sw_average.ipynb>`_: plot the average template of the detected slow-waves, per channel.
 
 
 Typical uses
