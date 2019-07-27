@@ -135,6 +135,7 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
             'ptp' : peak-to-peak amplitude of x
             'prop_above_zero' : proportion of values of x that are above zero
             'rms' : root mean square of x
+            'slope' : slope of the least-square regression of x (in a.u / sec)
             'corr' : Correlation between x and y
             'covar' : Covariance between x and y
     interp : boolean
@@ -155,7 +156,7 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
     """
     # Safety checks
     assert method in ['mean', 'min', 'max', 'ptp', 'rms',
-                      'prop_above_zero', 'covar', 'corr']
+                      'prop_above_zero', 'slope', 'covar', 'corr']
     x = np.asarray(x, dtype=np.float64)
     if y is not None:
         y = np.asarray(y, dtype=np.float64)
@@ -200,6 +201,11 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
     elif method == 'prop_above_zero':
         def func(x):
             return np.count_nonzero(x >= 0) / x.size
+
+    elif method == 'slope':
+        def func(x):
+            times = np.arange(x.size, dtype=np.float64) / sf
+            return _slope_lstsq(times, x)
 
     elif method == 'covar':
         def func(x, y):

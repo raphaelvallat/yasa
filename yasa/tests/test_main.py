@@ -105,7 +105,7 @@ class TestStringMethods(unittest.TestCase):
     def test_moving_transform(self):
         """Test moving_transform"""
         method = ['mean', 'min', 'max', 'ptp', 'rms', 'prop_above_zero',
-                  'corr', 'covar']
+                  'slope', 'corr', 'covar']
         interp = [False, True]
         win = [.3, .5]
         step = [0, .1, .3, .5]
