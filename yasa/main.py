@@ -139,7 +139,7 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
             'covar' : Covariance between x and y
     interp : boolean
         If True, a cubic interpolation is performed to ensure that the output
-        is the same size as the input (= pointwise power).
+        has the same size as the input.
 
     Returns
     -------
