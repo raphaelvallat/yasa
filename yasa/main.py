@@ -129,6 +129,11 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
         Transformation to use.
         Available methods are:
 
+            'mean' : arithmetic mean of x
+            'min' : minimum value of x
+            'max' : maximum value of x
+            'ptp' : peak-to-peak amplitude of x
+            'prop_above_zero' : proportion of values of x that are above zero
             'rms' : root mean square of x
             'corr' : Correlation between x and y
             'covar' : Covariance between x and y
@@ -149,7 +154,8 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
     Wonambi package (https://github.com/wonambi-python/wonambi).
     """
     # Safety checks
-    assert method in ['covar', 'corr', 'rms']
+    assert method in ['mean', 'min', 'max', 'ptp', 'rms',
+                      'prop_above_zero', 'covar', 'corr']
     x = np.asarray(x, dtype=np.float64)
     if y is not None:
         y = np.asarray(y, dtype=np.float64)
@@ -167,12 +173,35 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
 
     # Define beginning, end and time (centered) vector
     beg = ((idx - halfdur) * sf).astype(int)
-    beg[beg < 0] = 0
     end = ((idx + halfdur) * sf).astype(int)
+    beg[beg < 0] = 0
     end[end > last] = last
+    # Alternatively, to cut off incomplete windows (comment the 2 lines above)
+    # mask = ~((beg < 0) | (end > last))
+    # beg, end = beg[mask], end[mask]
     t = np.column_stack((beg, end)).mean(1) / sf
 
-    if method == 'covar':
+    if method == 'mean':
+        def func(x):
+            return np.mean(x)
+
+    elif method == 'min':
+        def func(x):
+            return np.min(x)
+
+    elif method == 'max':
+        def func(x):
+            return np.max(x)
+
+    elif method == 'ptp':
+        def func(x):
+            return np.ptp(x)
+
+    elif method == 'prop_above_zero':
+        def func(x):
+            return np.count_nonzero(x >= 0) / x.size
+
+    elif method == 'covar':
         def func(x, y):
             return _covar(x, y)
 
@@ -194,9 +223,8 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
 
     # Finally interpolate
     if interp and step != 1 / sf:
-        f = interp1d(t, out, kind='cubic',
-                     bounds_error=False,
-                     fill_value=0)
+        f = interp1d(t, out, kind='cubic', bounds_error=False,
+                     fill_value=0, assume_sorted=True)
         t = np.arange(n) / sf
         out = f(t)
 
