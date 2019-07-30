@@ -362,6 +362,7 @@ class TestStringMethods(unittest.TestCase):
         df_rem = rem_detect(loc, roc, sf)
         df_rem2 = rem_detect(loc, roc, sf, remove_outliers=True)
         assert df_rem.shape[0] > df_rem2.shape[0]
+        assert get_bool_vector(loc, sf, df_rem).size == loc.size
 
         # With REM hypnogram
         hypno_rem = 4 * np.ones_like(loc)

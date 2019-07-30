@@ -31,7 +31,7 @@
 YASA
 ====
 
-YASA (*Yet Another Spindle Algorithm*) is a fast, robust, and data-agnostic sleep spindles & slow-waves detection algorithm written in Python 3.
+YASA (*Yet Another Spindle Algorithm*) is a fast and robust Python 3 toolbox to detect sleep microstructure events (e.g. spindles, slow-waves, REMs) from EEG recordings.
 
 The **sleep spindles** algorithm of YASA is largely inspired by the method described in:
 
@@ -42,6 +42,12 @@ The **slow-waves** detection algorithm is adapted from:
 - Massimini, M., Huber, R., Ferrarelli, F., Hill, S. & Tononi, G. (2004). `The sleep slow oscillation as a traveling wave <https://doi.org/10.1523/JNEUROSCI.1318-04.2004>`_. *J. Neurosci.*.
 
 - Carrier, J. et al. (2011). `Sleep slow wave changes during the middle years of life <https://doi.org/10.1111/j.1460-9568.2010.07543.x>`_. *Eur. J. Neurosci*.
+
+The **rapid eye movements (REMs)** detection algorithm is inspired from:
+
+- Agarwal, R., Takeuchi, T., Laroche, S., & Gotman, J. (2005). `Detection of rapid-eye movements in sleep studies <https://ieeexplore.ieee.org/abstract/document/1463327/>`_. *IEEE Transactions on biomedical engineering*.
+
+- Yetton, B. D., Niknazar, M., Duggan, K. A., McDevitt, E. A., Whitehurst, L. N., Sattari, N., & Mednick, S. C. (2016). `Automatic detection of rapid eye movements (REMs): A machine learning approach <https://www.sciencedirect.com/science/article/pii/S0165027015004173>`_. *Journal of neuroscience methods*.
 
 Installation
 ~~~~~~~~~~~~
@@ -70,7 +76,7 @@ In order to use YASA, you need:
 
 - Some basic knowledge of Python and especially the `NumPy <https://docs.scipy.org/doc/numpy/user/quickstart.html>`_, `Pandas <https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html>`_ and `MNE <https://martinos.org/mne/stable/index.html>`_ libraries.
 - A Python editor: YASA works best with `Jupyter Lab <https://jupyterlab.readthedocs.io/en/stable/index.html>`_, a web-based interactive user interface.
-- Some EEG data, either already loaded into a NumPy array, or loaded as a raw MNE object (for instance, using the `mne.io.read_raw_edf <https://mne-tools.github.io/stable/generated/mne.io.read_raw_edf.html>`_ function for EDF file.)
+- Some EEG data, in uV, either already loaded into a NumPy array, or loaded as a raw MNE object (for instance, using the `mne.io.read_raw_edf <https://mne-tools.github.io/stable/generated/mne.io.read_raw_edf.html>`_ function for EDF file.)
 - Optionally, a sleep staging vector (= hypnogram) to run the detections on specific sleep stages. Note that YASA requires that the data and hypnogram have the same sampling frequency.
 
 

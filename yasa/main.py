@@ -1,6 +1,7 @@
 """
-YASA (Yet Another Spindle Algorithm) is a fast, rosbut and data-agnostic sleep
-spindles and slow-waves detection algorithm written in Python 3.
+YASA (Yet Another Spindle Algorithm) is a fast and robust Python 3 toolbox
+to detect sleep microstructure events (e.g. spindles, slow-waves,
+REMs) from EEG recordings.
 
 - Author: Raphael Vallat (www.raphaelvallat.com)
 - Date of creation: December 2018
@@ -440,7 +441,7 @@ def _index_to_events(x):
     return index.astype(int)
 
 
-def get_bool_vector(data, sf, sp):
+def get_bool_vector(data, sf, detection):
     """Return a Boolean vector given the original data and sf and
     a YASA's detection dataframe.
 
@@ -450,38 +451,38 @@ def get_bool_vector(data, sf, sp):
         Single-channel EEG data.
     sf : float
         Sampling frequency of the data.
-    sp : pandas DataFrame
-        YASA's detection dataframe returned by the `spindles_detect` or
-        `sw_detect` functions.
+    detection : pandas DataFrame
+        YASA's detection dataframe returned by the `spindles_detect`,
+        `sw_detect` or `rem_detect` functions.
 
     Returns
     -------
     bool_vector : array
         Array of bool indicating for each sample in data if this sample is
-        part of a spindle / slow-wave (True) or not (False).
+        part of a detected event (True) or not (False).
     """
     data = np.asarray(data)
-    assert isinstance(sp, pd.DataFrame)
-    assert 'Start' in sp.keys()
-    assert 'End' in sp.keys()
-    bool_spindles = np.zeros(data.shape, dtype=int)
+    assert isinstance(detection, pd.DataFrame)
+    assert 'Start' in detection.keys()
+    assert 'End' in detection.keys()
+    bool_vector = np.zeros(data.shape, dtype=int)
 
     # For multi-channel detection
     multi = False
-    if 'Channel' in sp.keys():
-        chan = sp['Channel'].unique()
+    if 'Channel' in detection.keys():
+        chan = detection['Channel'].unique()
         n_chan = chan.size
         multi = True if n_chan > 1 else False
 
     if multi:
         for c in chan:
-            sp_chan = sp[sp['Channel'] == c]
+            sp_chan = detection[detection['Channel'] == c]
             idx_sp = _index_to_events(sp_chan[['Start', 'End']].values * sf)
-            bool_spindles[sp_chan['IdxChannel'].iloc[0], idx_sp] = 1
+            bool_vector[sp_chan['IdxChannel'].iloc[0], idx_sp] = 1
     else:
-        idx_sp = _index_to_events(sp[['Start', 'End']].values * sf)
-        bool_spindles[idx_sp] = 1
-    return bool_spindles
+        idx_sp = _index_to_events(detection[['Start', 'End']].values * sf)
+        bool_vector[idx_sp] = 1
+    return bool_vector
 
 
 def get_sync_sw(data, sf, sw, event='NegPeak', time_before=0.4,
