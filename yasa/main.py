@@ -23,7 +23,7 @@ logger = logging.getLogger('yasa')
 
 __all__ = ['spindles_detect', 'spindles_detect_multi', 'stft_power',
            'moving_transform', 'get_bool_vector', 'get_sync_sw', 'sw_detect',
-           'sw_detect_multi']
+           'sw_detect_multi', 'rem_detect']
 
 
 #############################################################################
@@ -573,7 +573,7 @@ def get_sync_sw(data, sf, sw, event='NegPeak', time_before=0.4,
 
 
 #############################################################################
-# MAIN FUNCTIONS
+# SPINDLES DETECTION
 #############################################################################
 
 
@@ -989,6 +989,11 @@ def spindles_detect_multi(data, sf, ch_names, multi_only=False, **kwargs):
         return df
 
 
+#############################################################################
+# SLOW-WAVES DETECTION
+#############################################################################
+
+
 def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
               dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 300),
               amp_pos=(10, 200), amp_ptp=(75, 500), downsample=True,
@@ -1351,3 +1356,237 @@ def sw_detect_multi(data, sf, ch_names, **kwargs):
         return None
 
     return df
+
+
+#############################################################################
+# REMs DETECTION
+#############################################################################
+
+
+def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
+               duration=(0.3, 1.5), freq_rem=(0.5, 5), downsample=True,
+               remove_outliers=False):
+    """Rapid Eye Movements (REMs) detection.
+
+    Parameters
+    ----------
+    loc, roc : array_like
+        Continuous EOG data (Left and Right Ocular Canthi, LOC / ROC) channels.
+        Unit must be uV.
+    sf : float
+        Sampling frequency of the data in Hz.
+    hypno : array_like
+        Sleep stage vector (hypnogram). If the hypnogram is loaded, the
+        detection will only be applied to the value defined in
+        ``include`` (default = REM sleep). ``hypno`` MUST be a 1D array of
+        integers with the same size as data and where -1 = Artefact, 0 = Wake,
+        1 = N1, 2 = N2, 3 = N3, 4 = REM. If you need help loading your
+        hypnogram vector, please read the Visbrain documentation at
+        http://visbrain.org/sleep.
+    include : tuple, list or int
+        Values in ``hypno`` that will be included in the mask. The default is
+        (4), meaning that the detection is applied only on REM sleep.
+        This has no effect is ``hypno`` is None.
+    amplitude : tuple or list
+        Minimum and maximum amplitude of the peak of the REM.
+        Default is 50 uV to 325 uV.
+    duration : tuple or list
+        The minimum and maximum duration of the REMs.
+        Default is 0.3 to 1.5 seconds.
+    freq_rem : tuple or list
+        Frequency range of REMs. Default is 0.5 to 5 Hz.
+    downsample : boolean
+        If True, the data will be downsampled to 100 Hz or 128 Hz (depending
+        on whether the original sampling frequency is a multiple of 100 or 128,
+        respectively).
+    remove_outliers : boolean
+        If True, YASA will automatically detect and remove outliers REMs
+        using an Isolation Forest (implemented in the scikit-learn package).
+        YASA uses a random seed (42) to ensure reproducible results.
+        Note that this step will only be applied if there are more than
+        100 detected REMs in the first place. Default to False.
+
+    Returns
+    -------
+    df_rem : pd.DataFrame
+        Pandas DataFrame:
+
+            'Start' : Start of each detected slow-wave (in seconds of data)
+            'Peak' : Location of the peak (in seconds of data)
+            'End' : End time (in seconds)
+            'Duration' : Duration (in seconds)
+            'LOCAbsValPeak' : LOC absolute amplitude at REM peak (in uV)
+            'ROCAbsValPeak' : ROC absolute amplitude at REM peak (in uV)
+            'LOCAbsRiseSlope' : LOC absolute rise slope (in uV/s)
+            'ROCAbsRiseSlope' : ROC absolute rise slope (in uV/s)
+            'LOCAbsFallSlope' : LOC absolute fall slope (in uV/s)
+            'ROCAbsFallSlope' : ROC absolute fall slope (in uV/s)
+            'Stage' : Sleep stage (only if hypno was provided)
+
+    Notes
+    -----
+    For better results, apply this detection only on artefact-free REM sleep.
+
+    Note that all the parameters are computed on the filtered signal.
+    """
+    # Safety check
+    loc = np.squeeze(np.asarray(loc, dtype=np.float64))
+    roc = np.squeeze(np.asarray(roc, dtype=np.float64))
+    assert loc.ndim == 1, 'LOC must be 1D.'
+    assert roc.ndim == 1, 'ROC must be 1D.'
+    assert loc.size == roc.size, 'LOC and ROC must have the same size.'
+    data = np.vstack((loc, roc))
+    assert freq_rem[0] < freq_rem[1]
+    assert duration[0] < duration[1]
+    assert amplitude[0] < amplitude[1]
+    assert isinstance(downsample, bool), 'Downsample must be True or False.'
+
+    # Hypno processing
+    if hypno is not None:
+        hypno = np.asarray(hypno, dtype=int)
+        assert hypno.ndim == 1, 'Hypno must be one dimensional.'
+        assert hypno.size == loc.size, 'Hypno must have same size as data.'
+        unique_hypno = np.unique(hypno)
+        logger.info('Number of unique values in hypno = %i', unique_hypno.size)
+        if isinstance(include, int):
+            include = [include]
+        else:
+            assert isinstance(include, (tuple, list, np.ndarray))
+        assert len(include) >= 1, 'include must have at least one element.'
+        if not any(np.in1d(unique_hypno, include)):
+            logger.error('The values in include are not present in hypno. '
+                         'Switching to hypno = None.')
+            hypno = None
+
+    # Check data amplitude
+    loc_trimstd = trimbothstd(loc, cut=0.10)
+    roc_trimstd = trimbothstd(loc, cut=0.10)
+    loc_ptp, roc_ptp = np.ptp(loc), np.ptp(roc)
+    logger.info('Number of samples in data = %i', data.shape[1])
+    logger.info('Sampling frequency = %.2f Hz', sf)
+    logger.info('Data duration = %.2f seconds', data.shape[1] / sf)
+    logger.info('Trimmed standard deviation of LOC = %.4f uV', loc_trimstd)
+    logger.info('Trimmed standard deviation of ROC = %.4f uV', roc_trimstd)
+    logger.info('Peak-to-peak amplitude of LOC = %.4f uV', loc_ptp)
+    logger.info('Peak-to-peak amplitude of ROC = %.4f uV', roc_ptp)
+    if not(1 < loc_trimstd < 1e3 or 1 < loc_ptp < 1e6):
+        logger.error('Wrong LOC amplitude. Unit must be uV. Returning None.')
+        return None
+    if not(1 < roc_trimstd < 1e3 or 1 < roc_ptp < 1e6):
+        logger.error('Wrong ROC amplitude. Unit must be uV. Returning None.')
+        return None
+
+    # Check if we can downsample to 100 or 128 Hz
+    if downsample is True and sf > 128:
+        if sf % 100 == 0 or sf % 128 == 0:
+            new_sf = 100 if sf % 100 == 0 else 128
+            fac = int(sf / new_sf)
+            sf = new_sf
+            data = data[::fac]
+            logger.info('Downsampled data by a factor of %i', fac)
+            if hypno is not None:
+                hypno = hypno[::fac]
+                assert hypno.size == data.size
+        else:
+            logger.warning("Cannot downsample if sf is not a mutiple of 100 "
+                           "or 128. Skipping downsampling.")
+
+    # Define time vector
+    # times = np.arange(data.size) / sf
+
+    # Bandpass filter
+    data = filter_data(data, sf, freq_rem[0], freq_rem[1], verbose=0)
+
+    # Negative product
+    negp = -data[0, :] * data[1, :]
+
+    # Find peaks in data
+    hmin, hmax = amplitude[0]**2, amplitude[1]**2
+    pks, pks_params = signal.find_peaks(negp, height=(hmin, hmax),
+                                        distance=(0.5 * sf),
+                                        prominence=(0.8 * hmin),
+                                        wlen=(1.2 * sf))
+
+    # Intersect with sleep stage vector
+    # We do that before calculating the features in order to gain some time
+    if hypno is not None:
+        mask = np.in1d(hypno, include)
+        idx_mask = np.where(mask)[0]
+        pks, idx_good, _ = np.intersect1d(pks, idx_mask, True, True)
+        for k in pks_params.keys():
+            pks_params[k] = pks_params[k][idx_good]
+
+    # If no peaks are detected, return None
+    if len(pks) == 0:
+        logger.warning('No REMs were found in data. Returning None.')
+        return None
+
+    # Calculate rising and falling slope
+    dist_pk_left = (pks - pks_params['left_bases']) / sf
+    dist_pk_right = (pks_params['right_bases'] - pks) / sf
+    locrs = (data[0, pks] - data[0, pks_params['left_bases']]) / dist_pk_left
+    rocrs = (data[1, pks] - data[1, pks_params['left_bases']]) / dist_pk_left
+    locfs = (data[0, pks_params['right_bases']] - data[0, pks]) / dist_pk_right
+    rocfs = (data[1, pks_params['right_bases']] - data[1, pks]) / dist_pk_right
+
+    # Hypnogram
+    if hypno is not None:
+        rem_sta = hypno[pks_params['left_bases']]
+    else:
+        rem_sta = np.zeros(pks.shape)
+
+    # Append to DataFrame
+    df_rem = pd.DataFrame(pks_params)
+    df_rem['Start'] = df_rem['left_bases'] / sf
+    df_rem['Peak'] = pks / sf
+    df_rem['End'] = df_rem['right_bases'] / sf
+    df_rem['Duration'] = df_rem['End'] - df_rem['Start']
+    # Time points in minutes (HH:MM:SS)
+    # df_rem['StartMin'] = pd.to_timedelta(df_rem['Start'], unit='s').dt.round('s')  # noqa
+    # df_rem['PeakMin'] = pd.to_timedelta(df_rem['Peak'], unit='s').dt.round('s')  # noqa
+    # df_rem['EndMin'] = pd.to_timedelta(df_rem['End'], unit='s').dt.round('s')  # noqa
+    # Absolute LOC / ROC value at peak (filtered)
+    df_rem['LOCAbsValPeak'] = abs(data[0, pks])
+    df_rem['ROCAbsValPeak'] = abs(data[1, pks])
+    # Absolute rising and falling slope
+    df_rem['LOCAbsRiseSlope'] = abs(locrs)
+    df_rem['ROCAbsRiseSlope'] = abs(rocrs)
+    df_rem['LOCAbsFallSlope'] = abs(locfs)
+    df_rem['ROCAbsFallSlope'] = abs(rocfs)
+    # Sleep stage
+    df_rem['Stage'] = rem_sta
+
+    # Make sure that the sign of ROC and LOC is opposite
+    df_rem['IsOppositeSign'] = np.sign(data[1, pks]) != np.sign(data[0, pks])
+    df_rem = df_rem[df_rem['IsOppositeSign']]
+
+    # Remove bad duration
+    tmin, tmax = duration
+    df_rem = df_rem.query('@tmin <= Duration < @tmax').copy()
+
+    # Keep only useful channels
+    df_rem = df_rem[['Start', 'Peak', 'End', 'Duration', 'LOCAbsValPeak',
+                     'ROCAbsValPeak', 'LOCAbsRiseSlope', 'ROCAbsRiseSlope',
+                     'LOCAbsFallSlope', 'ROCAbsFallSlope', 'Stage']]
+
+    if hypno is None:
+        df_rem = df_rem.drop(columns=['Stage'])
+    else:
+        df_rem['Stage'] = df_rem['Stage'].astype(int).astype('category')
+
+    # We need at least 100 detected REMs to apply the Isolation Forest.
+    if remove_outliers and df_rem.shape[0] >= 100:
+        from sklearn.ensemble import IsolationForest
+        col_keep = ['Duration', 'LOCAbsValPeak', 'ROCAbsValPeak',
+                    'LOCAbsRiseSlope', 'ROCAbsRiseSlope', 'LOCAbsFallSlope',
+                    'ROCAbsFallSlope']
+        ilf = IsolationForest(behaviour='new', contamination='auto',
+                              max_samples='auto', verbose=0, random_state=42)
+        good = ilf.fit_predict(df_rem[col_keep])
+        good[good == -1] = 0
+        logger.info('%i outliers were removed.', (good == 0).sum())
+        # Remove outliers from DataFrame
+        df_rem = df_rem[good.astype(bool)]
+
+    logger.info('%i REMs were found in data.', df_rem.shape[0])
+    return df_rem.reset_index(drop=True)
