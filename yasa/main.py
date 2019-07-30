@@ -1482,11 +1482,11 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
             new_sf = 100 if sf % 100 == 0 else 128
             fac = int(sf / new_sf)
             sf = new_sf
-            data = data[::fac]
+            data = data[:, ::fac]
             logger.info('Downsampled data by a factor of %i', fac)
             if hypno is not None:
                 hypno = hypno[::fac]
-                assert hypno.size == data.size
+                assert hypno.size == data.shape[1]
         else:
             logger.warning("Cannot downsample if sf is not a mutiple of 100 "
                            "or 128. Skipping downsampling.")

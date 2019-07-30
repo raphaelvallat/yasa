@@ -11,7 +11,7 @@ from yasa.main import (_corr, _covar, _rms, _slope_lstsq, _detrend,
                        moving_transform, stft_power, get_sync_sw,
                        _index_to_events, get_bool_vector, trimbothstd,
                        _merge_close, spindles_detect, spindles_detect_multi,
-                       _zerocrossings, sw_detect, sw_detect_multi)
+                       _zerocrossings, sw_detect, sw_detect_multi, rem_detect)
 
 # Load data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -335,3 +335,38 @@ class TestStringMethods(unittest.TestCase):
         with self.assertLogs('yasa', level='WARNING'):
             sp = sw_detect_multi(data_full, sf_full, chan_full)
             assert sp is None
+
+    def test_rem_detect(self):
+        """Test function REM detect
+        """
+        file_rem = np.load('notebooks/EOGs_REM_256Hz.npz')
+        data_rem = file_rem['data']
+        loc, roc = data_rem[0, :], data_rem[1, :]
+        sf_rem = file_rem['sf']
+        # chan_rem = file_rem['chan']
+        hypno_rem = 4 * np.ones_like(loc)
+
+        # Parameters product testing
+        freq_rem = [(0.5, 5), (0.3, 8)]
+        duration = [(0.3, 1.5), [0.5, 1]]
+        amplitude = [(50, 200), [60, 300]]
+        downsample = [True, False]
+        hypno = [hypno_rem, None]
+        prod_args = product(freq_rem, duration, amplitude, downsample, hypno)
+
+        for i, (f, dr, am, ds, h) in enumerate(prod_args):
+            rem_detect(loc, roc, sf_rem, hypno=h, freq_rem=f, duration=dr,
+                       amplitude=am, downsample=ds)
+
+        # With isolation forest
+        df_rem = rem_detect(loc, roc, sf)
+        df_rem2 = rem_detect(loc, roc, sf, remove_outliers=True)
+        assert df_rem.shape[0] > df_rem2.shape[0]
+
+        # With REM hypnogram
+        hypno_rem = 4 * np.ones_like(loc)
+        df_rem = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
+        hypno_rem = np.r_[np.ones(int(loc.size / 2)),
+                          4 * np.ones(int(loc.size / 2))]
+        df_rem2 = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
+        assert df_rem.shape[0] > df_rem2.shape[0]
