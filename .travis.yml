@@ -14,7 +14,7 @@ install:
   - export NUMBA_DISABLE_JIT=1  # Disable JIT
 
 script:
-  - py.test --cov
+  - pytest --cov
 
 after_success:
   - codecov
