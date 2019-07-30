@@ -1,4 +1,4 @@
-pytest
+pytest==3.9.2
 codecov
 pytest-cov
 pytest-sugar
