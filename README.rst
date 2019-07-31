@@ -66,8 +66,6 @@ Installation
 - numba>=0.39.0
 - scikit-learn>=0.20
 
-**Note**
-
 Several functions of YASA are written using `Numba <http://numba.pydata.org/>`_, a just-in-time compiler for Python. This allows to greatly speed up the computation time (typically a few seconds for a full night recording).
 
 **What are the prerequisites for using YASA?**
