@@ -31,7 +31,7 @@
 YASA
 ====
 
-YASA (*Yet Another Spindle Algorithm*) is a fast and robust Python 3 toolbox to detect sleep microstructure events (e.g. spindles, slow-waves, REMs) from EEG recordings.
+YASA (*Yet Another Spindle Algorithm*) is a fast and robust Python 3 toolbox to detect sleep microstructure events from EEG recordings.
 
 The **sleep spindles** algorithm of YASA is largely inspired by the method described in:
 
@@ -39,9 +39,9 @@ The **sleep spindles** algorithm of YASA is largely inspired by the method descr
 
 The **slow-waves** detection algorithm is adapted from:
 
-- Massimini, M., Huber, R., Ferrarelli, F., Hill, S. & Tononi, G. (2004). `The sleep slow oscillation as a traveling wave <https://doi.org/10.1523/JNEUROSCI.1318-04.2004>`_. *J. Neurosci.*.
+- Massimini, M., Huber, R., Ferrarelli, F., Hill, S. & Tononi, G. (2004). `The sleep slow oscillation as a traveling wave <https://doi.org/10.1523/JNEUROSCI.1318-04.2004>`_. *J. Neurosci*.
 
-- Carrier, J. et al. (2011). `Sleep slow wave changes during the middle years of life <https://doi.org/10.1111/j.1460-9568.2010.07543.x>`_. *Eur. J. Neurosci*.
+- Carrier, J., Viens, I., Poirier, G., Robillard, R., Lafortune, M., Vandewalle, G., ... & Filipini, D. (2011). `Sleep slow wave changes during the middle years of life <https://doi.org/10.1111/j.1460-9568.2010.07543.x>`_. *Eur. J. Neurosci*.
 
 The **rapid eye movements (REMs)** detection algorithm is a custom adaptation inspired by:
 
@@ -82,6 +82,11 @@ In order to use YASA, you need:
 Examples
 ~~~~~~~~
 
+API
+---
+
+Check out the API documentation at `html/main.html <http://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/main.html>`_.
+
 Notebooks
 ---------
 
@@ -112,42 +117,42 @@ Typical uses
 
   # SLEEP SPINDLES
   # ==============
-  # 1 - Single-channel spindles detection
+  # Single-channel spindles detection
   yasa.spindles_detect(data, sf)
 
-  # 2 - Single-channel full command (shows all the default implicit parameters)
+  # Single-channel full command (shows all the default implicit parameters)
   yasa.spindles_detect(data, sf, hypno=None, include=(1, 2, 3),
                        freq_sp=(12, 15), duration=(0.5, 2), freq_broad=(1, 30),
                        min_distance=500, downsample=True,
                        thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
                        remove_outliers=False)
 
-  # 3 - Multi-channels detection on NREM sleep only (requires an hypnogram)
+  # Multi-channels detection on NREM sleep only (requires an hypnogram)
   yasa.spindles_detect_multi(data, sf, ch_names, hypno=hypno)
 
-  # 4 - Multi-channels detection on N2 sleep only with automatic outlier rejection
+  # Multi-channels detection on N2 sleep only with automatic outlier rejection
   yasa.spindles_detect_multi(data, sf, ch_names, hypno=hypno, include=(2), remove_outliers=True)
 
   # SLOW-WAVES
   # ==========
-  # 1 - Single-channel slow-wave detection
+  # Single-channel slow-wave detection
   yasa.sw_detect(data, sf)
 
-  # 2 - Single-channel full command (shows all the default implicit parameters)
+  # Single-channel full command (shows all the default implicit parameters)
   yasa.sw_detect(data, sf, hypno=hypno, include=(2, 3), freq_sw=(0.3, 3.5),
                  dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 300),
                  amp_pos=(10, 150), amp_ptp=(75, 400), downsample=True,
                  remove_outliers=False)
 
-  # 3 - Multi-channel slow-waves detection on N2 + N3 sleep only (requires an hypnogram)
+  # Multi-channel slow-waves detection on N2 + N3 sleep only (requires an hypnogram)
   yasa.sw_detect_multi(data, sf, ch_names, hypno=hypno)
 
-  # Rapid Eye Movements (REMs)
-  # ==========================
-  # 1 - Default detection (requires both LOC and ROC EOG channels)
+  # RAPID EYE MOVEMENTS
+  # ===================
+  # Default detection (requires both LOC and ROC EOG channels)
   yasa.rem_detect(loc, roc, sf)
 
-  # 2 - On REM sleep only + all implicit parameters
+  # On REM sleep only + all implicit parameters
   yasa.rem_detect(loc, roc, sf, hypno=hypno, include=4, amplitude=(50, 325),
                   duration=(0.3, 1.5), freq_rem=(0.5, 5), downsample=True,
                   remove_outliers=False)
@@ -215,12 +220,6 @@ To activate this post-processing step, simply use:
   yasa.spindles_detect(data, sf, remove_outliers=True)  # Spindles
   yasa.sw_detect(data, sf, remove_outliers=True)        # Slow-waves
   yasa.rem_detect(loc, roc, sf, remove_outliers=True)   # REMs
-
-
-API
----
-
-Check out the API documentation at `html/main.html <http://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/main.html>`_.
 
 
 Development
