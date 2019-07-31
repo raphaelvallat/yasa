@@ -3,7 +3,7 @@
 # Copyright (C) 2018 Raphael Vallat
 
 DESCRIPTION = "Yet Another Spindle Algorithm"
-LONG_DESCRIPTION = """YASA (Yet Another Spindle Algorithm) is a fast and data-agnostic sleep spindles / slow-waves detection algorithm.
+LONG_DESCRIPTION = """YASA (Yet Another Spindle Algorithm) : fast and robust detection of spindles, slow-waves, and rapid eye movements from sleep EEG recordings..
 """
 
 DISTNAME = 'yasa'

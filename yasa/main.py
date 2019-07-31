@@ -1,10 +1,8 @@
 """
-YASA (Yet Another Spindle Algorithm) is a fast and robust Python 3 toolbox
-to detect sleep microstructure events (e.g. spindles, slow-waves,
-REMs) from EEG recordings.
+YASA (Yet Another Spindle Algorithm): fast and robust detection of spindles,
+slow-waves, and rapid eye movements from sleep EEG recordings.
 
 - Author: Raphael Vallat (www.raphaelvallat.com)
-- Date of creation: December 2018
 - GitHub: https://github.com/raphaelvallat/yasa
 - License: BSD 3-Clause License
 """
