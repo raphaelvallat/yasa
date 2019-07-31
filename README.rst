@@ -43,7 +43,7 @@ The **slow-waves** detection algorithm is adapted from:
 
 - Carrier, J. et al. (2011). `Sleep slow wave changes during the middle years of life <https://doi.org/10.1111/j.1460-9568.2010.07543.x>`_. *Eur. J. Neurosci*.
 
-The **rapid eye movements (REMs)** detection algorithm is inspired from:
+The **rapid eye movements (REMs)** detection algorithm is a custom adaptation inspired by:
 
 - Agarwal, R., Takeuchi, T., Laroche, S., & Gotman, J. (2005). `Detection of rapid-eye movements in sleep studies <https://ieeexplore.ieee.org/abstract/document/1463327/>`_. *IEEE Transactions on biomedical engineering*.
 
@@ -76,9 +76,8 @@ In order to use YASA, you need:
 
 - Some basic knowledge of Python and especially the `NumPy <https://docs.scipy.org/doc/numpy/user/quickstart.html>`_, `Pandas <https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html>`_ and `MNE <https://martinos.org/mne/stable/index.html>`_ libraries.
 - A Python editor: YASA works best with `Jupyter Lab <https://jupyterlab.readthedocs.io/en/stable/index.html>`_, a web-based interactive user interface.
-- Some EEG data, in uV, either already loaded into a NumPy array, or loaded as a raw MNE object (for instance, using the `mne.io.read_raw_edf <https://mne-tools.github.io/stable/generated/mne.io.read_raw_edf.html>`_ function for EDF file.)
-- Optionally, a sleep staging vector (= hypnogram) to run the detections on specific sleep stages. Note that YASA requires that the data and hypnogram have the same sampling frequency.
-
+- Some sleep EEG data, either as a NumPy array, or as a raw MNE object (for instance, using the `mne.io.read_raw_edf <https://mne-tools.github.io/stable/generated/mne.io.read_raw_edf.html>`_ function for EDF file). The units of the data MUST be uV.
+- Optionally, a sleep staging vector (= hypnogram) to run the detections on specific sleep stages. YASA requires that the data and hypnogram have the same sampling frequency.
 
 Examples
 ~~~~~~~~
@@ -100,6 +99,9 @@ Notebooks
 7. `notebooks/07_sw_detection_multi.ipynb <notebooks/07_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection using MNE Raw objects.
 8. `notebooks/08_sw_average.ipynb <notebooks/08_sw_average.ipynb>`_: plot the average template of the detected slow-waves, per channel.
 
+**Rapid Eye Movements (REMs)**
+
+9. `notebooks/09_REMs_detection.ipynb <notebooks/09_REMs_detection.ipynb>`_: REMs detection.
 
 Typical uses
 ------------
@@ -140,6 +142,16 @@ Typical uses
   # 3 - Multi-channel slow-waves detection on N2 + N3 sleep only (requires an hypnogram)
   yasa.sw_detect_multi(data, sf, ch_names, hypno=hypno)
 
+  # Rapid Eye Movements (REMs)
+  # ==========================
+  # 1 - Default detection (requires both LOC and ROC EOG channels)
+  yasa.rem_detect(loc, roc, sf)
+
+  # 2 - On REM sleep only + all implicit parameters
+  yasa.rem_detect(loc, roc, sf, hypno=hypno, include=4, amplitude=(50, 325),
+                  duration=(0.3, 1.5), freq_rem=(0.5, 5), downsample=True,
+                  remove_outliers=False)
+
 The result of the detection is a `pandas DataFrame <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>`_...
 
 .. table:: Output
@@ -152,7 +164,7 @@ The result of the detection is a `pandas DataFrame <https://pandas.pydata.org/pa
   13.26  13.85        0.59        99.30  24.49        2.82        0.24        12.15               7        0.25
 =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
 
-...that can be easily used to plot the detected spindles / slow-waves.
+...that can be easily used to plot the detected events.
 
 .. figure::  notebooks/detection.png
    :align:   center
@@ -191,9 +203,9 @@ Then navigate to the *Detection* tab and click on *Apply* to run the YASA algori
 Outlier rejection
 -----------------
 
-YASA incorporates an optional post-processing step to identify and remove pseudo (fake) spindles / slow-waves.
+YASA incorporates an optional post-processing step to identify and remove pseudo (fake) events.
 The method is based on a machine-learning algorithm (the `Isolation Forest <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html>`_, implemented in the `scikit-learn <https://scikit-learn.org/stable/index.html>`_ package),
-which uses the spindles parameters (e.g. amplitude, duration, frequency, etc) as input features to identify *aberrant* spindles / slow-waves.
+which uses the events parameters (e.g. amplitude, duration, frequency, etc) as input features to identify *aberrant* spindles / slow-waves / REMs.
 
 To activate this post-processing step, simply use:
 
@@ -202,6 +214,7 @@ To activate this post-processing step, simply use:
   import yasa
   yasa.spindles_detect(data, sf, remove_outliers=True)  # Spindles
   yasa.sw_detect(data, sf, remove_outliers=True)        # Slow-waves
+  yasa.rem_detect(loc, roc, sf, remove_outliers=True)   # REMs
 
 
 API

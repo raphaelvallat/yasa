@@ -1369,6 +1369,11 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
                remove_outliers=False):
     """Rapid Eye Movements (REMs) detection.
 
+    This detection requires both the left EOG (LOC) and right EOG (LOC).
+    The units of the data must be uV. The algorithm is based on an amplitude
+    thresholding of the negative product of the LOC and ROC
+    filtered signal.
+
     Parameters
     ----------
     loc, roc : array_like
@@ -1412,7 +1417,7 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
     df_rem : pd.DataFrame
         Pandas DataFrame:
 
-            'Start' : Start of each detected slow-wave (in seconds of data)
+            'Start' : Start of each detected REM (in seconds of data)
             'Peak' : Location of the peak (in seconds of data)
             'End' : End time (in seconds)
             'Duration' : Duration (in seconds)
@@ -1428,7 +1433,7 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
     -----
     For better results, apply this detection only on artefact-free REM sleep.
 
-    Note that all the parameters are computed on the filtered signal.
+    Note that all the output parameters are computed on the filtered signal.
     """
     # Safety check
     loc = np.squeeze(np.asarray(loc, dtype=np.float64))
@@ -1522,48 +1527,51 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         logger.warning('No REMs were found in data. Returning None.')
         return None
 
-    # Calculate rising and falling slope
+    # Hypnogram
+    if hypno is not None:
+        # The sleep stage at the beginning of the REM is considered.
+        rem_sta = hypno[pks_params['left_bases']]
+    else:
+        rem_sta = np.zeros(pks.shape)
+
+    # Calculate time features
+    pks_params['Start'] = pks_params['left_bases'] / sf
+    pks_params['Peak'] = pks / sf
+    pks_params['End'] = pks_params['right_bases'] / sf
+    pks_params['Duration'] = pks_params['End'] - pks_params['Start']
+    # Time points in minutes (HH:MM:SS)
+    # pks_params['StartMin'] = pd.to_timedelta(pks_params['Start'], unit='s').dt.round('s')  # noqa
+    # pks_params['PeakMin'] = pd.to_timedelta(pks_params['Peak'], unit='s').dt.round('s')  # noqa
+    # pks_params['EndMin'] = pd.to_timedelta(pks_params['End'], unit='s').dt.round('s')  # noqa
+    # Absolute LOC / ROC value at peak (filtered)
+    pks_params['LOCAbsValPeak'] = abs(data[0, pks])
+    pks_params['ROCAbsValPeak'] = abs(data[1, pks])
+    # Absolute rising and falling slope
     dist_pk_left = (pks - pks_params['left_bases']) / sf
     dist_pk_right = (pks_params['right_bases'] - pks) / sf
     locrs = (data[0, pks] - data[0, pks_params['left_bases']]) / dist_pk_left
     rocrs = (data[1, pks] - data[1, pks_params['left_bases']]) / dist_pk_left
     locfs = (data[0, pks_params['right_bases']] - data[0, pks]) / dist_pk_right
     rocfs = (data[1, pks_params['right_bases']] - data[1, pks]) / dist_pk_right
-
-    # Hypnogram
-    if hypno is not None:
-        rem_sta = hypno[pks_params['left_bases']]
-    else:
-        rem_sta = np.zeros(pks.shape)
-
-    # Append to DataFrame
-    df_rem = pd.DataFrame(pks_params)
-    df_rem['Start'] = df_rem['left_bases'] / sf
-    df_rem['Peak'] = pks / sf
-    df_rem['End'] = df_rem['right_bases'] / sf
-    df_rem['Duration'] = df_rem['End'] - df_rem['Start']
-    # Time points in minutes (HH:MM:SS)
-    # df_rem['StartMin'] = pd.to_timedelta(df_rem['Start'], unit='s').dt.round('s')  # noqa
-    # df_rem['PeakMin'] = pd.to_timedelta(df_rem['Peak'], unit='s').dt.round('s')  # noqa
-    # df_rem['EndMin'] = pd.to_timedelta(df_rem['End'], unit='s').dt.round('s')  # noqa
-    # Absolute LOC / ROC value at peak (filtered)
-    df_rem['LOCAbsValPeak'] = abs(data[0, pks])
-    df_rem['ROCAbsValPeak'] = abs(data[1, pks])
-    # Absolute rising and falling slope
-    df_rem['LOCAbsRiseSlope'] = abs(locrs)
-    df_rem['ROCAbsRiseSlope'] = abs(rocrs)
-    df_rem['LOCAbsFallSlope'] = abs(locfs)
-    df_rem['ROCAbsFallSlope'] = abs(rocfs)
+    pks_params['LOCAbsRiseSlope'] = abs(locrs)
+    pks_params['ROCAbsRiseSlope'] = abs(rocrs)
+    pks_params['LOCAbsFallSlope'] = abs(locfs)
+    pks_params['ROCAbsFallSlope'] = abs(rocfs)
     # Sleep stage
-    df_rem['Stage'] = rem_sta
+    pks_params['Stage'] = rem_sta
+
+    # Convert to Pandas DataFrame
+    df_rem = pd.DataFrame(pks_params)
 
     # Make sure that the sign of ROC and LOC is opposite
     df_rem['IsOppositeSign'] = np.sign(data[1, pks]) != np.sign(data[0, pks])
-    df_rem = df_rem[df_rem['IsOppositeSign']]
+    df_rem = df_rem[np.sign(data[1, pks]) != np.sign(data[0, pks])]
 
     # Remove bad duration
     tmin, tmax = duration
-    df_rem = df_rem.query('@tmin <= Duration < @tmax').copy()
+    good_dur = np.logical_and(pks_params['Duration'] >= tmin,
+                              pks_params['Duration'] < tmax)
+    df_rem = df_rem[good_dur]
 
     # Keep only useful channels
     df_rem = df_rem[['Start', 'Peak', 'End', 'Duration', 'LOCAbsValPeak',
