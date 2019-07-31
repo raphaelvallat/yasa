@@ -1466,10 +1466,10 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
 
     # Check data amplitude
     loc_trimstd = trimbothstd(loc, cut=0.10)
-    roc_trimstd = trimbothstd(loc, cut=0.10)
+    roc_trimstd = trimbothstd(roc, cut=0.10)
     loc_ptp, roc_ptp = np.ptp(loc), np.ptp(roc)
     logger.info('Number of samples in data = %i', data.shape[1])
-    logger.info('Sampling frequency = %.2f Hz', sf)
+    logger.info('Original sampling frequency = %.2f Hz', sf)
     logger.info('Data duration = %.2f seconds', data.shape[1] / sf)
     logger.info('Trimmed standard deviation of LOC = %.4f uV', loc_trimstd)
     logger.info('Trimmed standard deviation of ROC = %.4f uV', roc_trimstd)

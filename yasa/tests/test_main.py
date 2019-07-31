@@ -339,7 +339,7 @@ class TestStringMethods(unittest.TestCase):
     def test_rem_detect(self):
         """Test function REM detect
         """
-        file_rem = np.load('notebooks/EOGs_REM_256Hz.npz')
+        file_rem = np.load('notebooks/data_EOGs_REM_256Hz.npz')
         data_rem = file_rem['data']
         loc, roc = data_rem[0, :], data_rem[1, :]
         sf_rem = file_rem['sf']
