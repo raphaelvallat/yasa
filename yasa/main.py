@@ -661,8 +661,8 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     if data.ndim == 2:
         data = np.squeeze(data)
     assert data.ndim == 1, 'Wrong data dimension. Please pass 1D data.'
-    assert freq_sp[0] < freq_sp[1]
-    assert freq_broad[0] < freq_broad[1]
+    freq_sp = sorted(freq_sp)
+    freq_broad = sorted(freq_broad)
     assert isinstance(downsample, bool), 'Downsample must be True or False.'
 
     # Hypno processing
@@ -1082,8 +1082,8 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
     if data.ndim == 2:
         data = np.squeeze(data)
     assert data.ndim == 1, 'Wrong data dimension. Please pass 1D data.'
-    assert freq_sw[0] < freq_sw[1]
-    assert amp_ptp[0] < amp_ptp[1]
+    freq_sw = sorted(freq_sw)
+    amp_ptp = sorted(amp_ptp)
     assert isinstance(downsample, bool), 'Downsample must be True or False.'
 
     # Hypno processing
@@ -1365,7 +1365,7 @@ def sw_detect_multi(data, sf, ch_names, **kwargs):
 
 
 def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
-               duration=(0.3, 1.5), freq_rem=(0.5, 5), downsample=True,
+               duration=(0.3, 1.2), freq_rem=(0.5, 5), downsample=True,
                remove_outliers=False):
     """Rapid Eye Movements (REMs) detection.
 
@@ -1398,7 +1398,7 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         Default is 50 uV to 325 uV.
     duration : tuple or list
         The minimum and maximum duration of the REMs.
-        Default is 0.3 to 1.5 seconds.
+        Default is 0.3 to 1.2 seconds.
     freq_rem : tuple or list
         Frequency range of REMs. Default is 0.5 to 5 Hz.
     downsample : boolean
@@ -1433,19 +1433,30 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
     -----
     For better results, apply this detection only on artefact-free REM sleep.
 
-    Note that all the output parameters are computed on the filtered signal.
+    Note that all the output parameters are computed on the filtered LOC and
+    ROC signals.
+
+    References
+    ----------
+    - Agarwal, R., Takeuchi, T., Laroche, S., & Gotman, J. (2005).
+    Detection of rapid-eye movements in sleep studies. IEEE
+    Transactions on biomedical engineering, 52(8), 1390-1396.
+
+    - Yetton, B. D., Niknazar, M., Duggan, K. A., McDevitt, E. A.,
+    Whitehurst, L. N., Sattari, N., & Mednick, S. C. (2016). Automatic
+    detection of rapid eye movements (REMs): A machine learning
+    approach. Journal of neuroscience methods, 259, 72-82.
     """
-    # Safety check
+    # Safety checks
     loc = np.squeeze(np.asarray(loc, dtype=np.float64))
     roc = np.squeeze(np.asarray(roc, dtype=np.float64))
     assert loc.ndim == 1, 'LOC must be 1D.'
     assert roc.ndim == 1, 'ROC must be 1D.'
     assert loc.size == roc.size, 'LOC and ROC must have the same size.'
-    data = np.vstack((loc, roc))
-    assert freq_rem[0] < freq_rem[1]
-    assert duration[0] < duration[1]
-    assert amplitude[0] < amplitude[1]
     assert isinstance(downsample, bool), 'Downsample must be True or False.'
+    freq_rem = sorted(freq_rem)
+    duration = sorted(duration)
+    amplitude = sorted(amplitude)
 
     # Hypno processing
     if hypno is not None:
@@ -1465,6 +1476,8 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
             hypno = None
 
     # Check data amplitude
+    # times = np.arange(data.size) / sf
+    data = np.vstack((loc, roc))
     loc_trimstd = trimbothstd(loc, cut=0.10)
     roc_trimstd = trimbothstd(roc, cut=0.10)
     loc_ptp, roc_ptp = np.ptp(loc), np.ptp(roc)
@@ -1497,21 +1510,22 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
             logger.warning("Cannot downsample if sf is not a mutiple of 100 "
                            "or 128. Skipping downsampling.")
 
-    # Define time vector
-    # times = np.arange(data.size) / sf
-
     # Bandpass filter
     data = filter_data(data, sf, freq_rem[0], freq_rem[1], verbose=0)
 
-    # Negative product
+    # Calculate the negative product of LOC and ROC, maximal during REM.
     negp = -data[0, :] * data[1, :]
 
     # Find peaks in data
+    # - height: required height of peaks (min and max.)
+    # - distance: required distance in samples between neighboring peaks.
+    # - prominence: required prominence of peaks.
+    # - wlen: limit search for bases to a specific window.
     hmin, hmax = amplitude[0]**2, amplitude[1]**2
     pks, pks_params = signal.find_peaks(negp, height=(hmin, hmax),
-                                        distance=(0.5 * sf),
+                                        distance=(duration[0] * sf),
                                         prominence=(0.8 * hmin),
-                                        wlen=(1.2 * sf))
+                                        wlen=(duration[1] * sf))
 
     # Intersect with sleep stage vector
     # We do that before calculating the features in order to gain some time
