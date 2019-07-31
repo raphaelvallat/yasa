@@ -85,23 +85,25 @@ Examples
 API
 ---
 
-Check out the API documentation at `html/main.html <http://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/main.html>`_.
+Check out the `API documentation <http://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/main.html>`_ for more details on YASA's functions.
 
 Notebooks
 ---------
 
+The examples Jupyter notebooks are really what make YASA great! In addition to showing how to use the main functions of YASA, they also provide an extensive step-by-step description of the detection algorithms, as well as several useful code snippets to analyze and plot your data.
+
 **Spindles**
 
 1. `notebooks/01_spindles_detection.ipynb <notebooks/01_spindles_detection.ipynb>`_: single-channel spindles detection and step-by-step description of the algorithm.
-2. `notebooks/02_spindles_detection_multi.ipynb <notebooks/02_spindles_detection_multi.ipynb>`_: multi-channel spindles detection using MNE Raw objects.
-3. `notebooks/03_slow_fast_spindles.ipynb <notebooks/03_slow_fast_spindles.ipynb>`_: slow and fast spindles differentiation.
-4. `notebooks/04_detection_NREM_only.ipynb <notebooks/04_detection_NREM_only.ipynb>`_: detection on NREM sleep only.
+2. `notebooks/02_spindles_detection_multi.ipynb <notebooks/02_spindles_detection_multi.ipynb>`_: multi-channel spindles detection using MNE data.
+3. `notebooks/03_slow_fast_spindles.ipynb <notebooks/03_slow_fast_spindles.ipynb>`_: slow and fast spindles analysis.
+4. `notebooks/04_detection_NREM_only.ipynb <notebooks/04_detection_NREM_only.ipynb>`_: spindles detection on NREM sleep only.
 5. `notebooks/05_run_visbrain.py <notebooks/05_run_visbrain.py>`_: interactive display with the Visbrain graphical user interface.
 
 **Slow-waves**
 
 6. `notebooks/06_sw_detection.ipynb <notebooks/06_sw_detection.ipynb>`_: single-channel slow-waves detection and step-by-step description of the algorithm.
-7. `notebooks/07_sw_detection_multi.ipynb <notebooks/07_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection using MNE Raw objects.
+7. `notebooks/07_sw_detection_multi.ipynb <notebooks/07_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection using MNE data.
 8. `notebooks/08_sw_average.ipynb <notebooks/08_sw_average.ipynb>`_: plot the average template of the detected slow-waves, per channel.
 
 **Rapid Eye Movements (REMs)**
@@ -157,7 +159,7 @@ Typical uses
                   duration=(0.3, 1.5), freq_rem=(0.5, 5), downsample=True,
                   remove_outliers=False)
 
-The result of the detection is a `pandas DataFrame <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>`_...
+The result of the detection is a `pandas DataFrame <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>`_ where each row is a unique detected event (e.g. spindle, slow-waves, REMs) and each column a parameter of this event, including, the start and end timestamps, duration, amplitude, etc.
 
 .. table:: Output
    :widths: auto
@@ -169,7 +171,7 @@ The result of the detection is a `pandas DataFrame <https://pandas.pydata.org/pa
   13.26  13.85        0.59        99.30  24.49        2.82        0.24        12.15               7        0.25
 =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
 
-...that can be easily used to plot the detected events.
+In turn, the detection dataframe can be easily used to plot the events.
 
 .. figure::  notebooks/detection.png
    :align:   center
