@@ -1214,7 +1214,7 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
     sw_slope = sw_ptp / (sw_midcrossing - sw_idx_neg)
     # Hypnogram
     if hypno is not None:
-        sw_sta = hypno[idx_neg_peaks + previous_neg_zc]
+        sw_sta = hypno[idx_neg_peaks]
     else:
         sw_sta = np.zeros(sw_dur.shape)
 
