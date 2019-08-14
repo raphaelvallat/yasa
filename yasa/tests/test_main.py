@@ -314,7 +314,7 @@ class TestStringMethods(unittest.TestCase):
                         hypno=hypno_full, include=3)
 
         # Using a MNE raw object
-        spindles_detect_multi(data_mne, hypno=hypno_mne, include=(2, 3))
+        sw_detect_multi(data_mne, hypno=hypno_mne, include=(2, 3))
 
         # Now we replace one channel with no slow-wave / bad data
         data_full[1, :] = np.random.random(data_full.shape[1])
