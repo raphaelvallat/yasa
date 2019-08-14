@@ -3,4 +3,4 @@ from .hypno import *
 from .main import *
 from .spectral import *
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
