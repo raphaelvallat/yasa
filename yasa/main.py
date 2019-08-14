@@ -516,9 +516,9 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         detection will only be applied to the value defined in
         ``include`` (default = N1 + N2 + N3 sleep). ``hypno`` MUST be a 1D
         array of integers with the same size as data and where -1 = Artefact,
-        0 = Wake, 1 = N1, 2 = N2, 3 = N3, 4 = REM. If you need help loading
-        your hypnogram vector, please read the Visbrain documentation at
-        http://visbrain.org/sleep.
+        0 = Wake, 1 = N1, 2 = N2, 3 = N3, 4 = REM. YASA provides several
+        convenient functions to load and upsample hypnogram data:
+        https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
         (1, 2, 3), meaning that the detection is applied on N1, N2 and N3
@@ -933,9 +933,9 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         detection will only be applied to the value defined in
         ``include`` (default = N2 + N3 sleep). ``hypno`` MUST be a 1D array of
         integers with the same size as data and where -1 = Artefact, 0 = Wake,
-        1 = N1, 2 = N2, 3 = N3, 4 = REM. If you need help loading your
-        hypnogram vector, please read the Visbrain documentation at
-        http://visbrain.org/sleep.
+        1 = N1, 2 = N2, 3 = N3, 4 = REM. YASA provides several
+        convenient functions to load and upsample hypnogram data:
+        https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
         (2, 3), meaning that the detection is applied only on N2 and N3 sleep.
@@ -1307,9 +1307,9 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         detection will only be applied to the value defined in
         ``include`` (default = REM sleep). ``hypno`` MUST be a 1D array of
         integers with the same size as data and where -1 = Artefact, 0 = Wake,
-        1 = N1, 2 = N2, 3 = N3, 4 = REM. If you need help loading your
-        hypnogram vector, please read the Visbrain documentation at
-        http://visbrain.org/sleep.
+        1 = N1, 2 = N2, 3 = N3, 4 = REM. YASA provides several
+        convenient functions to load and upsample hypnogram data:
+        https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
         (4), meaning that the detection is applied only on REM sleep.

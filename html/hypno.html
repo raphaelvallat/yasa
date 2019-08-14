@@ -95,7 +95,7 @@ import numpy as np
 import pandas as pd
 
 __all__ = [&#39;hypno_str_to_int&#39;, &#39;hypno_int_to_str&#39;, &#39;hypno_upsample_to_sf&#39;,
-           &#39;hypno_fit_to_data&#39;, &#39;hypno_upsample_to_data&#39;]
+           &#39;hypno_upsample_to_data&#39;]
 
 
 #############################################################################
@@ -186,8 +186,9 @@ def hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
 def hypno_fit_to_data(hypno, data, sf=None):
     &#34;&#34;&#34;Crop or pad the hypnogram to fit the length of data.
 
-    Hypnogram and data MUST have the SAME sampling frequency. If not,
-    please use the ``hypno_upsample_to_sf`` function before.
+    Hypnogram and data MUST have the SAME sampling frequency.
+
+    This is an internal function.
 
     Parameters
     ----------
@@ -245,9 +246,6 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None):
     resulting hypnogram to corresponding EEG data, such that the hypnogram
     and EEG data have the exact same number of samples.
 
-    This function is a shortcut to
-    ``hypno = hypno_fit_to_data(hypno_upsample_to_sf(...), ...)``.
-
     Parameters
     ----------
     hypno : array_like
@@ -284,87 +282,6 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="yasa.hypno.hypno_fit_to_data"><code class="name flex">
-<span>def <span class="ident">hypno_fit_to_data</span></span>(<span>hypno, data, sf=None)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Crop or pad the hypnogram to fit the length of data.</p>
-<p>Hypnogram and data MUST have the SAME sampling frequency. If not,
-please use the <code>&lt;a title="yasa.hypno.hypno_upsample_to_sf" href="#yasa.hypno.hypno_upsample_to_sf"&gt;</code>hypno_upsample_to_sf()<code>&lt;/a&gt;</code> function before.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>hypno</code></strong> :&ensp;<code>array_like</code></dt>
-<dd>The sleep staging (hypnogram) 1D array.</dd>
-<dt><strong><code>data</code></strong> :&ensp;<code>np.array_like</code> or <code>mne.io.Raw</code></dt>
-<dd>1D or 2D EEG data. Can also be a MNE Raw object, in which case data and
-sf will be automatically extracted.</dd>
-<dt><strong><code>sf</code></strong> :&ensp;<code>float</code>, optional</dt>
-<dd>The sampling frequency of data AND the hypnogram.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>hypno</code></strong> :&ensp;<code>array_like</code></dt>
-<dd>Hypnogram, with the same number of samples as data.</dd>
-</dl></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def hypno_fit_to_data(hypno, data, sf=None):
-    &#34;&#34;&#34;Crop or pad the hypnogram to fit the length of data.
-
-    Hypnogram and data MUST have the SAME sampling frequency. If not,
-    please use the ``hypno_upsample_to_sf`` function before.
-
-    Parameters
-    ----------
-    hypno : array_like
-        The sleep staging (hypnogram) 1D array.
-    data : np.array_like or mne.io.Raw
-        1D or 2D EEG data. Can also be a MNE Raw object, in which case data and
-        sf will be automatically extracted.
-    sf : float, optional
-        The sampling frequency of data AND the hypnogram.
-
-    Returns
-    -------
-    hypno : array_like
-        Hypnogram, with the same number of samples as data.
-    &#34;&#34;&#34;
-    # Check if data is an MNE raw object
-    if isinstance(data, mne.io.BaseRaw):
-        sf = data.info[&#39;sfreq&#39;]
-        data = data.times  # 1D array and does not require to preload data
-    data = np.asarray(data)
-    hypno = np.asarray(hypno)
-    assert hypno.ndim == 1, &#39;Hypno must be 1D.&#39;
-    npts_hyp = hypno.size
-    npts_data = max(data.shape)  # Support for 2D data
-    if npts_hyp &lt; npts_data:
-        # Hypnogram is shorter than data
-        npts_diff = npts_data - npts_hyp
-        if sf is not None:
-            dur_diff = npts_diff / sf
-            warnings.warn(&#39;Hypnogram is SHORTER then data by %.2f seconds. &#39;
-                          &#39;Padding hypnogram (with last value) to match &#39;
-                          &#39;data.size.&#39; % dur_diff)
-        else:
-            warnings.warn(&#39;Hypnogram is SHORTER then data by %i samples. &#39;
-                          &#39;Padding hypnogram (with last value) to match &#39;
-                          &#39;data.size.&#39; % npts_diff)
-        hypno = np.pad(hypno, (0, npts_diff), mode=&#39;edge&#39;)
-    elif npts_hyp &gt; npts_data:
-        # Hypnogram is longer than data
-        npts_diff = npts_hyp - npts_data
-        if sf is not None:
-            dur_diff = npts_diff / sf
-            warnings.warn(&#39;Hypnogram is LONGER then data by %.2f seconds. &#39;
-                          &#39;Cropping hypnogram to match data.size.&#39; % dur_diff)
-        else:
-            warnings.warn(&#39;Hypnogram is LONGER then data by %i samples. &#39;
-                          &#39;Cropping hypnogram to match data.size.&#39; % npts_diff)
-        hypno = hypno[0:npts_data]
-    return hypno</code></pre>
-</details>
-</dd>
 <dt id="yasa.hypno.hypno_int_to_str"><code class="name flex">
 <span>def <span class="ident">hypno_int_to_str</span></span>(<span>hypno, mapping_dict={0: 'W', 1: 'N1', 2: 'N2', 3: 'N3', 4: 'R', -1: 'Art'})</span>
 </code></dt>
@@ -467,8 +384,6 @@ essentially a wrapper around <code>pandas.Series.map</code>.</dd>
 <section class="desc"><p>Upsample an hypnogram to a given sampling frequency and fit the
 resulting hypnogram to corresponding EEG data, such that the hypnogram
 and EEG data have the exact same number of samples.</p>
-<p>This function is a shortcut to
-<code>hypno = hypno_fit_to_data(hypno_upsample_to_sf(...), ...)</code>.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>hypno</code></strong> :&ensp;<code>array_like</code></dt>
@@ -496,9 +411,6 @@ Can be omitted if <code>data</code> is a mne.io.Raw object.</dd>
     &#34;&#34;&#34;Upsample an hypnogram to a given sampling frequency and fit the
     resulting hypnogram to corresponding EEG data, such that the hypnogram
     and EEG data have the exact same number of samples.
-
-    This function is a shortcut to
-    ``hypno = hypno_fit_to_data(hypno_upsample_to_sf(...), ...)``.
 
     Parameters
     ----------
@@ -598,7 +510,6 @@ Can be omitted if <code>data</code> is a mne.io.Raw object.</dd>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="yasa.hypno.hypno_fit_to_data" href="#yasa.hypno.hypno_fit_to_data">hypno_fit_to_data</a></code></li>
 <li><code><a title="yasa.hypno.hypno_int_to_str" href="#yasa.hypno.hypno_int_to_str">hypno_int_to_str</a></code></li>
 <li><code><a title="yasa.hypno.hypno_str_to_int" href="#yasa.hypno.hypno_str_to_int">hypno_str_to_int</a></code></li>
 <li><code><a title="yasa.hypno.hypno_upsample_to_data" href="#yasa.hypno.hypno_upsample_to_data">hypno_upsample_to_data</a></code></li>

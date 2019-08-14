@@ -32,7 +32,7 @@ import numpy as np
 import pandas as pd
 
 __all__ = ['hypno_str_to_int', 'hypno_int_to_str', 'hypno_upsample_to_sf',
-           'hypno_fit_to_data', 'hypno_upsample_to_data']
+           'hypno_upsample_to_data']
 
 
 #############################################################################
@@ -123,8 +123,9 @@ def hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
 def hypno_fit_to_data(hypno, data, sf=None):
     """Crop or pad the hypnogram to fit the length of data.
 
-    Hypnogram and data MUST have the SAME sampling frequency. If not,
-    please use the ``hypno_upsample_to_sf`` function before.
+    Hypnogram and data MUST have the SAME sampling frequency.
+
+    This is an internal function.
 
     Parameters
     ----------
@@ -181,9 +182,6 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None):
     """Upsample an hypnogram to a given sampling frequency and fit the
     resulting hypnogram to corresponding EEG data, such that the hypnogram
     and EEG data have the exact same number of samples.
-
-    This function is a shortcut to
-    ``hypno = hypno_fit_to_data(hypno_upsample_to_sf(...), ...)``.
 
     Parameters
     ----------
