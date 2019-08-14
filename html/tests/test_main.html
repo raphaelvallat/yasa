@@ -193,11 +193,6 @@ class TestStringMethods(unittest.TestCase):
         with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
             spindles_detect(data_150, sf_150, hypno=np.ones(data_150.size))
 
-        # Hypnogram with only one unique value
-        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
-            sp = spindles_detect(data, sf, hypno=np.zeros(data.size))
-        assert &#39;Stage&#39; not in sp.keys()
-
         # Now load other data
         with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
             spindles_detect(data_n3, sf_n3)
@@ -231,6 +226,12 @@ class TestStringMethods(unittest.TestCase):
         with pytest.raises(AssertionError):
             sp = spindles_detect(data_full, sf_full)
 
+        # No values in hypno intersect with include
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sp = spindles_detect(data, sf, include=2,
+                                 hypno=np.zeros(data.size, dtype=int))
+            assert sp is None
+
     def test_spindles_detect_multi(self):
         &#34;&#34;&#34;Test spindles_detect_multi&#34;&#34;&#34;
         sp = spindles_detect_multi(data_full, sf_full, chan_full)
@@ -248,6 +249,7 @@ class TestStringMethods(unittest.TestCase):
                               include=2)
 
         # Using a MNE raw object
+        spindles_detect_multi(data_mne)
         spindles_detect_multi(data_mne, hypno=hypno_mne, include=2)
 
         # Now we replace one channel with no spindle / bad data
@@ -304,9 +306,6 @@ class TestStringMethods(unittest.TestCase):
         # With N3 hypnogram
         sw_detect(data_sw, sf_full, hypno=hypno_sw)
 
-        # With N1
-        sw_detect(data_sw, sf_full, hypno=np.ones(data_sw.shape, dtype=int))
-
         # With 2D data
         sw_detect(data_sw[np.newaxis, ...], sf_full)
 
@@ -324,6 +323,12 @@ class TestStringMethods(unittest.TestCase):
         data_sw_250 = resample(data_sw, up=2.5)
         sw_detect(data_sw_250, 250)
 
+        # No values in hypno intersect with include
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sw = sw_detect(data_sw, sf_full, include=3,
+                           hypno=np.ones(data_sw.shape, dtype=int))
+            assert sw is None
+
     def test_sw_detect_multi(self):
         &#34;&#34;&#34;Test sw_detect_multi&#34;&#34;&#34;
         data_full = file_full.get(&#39;data&#39;)
@@ -339,7 +344,8 @@ class TestStringMethods(unittest.TestCase):
                         hypno=hypno_full, include=3)
 
         # Using a MNE raw object
-        spindles_detect_multi(data_mne, hypno=hypno_mne, include=(2, 3))
+        sw_detect_multi(data_mne)
+        sw_detect_multi(data_mne, hypno=hypno_mne, include=(2, 3))
 
         # Now we replace one channel with no slow-wave / bad data
         data_full[1, :] = np.random.random(data_full.shape[1])
@@ -389,7 +395,12 @@ class TestStringMethods(unittest.TestCase):
         hypno_rem = np.r_[np.ones(int(loc.size / 2)),
                           4 * np.ones(int(loc.size / 2))]
         df_rem2 = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
-        assert df_rem.shape[0] &gt; df_rem2.shape[0]</code></pre>
+        assert df_rem.shape[0] &gt; df_rem2.shape[0]
+
+        # No values in hypno intersect with include
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sp = rem_detect(loc, roc, sf_full, hypno=hypno_rem, include=5)
+            assert sp is None</code></pre>
 </details>
 </section>
 <section>
@@ -549,11 +560,6 @@ not have a method with the specified name.</p></section>
         with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
             spindles_detect(data_150, sf_150, hypno=np.ones(data_150.size))
 
-        # Hypnogram with only one unique value
-        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
-            sp = spindles_detect(data, sf, hypno=np.zeros(data.size))
-        assert &#39;Stage&#39; not in sp.keys()
-
         # Now load other data
         with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
             spindles_detect(data_n3, sf_n3)
@@ -587,6 +593,12 @@ not have a method with the specified name.</p></section>
         with pytest.raises(AssertionError):
             sp = spindles_detect(data_full, sf_full)
 
+        # No values in hypno intersect with include
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sp = spindles_detect(data, sf, include=2,
+                                 hypno=np.zeros(data.size, dtype=int))
+            assert sp is None
+
     def test_spindles_detect_multi(self):
         &#34;&#34;&#34;Test spindles_detect_multi&#34;&#34;&#34;
         sp = spindles_detect_multi(data_full, sf_full, chan_full)
@@ -604,6 +616,7 @@ not have a method with the specified name.</p></section>
                               include=2)
 
         # Using a MNE raw object
+        spindles_detect_multi(data_mne)
         spindles_detect_multi(data_mne, hypno=hypno_mne, include=2)
 
         # Now we replace one channel with no spindle / bad data
@@ -660,9 +673,6 @@ not have a method with the specified name.</p></section>
         # With N3 hypnogram
         sw_detect(data_sw, sf_full, hypno=hypno_sw)
 
-        # With N1
-        sw_detect(data_sw, sf_full, hypno=np.ones(data_sw.shape, dtype=int))
-
         # With 2D data
         sw_detect(data_sw[np.newaxis, ...], sf_full)
 
@@ -680,6 +690,12 @@ not have a method with the specified name.</p></section>
         data_sw_250 = resample(data_sw, up=2.5)
         sw_detect(data_sw_250, 250)
 
+        # No values in hypno intersect with include
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sw = sw_detect(data_sw, sf_full, include=3,
+                           hypno=np.ones(data_sw.shape, dtype=int))
+            assert sw is None
+
     def test_sw_detect_multi(self):
         &#34;&#34;&#34;Test sw_detect_multi&#34;&#34;&#34;
         data_full = file_full.get(&#39;data&#39;)
@@ -695,7 +711,8 @@ not have a method with the specified name.</p></section>
                         hypno=hypno_full, include=3)
 
         # Using a MNE raw object
-        spindles_detect_multi(data_mne, hypno=hypno_mne, include=(2, 3))
+        sw_detect_multi(data_mne)
+        sw_detect_multi(data_mne, hypno=hypno_mne, include=(2, 3))
 
         # Now we replace one channel with no slow-wave / bad data
         data_full[1, :] = np.random.random(data_full.shape[1])
@@ -745,7 +762,12 @@ not have a method with the specified name.</p></section>
         hypno_rem = np.r_[np.ones(int(loc.size / 2)),
                           4 * np.ones(int(loc.size / 2))]
         df_rem2 = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
-        assert df_rem.shape[0] &gt; df_rem2.shape[0]</code></pre>
+        assert df_rem.shape[0] &gt; df_rem2.shape[0]
+
+        # No values in hypno intersect with include
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sp = rem_detect(loc, roc, sf_full, hypno=hypno_rem, include=5)
+            assert sp is None</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -915,7 +937,12 @@ not have a method with the specified name.</p></section>
     hypno_rem = np.r_[np.ones(int(loc.size / 2)),
                       4 * np.ones(int(loc.size / 2))]
     df_rem2 = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
-    assert df_rem.shape[0] &gt; df_rem2.shape[0]</code></pre>
+    assert df_rem.shape[0] &gt; df_rem2.shape[0]
+
+    # No values in hypno intersect with include
+    with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+        sp = rem_detect(loc, roc, sf_full, hypno=hypno_rem, include=5)
+        assert sp is None</code></pre>
 </details>
 </dd>
 <dt id="yasa.tests.test_main.TestStringMethods.test_spindles_detect"><code class="name flex">
@@ -963,11 +990,6 @@ not have a method with the specified name.</p></section>
     with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
         spindles_detect(data_150, sf_150, hypno=np.ones(data_150.size))
 
-    # Hypnogram with only one unique value
-    with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
-        sp = spindles_detect(data, sf, hypno=np.zeros(data.size))
-    assert &#39;Stage&#39; not in sp.keys()
-
     # Now load other data
     with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
         spindles_detect(data_n3, sf_n3)
@@ -999,7 +1021,13 @@ not have a method with the specified name.</p></section>
     assert sp.shape[0] &gt; 100
 
     with pytest.raises(AssertionError):
-        sp = spindles_detect(data_full, sf_full)</code></pre>
+        sp = spindles_detect(data_full, sf_full)
+
+    # No values in hypno intersect with include
+    with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+        sp = spindles_detect(data, sf, include=2,
+                             hypno=np.zeros(data.size, dtype=int))
+        assert sp is None</code></pre>
 </details>
 </dd>
 <dt id="yasa.tests.test_main.TestStringMethods.test_spindles_detect_multi"><code class="name flex">
@@ -1026,6 +1054,7 @@ not have a method with the specified name.</p></section>
                           include=2)
 
     # Using a MNE raw object
+    spindles_detect_multi(data_mne)
     spindles_detect_multi(data_mne, hypno=hypno_mne, include=2)
 
     # Now we replace one channel with no spindle / bad data
@@ -1077,9 +1106,6 @@ not have a method with the specified name.</p></section>
     # With N3 hypnogram
     sw_detect(data_sw, sf_full, hypno=hypno_sw)
 
-    # With N1
-    sw_detect(data_sw, sf_full, hypno=np.ones(data_sw.shape, dtype=int))
-
     # With 2D data
     sw_detect(data_sw[np.newaxis, ...], sf_full)
 
@@ -1095,7 +1121,13 @@ not have a method with the specified name.</p></section>
 
     # Non-integer sampling frequency
     data_sw_250 = resample(data_sw, up=2.5)
-    sw_detect(data_sw_250, 250)</code></pre>
+    sw_detect(data_sw_250, 250)
+
+    # No values in hypno intersect with include
+    with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+        sw = sw_detect(data_sw, sf_full, include=3,
+                       hypno=np.ones(data_sw.shape, dtype=int))
+        assert sw is None</code></pre>
 </details>
 </dd>
 <dt id="yasa.tests.test_main.TestStringMethods.test_sw_detect_multi"><code class="name flex">
@@ -1120,7 +1152,8 @@ not have a method with the specified name.</p></section>
                     hypno=hypno_full, include=3)
 
     # Using a MNE raw object
-    spindles_detect_multi(data_mne, hypno=hypno_mne, include=(2, 3))
+    sw_detect_multi(data_mne)
+    sw_detect_multi(data_mne, hypno=hypno_mne, include=(2, 3))
 
     # Now we replace one channel with no slow-wave / bad data
     data_full[1, :] = np.random.random(data_full.shape[1])

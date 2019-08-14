@@ -626,15 +626,17 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         assert hypno.size == data.size, &#39;Hypno must have same size as data.&#39;
         unique_hypno = np.unique(hypno)
         logger.info(&#39;Number of unique values in hypno = %i&#39;, unique_hypno.size)
-        if isinstance(include, int):
-            include = [include]
-        else:
-            assert isinstance(include, (tuple, list, np.ndarray))
-        assert len(include) &gt;= 1, &#39;include must have at least one element.&#39;
-        if not any(np.in1d(unique_hypno, include)):
-            logger.error(&#39;The values in include are not present in hypno. &#39;
-                         &#39;Switching to hypno = None.&#39;)
-            hypno = None
+        # Check include
+        if include is None:
+            include = []
+        include = np.atleast_1d(np.asarray(include))
+        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
+                                                        &#39;must have same dtype&#39;)
+        if not np.in1d(hypno, include).any():
+            logger.error(&#39;None of the stages specified in `include` &#39;
+                         &#39;are present in hypno. Returning None.&#39;)
+            return None
 
     # Check data amplitude
     data_trimstd = trimbothstd(data, cut=0.10)
@@ -1059,15 +1061,17 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         assert hypno.size == data.size, &#39;Hypno must have same size as data.&#39;
         unique_hypno = np.unique(hypno)
         logger.info(&#39;Number of unique values in hypno = %i&#39;, unique_hypno.size)
-        if isinstance(include, int):
-            include = [include]
-        else:
-            assert isinstance(include, (tuple, list, np.ndarray))
-        assert len(include) &gt;= 1, &#39;include must have at least one element.&#39;
-        if not any(np.in1d(unique_hypno, include)):
-            logger.error(&#39;The values in include are not present in hypno. &#39;
-                         &#39;Switching to hypno = None.&#39;)
-            hypno = None
+        # Check include
+        if include is None:
+            include = []
+        include = np.atleast_1d(np.asarray(include))
+        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
+                                                        &#39;must have same dtype&#39;)
+        if not np.in1d(hypno, include).any():
+            logger.error(&#39;None of the stages specified in `include` &#39;
+                         &#39;are present in hypno. Returning None.&#39;)
+            return None
 
     # Check data amplitude
     data_trimstd = trimbothstd(data, cut=0.10)
@@ -1444,15 +1448,17 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         assert hypno.size == loc.size, &#39;Hypno must have same size as data.&#39;
         unique_hypno = np.unique(hypno)
         logger.info(&#39;Number of unique values in hypno = %i&#39;, unique_hypno.size)
-        if isinstance(include, int):
-            include = [include]
-        else:
-            assert isinstance(include, (tuple, list, np.ndarray))
-        assert len(include) &gt;= 1, &#39;include must have at least one element.&#39;
-        if not any(np.in1d(unique_hypno, include)):
-            logger.error(&#39;The values in include are not present in hypno. &#39;
-                         &#39;Switching to hypno = None.&#39;)
-            hypno = None
+        # Check include
+        if include is None:
+            include = []
+        include = np.atleast_1d(np.asarray(include))
+        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
+                                                        &#39;must have same dtype&#39;)
+        if not np.in1d(hypno, include).any():
+            logger.error(&#39;None of the stages specified in `include` &#39;
+                         &#39;are present in hypno. Returning None.&#39;)
+            return None
 
     # Check data amplitude
     # times = np.arange(data.size) / sf
@@ -2167,15 +2173,17 @@ approach. Journal of neuroscience methods, 259, 72-82.</p>
         assert hypno.size == loc.size, &#39;Hypno must have same size as data.&#39;
         unique_hypno = np.unique(hypno)
         logger.info(&#39;Number of unique values in hypno = %i&#39;, unique_hypno.size)
-        if isinstance(include, int):
-            include = [include]
-        else:
-            assert isinstance(include, (tuple, list, np.ndarray))
-        assert len(include) &gt;= 1, &#39;include must have at least one element.&#39;
-        if not any(np.in1d(unique_hypno, include)):
-            logger.error(&#39;The values in include are not present in hypno. &#39;
-                         &#39;Switching to hypno = None.&#39;)
-            hypno = None
+        # Check include
+        if include is None:
+            include = []
+        include = np.atleast_1d(np.asarray(include))
+        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
+                                                        &#39;must have same dtype&#39;)
+        if not np.in1d(hypno, include).any():
+            logger.error(&#39;None of the stages specified in `include` &#39;
+                         &#39;are present in hypno. Returning None.&#39;)
+            return None
 
     # Check data amplitude
     # times = np.arange(data.size) / sf
@@ -2488,15 +2496,17 @@ detected spindles in the first place. Default to False.</dd>
         assert hypno.size == data.size, &#39;Hypno must have same size as data.&#39;
         unique_hypno = np.unique(hypno)
         logger.info(&#39;Number of unique values in hypno = %i&#39;, unique_hypno.size)
-        if isinstance(include, int):
-            include = [include]
-        else:
-            assert isinstance(include, (tuple, list, np.ndarray))
-        assert len(include) &gt;= 1, &#39;include must have at least one element.&#39;
-        if not any(np.in1d(unique_hypno, include)):
-            logger.error(&#39;The values in include are not present in hypno. &#39;
-                         &#39;Switching to hypno = None.&#39;)
-            hypno = None
+        # Check include
+        if include is None:
+            include = []
+        include = np.atleast_1d(np.asarray(include))
+        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
+                                                        &#39;must have same dtype&#39;)
+        if not np.in1d(hypno, include).any():
+            logger.error(&#39;None of the stages specified in `include` &#39;
+                         &#39;are present in hypno. Returning None.&#39;)
+            return None
 
     # Check data amplitude
     data_trimstd = trimbothstd(data, cut=0.10)
@@ -3042,15 +3052,17 @@ computed on the filtered signal.</p></section>
         assert hypno.size == data.size, &#39;Hypno must have same size as data.&#39;
         unique_hypno = np.unique(hypno)
         logger.info(&#39;Number of unique values in hypno = %i&#39;, unique_hypno.size)
-        if isinstance(include, int):
-            include = [include]
-        else:
-            assert isinstance(include, (tuple, list, np.ndarray))
-        assert len(include) &gt;= 1, &#39;include must have at least one element.&#39;
-        if not any(np.in1d(unique_hypno, include)):
-            logger.error(&#39;The values in include are not present in hypno. &#39;
-                         &#39;Switching to hypno = None.&#39;)
-            hypno = None
+        # Check include
+        if include is None:
+            include = []
+        include = np.atleast_1d(np.asarray(include))
+        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
+                                                        &#39;must have same dtype&#39;)
+        if not np.in1d(hypno, include).any():
+            logger.error(&#39;None of the stages specified in `include` &#39;
+                         &#39;are present in hypno. Returning None.&#39;)
+            return None
 
     # Check data amplitude
     data_trimstd = trimbothstd(data, cut=0.10)
