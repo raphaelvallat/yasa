@@ -1,12 +1,14 @@
 """
 Test the functions in the yasa/main.py file.
 """
+import mne
 import pytest
 import unittest
 import numpy as np
 from itertools import product
 from scipy.signal import detrend
 from mne.filter import filter_data, resample
+from yasa import hypno_str_to_int, hypno_upsample_to_data
 from yasa.main import (_corr, _covar, _rms, _slope_lstsq, _detrend,
                        moving_transform, get_sync_sw,
                        _index_to_events, get_bool_vector, trimbothstd,
@@ -42,6 +44,15 @@ data_full = file_full.get('data')
 chan_full = file_full.get('chan')
 sf_full = 100
 hypno_full = np.load('notebooks/data_full_6hrs_100Hz_hypno.npz').get('hypno')
+
+# Using MNE
+data_mne = mne.io.read_raw_fif('notebooks/sub-02_mne_raw.fif', preload=True,
+                               verbose=0)
+data_mne.pick_types(eeg=True)
+hypno_mne = np.loadtxt('notebooks/sub-02_hypno_30s.txt', dtype=str)
+hypno_mne = hypno_str_to_int(hypno_mne)
+hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30),
+                                   data=data_mne)
 
 
 class TestStringMethods(unittest.TestCase):
@@ -211,6 +222,9 @@ class TestStringMethods(unittest.TestCase):
         spindles_detect_multi(data_full, sf_full, chan_full, hypno=hypno_full,
                               include=2)
 
+        # Using a MNE raw object
+        spindles_detect_multi(data_mne, hypno=hypno_mne, include=2)
+
         # Now we replace one channel with no spindle / bad data
         data_full[1, :] = np.random.random(data_full.shape[1])
 
@@ -298,6 +312,9 @@ class TestStringMethods(unittest.TestCase):
         # Test with hypnogram
         sw_detect_multi(data_full, sf_full, chan_full,
                         hypno=hypno_full, include=3)
+
+        # Using a MNE raw object
+        spindles_detect_multi(data_mne, hypno=hypno_mne, include=(2, 3))
 
         # Now we replace one channel with no slow-wave / bad data
         data_full[1, :] = np.random.random(data_full.shape[1])

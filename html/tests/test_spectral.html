@@ -61,12 +61,14 @@ class TestStringMethods(unittest.TestCase):
         &#34;&#34;&#34;Test function bandpower
         &#34;&#34;&#34;
         # BANDPOWER
-        bandpower(data_mne)
-        bandpower(data, sf=sf)
-        bandpower(data, sf=sf, ch_names=&#39;F4&#39;)
+        bandpower(data_mne)  # Raw MNE multi-channel
+        bandpower(data, sf=sf)  # Single channel Numpy
+        bandpower(data, sf=sf, ch_names=&#39;F4&#39;)  # Single channel Numpy labelled
         bandpower(data_full, sf=sf_full, ch_names=chan_full, hypno=hypno_full,
-                  include=(2, 3))
-        bandpower(data_mne, hypno=hypno_mne, include=2)
+                  include=(2, 3))  # Multi channel numpy
+        bandpower(data_full, sf=sf_full, hypno=hypno_full,
+                  include=(3, 4))  # Multi channel numpy
+        bandpower(data_mne, hypno=hypno_mne, include=2)  # Raw MNE with hypno
 
         # BANDPOWER_FROM_PSD
         # 1-D EEG data
@@ -168,12 +170,14 @@ not have a method with the specified name.</p></section>
         &#34;&#34;&#34;Test function bandpower
         &#34;&#34;&#34;
         # BANDPOWER
-        bandpower(data_mne)
-        bandpower(data, sf=sf)
-        bandpower(data, sf=sf, ch_names=&#39;F4&#39;)
+        bandpower(data_mne)  # Raw MNE multi-channel
+        bandpower(data, sf=sf)  # Single channel Numpy
+        bandpower(data, sf=sf, ch_names=&#39;F4&#39;)  # Single channel Numpy labelled
         bandpower(data_full, sf=sf_full, ch_names=chan_full, hypno=hypno_full,
-                  include=(2, 3))
-        bandpower(data_mne, hypno=hypno_mne, include=2)
+                  include=(2, 3))  # Multi channel numpy
+        bandpower(data_full, sf=sf_full, hypno=hypno_full,
+                  include=(3, 4))  # Multi channel numpy
+        bandpower(data_mne, hypno=hypno_mne, include=2)  # Raw MNE with hypno
 
         # BANDPOWER_FROM_PSD
         # 1-D EEG data
@@ -241,12 +245,14 @@ not have a method with the specified name.</p></section>
     &#34;&#34;&#34;Test function bandpower
     &#34;&#34;&#34;
     # BANDPOWER
-    bandpower(data_mne)
-    bandpower(data, sf=sf)
-    bandpower(data, sf=sf, ch_names=&#39;F4&#39;)
+    bandpower(data_mne)  # Raw MNE multi-channel
+    bandpower(data, sf=sf)  # Single channel Numpy
+    bandpower(data, sf=sf, ch_names=&#39;F4&#39;)  # Single channel Numpy labelled
     bandpower(data_full, sf=sf_full, ch_names=chan_full, hypno=hypno_full,
-              include=(2, 3))
-    bandpower(data_mne, hypno=hypno_mne, include=2)
+              include=(2, 3))  # Multi channel numpy
+    bandpower(data_full, sf=sf_full, hypno=hypno_full,
+              include=(3, 4))  # Multi channel numpy
+    bandpower(data_mne, hypno=hypno_mne, include=2)  # Raw MNE with hypno
 
     # BANDPOWER_FROM_PSD
     # 1-D EEG data

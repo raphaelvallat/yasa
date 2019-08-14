@@ -38,6 +38,7 @@ slow-waves, and rapid eye movements from sleep EEG recordings.
 - GitHub: https://github.com/raphaelvallat/yasa
 - License: BSD 3-Clause License
 &#34;&#34;&#34;
+import mne
 import logging
 import numpy as np
 import pandas as pd
@@ -865,20 +866,22 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     return df_sp
 
 
-def spindles_detect_multi(data, sf, ch_names, multi_only=False, **kwargs):
+def spindles_detect_multi(data, sf=None, ch_names=None, multi_only=False,
+                          **kwargs):
     &#34;&#34;&#34;Multi-channel spindles detection.
 
     Parameters
     ----------
     data : array_like
         Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-        If you used MNE to load the data, you should pass `raw._data * 1e6`.
+        Can also be a MNE Raw object, in which case data, sf, and ch_names
+        will be automatically extracted. Data will also be internally
+        converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
         Sampling frequency of the data in Hz.
-        If you used MNE to load the data, you should pass `raw.info[&#39;sfreq&#39;]`.
+        Can be omitted if ``data`` is a MNE Raw object.
     ch_names : list of str
-        Channel names.
-        If you used MNE to load the data, you should pass `raw.ch_names`.
+        Channel names. Can be omitted if ``data`` is a MNE Raw object.
     multi_only : boolean
         Define the behavior of the multi-channel detection. If True, only
         spindles that are present on at least two channels are kept. If False,
@@ -906,6 +909,16 @@ def spindles_detect_multi(data, sf, ch_names, multi_only=False, **kwargs):
             &#39;IdxChannel&#39; : Integer index of channel in data
             &#39;Stage&#39; : Sleep stage (only if hypno was provided)
     &#34;&#34;&#34;
+    # Check if input data is a MNE Raw object
+    if isinstance(data, mne.io.BaseRaw):
+        sf = data.info[&#39;sfreq&#39;]  # Extract sampling frequency
+        ch_names = data.ch_names  # Extract channel names
+        data = data.get_data() * 1e6  # Convert from V to uV
+    else:
+        assert sf is not None, &#39;sf must be specified if not using MNE Raw.&#39;
+        assert ch_names is not None, (&#39;ch_names must be specified if not &#39;
+                                      &#39;using MNE Raw.&#39;)
+
     # Safety check
     data = np.asarray(data, dtype=np.float64)
     assert data.ndim == 2
@@ -1239,20 +1252,21 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
     return df_sw.reset_index(drop=True)
 
 
-def sw_detect_multi(data, sf, ch_names, **kwargs):
+def sw_detect_multi(data, sf=None, ch_names=None, **kwargs):
     &#34;&#34;&#34;Multi-channel slow-waves detection.
 
     Parameters
     ----------
     data : array_like
         Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-        If you used MNE to load the data, you should pass `raw._data * 1e6`.
+        Can also be a MNE Raw object, in which case data, sf, and ch_names
+        will be automatically extracted. Data will also be internally
+        converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
         Sampling frequency of the data in Hz.
-        If you used MNE to load the data, you should pass `raw.info[&#39;sfreq&#39;]`.
+        Can be omitted if ``data`` is a MNE Raw object.
     ch_names : list of str
-        Channel names.
-        If you used MNE to load the data, you should pass `raw.ch_names`.
+        Channel names. Can be omitted if ``data`` is a MNE Raw object.
     **kwargs
         Keywords arguments that are passed to the `sw_detect` function.
 
@@ -1283,6 +1297,16 @@ def sw_detect_multi(data, sf, ch_names, **kwargs):
     Note that the ``PTP``, ``Slope``, ``ValNegPeak`` and ``ValPosPeak`` are
     computed on the filtered signal.
     &#34;&#34;&#34;
+    # Check if input data is a MNE Raw object
+    if isinstance(data, mne.io.BaseRaw):
+        sf = data.info[&#39;sfreq&#39;]  # Extract sampling frequency
+        ch_names = data.ch_names  # Extract channel names
+        data = data.get_data() * 1e6  # Convert from V to uV
+    else:
+        assert sf is not None, &#39;sf must be specified if not using MNE Raw.&#39;
+        assert ch_names is not None, (&#39;ch_names must be specified if not &#39;
+                                      &#39;using MNE Raw.&#39;)
+
     # Safety check
     data = np.asarray(data, dtype=np.float64)
     assert data.ndim == 2
@@ -2705,7 +2729,7 @@ detected spindles in the first place. Default to False.</dd>
 </details>
 </dd>
 <dt id="yasa.main.spindles_detect_multi"><code class="name flex">
-<span>def <span class="ident">spindles_detect_multi</span></span>(<span>data, sf, ch_names, multi_only=False, **kwargs)</span>
+<span>def <span class="ident">spindles_detect_multi</span></span>(<span>data, sf=None, ch_names=None, multi_only=False, **kwargs)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Multi-channel spindles detection.</p>
@@ -2713,20 +2737,21 @@ detected spindles in the first place. Default to False.</dd>
 <dl>
 <dt><strong><code>data</code></strong> :&ensp;<code>array_like</code></dt>
 <dd>Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-If you used MNE to load the data, you should pass <code>raw._data * 1e6</code>.</dd>
+Can also be a MNE Raw object, in which case data, sf, and ch_names
+will be automatically extracted. Data will also be internally
+converted from Volts (MNE) to micro-Volts (YASA).</dd>
 <dt><strong><code>sf</code></strong> :&ensp;<code>float</code></dt>
 <dd>Sampling frequency of the data in Hz.
-If you used MNE to load the data, you should pass <code>raw.info['sfreq']</code>.</dd>
+Can be omitted if <code>data</code> is a MNE Raw object.</dd>
 <dt><strong><code>ch_names</code></strong> :&ensp;<code>list</code> of <code>str</code></dt>
-<dd>Channel names.
-If you used MNE to load the data, you should pass <code>raw.ch_names</code>.</dd>
+<dd>Channel names. Can be omitted if <code>data</code> is a MNE Raw object.</dd>
 <dt><strong><code>multi_only</code></strong> :&ensp;<code>boolean</code></dt>
 <dd>Define the behavior of the multi-channel detection. If True, only
 spindles that are present on at least two channels are kept. If False,
 no selection is applied and the output is just a concatenation of the
 single-channel detection dataframe. Default is False.</dd>
 <dt><strong><code>**kwargs</code></strong></dt>
-<dd>Keywords arguments that are passed to the <a title="yasa.main.spindles_detect" href="#yasa.main.spindles_detect"><code>spindles_detect()</code></a> function.</dd>
+<dd>Keywords arguments that are passed to the <code>spindles_detect</code> function.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -2749,20 +2774,22 @@ single-channel detection dataframe. Default is False.</dd>
 </dl></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def spindles_detect_multi(data, sf, ch_names, multi_only=False, **kwargs):
+<pre><code class="python">def spindles_detect_multi(data, sf=None, ch_names=None, multi_only=False,
+                          **kwargs):
     &#34;&#34;&#34;Multi-channel spindles detection.
 
     Parameters
     ----------
     data : array_like
         Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-        If you used MNE to load the data, you should pass `raw._data * 1e6`.
+        Can also be a MNE Raw object, in which case data, sf, and ch_names
+        will be automatically extracted. Data will also be internally
+        converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
         Sampling frequency of the data in Hz.
-        If you used MNE to load the data, you should pass `raw.info[&#39;sfreq&#39;]`.
+        Can be omitted if ``data`` is a MNE Raw object.
     ch_names : list of str
-        Channel names.
-        If you used MNE to load the data, you should pass `raw.ch_names`.
+        Channel names. Can be omitted if ``data`` is a MNE Raw object.
     multi_only : boolean
         Define the behavior of the multi-channel detection. If True, only
         spindles that are present on at least two channels are kept. If False,
@@ -2790,6 +2817,16 @@ single-channel detection dataframe. Default is False.</dd>
             &#39;IdxChannel&#39; : Integer index of channel in data
             &#39;Stage&#39; : Sleep stage (only if hypno was provided)
     &#34;&#34;&#34;
+    # Check if input data is a MNE Raw object
+    if isinstance(data, mne.io.BaseRaw):
+        sf = data.info[&#39;sfreq&#39;]  # Extract sampling frequency
+        ch_names = data.ch_names  # Extract channel names
+        data = data.get_data() * 1e6  # Convert from V to uV
+    else:
+        assert sf is not None, &#39;sf must be specified if not using MNE Raw.&#39;
+        assert ch_names is not None, (&#39;ch_names must be specified if not &#39;
+                                      &#39;using MNE Raw.&#39;)
+
     # Safety check
     data = np.asarray(data, dtype=np.float64)
     assert data.ndim == 2
@@ -3199,7 +3236,7 @@ computed on the filtered signal.</p></section>
 </details>
 </dd>
 <dt id="yasa.main.sw_detect_multi"><code class="name flex">
-<span>def <span class="ident">sw_detect_multi</span></span>(<span>data, sf, ch_names, **kwargs)</span>
+<span>def <span class="ident">sw_detect_multi</span></span>(<span>data, sf=None, ch_names=None, **kwargs)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Multi-channel slow-waves detection.</p>
@@ -3207,15 +3244,16 @@ computed on the filtered signal.</p></section>
 <dl>
 <dt><strong><code>data</code></strong> :&ensp;<code>array_like</code></dt>
 <dd>Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-If you used MNE to load the data, you should pass <code>raw._data * 1e6</code>.</dd>
+Can also be a MNE Raw object, in which case data, sf, and ch_names
+will be automatically extracted. Data will also be internally
+converted from Volts (MNE) to micro-Volts (YASA).</dd>
 <dt><strong><code>sf</code></strong> :&ensp;<code>float</code></dt>
 <dd>Sampling frequency of the data in Hz.
-If you used MNE to load the data, you should pass <code>raw.info['sfreq']</code>.</dd>
+Can be omitted if <code>data</code> is a MNE Raw object.</dd>
 <dt><strong><code>ch_names</code></strong> :&ensp;<code>list</code> of <code>str</code></dt>
-<dd>Channel names.
-If you used MNE to load the data, you should pass <code>raw.ch_names</code>.</dd>
+<dd>Channel names. Can be omitted if <code>data</code> is a MNE Raw object.</dd>
 <dt><strong><code>**kwargs</code></strong></dt>
-<dd>Keywords arguments that are passed to the <a title="yasa.main.sw_detect" href="#yasa.main.sw_detect"><code>sw_detect()</code></a> function.</dd>
+<dd>Keywords arguments that are passed to the <code>sw_detect</code> function.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -3243,20 +3281,21 @@ If you used MNE to load the data, you should pass <code>raw.ch_names</code>.</dd
 computed on the filtered signal.</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def sw_detect_multi(data, sf, ch_names, **kwargs):
+<pre><code class="python">def sw_detect_multi(data, sf=None, ch_names=None, **kwargs):
     &#34;&#34;&#34;Multi-channel slow-waves detection.
 
     Parameters
     ----------
     data : array_like
         Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-        If you used MNE to load the data, you should pass `raw._data * 1e6`.
+        Can also be a MNE Raw object, in which case data, sf, and ch_names
+        will be automatically extracted. Data will also be internally
+        converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
         Sampling frequency of the data in Hz.
-        If you used MNE to load the data, you should pass `raw.info[&#39;sfreq&#39;]`.
+        Can be omitted if ``data`` is a MNE Raw object.
     ch_names : list of str
-        Channel names.
-        If you used MNE to load the data, you should pass `raw.ch_names`.
+        Channel names. Can be omitted if ``data`` is a MNE Raw object.
     **kwargs
         Keywords arguments that are passed to the `sw_detect` function.
 
@@ -3287,6 +3326,16 @@ computed on the filtered signal.</p></section>
     Note that the ``PTP``, ``Slope``, ``ValNegPeak`` and ``ValPosPeak`` are
     computed on the filtered signal.
     &#34;&#34;&#34;
+    # Check if input data is a MNE Raw object
+    if isinstance(data, mne.io.BaseRaw):
+        sf = data.info[&#39;sfreq&#39;]  # Extract sampling frequency
+        ch_names = data.ch_names  # Extract channel names
+        data = data.get_data() * 1e6  # Convert from V to uV
+    else:
+        assert sf is not None, &#39;sf must be specified if not using MNE Raw.&#39;
+        assert ch_names is not None, (&#39;ch_names must be specified if not &#39;
+                                      &#39;using MNE Raw.&#39;)
+
     # Safety check
     data = np.asarray(data, dtype=np.float64)
     assert data.ndim == 2
