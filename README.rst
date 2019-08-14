@@ -96,8 +96,8 @@ The examples Jupyter notebooks are really what make YASA great! In addition to s
 
 1. `notebooks/01_spindles_detection.ipynb <notebooks/01_spindles_detection.ipynb>`_: single-channel spindles detection and step-by-step description of the algorithm.
 2. `notebooks/02_spindles_detection_multi.ipynb <notebooks/02_spindles_detection_multi.ipynb>`_: multi-channel spindles detection using MNE data.
-3. `notebooks/04_spindles_slow_fast.ipynb <notebooks/04_spindles_slow_fast.ipynb>`_: slow and fast spindles analysis.
-4. `notebooks/03_spindles_detection_NREM_only.ipynb <notebooks/03_spindles_detection_NREM_only.ipynb>`_: spindles detection on NREM sleep only.
+3. `notebooks/03_spindles_detection_NREM_only.ipynb <notebooks/03_spindles_detection_NREM_only.ipynb>`_: spindles detection on NREM sleep only.
+4. `notebooks/04_spindles_slow_fast.ipynb <notebooks/04_spindles_slow_fast.ipynb>`_: slow and fast spindles analysis.
 5. `notebooks/05_run_visbrain.py <notebooks/05_run_visbrain.py>`_: interactive display with the Visbrain graphical user interface.
 
 **Slow-waves**
