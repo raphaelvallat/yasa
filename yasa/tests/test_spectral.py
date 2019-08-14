@@ -42,7 +42,7 @@ class TestStringMethods(unittest.TestCase):
         bandpower(data_full, sf=sf_full, ch_names=chan_full, hypno=hypno_full,
                   include=(2, 3))  # Multi channel numpy
         bandpower(data_full, sf=sf_full, hypno=hypno_full,
-                  include=(3, 4))  # Multi channel numpy
+                  include=(3, 4, 5))  # Multi channel numpy
         bandpower(data_mne, hypno=hypno_mne, include=2)  # Raw MNE with hypno
 
         # BANDPOWER_FROM_PSD

@@ -115,12 +115,11 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     else:
         # Per each sleep stage defined in ``include``.
         hypno = np.asarray(hypno)
-        if include is None:
-            include = []
+        assert include is not None, &#39;include cannot be None if hypno is given&#39;
         include = np.atleast_1d(np.asarray(include))
         assert hypno.ndim == 1, &#39;Hypno must be a 1D array.&#39;
         assert hypno.size == npts, &#39;Hypno must have same size as data.shape[1]&#39;
-        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert include.size &gt;= 1, &#39;`include` must have at least one element.&#39;
         assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
                                                         &#39;must have same dtype&#39;)
         assert np.in1d(hypno, include).any(), (&#39;None of the stages &#39;
@@ -427,12 +426,11 @@ a spectral band.</dd>
     else:
         # Per each sleep stage defined in ``include``.
         hypno = np.asarray(hypno)
-        if include is None:
-            include = []
+        assert include is not None, &#39;include cannot be None if hypno is given&#39;
         include = np.atleast_1d(np.asarray(include))
         assert hypno.ndim == 1, &#39;Hypno must be a 1D array.&#39;
         assert hypno.size == npts, &#39;Hypno must have same size as data.shape[1]&#39;
-        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert include.size &gt;= 1, &#39;`include` must have at least one element.&#39;
         assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
                                                         &#39;must have same dtype&#39;)
         assert np.in1d(hypno, include).any(), (&#39;None of the stages &#39;

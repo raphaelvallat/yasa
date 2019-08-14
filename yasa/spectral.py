@@ -88,12 +88,11 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     else:
         # Per each sleep stage defined in ``include``.
         hypno = np.asarray(hypno)
-        if include is None:
-            include = []
+        assert include is not None, 'include cannot be None if hypno is given'
         include = np.atleast_1d(np.asarray(include))
         assert hypno.ndim == 1, 'Hypno must be a 1D array.'
         assert hypno.size == npts, 'Hypno must have same size as data.shape[1]'
-        assert include.size >= 1, 'Include must have at least one element.'
+        assert include.size >= 1, '`include` must have at least one element.'
         assert hypno.dtype.kind == include.dtype.kind, ('hypno and include '
                                                         'must have same dtype')
         assert np.in1d(hypno, include).any(), ('None of the stages '

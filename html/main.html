@@ -627,10 +627,9 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         unique_hypno = np.unique(hypno)
         logger.info(&#39;Number of unique values in hypno = %i&#39;, unique_hypno.size)
         # Check include
-        if include is None:
-            include = []
+        assert include is not None, &#39;include cannot be None if hypno is given&#39;
         include = np.atleast_1d(np.asarray(include))
-        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert include.size &gt;= 1, &#39;`include` must have at least one element.&#39;
         assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
                                                         &#39;must have same dtype&#39;)
         if not np.in1d(hypno, include).any():
@@ -1062,10 +1061,9 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         unique_hypno = np.unique(hypno)
         logger.info(&#39;Number of unique values in hypno = %i&#39;, unique_hypno.size)
         # Check include
-        if include is None:
-            include = []
+        assert include is not None, &#39;include cannot be None if hypno is given&#39;
         include = np.atleast_1d(np.asarray(include))
-        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert include.size &gt;= 1, &#39;`include` must have at least one element.&#39;
         assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
                                                         &#39;must have same dtype&#39;)
         if not np.in1d(hypno, include).any():
@@ -1449,10 +1447,9 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         unique_hypno = np.unique(hypno)
         logger.info(&#39;Number of unique values in hypno = %i&#39;, unique_hypno.size)
         # Check include
-        if include is None:
-            include = []
+        assert include is not None, &#39;include cannot be None if hypno is given&#39;
         include = np.atleast_1d(np.asarray(include))
-        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert include.size &gt;= 1, &#39;`include` must have at least one element.&#39;
         assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
                                                         &#39;must have same dtype&#39;)
         if not np.in1d(hypno, include).any():
@@ -2174,10 +2171,9 @@ approach. Journal of neuroscience methods, 259, 72-82.</p>
         unique_hypno = np.unique(hypno)
         logger.info(&#39;Number of unique values in hypno = %i&#39;, unique_hypno.size)
         # Check include
-        if include is None:
-            include = []
+        assert include is not None, &#39;include cannot be None if hypno is given&#39;
         include = np.atleast_1d(np.asarray(include))
-        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert include.size &gt;= 1, &#39;`include` must have at least one element.&#39;
         assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
                                                         &#39;must have same dtype&#39;)
         if not np.in1d(hypno, include).any():
@@ -2497,10 +2493,9 @@ detected spindles in the first place. Default to False.</dd>
         unique_hypno = np.unique(hypno)
         logger.info(&#39;Number of unique values in hypno = %i&#39;, unique_hypno.size)
         # Check include
-        if include is None:
-            include = []
+        assert include is not None, &#39;include cannot be None if hypno is given&#39;
         include = np.atleast_1d(np.asarray(include))
-        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert include.size &gt;= 1, &#39;`include` must have at least one element.&#39;
         assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
                                                         &#39;must have same dtype&#39;)
         if not np.in1d(hypno, include).any():
@@ -3053,10 +3048,9 @@ computed on the filtered signal.</p></section>
         unique_hypno = np.unique(hypno)
         logger.info(&#39;Number of unique values in hypno = %i&#39;, unique_hypno.size)
         # Check include
-        if include is None:
-            include = []
+        assert include is not None, &#39;include cannot be None if hypno is given&#39;
         include = np.atleast_1d(np.asarray(include))
-        assert include.size &gt;= 1, &#39;Include must have at least one element.&#39;
+        assert include.size &gt;= 1, &#39;`include` must have at least one element.&#39;
         assert hypno.dtype.kind == include.dtype.kind, (&#39;hypno and include &#39;
                                                         &#39;must have same dtype&#39;)
         if not np.in1d(hypno, include).any():

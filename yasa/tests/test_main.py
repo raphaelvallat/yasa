@@ -372,6 +372,20 @@ class TestStringMethods(unittest.TestCase):
         df_rem2 = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
         assert df_rem.shape[0] > df_rem2.shape[0]
 
+        # Test with wrong data amplitude on ROC
+        with self.assertLogs('yasa', level='ERROR'):
+            rd = rem_detect(loc * 1e-8, roc, sf)
+        assert rd is None
+
+        # Test with wrong data amplitude on LOC
+        with self.assertLogs('yasa', level='ERROR'):
+            rd = rem_detect(loc, roc * 1e8, sf)
+        assert rd is None
+
+        # Hypnogram with sf = 150
+        with self.assertLogs('yasa', level='WARNING'):
+            rem_detect(loc, roc * 1e8, sf=150)  # Fake sampling frequency
+
         # No values in hypno intersect with include
         with self.assertLogs('yasa', level='ERROR'):
             sp = rem_detect(loc, roc, sf_full, hypno=hypno_rem, include=5)

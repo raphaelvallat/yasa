@@ -595,10 +595,9 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         unique_hypno = np.unique(hypno)
         logger.info('Number of unique values in hypno = %i', unique_hypno.size)
         # Check include
-        if include is None:
-            include = []
+        assert include is not None, 'include cannot be None if hypno is given'
         include = np.atleast_1d(np.asarray(include))
-        assert include.size >= 1, 'Include must have at least one element.'
+        assert include.size >= 1, '`include` must have at least one element.'
         assert hypno.dtype.kind == include.dtype.kind, ('hypno and include '
                                                         'must have same dtype')
         if not np.in1d(hypno, include).any():
@@ -1030,10 +1029,9 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         unique_hypno = np.unique(hypno)
         logger.info('Number of unique values in hypno = %i', unique_hypno.size)
         # Check include
-        if include is None:
-            include = []
+        assert include is not None, 'include cannot be None if hypno is given'
         include = np.atleast_1d(np.asarray(include))
-        assert include.size >= 1, 'Include must have at least one element.'
+        assert include.size >= 1, '`include` must have at least one element.'
         assert hypno.dtype.kind == include.dtype.kind, ('hypno and include '
                                                         'must have same dtype')
         if not np.in1d(hypno, include).any():
@@ -1417,10 +1415,9 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         unique_hypno = np.unique(hypno)
         logger.info('Number of unique values in hypno = %i', unique_hypno.size)
         # Check include
-        if include is None:
-            include = []
+        assert include is not None, 'include cannot be None if hypno is given'
         include = np.atleast_1d(np.asarray(include))
-        assert include.size >= 1, 'Include must have at least one element.'
+        assert include.size >= 1, '`include` must have at least one element.'
         assert hypno.dtype.kind == include.dtype.kind, ('hypno and include '
                                                         'must have same dtype')
         if not np.in1d(hypno, include).any():
