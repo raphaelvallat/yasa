@@ -109,6 +109,8 @@ def hypno_str_to_int(hypno, mapping_dict={&#39;w&#39;: 0, &#39;wake&#39;: 0, &#3
 
     [&#39;W&#39;, &#39;N2&#39;, &#39;N2&#39;, &#39;N3&#39;, &#39;R&#39;] ==&gt; [0, 2, 2, 3, 4]
 
+    .. versionadded:: 0.1.5
+
     Parameters
     ----------
     hypno : array_like
@@ -134,6 +136,8 @@ def hypno_int_to_str(hypno, mapping_dict={0: &#39;W&#39;, 1: &#39;N1&#39;, 2: &#
 
     [0, 2, 2, 3, 4] ==&gt; [&#39;W&#39;, &#39;N2&#39;, &#39;N2&#39;, &#39;N3&#39;, &#39;R&#39;]
 
+    .. versionadded:: 0.1.5
+
     Parameters
     ----------
     hypno : array_like
@@ -158,6 +162,8 @@ def hypno_int_to_str(hypno, mapping_dict={0: &#39;W&#39;, 1: &#39;N1&#39;, 2: &#
 
 def hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
     &#34;&#34;&#34;Upsample the hypnogram to a given sampling frequency.
+
+    .. versionadded:: 0.1.5
 
     Parameters
     ----------
@@ -246,6 +252,8 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None):
     resulting hypnogram to corresponding EEG data, such that the hypnogram
     and EEG data have the exact same number of samples.
 
+    .. versionadded:: 0.1.5
+
     Parameters
     ----------
     hypno : array_like
@@ -288,6 +296,9 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None):
 <dd>
 <section class="desc"><p>Convert an integer hypnogram array to a string array.</p>
 <p>[0, 2, 2, 3, 4] ==&gt; ['W', 'N2', 'N2', 'N3', 'R']</p>
+<div class="admonition versionadded">
+<p class="admonition-title">Added in version:&ensp;0.1.5</p>
+</div>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>hypno</code></strong> :&ensp;<code>array_like</code></dt>
@@ -308,6 +319,8 @@ essentially a wrapper around <code>pandas.Series.map</code>.</dd>
     &#34;&#34;&#34;Convert an integer hypnogram array to a string array.
 
     [0, 2, 2, 3, 4] ==&gt; [&#39;W&#39;, &#39;N2&#39;, &#39;N2&#39;, &#39;N3&#39;, &#39;R&#39;]
+
+    .. versionadded:: 0.1.5
 
     Parameters
     ----------
@@ -333,6 +346,9 @@ essentially a wrapper around <code>pandas.Series.map</code>.</dd>
 <dd>
 <section class="desc"><p>Convert a string hypnogram array to integer.</p>
 <p>['W', 'N2', 'N2', 'N3', 'R'] ==&gt; [0, 2, 2, 3, 4]</p>
+<div class="admonition versionadded">
+<p class="admonition-title">Added in version:&ensp;0.1.5</p>
+</div>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>hypno</code></strong> :&ensp;<code>array_like</code></dt>
@@ -354,6 +370,8 @@ essentially a wrapper around <code>pandas.Series.map</code>.</dd>
     &#34;&#34;&#34;Convert a string hypnogram array to integer.
 
     [&#39;W&#39;, &#39;N2&#39;, &#39;N2&#39;, &#39;N3&#39;, &#39;R&#39;] ==&gt; [0, 2, 2, 3, 4]
+
+    .. versionadded:: 0.1.5
 
     Parameters
     ----------
@@ -381,6 +399,9 @@ essentially a wrapper around <code>pandas.Series.map</code>.</dd>
 <section class="desc"><p>Upsample an hypnogram to a given sampling frequency and fit the
 resulting hypnogram to corresponding EEG data, such that the hypnogram
 and EEG data have the exact same number of samples.</p>
+<div class="admonition versionadded">
+<p class="admonition-title">Added in version:&ensp;0.1.5</p>
+</div>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>hypno</code></strong> :&ensp;<code>array_like</code></dt>
@@ -408,6 +429,8 @@ Can be omitted if <code>data</code> is a mne.io.Raw object.</dd>
     &#34;&#34;&#34;Upsample an hypnogram to a given sampling frequency and fit the
     resulting hypnogram to corresponding EEG data, such that the hypnogram
     and EEG data have the exact same number of samples.
+
+    .. versionadded:: 0.1.5
 
     Parameters
     ----------
@@ -443,6 +466,9 @@ Can be omitted if <code>data</code> is a mne.io.Raw object.</dd>
 </code></dt>
 <dd>
 <section class="desc"><p>Upsample the hypnogram to a given sampling frequency.</p>
+<div class="admonition versionadded">
+<p class="admonition-title">Added in version:&ensp;0.1.5</p>
+</div>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>hypno</code></strong> :&ensp;<code>array_like</code></dt>
@@ -464,6 +490,8 @@ Can be omitted if <code>data</code> is a mne.io.Raw object.</dd>
 <summary>Source code</summary>
 <pre><code class="python">def hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
     &#34;&#34;&#34;Upsample the hypnogram to a given sampling frequency.
+
+    .. versionadded:: 0.1.5
 
     Parameters
     ----------

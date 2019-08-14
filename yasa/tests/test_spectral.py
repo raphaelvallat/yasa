@@ -1,11 +1,13 @@
 """
 Test the functions in the yasa/main.py file.
 """
+import mne
 import unittest
 import numpy as np
 from itertools import product
 from scipy.signal import welch
-from yasa.spectral import (stft_power, bandpower_from_psd)
+from yasa import hypno_str_to_int, hypno_upsample_to_data
+from yasa.spectral import (bandpower, bandpower_from_psd, stft_power)
 
 # Load 1D data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -18,12 +20,32 @@ chan_full = file_full.get('chan')
 sf_full = 100
 hypno_full = np.load('notebooks/data_full_6hrs_100Hz_hypno.npz').get('hypno')
 
+# Using MNE
+data_mne = mne.io.read_raw_fif('notebooks/sub-02_mne_raw.fif', preload=True,
+                               verbose=0)
+data_mne.pick_types(eeg=True)
+hypno_mne = np.loadtxt('notebooks/sub-02_hypno_30s.txt', dtype=str)
+hypno_mne = hypno_str_to_int(hypno_mne)
+hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30),
+                                   data=data_mne)
+
 
 class TestStringMethods(unittest.TestCase):
 
     def test_bandpower(self):
         """Test function bandpower
         """
+        # BANDPOWER
+        bandpower(data_mne)  # Raw MNE multi-channel
+        bandpower(data, sf=sf)  # Single channel Numpy
+        bandpower(data, sf=sf, ch_names='F4')  # Single channel Numpy labelled
+        bandpower(data_full, sf=sf_full, ch_names=chan_full, hypno=hypno_full,
+                  include=(2, 3))  # Multi channel numpy
+        bandpower(data_full, sf=sf_full, hypno=hypno_full,
+                  include=(3, 4))  # Multi channel numpy
+        bandpower(data_mne, hypno=hypno_mne, include=2)  # Raw MNE with hypno
+
+        # BANDPOWER_FROM_PSD
         # 1-D EEG data
         win = int(2 * sf)
         freqs, psd = welch(data, sf, nperseg=win)

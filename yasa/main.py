@@ -1295,6 +1295,8 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
     thresholding of the negative product of the LOC and ROC
     filtered signal.
 
+    .. versionadded:: 0.1.5
+
     Parameters
     ----------
     loc, roc : array_like

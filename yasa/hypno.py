@@ -46,6 +46,8 @@ def hypno_str_to_int(hypno, mapping_dict={'w': 0, 'wake': 0, 'n1': 1, 's1': 1,
 
     ['W', 'N2', 'N2', 'N3', 'R'] ==> [0, 2, 2, 3, 4]
 
+    .. versionadded:: 0.1.5
+
     Parameters
     ----------
     hypno : array_like
@@ -71,6 +73,8 @@ def hypno_int_to_str(hypno, mapping_dict={0: 'W', 1: 'N1', 2: 'N2', 3: 'N3',
 
     [0, 2, 2, 3, 4] ==> ['W', 'N2', 'N2', 'N3', 'R']
 
+    .. versionadded:: 0.1.5
+
     Parameters
     ----------
     hypno : array_like
@@ -95,6 +99,8 @@ def hypno_int_to_str(hypno, mapping_dict={0: 'W', 1: 'N1', 2: 'N2', 3: 'N3',
 
 def hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
     """Upsample the hypnogram to a given sampling frequency.
+
+    .. versionadded:: 0.1.5
 
     Parameters
     ----------
@@ -182,6 +188,8 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None):
     """Upsample an hypnogram to a given sampling frequency and fit the
     resulting hypnogram to corresponding EEG data, such that the hypnogram
     and EEG data have the exact same number of samples.
+
+    .. versionadded:: 0.1.5
 
     Parameters
     ----------

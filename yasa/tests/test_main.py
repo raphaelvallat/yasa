@@ -108,7 +108,7 @@ class TestStringMethods(unittest.TestCase):
                   'slope', 'corr', 'covar']
         interp = [False, True]
         win = [.3, .5]
-        step = [0, .1, .3, .5]
+        step = [0, .5]
 
         prod_args = product(win, step, method, interp)
 
@@ -121,10 +121,10 @@ class TestStringMethods(unittest.TestCase):
 
     def test_spindles_detect(self):
         """Test spindles_detect"""
-        freq_sp = [(11, 16), [12, 14], (11, 15)]
+        freq_sp = [(11, 16), [12, 14]]
         freq_broad = [(0.5, 30), [1, 25]]
         duration = [(0.3, 2.5), [0.5, 3]]
-        min_distance = [None, 0, 300, 500]
+        min_distance = [None, 0, 500]
 
         prod_args = product(freq_sp, freq_broad, duration, min_distance)
 
