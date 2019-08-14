@@ -594,15 +594,17 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         assert hypno.size == data.size, 'Hypno must have same size as data.'
         unique_hypno = np.unique(hypno)
         logger.info('Number of unique values in hypno = %i', unique_hypno.size)
-        if isinstance(include, int):
-            include = [include]
-        else:
-            assert isinstance(include, (tuple, list, np.ndarray))
-        assert len(include) >= 1, 'include must have at least one element.'
-        if not any(np.in1d(unique_hypno, include)):
-            logger.error('The values in include are not present in hypno. '
-                         'Switching to hypno = None.')
-            hypno = None
+        # Check include
+        if include is None:
+            include = []
+        include = np.atleast_1d(np.asarray(include))
+        assert include.size >= 1, 'Include must have at least one element.'
+        assert hypno.dtype.kind == include.dtype.kind, ('hypno and include '
+                                                        'must have same dtype')
+        if not np.in1d(hypno, include).any():
+            logger.error('None of the stages specified in `include` '
+                         'are present in hypno. Returning None.')
+            return None
 
     # Check data amplitude
     data_trimstd = trimbothstd(data, cut=0.10)
@@ -1027,15 +1029,17 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         assert hypno.size == data.size, 'Hypno must have same size as data.'
         unique_hypno = np.unique(hypno)
         logger.info('Number of unique values in hypno = %i', unique_hypno.size)
-        if isinstance(include, int):
-            include = [include]
-        else:
-            assert isinstance(include, (tuple, list, np.ndarray))
-        assert len(include) >= 1, 'include must have at least one element.'
-        if not any(np.in1d(unique_hypno, include)):
-            logger.error('The values in include are not present in hypno. '
-                         'Switching to hypno = None.')
-            hypno = None
+        # Check include
+        if include is None:
+            include = []
+        include = np.atleast_1d(np.asarray(include))
+        assert include.size >= 1, 'Include must have at least one element.'
+        assert hypno.dtype.kind == include.dtype.kind, ('hypno and include '
+                                                        'must have same dtype')
+        if not np.in1d(hypno, include).any():
+            logger.error('None of the stages specified in `include` '
+                         'are present in hypno. Returning None.')
+            return None
 
     # Check data amplitude
     data_trimstd = trimbothstd(data, cut=0.10)
@@ -1412,15 +1416,17 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         assert hypno.size == loc.size, 'Hypno must have same size as data.'
         unique_hypno = np.unique(hypno)
         logger.info('Number of unique values in hypno = %i', unique_hypno.size)
-        if isinstance(include, int):
-            include = [include]
-        else:
-            assert isinstance(include, (tuple, list, np.ndarray))
-        assert len(include) >= 1, 'include must have at least one element.'
-        if not any(np.in1d(unique_hypno, include)):
-            logger.error('The values in include are not present in hypno. '
-                         'Switching to hypno = None.')
-            hypno = None
+        # Check include
+        if include is None:
+            include = []
+        include = np.atleast_1d(np.asarray(include))
+        assert include.size >= 1, 'Include must have at least one element.'
+        assert hypno.dtype.kind == include.dtype.kind, ('hypno and include '
+                                                        'must have same dtype')
+        if not np.in1d(hypno, include).any():
+            logger.error('None of the stages specified in `include` '
+                         'are present in hypno. Returning None.')
+            return None
 
     # Check data amplitude
     # times = np.arange(data.size) / sf

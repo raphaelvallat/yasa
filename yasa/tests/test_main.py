@@ -168,11 +168,6 @@ class TestStringMethods(unittest.TestCase):
         with self.assertLogs('yasa', level='WARNING'):
             spindles_detect(data_150, sf_150, hypno=np.ones(data_150.size))
 
-        # Hypnogram with only one unique value
-        with self.assertLogs('yasa', level='ERROR'):
-            sp = spindles_detect(data, sf, hypno=np.zeros(data.size))
-        assert 'Stage' not in sp.keys()
-
         # Now load other data
         with self.assertLogs('yasa', level='WARNING'):
             spindles_detect(data_n3, sf_n3)
@@ -205,6 +200,12 @@ class TestStringMethods(unittest.TestCase):
 
         with pytest.raises(AssertionError):
             sp = spindles_detect(data_full, sf_full)
+
+        # No values in hypno intersect with include
+        with self.assertLogs('yasa', level='ERROR'):
+            sp = spindles_detect(data, sf, include=2,
+                                 hypno=np.zeros(data.size, dtype=int))
+            assert sp is None
 
     def test_spindles_detect_multi(self):
         """Test spindles_detect_multi"""
@@ -280,9 +281,6 @@ class TestStringMethods(unittest.TestCase):
         # With N3 hypnogram
         sw_detect(data_sw, sf_full, hypno=hypno_sw)
 
-        # With N1
-        sw_detect(data_sw, sf_full, hypno=np.ones(data_sw.shape, dtype=int))
-
         # With 2D data
         sw_detect(data_sw[np.newaxis, ...], sf_full)
 
@@ -299,6 +297,12 @@ class TestStringMethods(unittest.TestCase):
         # Non-integer sampling frequency
         data_sw_250 = resample(data_sw, up=2.5)
         sw_detect(data_sw_250, 250)
+
+        # No values in hypno intersect with include
+        with self.assertLogs('yasa', level='ERROR'):
+            sw = sw_detect(data_sw, sf_full, include=3,
+                           hypno=np.ones(data_sw.shape, dtype=int))
+            assert sw is None
 
     def test_sw_detect_multi(self):
         """Test sw_detect_multi"""
@@ -367,3 +371,8 @@ class TestStringMethods(unittest.TestCase):
                           4 * np.ones(int(loc.size / 2))]
         df_rem2 = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
         assert df_rem.shape[0] > df_rem2.shape[0]
+
+        # No values in hypno intersect with include
+        with self.assertLogs('yasa', level='ERROR'):
+            sp = rem_detect(loc, roc, sf_full, hypno=hypno_rem, include=5)
+            assert sp is None
