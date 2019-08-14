@@ -1,5 +1,6 @@
 # Import EntroPy objects
-from .main import *
 from .hypno import *
+from .main import *
+from .spectral import *
 
 __version__ = "0.1.4"

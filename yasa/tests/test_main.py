@@ -8,7 +8,7 @@ from itertools import product
 from scipy.signal import detrend
 from mne.filter import filter_data, resample
 from yasa.main import (_corr, _covar, _rms, _slope_lstsq, _detrend,
-                       moving_transform, stft_power, get_sync_sw,
+                       moving_transform, get_sync_sw,
                        _index_to_events, get_bool_vector, trimbothstd,
                        _merge_close, spindles_detect, spindles_detect_multi,
                        _zerocrossings, sw_detect, sw_detect_multi, rem_detect)
@@ -224,29 +224,6 @@ class TestStringMethods(unittest.TestCase):
         with self.assertLogs('yasa', level='WARNING'):
             sp = spindles_detect_multi(data_full, sf_full, chan_full)
             assert sp is None
-
-    def test_stft_power(self):
-        """Test function stft_power
-        """
-        window = [2, 4]
-        step = [0, .1, 1]
-        band = [(0.5, 20), (1, 30), [5, 12], None]
-        norm = [True, False]
-        interp = [True, False]
-
-        prod_args = product(window, step, band, interp, norm)
-
-        for i, (w, s, b, i, n) in enumerate(prod_args):
-            stft_power(data, sf, window=w, step=s, band=b, interp=i,
-                       norm=n)
-
-        f, t, _ = stft_power(data, sf, window=4, step=.1, band=(11, 16),
-                             interp=True, norm=False)
-
-        assert f[1] - f[0] == 0.25
-        assert t.size == data.size
-        assert max(f) == 16
-        assert min(f) == 11
 
     def test_trimbothstd(self):
         """Test function trimbothstd

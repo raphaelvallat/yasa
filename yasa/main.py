@@ -12,15 +12,18 @@ import pandas as pd
 from numba import jit
 from scipy import signal
 from mne.filter import filter_data
+from scipy.interpolate import interp1d
 from scipy.fftpack import next_fast_len
-from scipy.interpolate import interp1d, RectBivariateSpline
+
+from .spectral import stft_power
+
 
 logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s',
                     datefmt='%d-%b-%y %H:%M:%S')
 
 logger = logging.getLogger('yasa')
 
-__all__ = ['spindles_detect', 'spindles_detect_multi', 'stft_power',
+__all__ = ['spindles_detect', 'spindles_detect_multi',
            'moving_transform', 'get_bool_vector', 'get_sync_sw', 'sw_detect',
            'sw_detect_multi', 'rem_detect']
 
@@ -234,86 +237,6 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
         out = f(t)
 
     return t, out
-
-
-def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
-               norm=False):
-    """Compute the pointwise power via STFT and interpolation.
-
-    Parameters
-    ----------
-    data : array_like
-        Single-channel data.
-    sf : float
-        Sampling frequency of the data.
-    window : int
-        Window size in seconds for STFT.
-        2 or 4 seconds are usually a good default.
-        Higher values = higher frequency resolution = lower time resolution.
-    step : int
-        Step in seconds for the STFT.
-        A step of 0.2 second (200 ms) is usually a good default.
-        If step == 0, overlap at every sample (slowest)
-        If step == nperseg, no overlap (fastest)
-        Higher values = higher precision = slower computation.
-    band : tuple or None
-        Broad band frequency range.
-        Default is 1 to 30 Hz.
-    interp : boolean
-        If True, a cubic interpolation is performed to ensure that the output
-        is the same size as the input (= pointwise power).
-    norm : bool
-        If True, return bandwise normalized band power, i.e. for each time
-        point, the sum of power in all the frequency bins equals 1.
-
-    Returns
-    -------
-    f : ndarray
-        Frequency vector
-    t : ndarray
-        Time vector
-    Sxx : ndarray
-        Power in the specified frequency bins of shape (f, t)
-
-    Notes
-    -----
-    2D Interpolation is done using `scipy.interpolate.RectBivariateSpline`
-    which is much faster than `scipy.interpolate.interp2d` for a rectangular
-    grid. The default is to use a bivariate spline with 3 degrees.
-    """
-    # Safety check
-    data = np.asarray(data)
-    assert step <= window
-
-    step = 1 / sf if step == 0 else step
-
-    # Define STFT parameters
-    nperseg = int(window * sf)
-    noverlap = int(nperseg - (step * sf))
-
-    # Compute STFT and remove the last epoch
-    f, t, Sxx = signal.stft(data, sf, nperseg=nperseg, noverlap=noverlap,
-                            detrend=False, padded=True)
-
-    # Let's keep only the frequency of interest
-    if band is not None:
-        idx_band = np.logical_and(f >= band[0], f <= band[1])
-        f = f[idx_band]
-        Sxx = Sxx[idx_band, :]
-
-    # Compute power
-    Sxx = np.square(np.abs(Sxx))
-
-    # Interpolate
-    if interp:
-        func = RectBivariateSpline(f, t, Sxx)
-        t = np.arange(data.size) / sf
-        Sxx = func(f, t)
-
-    if norm:
-        sum_pow = Sxx.sum(0).reshape(1, -1)
-        np.divide(Sxx, sum_pow, out=Sxx)
-    return f, t, Sxx
 
 
 def _zerocrossings(x):
