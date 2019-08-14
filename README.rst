@@ -49,6 +49,8 @@ The **rapid eye movements (REMs)** detection algorithm is a custom adaptation in
 
 - Yetton, B. D., Niknazar, M., Duggan, K. A., McDevitt, E. A., Whitehurst, L. N., Sattari, N., & Mednick, S. C. (2016). `Automatic detection of rapid eye movements (REMs): A machine learning approach <https://www.sciencedirect.com/science/article/pii/S0165027015004173>`_. *Journal of neuroscience methods*.
 
+In addition, YASA also provides some convenient functions to `load and manipulate sleep stages vector (hypnogram) <https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html>`_, and to `calculate spectral power in desired bands <https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/spectral.html#yasa.spectral.bandpower_from_psd>`_ from a single or multi-channel power spectral density (PSD).
+
 Installation
 ~~~~~~~~~~~~
 
@@ -75,7 +77,7 @@ In order to use YASA, you need:
 - Some basic knowledge of Python and especially the `NumPy <https://docs.scipy.org/doc/numpy/user/quickstart.html>`_, `Pandas <https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html>`_ and `MNE <https://martinos.org/mne/stable/index.html>`_ libraries.
 - A Python editor: YASA works best with `Jupyter Lab <https://jupyterlab.readthedocs.io/en/stable/index.html>`_, a web-based interactive user interface.
 - Some sleep EEG data, either as a NumPy array, or as a raw MNE object (for instance, using the `mne.io.read_raw_edf <https://mne-tools.github.io/stable/generated/mne.io.read_raw_edf.html>`_ function for EDF file). The units of the data MUST be uV.
-- Optionally, a sleep staging vector (= hypnogram) to run the detections on specific sleep stages. To facilitate masking and selection operations, YASA requires that the data and hypnogram have the same sampling frequency and shape. If not, YASA provide some `convenient functions <https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html>`_ to load and upsample hypnogram data to the desired shape.
+- Optionally, a sleep staging vector (= hypnogram) to run the detections on specific sleep stages. To facilitate masking and indexing operations, YASA requires that the data and hypnogram have the same sampling frequency and number of samples. Fortunately, YASA provide some `convenient functions <https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html>`_ to load and upsample hypnogram data to the desired shape. The default hypnogram format in YASA is a one dimensional integer array where 0 = Wake, 1 = N1 sleep, 2 = N2 sleep, 3 = N3 sleep, 4 = REM and -1 = Artefact / Movement.
 
 Examples
 ~~~~~~~~
@@ -108,9 +110,9 @@ The examples Jupyter notebooks are really what make YASA great! In addition to s
 
 9. `notebooks/09_REMs_detection.ipynb <notebooks/09_REMs_detection.ipynb>`_: REMs detection.
 
-**Bandpower**
+**Bandpower & hypnogram handling**
 
-10. `notebooks/10_bandpower.ipynb <notebooks/10_bandpower.ipynb>`_: bandpower per channel and per sleep stage.
+10. `notebooks/10_bandpower.ipynb <notebooks/10_bandpower.ipynb>`_: spectral bandpower per channel and per sleep stage.
 
 Typical uses
 ------------
