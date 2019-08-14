@@ -74,15 +74,15 @@ def hypno_int_to_str(hypno, mapping_dict={0: 'W', 1: 'N1', 2: 'N2', 3: 'N3',
     Parameters
     ----------
     hypno : array_like
-      The sleep staging (hypnogram) 1D array.
+        The sleep staging (hypnogram) 1D array.
     mapping_dict : dict
-      The mapping dictionnary. Note that this function is
-      essentially a wrapper around `pandas.Series.map`.
+        The mapping dictionnary. Note that this function is
+        essentially a wrapper around `pandas.Series.map`.
 
     Returns
     --------
     hypno : array_like
-      The corresponding integer hypnogram.
+        The corresponding integer hypnogram.
     """
     assert isinstance(hypno, (list, np.ndarray, pd.Series)), 'Not an array.'
     hypno = pd.Series(np.asarray(hypno, dtype=int))
@@ -202,7 +202,7 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None):
     -------
     hypno : array_like
         The hypnogram, upsampled to ``sf_data`` and cropped/padded to
-        ``data.size``.
+        ``max(data.shape)``.
     """
     if isinstance(data, mne.io.BaseRaw):
         sf_data = data.info['sfreq']
