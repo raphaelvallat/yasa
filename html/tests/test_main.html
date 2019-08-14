@@ -1,0 +1,1187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.6.3" />
+<title>yasa.tests.test_main API documentation</title>
+<meta name="description" content="Test the functions in the yasa/main.py file." />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>yasa.tests.test_main</code></h1>
+</header>
+<section id="section-intro">
+<p>Test the functions in the yasa/main.py file.</p>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">&#34;&#34;&#34;
+Test the functions in the yasa/main.py file.
+&#34;&#34;&#34;
+import pytest
+import unittest
+import numpy as np
+from itertools import product
+from scipy.signal import detrend
+from mne.filter import filter_data, resample
+from yasa.main import (_corr, _covar, _rms, _slope_lstsq, _detrend,
+                       moving_transform, get_sync_sw,
+                       _index_to_events, get_bool_vector, trimbothstd,
+                       _merge_close, spindles_detect, spindles_detect_multi,
+                       _zerocrossings, sw_detect, sw_detect_multi, rem_detect)
+
+# Load data
+data = np.loadtxt(&#39;notebooks/data_N2_spindles_15sec_200Hz.txt&#39;)
+sf = 200
+data_sigma = filter_data(data, sf, 12, 15, method=&#39;fir&#39;, verbose=0)
+
+# Resample the data to 128 Hz
+fac = 128 / sf
+data_128 = resample(data, up=fac, down=1.0, npad=&#39;auto&#39;, axis=-1,
+                    window=&#39;boxcar&#39;, n_jobs=1, pad=&#39;reflect_limited&#39;,
+                    verbose=False)
+sf_128 = 128
+
+# Resample the data to 150 Hz
+fac = 150 / sf
+data_150 = resample(data, up=fac, down=1.0, npad=&#39;auto&#39;, axis=-1,
+                    window=&#39;boxcar&#39;, n_jobs=1, pad=&#39;reflect_limited&#39;,
+                    verbose=False)
+sf_150 = 150
+
+# Load an extract of N3 sleep without any spindle
+data_n3 = np.loadtxt(&#39;notebooks/data_N3_no-spindles_30sec_100Hz.txt&#39;)
+sf_n3 = 100
+
+# Load a full recording and its hypnogram
+file_full = np.load(&#39;notebooks/data_full_6hrs_100Hz_Cz+Fz+Pz.npz&#39;)
+data_full = file_full.get(&#39;data&#39;)
+chan_full = file_full.get(&#39;chan&#39;)
+sf_full = 100
+hypno_full = np.load(&#39;notebooks/data_full_6hrs_100Hz_hypno.npz&#39;).get(&#39;hypno&#39;)
+
+
+class TestStringMethods(unittest.TestCase):
+
+    def test_numba(self):
+        &#34;&#34;&#34;Test numba functions
+        &#34;&#34;&#34;
+        x = np.asarray([4, 5, 7, 8, 5, 6], dtype=np.float64)
+        y = np.asarray([1, 5, 4, 6, 8, 5], dtype=np.float64)
+
+        np.testing.assert_almost_equal(_corr(x, y), np.corrcoef(x, y)[0][1])
+        assert _covar(x, y) == np.cov(x, y)[0][1]
+        assert _rms(x) == np.sqrt(np.mean(np.square(x)))
+
+        # Least square slope and detrending
+        y = np.arange(30) + 3 * np.random.random(30)
+        times = np.arange(y.size, dtype=np.float64)
+        slope = _slope_lstsq(times, y)
+        np.testing.assert_array_almost_equal(_detrend(times, y),
+                                             detrend(y, type=&#39;linear&#39;))
+        X = times[..., np.newaxis]
+        X = np.column_stack((np.ones(X.shape[0]), X))
+        slope_np = np.linalg.lstsq(X, y, rcond=None)[0][1]
+        np.round(slope, 5) == np.round(slope_np, 5)
+
+    def test_index_to_events(self):
+        &#34;&#34;&#34;Test functions _index_to_events&#34;&#34;&#34;
+        a = np.array([[3, 6], [8, 12], [14, 20]])
+        good = [3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20]
+        out = _index_to_events(a)
+        np.testing.assert_equal(good, out)
+
+    def test_get_bool_vector(self):
+        &#34;&#34;&#34;Test functions get_bool_vector&#34;&#34;&#34;
+        sp_params = spindles_detect(data, sf)
+        out = get_bool_vector(data, sf, sp_params)
+        assert out.size == data.size
+        assert np.unique(out).size == 2
+
+    def test_get_sync_sw(self):
+        &#34;&#34;&#34;Test functions get_sync_sw&#34;&#34;&#34;
+        sw = sw_detect_multi(data_full, sf_full, chan_full)
+        # Multi-channel with negative slow-wave peak
+        df_sync = get_sync_sw(data_full, sf, sw)
+        assert df_sync[&#39;Channel&#39;].nunique() == 3
+        # Single-channel with positive slow-wave peak
+        sw_c = sw[sw[&#39;Channel&#39;] == sw.at[0, &#39;Channel&#39;]].iloc[:, :-2]
+        df_sync = get_sync_sw(data_full[0, :], sf_full, sw_c,
+                              event=&#39;PosPeak&#39;, time_before=0, time_after=2)
+        assert df_sync.shape[1] == 3
+
+    def test_merge_close(self):
+        &#34;&#34;&#34;Test functions _merge_close&#34;&#34;&#34;
+        a = np.array([4, 5, 6, 7, 10, 11, 12, 13, 20, 21, 22, 100, 102])
+        good = np.array([4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                         17, 18, 19, 20, 21, 22, 100, 101, 102])
+        # Events that are less than 100 ms apart (i.e. 10 points at 100 Hz sf)
+        out = _merge_close(a, 100, 100)
+        np.testing.assert_equal(good, out)
+
+    def test_moving_transform(self):
+        &#34;&#34;&#34;Test moving_transform&#34;&#34;&#34;
+        method = [&#39;mean&#39;, &#39;min&#39;, &#39;max&#39;, &#39;ptp&#39;, &#39;rms&#39;, &#39;prop_above_zero&#39;,
+                  &#39;slope&#39;, &#39;corr&#39;, &#39;covar&#39;]
+        interp = [False, True]
+        win = [.3, .5]
+        step = [0, .1, .3, .5]
+
+        prod_args = product(win, step, method, interp)
+
+        for i, (w, s, m, i) in enumerate(prod_args):
+            moving_transform(data, data_sigma, sf, w, s, m, i)
+
+        t, out = moving_transform(data, None, sf, w, s, &#39;rms&#39;, True)
+        assert t.size == out.size
+        assert out.size == data.size
+
+    def test_spindles_detect(self):
+        &#34;&#34;&#34;Test spindles_detect&#34;&#34;&#34;
+        freq_sp = [(11, 16), [12, 14], (11, 15)]
+        freq_broad = [(0.5, 30), [1, 25]]
+        duration = [(0.3, 2.5), [0.5, 3]]
+        min_distance = [None, 0, 300, 500]
+
+        prod_args = product(freq_sp, freq_broad, duration, min_distance)
+
+        for i, (s, b, d, m) in enumerate(prod_args):
+            spindles_detect(data, sf, freq_sp=s, duration=d,
+                            freq_broad=b, min_distance=m)
+
+        sp_params = spindles_detect(data, sf)
+        print(sp_params.round(2))
+        assert spindles_detect(data, sf).shape[0] == 2
+
+        # Test with custom thresholds
+        spindles_detect(data, sf, thresh={&#39;rel_pow&#39;: 0.25})
+        spindles_detect(data, sf, thresh={&#39;rms&#39;: 1.25})
+        spindles_detect(data, sf, thresh={&#39;rel_pow&#39;: 0.25, &#39;corr&#39;: .60})
+
+        # Test with downsampling is False
+        spindles_detect(data, sf, downsample=False)
+
+        # Power of 2 resampling
+        spindles_detect(data_128, sf_128)
+
+        # Test with hypnogram
+        spindles_detect(data_full[0, :], sf_full, hypno=hypno_full)
+
+        # Hypnogram with sf = 200 Hz (require downsampling)
+        spindles_detect(data, sf, hypno=np.ones(data.size))
+
+        # Hypnogram with sf = 150
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+            spindles_detect(data_150, sf_150, hypno=np.ones(data_150.size))
+
+        # Hypnogram with only one unique value
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sp = spindles_detect(data, sf, hypno=np.zeros(data.size))
+        assert &#39;Stage&#39; not in sp.keys()
+
+        # Now load other data
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+            spindles_detect(data_n3, sf_n3)
+
+        # Ensure that the two warnings are tested
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+            sp = spindles_detect(data_n3, sf_n3, thresh={&#39;corr&#39;: .95})
+        assert sp is None
+
+        # Test with wrong data amplitude (1)
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sp = spindles_detect(data_n3 / 1e6, sf_n3)
+        assert sp is None
+
+        # Test with wrong data amplitude (2)
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sp = spindles_detect(data_n3 * 1e6, sf_n3)
+        assert sp is None
+
+        # Test with a random array
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sp = spindles_detect(np.random.random(size=1000), sf_n3)
+        assert sp is None
+
+        # Now we try with the isolation forest on the full recording
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;INFO&#39;):
+            sp = spindles_detect(data_full[1, :], sf_full,
+                                 remove_outliers=True)
+        assert sp.shape[0] &gt; 100
+
+        with pytest.raises(AssertionError):
+            sp = spindles_detect(data_full, sf_full)
+
+    def test_spindles_detect_multi(self):
+        &#34;&#34;&#34;Test spindles_detect_multi&#34;&#34;&#34;
+        sp = spindles_detect_multi(data_full, sf_full, chan_full)
+        sp_no_out = spindles_detect_multi(data_full, sf_full, chan_full,
+                                          remove_outliers=True)
+        sp_multi = spindles_detect_multi(data_full, sf_full, chan_full,
+                                         multi_only=True)
+        assert sp_multi.shape[0] &lt; sp.shape[0]
+        assert sp_no_out.shape[0] &lt; sp.shape[0]
+        bv = get_bool_vector(data_full, sf_full, sp)
+        assert bv.shape[0] == len(chan_full)
+
+        # Test with hypnogram
+        spindles_detect_multi(data_full, sf_full, chan_full, hypno=hypno_full,
+                              include=2)
+
+        # Now we replace one channel with no spindle / bad data
+        data_full[1, :] = np.random.random(data_full.shape[1])
+
+        # Test where data.shape[0] != len(chan)
+        with pytest.raises(AssertionError):
+            spindles_detect_multi(data_full, sf_full, chan_full[:-1])
+
+        # Test with only bad channels
+        data_full[0, :] = np.random.random(data_full.shape[1])
+        data_full[2, :] = np.random.random(data_full.shape[1])
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+            sp = spindles_detect_multi(data_full, sf_full, chan_full)
+            assert sp is None
+
+    def test_trimbothstd(self):
+        &#34;&#34;&#34;Test function trimbothstd
+        &#34;&#34;&#34;
+        x = [4, 5, 7, 0, 18, 6, 7, 8, 9, 10]
+        assert trimbothstd(x) &lt; np.std(x, ddof=1)
+
+    def test_zerocrossings(self):
+        &#34;&#34;&#34;Test _zerocrossings
+        &#34;&#34;&#34;
+        a = np.array([4, 2, -1, -3, 1, 2, 3, -2, -5])
+        idx_zc = _zerocrossings(a)
+        np.testing.assert_equal(idx_zc, [1, 3, 6])
+
+    def test_sw_detect(self):
+        &#34;&#34;&#34;Test function slow-wave detect
+        &#34;&#34;&#34;
+        # Keep only Fz and during a N3 sleep period with (huge) slow-waves
+        data_sw = data_full[1, 666000:672000].astype(np.float64)
+        hypno_sw = hypno_full[666000:672000]
+
+        # Parameters product testing
+        freq_sw = [(0.3, 3.5), (0.5, 4)]
+        dur_neg = [(0.3, 1.5), [0.1, 2]]
+        dur_pos = [(0.3, 1.5), [0, 1]]
+        amp_neg = [(40, 300), [40, None]]
+        amp_pos = [(10, 150), (0, None)]
+        amp_ptp = [(75, 400), [80, 300]]
+
+        prod_args = product(freq_sw, dur_neg, dur_pos, amp_neg, amp_pos,
+                            amp_ptp)
+
+        for i, (f, dn, dp, an, ap, aptp) in enumerate(prod_args):
+            print((f, dn, dp, an, ap, aptp))
+            sw_detect(data_sw, sf_full, freq_sw=f, dur_neg=dn,
+                      dur_pos=dp, amp_neg=an, amp_pos=ap,
+                      amp_ptp=aptp)
+
+        # With N3 hypnogram
+        sw_detect(data_sw, sf_full, hypno=hypno_sw)
+
+        # With N1
+        sw_detect(data_sw, sf_full, hypno=np.ones(data_sw.shape, dtype=int))
+
+        # With 2D data
+        sw_detect(data_sw[np.newaxis, ...], sf_full)
+
+        # Downsampling with hypnogram
+        data_sw_200 = resample(data_sw, up=2)
+        sw_detect(data_sw_200, 200,
+                  hypno=2 * np.ones(data_sw_200.shape, dtype=int),
+                  include=2)
+
+        # Downsampling without hypnogram
+        data_sw_200 = resample(data_sw, up=2)
+        sw_detect(data_sw_200, 200)
+
+        # Non-integer sampling frequency
+        data_sw_250 = resample(data_sw, up=2.5)
+        sw_detect(data_sw_250, 250)
+
+    def test_sw_detect_multi(self):
+        &#34;&#34;&#34;Test sw_detect_multi&#34;&#34;&#34;
+        data_full = file_full.get(&#39;data&#39;)
+        sw = sw_detect_multi(data_full, sf_full, chan_full)
+        sw_no_out = sw_detect_multi(data_full, sf_full, chan_full,
+                                    remove_outliers=True)
+        assert sw_no_out.shape[0] &lt; sw.shape[0]
+        bv = get_bool_vector(data_full, sf_full, sw)
+        assert bv.shape[0] == len(chan_full)
+
+        # Test with hypnogram
+        sw_detect_multi(data_full, sf_full, chan_full,
+                        hypno=hypno_full, include=3)
+
+        # Now we replace one channel with no slow-wave / bad data
+        data_full[1, :] = np.random.random(data_full.shape[1])
+
+        # Test where data.shape[0] != len(chan)
+        with pytest.raises(AssertionError):
+            sw_detect_multi(data_full, sf_full, chan_full[:-1])
+
+        # Test with only bad channels
+        data_full[0, :] = np.random.random(data_full.shape[1])
+        data_full[2, :] = np.random.random(data_full.shape[1])
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+            sp = sw_detect_multi(data_full, sf_full, chan_full)
+            assert sp is None
+
+    def test_rem_detect(self):
+        &#34;&#34;&#34;Test function REM detect
+        &#34;&#34;&#34;
+        file_rem = np.load(&#39;notebooks/data_EOGs_REM_256Hz.npz&#39;)
+        data_rem = file_rem[&#39;data&#39;]
+        loc, roc = data_rem[0, :], data_rem[1, :]
+        sf_rem = file_rem[&#39;sf&#39;]
+        # chan_rem = file_rem[&#39;chan&#39;]
+        hypno_rem = 4 * np.ones_like(loc)
+
+        # Parameters product testing
+        freq_rem = [(0.5, 5), (0.3, 8)]
+        duration = [(0.3, 1.5), [0.5, 1]]
+        amplitude = [(50, 200), [60, 300]]
+        downsample = [True, False]
+        hypno = [hypno_rem, None]
+        prod_args = product(freq_rem, duration, amplitude, downsample, hypno)
+
+        for i, (f, dr, am, ds, h) in enumerate(prod_args):
+            rem_detect(loc, roc, sf_rem, hypno=h, freq_rem=f, duration=dr,
+                       amplitude=am, downsample=ds)
+
+        # With isolation forest
+        df_rem = rem_detect(loc, roc, sf)
+        df_rem2 = rem_detect(loc, roc, sf, remove_outliers=True)
+        assert df_rem.shape[0] &gt; df_rem2.shape[0]
+        assert get_bool_vector(loc, sf, df_rem).size == loc.size
+
+        # With REM hypnogram
+        hypno_rem = 4 * np.ones_like(loc)
+        df_rem = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
+        hypno_rem = np.r_[np.ones(int(loc.size / 2)),
+                          4 * np.ones(int(loc.size / 2))]
+        df_rem2 = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
+        assert df_rem.shape[0] &gt; df_rem2.shape[0]</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="yasa.tests.test_main.TestStringMethods"><code class="flex name class">
+<span>class <span class="ident">TestStringMethods</span></span>
+<span>(</span><span>methodName='runTest')</span>
+</code></dt>
+<dd>
+<section class="desc"><p>A class whose instances are single test cases.</p>
+<p>By default, the test code itself should be placed in a method named
+'runTest'.</p>
+<p>If the fixture may be used for many test cases, create as
+many test methods as are needed. When instantiating such a TestCase
+subclass, specify in the constructor arguments the name of the test method
+that the instance is to execute.</p>
+<p>Test authors should subclass TestCase for their own tests. Construction
+and deconstruction of the test's environment ('fixture') can be
+implemented by overriding the 'setUp' and 'tearDown' methods respectively.</p>
+<p>If it is necessary to override the <strong>init</strong> method, the base class
+<strong>init</strong> method must always be called. It is important that subclasses
+should not change the signature of their <strong>init</strong> method, since instances
+of the classes are instantiated automatically by parts of the framework
+in order to be run.</p>
+<p>When subclassing TestCase, you can set these attributes:
+* failureException: determines which exception will be raised when
+the instance's assertion methods fail; test methods raising this
+exception will be deemed to have 'failed' rather than 'errored'.
+* longMessage: determines whether long messages (including repr of
+objects used in assert methods) will be printed on failure in <em>addition</em>
+to any explicit message passed.
+* maxDiff: sets the maximum length of a diff in failure messages
+by assert methods using difflib. It is looked up as an instance
+attribute so can be configured by individual tests if required.</p>
+<p>Create an instance of the class that will use the named test
+method when executed. Raises a ValueError if the instance does
+not have a method with the specified name.</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">class TestStringMethods(unittest.TestCase):
+
+    def test_numba(self):
+        &#34;&#34;&#34;Test numba functions
+        &#34;&#34;&#34;
+        x = np.asarray([4, 5, 7, 8, 5, 6], dtype=np.float64)
+        y = np.asarray([1, 5, 4, 6, 8, 5], dtype=np.float64)
+
+        np.testing.assert_almost_equal(_corr(x, y), np.corrcoef(x, y)[0][1])
+        assert _covar(x, y) == np.cov(x, y)[0][1]
+        assert _rms(x) == np.sqrt(np.mean(np.square(x)))
+
+        # Least square slope and detrending
+        y = np.arange(30) + 3 * np.random.random(30)
+        times = np.arange(y.size, dtype=np.float64)
+        slope = _slope_lstsq(times, y)
+        np.testing.assert_array_almost_equal(_detrend(times, y),
+                                             detrend(y, type=&#39;linear&#39;))
+        X = times[..., np.newaxis]
+        X = np.column_stack((np.ones(X.shape[0]), X))
+        slope_np = np.linalg.lstsq(X, y, rcond=None)[0][1]
+        np.round(slope, 5) == np.round(slope_np, 5)
+
+    def test_index_to_events(self):
+        &#34;&#34;&#34;Test functions _index_to_events&#34;&#34;&#34;
+        a = np.array([[3, 6], [8, 12], [14, 20]])
+        good = [3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20]
+        out = _index_to_events(a)
+        np.testing.assert_equal(good, out)
+
+    def test_get_bool_vector(self):
+        &#34;&#34;&#34;Test functions get_bool_vector&#34;&#34;&#34;
+        sp_params = spindles_detect(data, sf)
+        out = get_bool_vector(data, sf, sp_params)
+        assert out.size == data.size
+        assert np.unique(out).size == 2
+
+    def test_get_sync_sw(self):
+        &#34;&#34;&#34;Test functions get_sync_sw&#34;&#34;&#34;
+        sw = sw_detect_multi(data_full, sf_full, chan_full)
+        # Multi-channel with negative slow-wave peak
+        df_sync = get_sync_sw(data_full, sf, sw)
+        assert df_sync[&#39;Channel&#39;].nunique() == 3
+        # Single-channel with positive slow-wave peak
+        sw_c = sw[sw[&#39;Channel&#39;] == sw.at[0, &#39;Channel&#39;]].iloc[:, :-2]
+        df_sync = get_sync_sw(data_full[0, :], sf_full, sw_c,
+                              event=&#39;PosPeak&#39;, time_before=0, time_after=2)
+        assert df_sync.shape[1] == 3
+
+    def test_merge_close(self):
+        &#34;&#34;&#34;Test functions _merge_close&#34;&#34;&#34;
+        a = np.array([4, 5, 6, 7, 10, 11, 12, 13, 20, 21, 22, 100, 102])
+        good = np.array([4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                         17, 18, 19, 20, 21, 22, 100, 101, 102])
+        # Events that are less than 100 ms apart (i.e. 10 points at 100 Hz sf)
+        out = _merge_close(a, 100, 100)
+        np.testing.assert_equal(good, out)
+
+    def test_moving_transform(self):
+        &#34;&#34;&#34;Test moving_transform&#34;&#34;&#34;
+        method = [&#39;mean&#39;, &#39;min&#39;, &#39;max&#39;, &#39;ptp&#39;, &#39;rms&#39;, &#39;prop_above_zero&#39;,
+                  &#39;slope&#39;, &#39;corr&#39;, &#39;covar&#39;]
+        interp = [False, True]
+        win = [.3, .5]
+        step = [0, .1, .3, .5]
+
+        prod_args = product(win, step, method, interp)
+
+        for i, (w, s, m, i) in enumerate(prod_args):
+            moving_transform(data, data_sigma, sf, w, s, m, i)
+
+        t, out = moving_transform(data, None, sf, w, s, &#39;rms&#39;, True)
+        assert t.size == out.size
+        assert out.size == data.size
+
+    def test_spindles_detect(self):
+        &#34;&#34;&#34;Test spindles_detect&#34;&#34;&#34;
+        freq_sp = [(11, 16), [12, 14], (11, 15)]
+        freq_broad = [(0.5, 30), [1, 25]]
+        duration = [(0.3, 2.5), [0.5, 3]]
+        min_distance = [None, 0, 300, 500]
+
+        prod_args = product(freq_sp, freq_broad, duration, min_distance)
+
+        for i, (s, b, d, m) in enumerate(prod_args):
+            spindles_detect(data, sf, freq_sp=s, duration=d,
+                            freq_broad=b, min_distance=m)
+
+        sp_params = spindles_detect(data, sf)
+        print(sp_params.round(2))
+        assert spindles_detect(data, sf).shape[0] == 2
+
+        # Test with custom thresholds
+        spindles_detect(data, sf, thresh={&#39;rel_pow&#39;: 0.25})
+        spindles_detect(data, sf, thresh={&#39;rms&#39;: 1.25})
+        spindles_detect(data, sf, thresh={&#39;rel_pow&#39;: 0.25, &#39;corr&#39;: .60})
+
+        # Test with downsampling is False
+        spindles_detect(data, sf, downsample=False)
+
+        # Power of 2 resampling
+        spindles_detect(data_128, sf_128)
+
+        # Test with hypnogram
+        spindles_detect(data_full[0, :], sf_full, hypno=hypno_full)
+
+        # Hypnogram with sf = 200 Hz (require downsampling)
+        spindles_detect(data, sf, hypno=np.ones(data.size))
+
+        # Hypnogram with sf = 150
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+            spindles_detect(data_150, sf_150, hypno=np.ones(data_150.size))
+
+        # Hypnogram with only one unique value
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sp = spindles_detect(data, sf, hypno=np.zeros(data.size))
+        assert &#39;Stage&#39; not in sp.keys()
+
+        # Now load other data
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+            spindles_detect(data_n3, sf_n3)
+
+        # Ensure that the two warnings are tested
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+            sp = spindles_detect(data_n3, sf_n3, thresh={&#39;corr&#39;: .95})
+        assert sp is None
+
+        # Test with wrong data amplitude (1)
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sp = spindles_detect(data_n3 / 1e6, sf_n3)
+        assert sp is None
+
+        # Test with wrong data amplitude (2)
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sp = spindles_detect(data_n3 * 1e6, sf_n3)
+        assert sp is None
+
+        # Test with a random array
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+            sp = spindles_detect(np.random.random(size=1000), sf_n3)
+        assert sp is None
+
+        # Now we try with the isolation forest on the full recording
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;INFO&#39;):
+            sp = spindles_detect(data_full[1, :], sf_full,
+                                 remove_outliers=True)
+        assert sp.shape[0] &gt; 100
+
+        with pytest.raises(AssertionError):
+            sp = spindles_detect(data_full, sf_full)
+
+    def test_spindles_detect_multi(self):
+        &#34;&#34;&#34;Test spindles_detect_multi&#34;&#34;&#34;
+        sp = spindles_detect_multi(data_full, sf_full, chan_full)
+        sp_no_out = spindles_detect_multi(data_full, sf_full, chan_full,
+                                          remove_outliers=True)
+        sp_multi = spindles_detect_multi(data_full, sf_full, chan_full,
+                                         multi_only=True)
+        assert sp_multi.shape[0] &lt; sp.shape[0]
+        assert sp_no_out.shape[0] &lt; sp.shape[0]
+        bv = get_bool_vector(data_full, sf_full, sp)
+        assert bv.shape[0] == len(chan_full)
+
+        # Test with hypnogram
+        spindles_detect_multi(data_full, sf_full, chan_full, hypno=hypno_full,
+                              include=2)
+
+        # Now we replace one channel with no spindle / bad data
+        data_full[1, :] = np.random.random(data_full.shape[1])
+
+        # Test where data.shape[0] != len(chan)
+        with pytest.raises(AssertionError):
+            spindles_detect_multi(data_full, sf_full, chan_full[:-1])
+
+        # Test with only bad channels
+        data_full[0, :] = np.random.random(data_full.shape[1])
+        data_full[2, :] = np.random.random(data_full.shape[1])
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+            sp = spindles_detect_multi(data_full, sf_full, chan_full)
+            assert sp is None
+
+    def test_trimbothstd(self):
+        &#34;&#34;&#34;Test function trimbothstd
+        &#34;&#34;&#34;
+        x = [4, 5, 7, 0, 18, 6, 7, 8, 9, 10]
+        assert trimbothstd(x) &lt; np.std(x, ddof=1)
+
+    def test_zerocrossings(self):
+        &#34;&#34;&#34;Test _zerocrossings
+        &#34;&#34;&#34;
+        a = np.array([4, 2, -1, -3, 1, 2, 3, -2, -5])
+        idx_zc = _zerocrossings(a)
+        np.testing.assert_equal(idx_zc, [1, 3, 6])
+
+    def test_sw_detect(self):
+        &#34;&#34;&#34;Test function slow-wave detect
+        &#34;&#34;&#34;
+        # Keep only Fz and during a N3 sleep period with (huge) slow-waves
+        data_sw = data_full[1, 666000:672000].astype(np.float64)
+        hypno_sw = hypno_full[666000:672000]
+
+        # Parameters product testing
+        freq_sw = [(0.3, 3.5), (0.5, 4)]
+        dur_neg = [(0.3, 1.5), [0.1, 2]]
+        dur_pos = [(0.3, 1.5), [0, 1]]
+        amp_neg = [(40, 300), [40, None]]
+        amp_pos = [(10, 150), (0, None)]
+        amp_ptp = [(75, 400), [80, 300]]
+
+        prod_args = product(freq_sw, dur_neg, dur_pos, amp_neg, amp_pos,
+                            amp_ptp)
+
+        for i, (f, dn, dp, an, ap, aptp) in enumerate(prod_args):
+            print((f, dn, dp, an, ap, aptp))
+            sw_detect(data_sw, sf_full, freq_sw=f, dur_neg=dn,
+                      dur_pos=dp, amp_neg=an, amp_pos=ap,
+                      amp_ptp=aptp)
+
+        # With N3 hypnogram
+        sw_detect(data_sw, sf_full, hypno=hypno_sw)
+
+        # With N1
+        sw_detect(data_sw, sf_full, hypno=np.ones(data_sw.shape, dtype=int))
+
+        # With 2D data
+        sw_detect(data_sw[np.newaxis, ...], sf_full)
+
+        # Downsampling with hypnogram
+        data_sw_200 = resample(data_sw, up=2)
+        sw_detect(data_sw_200, 200,
+                  hypno=2 * np.ones(data_sw_200.shape, dtype=int),
+                  include=2)
+
+        # Downsampling without hypnogram
+        data_sw_200 = resample(data_sw, up=2)
+        sw_detect(data_sw_200, 200)
+
+        # Non-integer sampling frequency
+        data_sw_250 = resample(data_sw, up=2.5)
+        sw_detect(data_sw_250, 250)
+
+    def test_sw_detect_multi(self):
+        &#34;&#34;&#34;Test sw_detect_multi&#34;&#34;&#34;
+        data_full = file_full.get(&#39;data&#39;)
+        sw = sw_detect_multi(data_full, sf_full, chan_full)
+        sw_no_out = sw_detect_multi(data_full, sf_full, chan_full,
+                                    remove_outliers=True)
+        assert sw_no_out.shape[0] &lt; sw.shape[0]
+        bv = get_bool_vector(data_full, sf_full, sw)
+        assert bv.shape[0] == len(chan_full)
+
+        # Test with hypnogram
+        sw_detect_multi(data_full, sf_full, chan_full,
+                        hypno=hypno_full, include=3)
+
+        # Now we replace one channel with no slow-wave / bad data
+        data_full[1, :] = np.random.random(data_full.shape[1])
+
+        # Test where data.shape[0] != len(chan)
+        with pytest.raises(AssertionError):
+            sw_detect_multi(data_full, sf_full, chan_full[:-1])
+
+        # Test with only bad channels
+        data_full[0, :] = np.random.random(data_full.shape[1])
+        data_full[2, :] = np.random.random(data_full.shape[1])
+        with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+            sp = sw_detect_multi(data_full, sf_full, chan_full)
+            assert sp is None
+
+    def test_rem_detect(self):
+        &#34;&#34;&#34;Test function REM detect
+        &#34;&#34;&#34;
+        file_rem = np.load(&#39;notebooks/data_EOGs_REM_256Hz.npz&#39;)
+        data_rem = file_rem[&#39;data&#39;]
+        loc, roc = data_rem[0, :], data_rem[1, :]
+        sf_rem = file_rem[&#39;sf&#39;]
+        # chan_rem = file_rem[&#39;chan&#39;]
+        hypno_rem = 4 * np.ones_like(loc)
+
+        # Parameters product testing
+        freq_rem = [(0.5, 5), (0.3, 8)]
+        duration = [(0.3, 1.5), [0.5, 1]]
+        amplitude = [(50, 200), [60, 300]]
+        downsample = [True, False]
+        hypno = [hypno_rem, None]
+        prod_args = product(freq_rem, duration, amplitude, downsample, hypno)
+
+        for i, (f, dr, am, ds, h) in enumerate(prod_args):
+            rem_detect(loc, roc, sf_rem, hypno=h, freq_rem=f, duration=dr,
+                       amplitude=am, downsample=ds)
+
+        # With isolation forest
+        df_rem = rem_detect(loc, roc, sf)
+        df_rem2 = rem_detect(loc, roc, sf, remove_outliers=True)
+        assert df_rem.shape[0] &gt; df_rem2.shape[0]
+        assert get_bool_vector(loc, sf, df_rem).size == loc.size
+
+        # With REM hypnogram
+        hypno_rem = 4 * np.ones_like(loc)
+        df_rem = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
+        hypno_rem = np.r_[np.ones(int(loc.size / 2)),
+                          4 * np.ones(int(loc.size / 2))]
+        df_rem2 = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
+        assert df_rem.shape[0] &gt; df_rem2.shape[0]</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>unittest.case.TestCase</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="yasa.tests.test_main.TestStringMethods.test_get_bool_vector"><code class="name flex">
+<span>def <span class="ident">test_get_bool_vector</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Test functions get_bool_vector</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def test_get_bool_vector(self):
+    &#34;&#34;&#34;Test functions get_bool_vector&#34;&#34;&#34;
+    sp_params = spindles_detect(data, sf)
+    out = get_bool_vector(data, sf, sp_params)
+    assert out.size == data.size
+    assert np.unique(out).size == 2</code></pre>
+</details>
+</dd>
+<dt id="yasa.tests.test_main.TestStringMethods.test_get_sync_sw"><code class="name flex">
+<span>def <span class="ident">test_get_sync_sw</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Test functions get_sync_sw</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def test_get_sync_sw(self):
+    &#34;&#34;&#34;Test functions get_sync_sw&#34;&#34;&#34;
+    sw = sw_detect_multi(data_full, sf_full, chan_full)
+    # Multi-channel with negative slow-wave peak
+    df_sync = get_sync_sw(data_full, sf, sw)
+    assert df_sync[&#39;Channel&#39;].nunique() == 3
+    # Single-channel with positive slow-wave peak
+    sw_c = sw[sw[&#39;Channel&#39;] == sw.at[0, &#39;Channel&#39;]].iloc[:, :-2]
+    df_sync = get_sync_sw(data_full[0, :], sf_full, sw_c,
+                          event=&#39;PosPeak&#39;, time_before=0, time_after=2)
+    assert df_sync.shape[1] == 3</code></pre>
+</details>
+</dd>
+<dt id="yasa.tests.test_main.TestStringMethods.test_index_to_events"><code class="name flex">
+<span>def <span class="ident">test_index_to_events</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Test functions _index_to_events</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def test_index_to_events(self):
+    &#34;&#34;&#34;Test functions _index_to_events&#34;&#34;&#34;
+    a = np.array([[3, 6], [8, 12], [14, 20]])
+    good = [3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20]
+    out = _index_to_events(a)
+    np.testing.assert_equal(good, out)</code></pre>
+</details>
+</dd>
+<dt id="yasa.tests.test_main.TestStringMethods.test_merge_close"><code class="name flex">
+<span>def <span class="ident">test_merge_close</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Test functions _merge_close</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def test_merge_close(self):
+    &#34;&#34;&#34;Test functions _merge_close&#34;&#34;&#34;
+    a = np.array([4, 5, 6, 7, 10, 11, 12, 13, 20, 21, 22, 100, 102])
+    good = np.array([4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                     17, 18, 19, 20, 21, 22, 100, 101, 102])
+    # Events that are less than 100 ms apart (i.e. 10 points at 100 Hz sf)
+    out = _merge_close(a, 100, 100)
+    np.testing.assert_equal(good, out)</code></pre>
+</details>
+</dd>
+<dt id="yasa.tests.test_main.TestStringMethods.test_moving_transform"><code class="name flex">
+<span>def <span class="ident">test_moving_transform</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Test moving_transform</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def test_moving_transform(self):
+    &#34;&#34;&#34;Test moving_transform&#34;&#34;&#34;
+    method = [&#39;mean&#39;, &#39;min&#39;, &#39;max&#39;, &#39;ptp&#39;, &#39;rms&#39;, &#39;prop_above_zero&#39;,
+              &#39;slope&#39;, &#39;corr&#39;, &#39;covar&#39;]
+    interp = [False, True]
+    win = [.3, .5]
+    step = [0, .1, .3, .5]
+
+    prod_args = product(win, step, method, interp)
+
+    for i, (w, s, m, i) in enumerate(prod_args):
+        moving_transform(data, data_sigma, sf, w, s, m, i)
+
+    t, out = moving_transform(data, None, sf, w, s, &#39;rms&#39;, True)
+    assert t.size == out.size
+    assert out.size == data.size</code></pre>
+</details>
+</dd>
+<dt id="yasa.tests.test_main.TestStringMethods.test_numba"><code class="name flex">
+<span>def <span class="ident">test_numba</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Test numba functions</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def test_numba(self):
+    &#34;&#34;&#34;Test numba functions
+    &#34;&#34;&#34;
+    x = np.asarray([4, 5, 7, 8, 5, 6], dtype=np.float64)
+    y = np.asarray([1, 5, 4, 6, 8, 5], dtype=np.float64)
+
+    np.testing.assert_almost_equal(_corr(x, y), np.corrcoef(x, y)[0][1])
+    assert _covar(x, y) == np.cov(x, y)[0][1]
+    assert _rms(x) == np.sqrt(np.mean(np.square(x)))
+
+    # Least square slope and detrending
+    y = np.arange(30) + 3 * np.random.random(30)
+    times = np.arange(y.size, dtype=np.float64)
+    slope = _slope_lstsq(times, y)
+    np.testing.assert_array_almost_equal(_detrend(times, y),
+                                         detrend(y, type=&#39;linear&#39;))
+    X = times[..., np.newaxis]
+    X = np.column_stack((np.ones(X.shape[0]), X))
+    slope_np = np.linalg.lstsq(X, y, rcond=None)[0][1]
+    np.round(slope, 5) == np.round(slope_np, 5)</code></pre>
+</details>
+</dd>
+<dt id="yasa.tests.test_main.TestStringMethods.test_rem_detect"><code class="name flex">
+<span>def <span class="ident">test_rem_detect</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Test function REM detect</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def test_rem_detect(self):
+    &#34;&#34;&#34;Test function REM detect
+    &#34;&#34;&#34;
+    file_rem = np.load(&#39;notebooks/data_EOGs_REM_256Hz.npz&#39;)
+    data_rem = file_rem[&#39;data&#39;]
+    loc, roc = data_rem[0, :], data_rem[1, :]
+    sf_rem = file_rem[&#39;sf&#39;]
+    # chan_rem = file_rem[&#39;chan&#39;]
+    hypno_rem = 4 * np.ones_like(loc)
+
+    # Parameters product testing
+    freq_rem = [(0.5, 5), (0.3, 8)]
+    duration = [(0.3, 1.5), [0.5, 1]]
+    amplitude = [(50, 200), [60, 300]]
+    downsample = [True, False]
+    hypno = [hypno_rem, None]
+    prod_args = product(freq_rem, duration, amplitude, downsample, hypno)
+
+    for i, (f, dr, am, ds, h) in enumerate(prod_args):
+        rem_detect(loc, roc, sf_rem, hypno=h, freq_rem=f, duration=dr,
+                   amplitude=am, downsample=ds)
+
+    # With isolation forest
+    df_rem = rem_detect(loc, roc, sf)
+    df_rem2 = rem_detect(loc, roc, sf, remove_outliers=True)
+    assert df_rem.shape[0] &gt; df_rem2.shape[0]
+    assert get_bool_vector(loc, sf, df_rem).size == loc.size
+
+    # With REM hypnogram
+    hypno_rem = 4 * np.ones_like(loc)
+    df_rem = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
+    hypno_rem = np.r_[np.ones(int(loc.size / 2)),
+                      4 * np.ones(int(loc.size / 2))]
+    df_rem2 = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
+    assert df_rem.shape[0] &gt; df_rem2.shape[0]</code></pre>
+</details>
+</dd>
+<dt id="yasa.tests.test_main.TestStringMethods.test_spindles_detect"><code class="name flex">
+<span>def <span class="ident">test_spindles_detect</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Test spindles_detect</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def test_spindles_detect(self):
+    &#34;&#34;&#34;Test spindles_detect&#34;&#34;&#34;
+    freq_sp = [(11, 16), [12, 14], (11, 15)]
+    freq_broad = [(0.5, 30), [1, 25]]
+    duration = [(0.3, 2.5), [0.5, 3]]
+    min_distance = [None, 0, 300, 500]
+
+    prod_args = product(freq_sp, freq_broad, duration, min_distance)
+
+    for i, (s, b, d, m) in enumerate(prod_args):
+        spindles_detect(data, sf, freq_sp=s, duration=d,
+                        freq_broad=b, min_distance=m)
+
+    sp_params = spindles_detect(data, sf)
+    print(sp_params.round(2))
+    assert spindles_detect(data, sf).shape[0] == 2
+
+    # Test with custom thresholds
+    spindles_detect(data, sf, thresh={&#39;rel_pow&#39;: 0.25})
+    spindles_detect(data, sf, thresh={&#39;rms&#39;: 1.25})
+    spindles_detect(data, sf, thresh={&#39;rel_pow&#39;: 0.25, &#39;corr&#39;: .60})
+
+    # Test with downsampling is False
+    spindles_detect(data, sf, downsample=False)
+
+    # Power of 2 resampling
+    spindles_detect(data_128, sf_128)
+
+    # Test with hypnogram
+    spindles_detect(data_full[0, :], sf_full, hypno=hypno_full)
+
+    # Hypnogram with sf = 200 Hz (require downsampling)
+    spindles_detect(data, sf, hypno=np.ones(data.size))
+
+    # Hypnogram with sf = 150
+    with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+        spindles_detect(data_150, sf_150, hypno=np.ones(data_150.size))
+
+    # Hypnogram with only one unique value
+    with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+        sp = spindles_detect(data, sf, hypno=np.zeros(data.size))
+    assert &#39;Stage&#39; not in sp.keys()
+
+    # Now load other data
+    with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+        spindles_detect(data_n3, sf_n3)
+
+    # Ensure that the two warnings are tested
+    with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+        sp = spindles_detect(data_n3, sf_n3, thresh={&#39;corr&#39;: .95})
+    assert sp is None
+
+    # Test with wrong data amplitude (1)
+    with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+        sp = spindles_detect(data_n3 / 1e6, sf_n3)
+    assert sp is None
+
+    # Test with wrong data amplitude (2)
+    with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+        sp = spindles_detect(data_n3 * 1e6, sf_n3)
+    assert sp is None
+
+    # Test with a random array
+    with self.assertLogs(&#39;yasa&#39;, level=&#39;ERROR&#39;):
+        sp = spindles_detect(np.random.random(size=1000), sf_n3)
+    assert sp is None
+
+    # Now we try with the isolation forest on the full recording
+    with self.assertLogs(&#39;yasa&#39;, level=&#39;INFO&#39;):
+        sp = spindles_detect(data_full[1, :], sf_full,
+                             remove_outliers=True)
+    assert sp.shape[0] &gt; 100
+
+    with pytest.raises(AssertionError):
+        sp = spindles_detect(data_full, sf_full)</code></pre>
+</details>
+</dd>
+<dt id="yasa.tests.test_main.TestStringMethods.test_spindles_detect_multi"><code class="name flex">
+<span>def <span class="ident">test_spindles_detect_multi</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Test spindles_detect_multi</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def test_spindles_detect_multi(self):
+    &#34;&#34;&#34;Test spindles_detect_multi&#34;&#34;&#34;
+    sp = spindles_detect_multi(data_full, sf_full, chan_full)
+    sp_no_out = spindles_detect_multi(data_full, sf_full, chan_full,
+                                      remove_outliers=True)
+    sp_multi = spindles_detect_multi(data_full, sf_full, chan_full,
+                                     multi_only=True)
+    assert sp_multi.shape[0] &lt; sp.shape[0]
+    assert sp_no_out.shape[0] &lt; sp.shape[0]
+    bv = get_bool_vector(data_full, sf_full, sp)
+    assert bv.shape[0] == len(chan_full)
+
+    # Test with hypnogram
+    spindles_detect_multi(data_full, sf_full, chan_full, hypno=hypno_full,
+                          include=2)
+
+    # Now we replace one channel with no spindle / bad data
+    data_full[1, :] = np.random.random(data_full.shape[1])
+
+    # Test where data.shape[0] != len(chan)
+    with pytest.raises(AssertionError):
+        spindles_detect_multi(data_full, sf_full, chan_full[:-1])
+
+    # Test with only bad channels
+    data_full[0, :] = np.random.random(data_full.shape[1])
+    data_full[2, :] = np.random.random(data_full.shape[1])
+    with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+        sp = spindles_detect_multi(data_full, sf_full, chan_full)
+        assert sp is None</code></pre>
+</details>
+</dd>
+<dt id="yasa.tests.test_main.TestStringMethods.test_sw_detect"><code class="name flex">
+<span>def <span class="ident">test_sw_detect</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Test function slow-wave detect</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def test_sw_detect(self):
+    &#34;&#34;&#34;Test function slow-wave detect
+    &#34;&#34;&#34;
+    # Keep only Fz and during a N3 sleep period with (huge) slow-waves
+    data_sw = data_full[1, 666000:672000].astype(np.float64)
+    hypno_sw = hypno_full[666000:672000]
+
+    # Parameters product testing
+    freq_sw = [(0.3, 3.5), (0.5, 4)]
+    dur_neg = [(0.3, 1.5), [0.1, 2]]
+    dur_pos = [(0.3, 1.5), [0, 1]]
+    amp_neg = [(40, 300), [40, None]]
+    amp_pos = [(10, 150), (0, None)]
+    amp_ptp = [(75, 400), [80, 300]]
+
+    prod_args = product(freq_sw, dur_neg, dur_pos, amp_neg, amp_pos,
+                        amp_ptp)
+
+    for i, (f, dn, dp, an, ap, aptp) in enumerate(prod_args):
+        print((f, dn, dp, an, ap, aptp))
+        sw_detect(data_sw, sf_full, freq_sw=f, dur_neg=dn,
+                  dur_pos=dp, amp_neg=an, amp_pos=ap,
+                  amp_ptp=aptp)
+
+    # With N3 hypnogram
+    sw_detect(data_sw, sf_full, hypno=hypno_sw)
+
+    # With N1
+    sw_detect(data_sw, sf_full, hypno=np.ones(data_sw.shape, dtype=int))
+
+    # With 2D data
+    sw_detect(data_sw[np.newaxis, ...], sf_full)
+
+    # Downsampling with hypnogram
+    data_sw_200 = resample(data_sw, up=2)
+    sw_detect(data_sw_200, 200,
+              hypno=2 * np.ones(data_sw_200.shape, dtype=int),
+              include=2)
+
+    # Downsampling without hypnogram
+    data_sw_200 = resample(data_sw, up=2)
+    sw_detect(data_sw_200, 200)
+
+    # Non-integer sampling frequency
+    data_sw_250 = resample(data_sw, up=2.5)
+    sw_detect(data_sw_250, 250)</code></pre>
+</details>
+</dd>
+<dt id="yasa.tests.test_main.TestStringMethods.test_sw_detect_multi"><code class="name flex">
+<span>def <span class="ident">test_sw_detect_multi</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Test sw_detect_multi</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def test_sw_detect_multi(self):
+    &#34;&#34;&#34;Test sw_detect_multi&#34;&#34;&#34;
+    data_full = file_full.get(&#39;data&#39;)
+    sw = sw_detect_multi(data_full, sf_full, chan_full)
+    sw_no_out = sw_detect_multi(data_full, sf_full, chan_full,
+                                remove_outliers=True)
+    assert sw_no_out.shape[0] &lt; sw.shape[0]
+    bv = get_bool_vector(data_full, sf_full, sw)
+    assert bv.shape[0] == len(chan_full)
+
+    # Test with hypnogram
+    sw_detect_multi(data_full, sf_full, chan_full,
+                    hypno=hypno_full, include=3)
+
+    # Now we replace one channel with no slow-wave / bad data
+    data_full[1, :] = np.random.random(data_full.shape[1])
+
+    # Test where data.shape[0] != len(chan)
+    with pytest.raises(AssertionError):
+        sw_detect_multi(data_full, sf_full, chan_full[:-1])
+
+    # Test with only bad channels
+    data_full[0, :] = np.random.random(data_full.shape[1])
+    data_full[2, :] = np.random.random(data_full.shape[1])
+    with self.assertLogs(&#39;yasa&#39;, level=&#39;WARNING&#39;):
+        sp = sw_detect_multi(data_full, sf_full, chan_full)
+        assert sp is None</code></pre>
+</details>
+</dd>
+<dt id="yasa.tests.test_main.TestStringMethods.test_trimbothstd"><code class="name flex">
+<span>def <span class="ident">test_trimbothstd</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Test function trimbothstd</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def test_trimbothstd(self):
+    &#34;&#34;&#34;Test function trimbothstd
+    &#34;&#34;&#34;
+    x = [4, 5, 7, 0, 18, 6, 7, 8, 9, 10]
+    assert trimbothstd(x) &lt; np.std(x, ddof=1)</code></pre>
+</details>
+</dd>
+<dt id="yasa.tests.test_main.TestStringMethods.test_zerocrossings"><code class="name flex">
+<span>def <span class="ident">test_zerocrossings</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Test _zerocrossings</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def test_zerocrossings(self):
+    &#34;&#34;&#34;Test _zerocrossings
+    &#34;&#34;&#34;
+    a = np.array([4, 2, -1, -3, 1, 2, 3, -2, -5])
+    idx_zc = _zerocrossings(a)
+    np.testing.assert_equal(idx_zc, [1, 3, 6])</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="yasa.tests" href="index.html">yasa.tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="yasa.tests.test_main.TestStringMethods" href="#yasa.tests.test_main.TestStringMethods">TestStringMethods</a></code></h4>
+<ul class="">
+<li><code><a title="yasa.tests.test_main.TestStringMethods.test_get_bool_vector" href="#yasa.tests.test_main.TestStringMethods.test_get_bool_vector">test_get_bool_vector</a></code></li>
+<li><code><a title="yasa.tests.test_main.TestStringMethods.test_get_sync_sw" href="#yasa.tests.test_main.TestStringMethods.test_get_sync_sw">test_get_sync_sw</a></code></li>
+<li><code><a title="yasa.tests.test_main.TestStringMethods.test_index_to_events" href="#yasa.tests.test_main.TestStringMethods.test_index_to_events">test_index_to_events</a></code></li>
+<li><code><a title="yasa.tests.test_main.TestStringMethods.test_merge_close" href="#yasa.tests.test_main.TestStringMethods.test_merge_close">test_merge_close</a></code></li>
+<li><code><a title="yasa.tests.test_main.TestStringMethods.test_moving_transform" href="#yasa.tests.test_main.TestStringMethods.test_moving_transform">test_moving_transform</a></code></li>
+<li><code><a title="yasa.tests.test_main.TestStringMethods.test_numba" href="#yasa.tests.test_main.TestStringMethods.test_numba">test_numba</a></code></li>
+<li><code><a title="yasa.tests.test_main.TestStringMethods.test_rem_detect" href="#yasa.tests.test_main.TestStringMethods.test_rem_detect">test_rem_detect</a></code></li>
+<li><code><a title="yasa.tests.test_main.TestStringMethods.test_spindles_detect" href="#yasa.tests.test_main.TestStringMethods.test_spindles_detect">test_spindles_detect</a></code></li>
+<li><code><a title="yasa.tests.test_main.TestStringMethods.test_spindles_detect_multi" href="#yasa.tests.test_main.TestStringMethods.test_spindles_detect_multi">test_spindles_detect_multi</a></code></li>
+<li><code><a title="yasa.tests.test_main.TestStringMethods.test_sw_detect" href="#yasa.tests.test_main.TestStringMethods.test_sw_detect">test_sw_detect</a></code></li>
+<li><code><a title="yasa.tests.test_main.TestStringMethods.test_sw_detect_multi" href="#yasa.tests.test_main.TestStringMethods.test_sw_detect_multi">test_sw_detect_multi</a></code></li>
+<li><code><a title="yasa.tests.test_main.TestStringMethods.test_trimbothstd" href="#yasa.tests.test_main.TestStringMethods.test_trimbothstd">test_trimbothstd</a></code></li>
+<li><code><a title="yasa.tests.test_main.TestStringMethods.test_zerocrossings" href="#yasa.tests.test_main.TestStringMethods.test_zerocrossings">test_zerocrossings</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.3</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>

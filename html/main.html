@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.6.2" />
+<meta name="generator" content="pdoc 0.6.3" />
 <title>yasa.main API documentation</title>
 <meta name="description" content="YASA (Yet Another Spindle Algorithm): fast and robust detection of spindles,
 slow-waves, and rapid eye movements from sleep EEG recordings …" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 </head>
@@ -44,15 +44,18 @@ import pandas as pd
 from numba import jit
 from scipy import signal
 from mne.filter import filter_data
+from scipy.interpolate import interp1d
 from scipy.fftpack import next_fast_len
-from scipy.interpolate import interp1d, RectBivariateSpline
+
+from .spectral import stft_power
+
 
 logging.basicConfig(format=&#39;%(asctime)s | %(levelname)s | %(message)s&#39;,
                     datefmt=&#39;%d-%b-%y %H:%M:%S&#39;)
 
 logger = logging.getLogger(&#39;yasa&#39;)
 
-__all__ = [&#39;spindles_detect&#39;, &#39;spindles_detect_multi&#39;, &#39;stft_power&#39;,
+__all__ = [&#39;spindles_detect&#39;, &#39;spindles_detect_multi&#39;,
            &#39;moving_transform&#39;, &#39;get_bool_vector&#39;, &#39;get_sync_sw&#39;, &#39;sw_detect&#39;,
            &#39;sw_detect_multi&#39;, &#39;rem_detect&#39;]
 
@@ -266,86 +269,6 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method=&#39;corr&#39
         out = f(t)
 
     return t, out
-
-
-def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
-               norm=False):
-    &#34;&#34;&#34;Compute the pointwise power via STFT and interpolation.
-
-    Parameters
-    ----------
-    data : array_like
-        Single-channel data.
-    sf : float
-        Sampling frequency of the data.
-    window : int
-        Window size in seconds for STFT.
-        2 or 4 seconds are usually a good default.
-        Higher values = higher frequency resolution = lower time resolution.
-    step : int
-        Step in seconds for the STFT.
-        A step of 0.2 second (200 ms) is usually a good default.
-        If step == 0, overlap at every sample (slowest)
-        If step == nperseg, no overlap (fastest)
-        Higher values = higher precision = slower computation.
-    band : tuple or None
-        Broad band frequency range.
-        Default is 1 to 30 Hz.
-    interp : boolean
-        If True, a cubic interpolation is performed to ensure that the output
-        is the same size as the input (= pointwise power).
-    norm : bool
-        If True, return bandwise normalized band power, i.e. for each time
-        point, the sum of power in all the frequency bins equals 1.
-
-    Returns
-    -------
-    f : ndarray
-        Frequency vector
-    t : ndarray
-        Time vector
-    Sxx : ndarray
-        Power in the specified frequency bins of shape (f, t)
-
-    Notes
-    -----
-    2D Interpolation is done using `scipy.interpolate.RectBivariateSpline`
-    which is much faster than `scipy.interpolate.interp2d` for a rectangular
-    grid. The default is to use a bivariate spline with 3 degrees.
-    &#34;&#34;&#34;
-    # Safety check
-    data = np.asarray(data)
-    assert step &lt;= window
-
-    step = 1 / sf if step == 0 else step
-
-    # Define STFT parameters
-    nperseg = int(window * sf)
-    noverlap = int(nperseg - (step * sf))
-
-    # Compute STFT and remove the last epoch
-    f, t, Sxx = signal.stft(data, sf, nperseg=nperseg, noverlap=noverlap,
-                            detrend=False, padded=True)
-
-    # Let&#39;s keep only the frequency of interest
-    if band is not None:
-        idx_band = np.logical_and(f &gt;= band[0], f &lt;= band[1])
-        f = f[idx_band]
-        Sxx = Sxx[idx_band, :]
-
-    # Compute power
-    Sxx = np.square(np.abs(Sxx))
-
-    # Interpolate
-    if interp:
-        func = RectBivariateSpline(f, t, Sxx)
-        t = np.arange(data.size) / sf
-        Sxx = func(f, t)
-
-    if norm:
-        sum_pow = Sxx.sum(0).reshape(1, -1)
-        np.divide(Sxx, sum_pow, out=Sxx)
-    return f, t, Sxx
 
 
 def _zerocrossings(x):
@@ -1246,7 +1169,7 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
     sw_slope = sw_ptp / (sw_midcrossing - sw_idx_neg)
     # Hypnogram
     if hypno is not None:
-        sw_sta = hypno[idx_neg_peaks + previous_neg_zc]
+        sw_sta = hypno[idx_neg_peaks]
     else:
         sw_sta = np.zeros(sw_dur.shape)
 
@@ -2897,132 +2820,6 @@ single-channel detection dataframe. Default is False.</dd>
         return df</code></pre>
 </details>
 </dd>
-<dt id="yasa.main.stft_power"><code class="name flex">
-<span>def <span class="ident">stft_power</span></span>(<span>data, sf, window=2, step=0.2, band=(1, 30), interp=True, norm=False)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Compute the pointwise power via STFT and interpolation.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>data</code></strong> :&ensp;<code>array_like</code></dt>
-<dd>Single-channel data.</dd>
-<dt><strong><code>sf</code></strong> :&ensp;<code>float</code></dt>
-<dd>Sampling frequency of the data.</dd>
-<dt><strong><code>window</code></strong> :&ensp;<code>int</code></dt>
-<dd>Window size in seconds for STFT.
-2 or 4 seconds are usually a good default.
-Higher values = higher frequency resolution = lower time resolution.</dd>
-<dt><strong><code>step</code></strong> :&ensp;<code>int</code></dt>
-<dd>Step in seconds for the STFT.
-A step of 0.2 second (200 ms) is usually a good default.
-If step == 0, overlap at every sample (slowest)
-If step == nperseg, no overlap (fastest)
-Higher values = higher precision = slower computation.</dd>
-<dt><strong><code>band</code></strong> :&ensp;<code>tuple</code> or <code>None</code></dt>
-<dd>Broad band frequency range.
-Default is 1 to 30 Hz.</dd>
-<dt><strong><code>interp</code></strong> :&ensp;<code>boolean</code></dt>
-<dd>If True, a cubic interpolation is performed to ensure that the output
-is the same size as the input (= pointwise power).</dd>
-<dt><strong><code>norm</code></strong> :&ensp;<code>bool</code></dt>
-<dd>If True, return bandwise normalized band power, i.e. for each time
-point, the sum of power in all the frequency bins equals 1.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><strong><code>f</code></strong> :&ensp;<code>ndarray</code></dt>
-<dd>Frequency vector</dd>
-<dt><strong><code>t</code></strong> :&ensp;<code>ndarray</code></dt>
-<dd>Time vector</dd>
-<dt><strong><code>Sxx</code></strong> :&ensp;<code>ndarray</code></dt>
-<dd>Power in the specified frequency bins of shape (f, t)</dd>
-</dl>
-<h2 id="notes">Notes</h2>
-<p>2D Interpolation is done using <code>scipy.interpolate.RectBivariateSpline</code>
-which is much faster than <code>scipy.interpolate.interp2d</code> for a rectangular
-grid. The default is to use a bivariate spline with 3 degrees.</p></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
-               norm=False):
-    &#34;&#34;&#34;Compute the pointwise power via STFT and interpolation.
-
-    Parameters
-    ----------
-    data : array_like
-        Single-channel data.
-    sf : float
-        Sampling frequency of the data.
-    window : int
-        Window size in seconds for STFT.
-        2 or 4 seconds are usually a good default.
-        Higher values = higher frequency resolution = lower time resolution.
-    step : int
-        Step in seconds for the STFT.
-        A step of 0.2 second (200 ms) is usually a good default.
-        If step == 0, overlap at every sample (slowest)
-        If step == nperseg, no overlap (fastest)
-        Higher values = higher precision = slower computation.
-    band : tuple or None
-        Broad band frequency range.
-        Default is 1 to 30 Hz.
-    interp : boolean
-        If True, a cubic interpolation is performed to ensure that the output
-        is the same size as the input (= pointwise power).
-    norm : bool
-        If True, return bandwise normalized band power, i.e. for each time
-        point, the sum of power in all the frequency bins equals 1.
-
-    Returns
-    -------
-    f : ndarray
-        Frequency vector
-    t : ndarray
-        Time vector
-    Sxx : ndarray
-        Power in the specified frequency bins of shape (f, t)
-
-    Notes
-    -----
-    2D Interpolation is done using `scipy.interpolate.RectBivariateSpline`
-    which is much faster than `scipy.interpolate.interp2d` for a rectangular
-    grid. The default is to use a bivariate spline with 3 degrees.
-    &#34;&#34;&#34;
-    # Safety check
-    data = np.asarray(data)
-    assert step &lt;= window
-
-    step = 1 / sf if step == 0 else step
-
-    # Define STFT parameters
-    nperseg = int(window * sf)
-    noverlap = int(nperseg - (step * sf))
-
-    # Compute STFT and remove the last epoch
-    f, t, Sxx = signal.stft(data, sf, nperseg=nperseg, noverlap=noverlap,
-                            detrend=False, padded=True)
-
-    # Let&#39;s keep only the frequency of interest
-    if band is not None:
-        idx_band = np.logical_and(f &gt;= band[0], f &lt;= band[1])
-        f = f[idx_band]
-        Sxx = Sxx[idx_band, :]
-
-    # Compute power
-    Sxx = np.square(np.abs(Sxx))
-
-    # Interpolate
-    if interp:
-        func = RectBivariateSpline(f, t, Sxx)
-        t = np.arange(data.size) / sf
-        Sxx = func(f, t)
-
-    if norm:
-        sum_pow = Sxx.sum(0).reshape(1, -1)
-        np.divide(Sxx, sum_pow, out=Sxx)
-    return f, t, Sxx</code></pre>
-</details>
-</dd>
 <dt id="yasa.main.sw_detect"><code class="name flex">
 <span>def <span class="ident">sw_detect</span></span>(<span>data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5), dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 300), amp_pos=(10, 200), amp_ptp=(75, 500), downsample=True, remove_outliers=False)</span>
 </code></dt>
@@ -3324,7 +3121,7 @@ computed on the filtered signal.</p></section>
     sw_slope = sw_ptp / (sw_midcrossing - sw_idx_neg)
     # Hypnogram
     if hypno is not None:
-        sw_sta = hypno[idx_neg_peaks + previous_neg_zc]
+        sw_sta = hypno[idx_neg_peaks]
     else:
         sw_sta = np.zeros(sw_dur.shape)
 
@@ -3536,7 +3333,6 @@ computed on the filtered signal.</p></section>
 <li><code><a title="yasa.main.rem_detect" href="#yasa.main.rem_detect">rem_detect</a></code></li>
 <li><code><a title="yasa.main.spindles_detect" href="#yasa.main.spindles_detect">spindles_detect</a></code></li>
 <li><code><a title="yasa.main.spindles_detect_multi" href="#yasa.main.spindles_detect_multi">spindles_detect_multi</a></code></li>
-<li><code><a title="yasa.main.stft_power" href="#yasa.main.stft_power">stft_power</a></code></li>
 <li><code><a title="yasa.main.sw_detect" href="#yasa.main.sw_detect">sw_detect</a></code></li>
 <li><code><a title="yasa.main.sw_detect_multi" href="#yasa.main.sw_detect_multi">sw_detect_multi</a></code></li>
 </ul>
@@ -3545,7 +3341,7 @@ computed on the filtered signal.</p></section>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.3</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>

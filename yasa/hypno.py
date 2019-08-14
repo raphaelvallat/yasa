@@ -3,12 +3,12 @@ This file contains several helper functions to manipulate sleep staging
 (hypnogram) data. The default hypnogram format in YASA is a one dimensional
 integer array where:
 
--1  = Artefact / Undefined / Movement
-0   = Wake
-1   = N1 sleep
-2   = N2 sleep
-3   = N3 sleep
-4   = REM sleep
+* -1  = Artefact / Undefined / Movement
+* 0   = Wake
+* 1   = N1 sleep
+* 2   = N2 sleep
+* 3   = N3 sleep
+* 4   = REM sleep
 
 For more details, please refer to the following references:
 
@@ -52,7 +52,7 @@ def hypno_str_to_int(hypno, mapping_dict={'w': 0, 'wake': 0, 'n1': 1, 's1': 1,
         The sleep staging (hypnogram) 1D array.
     mapping_dict : dict
         The mapping dictionnary, in lowercase. Note that this function is
-        essentially a wrapper around ``pandas.Series.map()``.
+        essentially a wrapper around `pandas.Series.map`.
 
     Returns
     --------
@@ -77,7 +77,7 @@ def hypno_int_to_str(hypno, mapping_dict={0: 'W', 1: 'N1', 2: 'N2', 3: 'N3',
       The sleep staging (hypnogram) 1D array.
     mapping_dict : dict
       The mapping dictionnary. Note that this function is
-      essentially a wrapper around ``pandas.Series.map()``.
+      essentially a wrapper around `pandas.Series.map`.
 
     Returns
     --------
