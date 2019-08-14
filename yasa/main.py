@@ -6,6 +6,7 @@ slow-waves, and rapid eye movements from sleep EEG recordings.
 - GitHub: https://github.com/raphaelvallat/yasa
 - License: BSD 3-Clause License
 """
+import mne
 import logging
 import numpy as np
 import pandas as pd
@@ -833,20 +834,22 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     return df_sp
 
 
-def spindles_detect_multi(data, sf, ch_names, multi_only=False, **kwargs):
+def spindles_detect_multi(data, sf=None, ch_names=None, multi_only=False,
+                          **kwargs):
     """Multi-channel spindles detection.
 
     Parameters
     ----------
     data : array_like
         Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-        If you used MNE to load the data, you should pass `raw._data * 1e6`.
+        Can also be a MNE Raw object, in which case data, sf, and ch_names
+        will be automatically extracted. Data will also be internally
+        converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
         Sampling frequency of the data in Hz.
-        If you used MNE to load the data, you should pass `raw.info['sfreq']`.
+        Can be omitted if ``data`` is a MNE Raw object.
     ch_names : list of str
-        Channel names.
-        If you used MNE to load the data, you should pass `raw.ch_names`.
+        Channel names. Can be omitted if ``data`` is a MNE Raw object.
     multi_only : boolean
         Define the behavior of the multi-channel detection. If True, only
         spindles that are present on at least two channels are kept. If False,
@@ -874,6 +877,16 @@ def spindles_detect_multi(data, sf, ch_names, multi_only=False, **kwargs):
             'IdxChannel' : Integer index of channel in data
             'Stage' : Sleep stage (only if hypno was provided)
     """
+    # Check if input data is a MNE Raw object
+    if isinstance(data, mne.io.BaseRaw):
+        sf = data.info['sfreq']  # Extract sampling frequency
+        ch_names = data.ch_names  # Extract channel names
+        data = data.get_data() * 1e6  # Convert from V to uV
+    else:
+        assert sf is not None, 'sf must be specified if not using MNE Raw.'
+        assert ch_names is not None, ('ch_names must be specified if not '
+                                      'using MNE Raw.')
+
     # Safety check
     data = np.asarray(data, dtype=np.float64)
     assert data.ndim == 2
@@ -1207,20 +1220,21 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
     return df_sw.reset_index(drop=True)
 
 
-def sw_detect_multi(data, sf, ch_names, **kwargs):
+def sw_detect_multi(data, sf=None, ch_names=None, **kwargs):
     """Multi-channel slow-waves detection.
 
     Parameters
     ----------
     data : array_like
         Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-        If you used MNE to load the data, you should pass `raw._data * 1e6`.
+        Can also be a MNE Raw object, in which case data, sf, and ch_names
+        will be automatically extracted. Data will also be internally
+        converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
         Sampling frequency of the data in Hz.
-        If you used MNE to load the data, you should pass `raw.info['sfreq']`.
+        Can be omitted if ``data`` is a MNE Raw object.
     ch_names : list of str
-        Channel names.
-        If you used MNE to load the data, you should pass `raw.ch_names`.
+        Channel names. Can be omitted if ``data`` is a MNE Raw object.
     **kwargs
         Keywords arguments that are passed to the `sw_detect` function.
 
@@ -1251,6 +1265,16 @@ def sw_detect_multi(data, sf, ch_names, **kwargs):
     Note that the ``PTP``, ``Slope``, ``ValNegPeak`` and ``ValPosPeak`` are
     computed on the filtered signal.
     """
+    # Check if input data is a MNE Raw object
+    if isinstance(data, mne.io.BaseRaw):
+        sf = data.info['sfreq']  # Extract sampling frequency
+        ch_names = data.ch_names  # Extract channel names
+        data = data.get_data() * 1e6  # Convert from V to uV
+    else:
+        assert sf is not None, 'sf must be specified if not using MNE Raw.'
+        assert ch_names is not None, ('ch_names must be specified if not '
+                                      'using MNE Raw.')
+
     # Safety check
     data = np.asarray(data, dtype=np.float64)
     assert data.ndim == 2
