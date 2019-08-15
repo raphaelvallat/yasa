@@ -395,16 +395,18 @@ def _index_to_events(x):
     return index.astype(int)
 
 
-def get_bool_vector(data, sf, detection):
+def get_bool_vector(data=None, sf=None, detection=None):
     &#34;&#34;&#34;Return a Boolean vector given the original data and sf and
     a YASA&#39;s detection dataframe.
 
     Parameters
     ----------
-    data : array_like
-        Single-channel EEG data.
+    data : np.array_like or mne.io.Raw
+        1D or 2D EEG data. Can also be a MNE Raw object, in which case
+        ``data`` and ``sf`` will be automatically extracted.
     sf : float
-        Sampling frequency of the data.
+        The sampling frequency of ``data``.
+        Can be omitted if ``data`` is a MNE Raw object.
     detection : pandas DataFrame
         YASA&#39;s detection dataframe returned by the `spindles_detect`,
         `sw_detect` or `rem_detect` functions.
@@ -415,6 +417,12 @@ def get_bool_vector(data, sf, detection):
         Array of bool indicating for each sample in data if this sample is
         part of a detected event (True) or not (False).
     &#34;&#34;&#34;
+    # Check if input data is a MNE Raw object
+    if isinstance(data, mne.io.BaseRaw):
+        sf = data.info[&#39;sfreq&#39;]  # Extract sampling frequency
+        data = data.get_data() * 1e6  # Convert from V to uV
+        data = np.squeeze(data)  # Flatten if only one channel is present
+
     data = np.asarray(data)
     assert isinstance(detection, pd.DataFrame)
     assert &#39;Start&#39; in detection.keys()
@@ -439,7 +447,7 @@ def get_bool_vector(data, sf, detection):
     return bool_vector
 
 
-def get_sync_sw(data, sf, sw, event=&#39;NegPeak&#39;, time_before=0.4,
+def get_sync_sw(data=None, sf=None, sw=None, event=&#39;NegPeak&#39;, time_before=0.4,
                 time_after=0.8):
     &#34;&#34;&#34;Synchronize the timing of detected slow-waves at a specific
     landmark timepoint.
@@ -449,12 +457,12 @@ def get_sync_sw(data, sf, sw, event=&#39;NegPeak&#39;, time_before=0.4,
 
     Parameters
     ----------
-    data : array_like
-        Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-        If you used MNE to load the data, you should pass `raw._data * 1e6`.
+    data : np.array_like or mne.io.Raw
+        1D or 2D EEG data. Can also be a MNE Raw object, in which case
+        ``data`` and ``sf`` will be automatically extracted.
     sf : float
-        Sampling frequency of the data in Hz.
-        If you used MNE to load the data, you should pass `raw.info[&#39;sfreq&#39;]`.
+        The sampling frequency of ``data``.
+        Can be omitted if ``data`` is a MNE Raw object.
     sw : pandas DataFrame
         YASA&#39;s detection dataframe returned by the
         `sw_detect` or `sw_detect_multi` functions.
@@ -471,12 +479,17 @@ def get_sync_sw(data, sf, sw, event=&#39;NegPeak&#39;, time_before=0.4,
     df_sw : pandas DataFrame
         Pandas DataFrame:
 
-            &#39;Time&#39; : Timing of the events (in seconds)
-            &#39;Event&#39; : Event number
-            &#39;Amplitude&#39; : Raw data for event
-            &#39;Amplitude&#39; : Amplitude (in uV)
-            &#39;Chan&#39; : Channel (only in multi-channel detection)
+        &#39;Time&#39; : Timing of the events (in seconds)
+        &#39;Event&#39; : Event number
+        &#39;Amplitude&#39; : Raw data for event
+        &#39;Amplitude&#39; : Amplitude (in uV)
+        &#39;Chan&#39; : Channel (only in multi-channel detection)
     &#34;&#34;&#34;
+    # Check if input data is a MNE Raw object
+    if isinstance(data, mne.io.BaseRaw):
+        sf = data.info[&#39;sfreq&#39;]  # Extract sampling frequency
+        data = data.get_data() * 1e6  # Convert from V to uV
+
     # Safety checks
     assert isinstance(data, np.ndarray)
     assert isinstance(sw, pd.DataFrame)
@@ -497,6 +510,7 @@ def get_sync_sw(data, sf, sw, event=&#39;NegPeak&#39;, time_before=0.4,
             df_sync = df_sync.append(df_tmp, ignore_index=True)
     else:
         # Single-channel
+        data = np.squeeze(data)
         assert data.ndim == 1, &#39;Data must be 1D for single-channel detection.&#39;
         # Define number of samples before and after the peak
         assert time_before &gt;= 0
@@ -1612,20 +1626,22 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="yasa.main.get_bool_vector"><code class="name flex">
-<span>def <span class="ident">get_bool_vector</span></span>(<span>data, sf, detection)</span>
+<span>def <span class="ident">get_bool_vector</span></span>(<span>data=None, sf=None, detection=None)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Return a Boolean vector given the original data and sf and
 a YASA's detection dataframe.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>data</code></strong> :&ensp;<code>array_like</code></dt>
-<dd>Single-channel EEG data.</dd>
+<dt><strong><code>data</code></strong> :&ensp;<code>np.array_like</code> or <code>mne.io.Raw</code></dt>
+<dd>1D or 2D EEG data. Can also be a MNE Raw object, in which case
+<code>data</code> and <code>sf</code> will be automatically extracted.</dd>
 <dt><strong><code>sf</code></strong> :&ensp;<code>float</code></dt>
-<dd>Sampling frequency of the data.</dd>
+<dd>The sampling frequency of <code>data</code>.
+Can be omitted if <code>data</code> is a MNE Raw object.</dd>
 <dt><strong><code>detection</code></strong> :&ensp;<code>pandas</code> <code>DataFrame</code></dt>
-<dd>YASA's detection dataframe returned by the <a title="yasa.main.spindles_detect" href="#yasa.main.spindles_detect"><code>spindles_detect()</code></a>,
-<a title="yasa.main.sw_detect" href="#yasa.main.sw_detect"><code>sw_detect()</code></a> or <a title="yasa.main.rem_detect" href="#yasa.main.rem_detect"><code>rem_detect()</code></a> functions.</dd>
+<dd>YASA's detection dataframe returned by the <code>spindles_detect</code>,
+<code>sw_detect</code> or <code>rem_detect</code> functions.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -1635,16 +1651,18 @@ part of a detected event (True) or not (False).</dd>
 </dl></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def get_bool_vector(data, sf, detection):
+<pre><code class="python">def get_bool_vector(data=None, sf=None, detection=None):
     &#34;&#34;&#34;Return a Boolean vector given the original data and sf and
     a YASA&#39;s detection dataframe.
 
     Parameters
     ----------
-    data : array_like
-        Single-channel EEG data.
+    data : np.array_like or mne.io.Raw
+        1D or 2D EEG data. Can also be a MNE Raw object, in which case
+        ``data`` and ``sf`` will be automatically extracted.
     sf : float
-        Sampling frequency of the data.
+        The sampling frequency of ``data``.
+        Can be omitted if ``data`` is a MNE Raw object.
     detection : pandas DataFrame
         YASA&#39;s detection dataframe returned by the `spindles_detect`,
         `sw_detect` or `rem_detect` functions.
@@ -1655,6 +1673,12 @@ part of a detected event (True) or not (False).</dd>
         Array of bool indicating for each sample in data if this sample is
         part of a detected event (True) or not (False).
     &#34;&#34;&#34;
+    # Check if input data is a MNE Raw object
+    if isinstance(data, mne.io.BaseRaw):
+        sf = data.info[&#39;sfreq&#39;]  # Extract sampling frequency
+        data = data.get_data() * 1e6  # Convert from V to uV
+        data = np.squeeze(data)  # Flatten if only one channel is present
+
     data = np.asarray(data)
     assert isinstance(detection, pd.DataFrame)
     assert &#39;Start&#39; in detection.keys()
@@ -1680,7 +1704,7 @@ part of a detected event (True) or not (False).</dd>
 </details>
 </dd>
 <dt id="yasa.main.get_sync_sw"><code class="name flex">
-<span>def <span class="ident">get_sync_sw</span></span>(<span>data, sf, sw, event='NegPeak', time_before=0.4, time_after=0.8)</span>
+<span>def <span class="ident">get_sync_sw</span></span>(<span>data=None, sf=None, sw=None, event='NegPeak', time_before=0.4, time_after=0.8)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Synchronize the timing of detected slow-waves at a specific
@@ -1689,15 +1713,15 @@ landmark timepoint.</p>
 detected slow-waves.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>data</code></strong> :&ensp;<code>array_like</code></dt>
-<dd>Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-If you used MNE to load the data, you should pass <code>raw._data * 1e6</code>.</dd>
+<dt><strong><code>data</code></strong> :&ensp;<code>np.array_like</code> or <code>mne.io.Raw</code></dt>
+<dd>1D or 2D EEG data. Can also be a MNE Raw object, in which case
+<code>data</code> and <code>sf</code> will be automatically extracted.</dd>
 <dt><strong><code>sf</code></strong> :&ensp;<code>float</code></dt>
-<dd>Sampling frequency of the data in Hz.
-If you used MNE to load the data, you should pass <code>raw.info['sfreq']</code>.</dd>
+<dd>The sampling frequency of <code>data</code>.
+Can be omitted if <code>data</code> is a MNE Raw object.</dd>
 <dt><strong><code>sw</code></strong> :&ensp;<code>pandas</code> <code>DataFrame</code></dt>
 <dd>YASA's detection dataframe returned by the
-<a title="yasa.main.sw_detect" href="#yasa.main.sw_detect"><code>sw_detect()</code></a> or <a title="yasa.main.sw_detect_multi" href="#yasa.main.sw_detect_multi"><code>sw_detect_multi()</code></a> functions.</dd>
+<code>sw_detect</code> or <code>sw_detect_multi</code> functions.</dd>
 <dt><strong><code>event</code></strong> :&ensp;<code>str</code></dt>
 <dd>Landmark of the slow-waves to synchronize the timing on.
 Default is to use the negative peak.</dd>
@@ -1709,15 +1733,15 @@ Default is to use the negative peak.</dd>
 <h2 id="returns">Returns:</h2>
 <p>df_sw : pandas DataFrame
 Pandas DataFrame:</p>
-<pre><code>    'Time' : Timing of the events (in seconds)
-    'Event' : Event number
-    'Amplitude' : Raw data for event
-    'Amplitude' : Amplitude (in uV)
-    'Chan' : Channel (only in multi-channel detection)
+<pre><code>'Time' : Timing of the events (in seconds)
+'Event' : Event number
+'Amplitude' : Raw data for event
+'Amplitude' : Amplitude (in uV)
+'Chan' : Channel (only in multi-channel detection)
 </code></pre></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def get_sync_sw(data, sf, sw, event=&#39;NegPeak&#39;, time_before=0.4,
+<pre><code class="python">def get_sync_sw(data=None, sf=None, sw=None, event=&#39;NegPeak&#39;, time_before=0.4,
                 time_after=0.8):
     &#34;&#34;&#34;Synchronize the timing of detected slow-waves at a specific
     landmark timepoint.
@@ -1727,12 +1751,12 @@ Pandas DataFrame:</p>
 
     Parameters
     ----------
-    data : array_like
-        Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-        If you used MNE to load the data, you should pass `raw._data * 1e6`.
+    data : np.array_like or mne.io.Raw
+        1D or 2D EEG data. Can also be a MNE Raw object, in which case
+        ``data`` and ``sf`` will be automatically extracted.
     sf : float
-        Sampling frequency of the data in Hz.
-        If you used MNE to load the data, you should pass `raw.info[&#39;sfreq&#39;]`.
+        The sampling frequency of ``data``.
+        Can be omitted if ``data`` is a MNE Raw object.
     sw : pandas DataFrame
         YASA&#39;s detection dataframe returned by the
         `sw_detect` or `sw_detect_multi` functions.
@@ -1749,12 +1773,17 @@ Pandas DataFrame:</p>
     df_sw : pandas DataFrame
         Pandas DataFrame:
 
-            &#39;Time&#39; : Timing of the events (in seconds)
-            &#39;Event&#39; : Event number
-            &#39;Amplitude&#39; : Raw data for event
-            &#39;Amplitude&#39; : Amplitude (in uV)
-            &#39;Chan&#39; : Channel (only in multi-channel detection)
+        &#39;Time&#39; : Timing of the events (in seconds)
+        &#39;Event&#39; : Event number
+        &#39;Amplitude&#39; : Raw data for event
+        &#39;Amplitude&#39; : Amplitude (in uV)
+        &#39;Chan&#39; : Channel (only in multi-channel detection)
     &#34;&#34;&#34;
+    # Check if input data is a MNE Raw object
+    if isinstance(data, mne.io.BaseRaw):
+        sf = data.info[&#39;sfreq&#39;]  # Extract sampling frequency
+        data = data.get_data() * 1e6  # Convert from V to uV
+
     # Safety checks
     assert isinstance(data, np.ndarray)
     assert isinstance(sw, pd.DataFrame)
@@ -1775,6 +1804,7 @@ Pandas DataFrame:</p>
             df_sync = df_sync.append(df_tmp, ignore_index=True)
     else:
         # Single-channel
+        data = np.squeeze(data)
         assert data.ndim == 1, &#39;Data must be 1D for single-channel detection.&#39;
         # Define number of samples before and after the peak
         assert time_before &gt;= 0

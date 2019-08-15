@@ -49,6 +49,7 @@ hypno_full = np.load('notebooks/data_full_6hrs_100Hz_hypno.npz').get('hypno')
 data_mne = mne.io.read_raw_fif('notebooks/sub-02_mne_raw.fif', preload=True,
                                verbose=0)
 data_mne.pick_types(eeg=True)
+data_mne_single = data_mne.copy().pick_channels(['F3'])
 hypno_mne = np.loadtxt('notebooks/sub-02_hypno_30s.txt', dtype=str)
 hypno_mne = hypno_str_to_int(hypno_mne)
 hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30),
@@ -87,9 +88,21 @@ class TestStringMethods(unittest.TestCase):
 
     def test_get_bool_vector(self):
         """Test functions get_bool_vector"""
+        # Numpy
         sp_params = spindles_detect(data, sf)
         out = get_bool_vector(data, sf, sp_params)
         assert out.size == data.size
+        assert np.unique(out).size == 2
+        # MNE
+        # Single channel
+        sp_params = spindles_detect_multi(data_mne_single)
+        out = get_bool_vector(data_mne_single, detection=sp_params)
+        assert out.size == max(data_mne_single.get_data().shape)
+        assert np.unique(out).size == 2
+        # Multi-channels
+        sp_params = spindles_detect_multi(data_mne)
+        out = get_bool_vector(data_mne, detection=sp_params)
+        assert out.size == data_mne.get_data().size
         assert np.unique(out).size == 2
 
     def test_get_sync_sw(self):
@@ -103,6 +116,16 @@ class TestStringMethods(unittest.TestCase):
         df_sync = get_sync_sw(data_full[0, :], sf_full, sw_c,
                               event='PosPeak', time_before=0, time_after=2)
         assert df_sync.shape[1] == 3
+        # MNE
+        # Single channel
+        sw = sw_detect_multi(data_mne_single, amp_neg=(20, 300),
+                             amp_ptp=(60, 500))
+        df_sync = get_sync_sw(data_mne_single, sw=sw)
+        assert df_sync['Channel'].nunique() == 1
+        # Multi channel
+        sw = sw_detect_multi(data_mne, amp_neg=(20, 300), amp_ptp=(60, 500))
+        df_sync = get_sync_sw(data_mne, sw=sw)
+        assert df_sync['Channel'].nunique() == 6
 
     def test_merge_close(self):
         """Test functions _merge_close"""
