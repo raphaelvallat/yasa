@@ -59,9 +59,11 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         be internally converted from Volts (MNE default) to micro-Volts (YASA).
     sf : float
         The sampling frequency of data AND the hypnogram.
+        Can be omitted if ``data`` is a MNE Raw object.
     ch_names : list
         List of channel names, e.g. [&#39;Cz&#39;, &#39;F3&#39;, &#39;F4&#39;, ...]. If None,
         channels will be labelled [&#39;CHAN001&#39;, &#39;CHAN002&#39;, ...].
+        Can be omitted if ``data`` is a MNE Raw object.
     hypno : array_like
         The sleep staging (hypnogram) 1D array. Must have the same
         sampling frequency and number of samples as data.
@@ -325,10 +327,12 @@ for each sleep stage.</p>
 sf, and ch_names will be automatically extracted. Data will also
 be internally converted from Volts (MNE default) to micro-Volts (YASA).</dd>
 <dt><strong><code>sf</code></strong> :&ensp;<code>float</code></dt>
-<dd>The sampling frequency of data AND the hypnogram.</dd>
+<dd>The sampling frequency of data AND the hypnogram.
+Can be omitted if <code>data</code> is a MNE Raw object.</dd>
 <dt><strong><code>ch_names</code></strong> :&ensp;<code>list</code></dt>
 <dd>List of channel names, e.g. ['Cz', 'F3', 'F4', &hellip;]. If None,
-channels will be labelled ['CHAN001', 'CHAN002', &hellip;].</dd>
+channels will be labelled ['CHAN001', 'CHAN002', &hellip;].
+Can be omitted if <code>data</code> is a MNE Raw object.</dd>
 <dt><strong><code>hypno</code></strong> :&ensp;<code>array_like</code></dt>
 <dd>The sleep staging (hypnogram) 1D array. Must have the same
 sampling frequency and number of samples as data.</dd>
@@ -370,9 +374,11 @@ a spectral band.</dd>
         be internally converted from Volts (MNE default) to micro-Volts (YASA).
     sf : float
         The sampling frequency of data AND the hypnogram.
+        Can be omitted if ``data`` is a MNE Raw object.
     ch_names : list
         List of channel names, e.g. [&#39;Cz&#39;, &#39;F3&#39;, &#39;F4&#39;, ...]. If None,
         channels will be labelled [&#39;CHAN001&#39;, &#39;CHAN002&#39;, ...].
+        Can be omitted if ``data`` is a MNE Raw object.
     hypno : array_like
         The sleep staging (hypnogram) 1D array. Must have the same
         sampling frequency and number of samples as data.

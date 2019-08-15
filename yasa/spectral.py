@@ -32,9 +32,11 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         be internally converted from Volts (MNE default) to micro-Volts (YASA).
     sf : float
         The sampling frequency of data AND the hypnogram.
+        Can be omitted if ``data`` is a MNE Raw object.
     ch_names : list
         List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None,
         channels will be labelled ['CHAN001', 'CHAN002', ...].
+        Can be omitted if ``data`` is a MNE Raw object.
     hypno : array_like
         The sleep staging (hypnogram) 1D array. Must have the same
         sampling frequency and number of samples as data.
