@@ -27,9 +27,10 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     Parameters
     ----------
     data : np.array_like or mne.io.Raw
-        1D or 2D EEG data. Can also be a MNE Raw object, in which case data,
-        sf, and ch_names will be automatically extracted. Data will also
-        be internally converted from Volts (MNE default) to micro-Volts (YASA).
+        1D or 2D EEG data. Can also be a MNE Raw object, in which case
+        ``data``, ``sf``, and ``ch_names`` will be automatically extracted.
+        ``data`` will also be internally converted from Volts (MNE default)
+        to micro-Volts (YASA).
     sf : float
         The sampling frequency of data AND the hypnogram.
         Can be omitted if ``data`` is a MNE Raw object.
@@ -39,7 +40,7 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         Can be omitted if ``data`` is a MNE Raw object.
     hypno : array_like
         The sleep staging (hypnogram) 1D array. Must have the same
-        sampling frequency and number of samples as data.
+        sampling frequency and number of samples as ``data``.
     relative : boolean
         If True, bandpower is divided by the total power between the min and
         max frequencies defined in ``band``.

@@ -1360,6 +1360,10 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
     loc, roc : array_like
         Continuous EOG data (Left and Right Ocular Canthi, LOC / ROC) channels.
         Unit must be uV.
+
+        .. warning::
+            if passing data from a MNE Raw object, make sure to multiply
+            the data by 1e6 to convert from Volts (MNE) to uV (YASA).
     sf : float
         Sampling frequency of the data in Hz.
     hypno : array_like
@@ -1367,9 +1371,12 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         detection will only be applied to the value defined in
         ``include`` (default = REM sleep). ``hypno`` MUST be a 1D array of
         integers with the same size as data and where -1 = Artefact, 0 = Wake,
-        1 = N1, 2 = N2, 3 = N3, 4 = REM. YASA provides several
-        convenient functions to load and upsample hypnogram data:
-        https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html
+        1 = N1, 2 = N2, 3 = N3, 4 = REM.
+
+        ..note::
+            YASA provides several
+            convenient functions to load and upsample hypnogram data:
+            https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
         (4), meaning that the detection is applied only on REM sleep.
@@ -1995,18 +2002,31 @@ filtered signal.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>loc</code></strong>, <strong><code>roc</code></strong> :&ensp;<code>array_like</code></dt>
-<dd>Continuous EOG data (Left and Right Ocular Canthi, LOC / ROC) channels.
-Unit must be uV.</dd>
+<dd>
+<p>Continuous EOG data (Left and Right Ocular Canthi, LOC / ROC) channels.
+Unit must be uV.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>if passing data from a MNE Raw object, make sure to multiply
+the data by 1e6 to convert from Volts (MNE) to uV (YASA).</p>
+</div>
+</dd>
 <dt><strong><code>sf</code></strong> :&ensp;<code>float</code></dt>
 <dd>Sampling frequency of the data in Hz.</dd>
 <dt><strong><code>hypno</code></strong> :&ensp;<code>array_like</code></dt>
-<dd>Sleep stage vector (hypnogram). If the hypnogram is loaded, the
+<dd>
+<p>Sleep stage vector (hypnogram). If the hypnogram is loaded, the
 detection will only be applied to the value defined in
 <code>include</code> (default = REM sleep). <code>hypno</code> MUST be a 1D array of
 integers with the same size as data and where -1 = Artefact, 0 = Wake,
-1 = N1, 2 = N2, 3 = N3, 4 = REM. YASA provides several
+1 = N1, 2 = N2, 3 = N3, 4 = REM.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>YASA provides several
 convenient functions to load and upsample hypnogram data:
-<a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html">https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html</a></dd>
+<a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html">https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html</a></p>
+</div>
+</dd>
 <dt><strong><code>include</code></strong> :&ensp;<code>tuple</code>, <code>list</code> or <code>int</code></dt>
 <dd>Values in <code>hypno</code> that will be included in the mask. The default is
 (4), meaning that the detection is applied only on REM sleep.
@@ -2084,6 +2104,10 @@ approach. Journal of neuroscience methods, 259, 72-82.</p>
     loc, roc : array_like
         Continuous EOG data (Left and Right Ocular Canthi, LOC / ROC) channels.
         Unit must be uV.
+
+        .. warning::
+            if passing data from a MNE Raw object, make sure to multiply
+            the data by 1e6 to convert from Volts (MNE) to uV (YASA).
     sf : float
         Sampling frequency of the data in Hz.
     hypno : array_like
@@ -2091,9 +2115,12 @@ approach. Journal of neuroscience methods, 259, 72-82.</p>
         detection will only be applied to the value defined in
         ``include`` (default = REM sleep). ``hypno`` MUST be a 1D array of
         integers with the same size as data and where -1 = Artefact, 0 = Wake,
-        1 = N1, 2 = N2, 3 = N3, 4 = REM. YASA provides several
-        convenient functions to load and upsample hypnogram data:
-        https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html
+        1 = N1, 2 = N2, 3 = N3, 4 = REM.
+
+        ..note::
+            YASA provides several
+            convenient functions to load and upsample hypnogram data:
+            https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
         (4), meaning that the detection is applied only on REM sleep.

@@ -1328,6 +1328,10 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
     loc, roc : array_like
         Continuous EOG data (Left and Right Ocular Canthi, LOC / ROC) channels.
         Unit must be uV.
+
+        .. warning::
+            if passing data from a MNE Raw object, make sure to multiply
+            the data by 1e6 to convert from Volts (MNE) to uV (YASA).
     sf : float
         Sampling frequency of the data in Hz.
     hypno : array_like
@@ -1335,9 +1339,12 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         detection will only be applied to the value defined in
         ``include`` (default = REM sleep). ``hypno`` MUST be a 1D array of
         integers with the same size as data and where -1 = Artefact, 0 = Wake,
-        1 = N1, 2 = N2, 3 = N3, 4 = REM. YASA provides several
-        convenient functions to load and upsample hypnogram data:
-        https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html
+        1 = N1, 2 = N2, 3 = N3, 4 = REM.
+
+        ..note::
+            YASA provides several
+            convenient functions to load and upsample hypnogram data:
+            https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
         (4), meaning that the detection is applied only on REM sleep.

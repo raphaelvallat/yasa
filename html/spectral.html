@@ -54,9 +54,10 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     Parameters
     ----------
     data : np.array_like or mne.io.Raw
-        1D or 2D EEG data. Can also be a MNE Raw object, in which case data,
-        sf, and ch_names will be automatically extracted. Data will also
-        be internally converted from Volts (MNE default) to micro-Volts (YASA).
+        1D or 2D EEG data. Can also be a MNE Raw object, in which case
+        ``data``, ``sf``, and ``ch_names`` will be automatically extracted.
+        ``data`` will also be internally converted from Volts (MNE default)
+        to micro-Volts (YASA).
     sf : float
         The sampling frequency of data AND the hypnogram.
         Can be omitted if ``data`` is a MNE Raw object.
@@ -66,7 +67,7 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         Can be omitted if ``data`` is a MNE Raw object.
     hypno : array_like
         The sleep staging (hypnogram) 1D array. Must have the same
-        sampling frequency and number of samples as data.
+        sampling frequency and number of samples as ``data``.
     relative : boolean
         If True, bandpower is divided by the total power between the min and
         max frequencies defined in ``band``.
@@ -323,9 +324,10 @@ for each sleep stage.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>data</code></strong> :&ensp;<code>np.array_like</code> or <code>mne.io.Raw</code></dt>
-<dd>1D or 2D EEG data. Can also be a MNE Raw object, in which case data,
-sf, and ch_names will be automatically extracted. Data will also
-be internally converted from Volts (MNE default) to micro-Volts (YASA).</dd>
+<dd>1D or 2D EEG data. Can also be a MNE Raw object, in which case
+<code>data</code>, <code>sf</code>, and <code>ch_names</code> will be automatically extracted.
+<code>data</code> will also be internally converted from Volts (MNE default)
+to micro-Volts (YASA).</dd>
 <dt><strong><code>sf</code></strong> :&ensp;<code>float</code></dt>
 <dd>The sampling frequency of data AND the hypnogram.
 Can be omitted if <code>data</code> is a MNE Raw object.</dd>
@@ -335,7 +337,7 @@ channels will be labelled ['CHAN001', 'CHAN002', &hellip;].
 Can be omitted if <code>data</code> is a MNE Raw object.</dd>
 <dt><strong><code>hypno</code></strong> :&ensp;<code>array_like</code></dt>
 <dd>The sleep staging (hypnogram) 1D array. Must have the same
-sampling frequency and number of samples as data.</dd>
+sampling frequency and number of samples as <code>data</code>.</dd>
 <dt><strong><code>relative</code></strong> :&ensp;<code>boolean</code></dt>
 <dd>If True, bandpower is divided by the total power between the min and
 max frequencies defined in <code>band</code>.</dd>
@@ -369,9 +371,10 @@ a spectral band.</dd>
     Parameters
     ----------
     data : np.array_like or mne.io.Raw
-        1D or 2D EEG data. Can also be a MNE Raw object, in which case data,
-        sf, and ch_names will be automatically extracted. Data will also
-        be internally converted from Volts (MNE default) to micro-Volts (YASA).
+        1D or 2D EEG data. Can also be a MNE Raw object, in which case
+        ``data``, ``sf``, and ``ch_names`` will be automatically extracted.
+        ``data`` will also be internally converted from Volts (MNE default)
+        to micro-Volts (YASA).
     sf : float
         The sampling frequency of data AND the hypnogram.
         Can be omitted if ``data`` is a MNE Raw object.
@@ -381,7 +384,7 @@ a spectral band.</dd>
         Can be omitted if ``data`` is a MNE Raw object.
     hypno : array_like
         The sleep staging (hypnogram) 1D array. Must have the same
-        sampling frequency and number of samples as data.
+        sampling frequency and number of samples as ``data``.
     relative : boolean
         If True, bandpower is divided by the total power between the min and
         max frequencies defined in ``band``.
