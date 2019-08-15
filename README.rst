@@ -49,7 +49,7 @@ The **rapid eye movements (REMs)** detection algorithm is a custom adaptation in
 
 - Yetton, B. D., Niknazar, M., Duggan, K. A., McDevitt, E. A., Whitehurst, L. N., Sattari, N., & Mednick, S. C. (2016). `Automatic detection of rapid eye movements (REMs): A machine learning approach <https://www.sciencedirect.com/science/article/pii/S0165027015004173>`_. *Journal of neuroscience methods*.
 
-In addition, YASA also provides some convenient functions to `load and manipulate sleep stages vector (hypnogram) <https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html>`_, and to `calculate spectral power in desired bands <https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/spectral.html#yasa.spectral.bandpower_from_psd>`_ from a single or multi-channel power spectral density (PSD).
+In addition, YASA also provides some convenient functions to `load and manipulate sleep stages vector (hypnogram) <https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html>`_, and to `perform spectral analysis <https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/spectral.html>`_.
 
 Installation
 ~~~~~~~~~~~~
