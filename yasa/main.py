@@ -24,9 +24,9 @@ logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s',
 
 logger = logging.getLogger('yasa')
 
-__all__ = ['spindles_detect', 'spindles_detect_multi',
-           'moving_transform', 'get_bool_vector', 'get_sync_sw', 'sw_detect',
-           'sw_detect_multi', 'rem_detect']
+__all__ = ['spindles_detect', 'spindles_detect_multi', 'sw_detect',
+           'sw_detect_multi', 'rem_detect', 'trimbothstd',
+           'moving_transform', 'get_bool_vector', 'get_sync_sw']
 
 
 #############################################################################
@@ -130,7 +130,7 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
         Higher values = higher precision = slower computation.
     method : str
         Transformation to use.
-        Available methods are:
+        Available methods are::
 
             'mean' : arithmetic mean of x
             'min' : minimum value of x
@@ -273,11 +273,10 @@ def trimbothstd(x, cut=0.10):
     compute the sample standard deviation.
 
     Slices off the passed proportion of items from both ends of the passed
-    array (i.e., with `cut` = 0.1, slices leftmost 10% **and**
+    array (i.e., with ``cut`` = 0.1, slices leftmost 10% **and**
     rightmost 10% of scores). The trimmed values are the lowest and
     highest ones.
-    Slices off less if proportion results in a non-integer slice index (i.e.,
-    conservatively slices off`proportiontocut`).
+    Slices off less if proportion results in a non-integer slice index.
 
     Parameters
     ----------
@@ -369,19 +368,20 @@ def get_bool_vector(data=None, sf=None, detection=None):
 
     Parameters
     ----------
-    data : np.array_like or mne.io.Raw
-        1D or 2D EEG data. Can also be a MNE Raw object, in which case
-        ``data`` and ``sf`` will be automatically extracted.
+    data : array_like or :py:class:`mne.io.BaseRaw`
+        1D or 2D EEG data. Can also be :py:class:`mne.io.BaseRaw`,
+        in which case ``data`` and ``sf`` will be automatically extracted.
     sf : float
         The sampling frequency of ``data``.
-        Can be omitted if ``data`` is a MNE Raw object.
-    detection : pandas DataFrame
-        YASA's detection dataframe returned by the `spindles_detect`,
-        `sw_detect` or `rem_detect` functions.
+        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+    detection : :py:class:`pandas.DataFrame`
+        YASA's detection dataframe returned by the
+        :py:func:`yasa.spindles_detect`, :py:func:`yasa.sw_detect`,
+        or :py:func:`yasa.rem_detect` functions.
 
     Returns
     -------
-    bool_vector : array
+    bool_vector : :py:class:`numpy.ndarray`
         Array of bool indicating for each sample in data if this sample is
         part of a detected event (True) or not (False).
     """
@@ -425,15 +425,15 @@ def get_sync_sw(data=None, sf=None, sw=None, event='NegPeak', time_before=0.4,
 
     Parameters
     ----------
-    data : np.array_like or mne.io.Raw
-        1D or 2D EEG data. Can also be a MNE Raw object, in which case
-        ``data`` and ``sf`` will be automatically extracted.
+    data : array_like or :py:class:`mne.io.BaseRaw`
+        1D or 2D EEG data. Can also be :py:class:`mne.io.BaseRaw`,
+        in which case ``data`` and ``sf`` will be automatically extracted.
     sf : float
         The sampling frequency of ``data``.
-        Can be omitted if ``data`` is a MNE Raw object.
-    sw : pandas DataFrame
+        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+    sw : :py:class:`pandas.DataFrame`
         YASA's detection dataframe returned by the
-        `sw_detect` or `sw_detect_multi` functions.
+        :py:func:`yasa.sw_detect` or :py:func:`yasa.sw_detect_multi` functions.
     event : str
         Landmark of the slow-waves to synchronize the timing on.
         Default is to use the negative peak.
@@ -442,10 +442,10 @@ def get_sync_sw(data=None, sf=None, sw=None, event='NegPeak', time_before=0.4,
     time_after : float
         Time (in seconds) after ``event``.
 
-    Returns:
-    --------
-    df_sw : pandas DataFrame
-        Pandas DataFrame:
+    Returns
+    -------
+    df_sw : :py:class:`pandas.DataFrame`
+        Ouput detection dataframe::
 
         'Time' : Timing of the events (in seconds)
         'Event' : Event number
@@ -524,20 +524,41 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     ----------
     data : array_like
         Single-channel continuous EEG data. Unit must be uV.
+
+        .. warning::
+            The default unit of :py:class:`mne.io.BaseRaw` is Volts.
+            Therefore, if passing data from a :py:class:`mne.io.BaseRaw`,
+            you need to multiply the data by 1e6 to convert to micro-Volts
+            (1 V = 1,000,000 uV), e.g.:
+
+            .. code-block:: ruby
+
+                data = raw.get_data() * 1e6  # Make sure that data is in uV
     sf : float
-        Sampling frequency of the data in Hz.
+        Sampling frequency of the data, in Hz.
     hypno : array_like
         Sleep stage vector (hypnogram). If the hypnogram is loaded, the
         detection will only be applied to the value defined in
-        ``include`` (default = N1 + N2 + N3 sleep). ``hypno`` MUST be a 1D
-        array of integers with the same size as data and where -1 = Artefact,
-        0 = Wake, 1 = N1, 2 = N2, 3 = N3, 4 = REM. YASA provides several
-        convenient functions to load and upsample hypnogram data:
-        https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html
+        ``include`` (default = N1 + N2 + N3 sleep).
+
+        The hypnogram must have the same number of samples as ``data``.
+        To upsample your hypnogram, please refer to
+        :py:func:`yasa.hypno_upsample_to_data`.
+
+        .. note::
+            The default hypnogram format in YASA is a 1D integer
+            vector where:
+
+            - -1 = Artefact / Movement
+            - 0 = Wake
+            - 1 = N1 sleep
+            - 2 = N2 sleep
+            - 3 = N3 sleep
+            - 4 = REM
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
         (1, 2, 3), meaning that the detection is applied on N1, N2 and N3
-        sleep. This has no effect is ``hypno`` is None.
+        sleep. This has no effect when ``hypno`` is None.
     freq_sp : tuple or list
         Spindles frequency range. Default is 12 to 15 Hz. Please note that YASA
         uses a FIR filter (implemented in MNE) with a 1.5Hz transition band,
@@ -550,7 +571,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         Broad band frequency of interest.
         Default is 1 to 30 Hz.
     min_distance : int
-        If two spindles are closer than `min_distance` (in ms), they are
+        If two spindles are closer than ``min_distance`` (in ms), they are
         merged into a single spindles. Default is 500 ms.
     downsample : boolean
         If True, the data will be downsampled to 100 Hz or 128 Hz (depending
@@ -564,17 +585,17 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
             'rms' : Mean(RMS) + 1.5 * STD(RMS).
     remove_outliers : boolean
         If True, YASA will automatically detect and remove outliers spindles
-        using an Isolation Forest (implemented in the scikit-learn package).
+        using :py:class:`sklearn.ensemble.IsolationForest`.
         The outliers detection is performed on all the spindles
-        parameters with the exception of the 'Start' and 'End' columns.
+        parameters with the exception of the ``Start`` and ``End`` columns.
         YASA uses a random seed (42) to ensure reproducible results.
         Note that this step will only be applied if there are more than 50
         detected spindles in the first place. Default to False.
 
     Returns
     -------
-    sp_params : pd.DataFrame
-        Pandas DataFrame:
+    sp_params : :py:class:`pandas.DataFrame`
+        Ouput detection dataframe::
 
             'Start' : Start time of each detected spindles (in seconds)
             'End' : End time (in seconds)
@@ -857,26 +878,29 @@ def spindles_detect_multi(data, sf=None, ch_names=None, multi_only=False,
     ----------
     data : array_like
         Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-        Can also be a MNE Raw object, in which case data, sf, and ch_names
-        will be automatically extracted. Data will also be internally
-        converted from Volts (MNE) to micro-Volts (YASA).
+        Can also be a :py:class:`mne.io.BaseRaw`, in which case ``data``,
+        ``sf``, and ``ch_names`` will be automatically extracted,
+        and ``data`` will also be automatically converted from Volts (MNE)
+        to micro-Volts (YASA).
     sf : float
         Sampling frequency of the data in Hz.
-        Can be omitted if ``data`` is a MNE Raw object.
+        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
     ch_names : list of str
-        Channel names. Can be omitted if ``data`` is a MNE Raw object.
+        Channel names. Can be omitted if ``data`` is a
+        :py:class:`mne.io.BaseRaw`.
     multi_only : boolean
         Define the behavior of the multi-channel detection. If True, only
         spindles that are present on at least two channels are kept. If False,
         no selection is applied and the output is just a concatenation of the
         single-channel detection dataframe. Default is False.
     **kwargs
-        Keywords arguments that are passed to the `spindles_detect` function.
+        Keywords arguments that are passed to the
+        :py:func:`yasa.spindles_detect` function.
 
     Returns
     -------
-    sp_params : pd.DataFrame
-        Pandas DataFrame:
+    sp_params : :py:class:`pandas.DataFrame`
+        Ouput detection dataframe::
 
             'Start' : Start time of each detected spindles (in seconds)
             'End' : End time (in seconds)
@@ -954,20 +978,41 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
     ----------
     data : array_like
         Single-channel continuous EEG data. Unit must be uV.
+
+        .. warning::
+            The default unit of :py:class:`mne.io.BaseRaw` is Volts.
+            Therefore, if passing data from a :py:class:`mne.io.BaseRaw`,
+            you need to multiply the data by 1e6 to convert to micro-Volts
+            (1 V = 1,000,000 uV), e.g.:
+
+            .. code-block:: ruby
+
+                data = raw.get_data() * 1e6  # Make sure that data is in uV
     sf : float
-        Sampling frequency of the data in Hz.
+        Sampling frequency of the data, in Hz.
     hypno : array_like
         Sleep stage vector (hypnogram). If the hypnogram is loaded, the
         detection will only be applied to the value defined in
-        ``include`` (default = N2 + N3 sleep). ``hypno`` MUST be a 1D array of
-        integers with the same size as data and where -1 = Artefact, 0 = Wake,
-        1 = N1, 2 = N2, 3 = N3, 4 = REM. YASA provides several
-        convenient functions to load and upsample hypnogram data:
-        https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html
+        ``include`` (default = N2 + N3 sleep).
+
+        The hypnogram must have the same number of samples as ``data``.
+        To upsample your hypnogram, please refer to
+        :py:func:`yasa.hypno_upsample_to_data`.
+
+        .. note::
+            The default hypnogram format in YASA is a 1D integer
+            vector where:
+
+            - -1 = Artefact / Movement
+            - 0 = Wake
+            - 1 = N1 sleep
+            - 2 = N2 sleep
+            - 3 = N3 sleep
+            - 4 = REM
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
-        (2, 3), meaning that the detection is applied only on N2 and N3 sleep.
-        This has no effect is ``hypno`` is None.
+        (2, 3), meaning that the detection is applied on N2 and N3
+        sleep. This has no effect when ``hypno`` is None.
     freq_sw : tuple or list
         Slow wave frequency range. Default is 0.3 to 3.5 Hz. Please note that
         YASA uses a FIR filter (implemented in MNE) with a 0.2Hz transition
@@ -994,7 +1039,7 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         respectively).
     remove_outliers : boolean
         If True, YASA will automatically detect and remove outliers slow-waves
-        using an Isolation Forest (implemented in the scikit-learn package).
+        using :py:class:`sklearn.ensemble.IsolationForest`.
         The outliers detection is performed on the frequency, amplitude and
         duration parameters of the detected slow-waves. YASA uses a random seed
         (42) to ensure reproducible results. Note that this step will only be
@@ -1003,8 +1048,8 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
 
     Returns
     -------
-    sw_params : pd.DataFrame
-        Pandas DataFrame:
+    sw_params : :py:class:`pandas.DataFrame`
+        Ouput detection dataframe::
 
             'Start' : Start of each detected slow-wave (in seconds of data)
             'NegPeak' : Location of the negative peak (in seconds of data)
@@ -1024,7 +1069,7 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
     For better results, apply this detection only on artefact-free NREM sleep.
 
     Note that the ``PTP``, ``Slope``, ``ValNegPeak`` and ``ValPosPeak`` are
-    computed on the filtered signal.
+    all computed on the filtered signal.
     """
     # Safety check
     data = np.asarray(data, dtype=np.float64)
@@ -1243,21 +1288,24 @@ def sw_detect_multi(data, sf=None, ch_names=None, **kwargs):
     ----------
     data : array_like
         Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-        Can also be a MNE Raw object, in which case data, sf, and ch_names
-        will be automatically extracted. Data will also be internally
-        converted from Volts (MNE) to micro-Volts (YASA).
+        Can also be a :py:class:`mne.io.BaseRaw`, in which case ``data``,
+        ``sf``, and ``ch_names`` will be automatically extracted,
+        and ``data`` will also be automatically converted from Volts (MNE)
+        to micro-Volts (YASA).
     sf : float
         Sampling frequency of the data in Hz.
-        Can be omitted if ``data`` is a MNE Raw object.
+        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
     ch_names : list of str
-        Channel names. Can be omitted if ``data`` is a MNE Raw object.
+        Channel names. Can be omitted if ``data`` is a
+        :py:class:`mne.io.BaseRaw`.
     **kwargs
-        Keywords arguments that are passed to the `sw_detect` function.
+        Keywords arguments that are passed to the :py:func:`yasa.sw_detect`
+        function.
 
     Returns
     -------
-    sw_params : pd.DataFrame
-        Pandas DataFrame:
+    sw_params : :py:class:`pandas.DataFrame`
+        Ouput detection dataframe::
 
             'Start' : Start of each detected slow-wave (in seconds of data)
             'NegPeak' : Location of the negative peak (in seconds of data)
@@ -1344,25 +1392,39 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         Unit must be uV.
 
         .. warning::
-            if passing data from a MNE Raw object, make sure to multiply
-            the data by 1e6 to convert from Volts (MNE) to uV (YASA).
+            The default unit of :py:class:`mne.io.BaseRaw` is Volts.
+            Therefore, if passing data from a :py:class:`mne.io.BaseRaw`,
+            you need to multiply the data by 1e6 to convert to micro-Volts
+            (1 V = 1,000,000 uV), e.g.:
+
+            .. code-block:: ruby
+
+                data = raw.get_data() * 1e6  # Make sure that data is in uV
     sf : float
-        Sampling frequency of the data in Hz.
+        Sampling frequency of the data, in Hz.
     hypno : array_like
         Sleep stage vector (hypnogram). If the hypnogram is loaded, the
         detection will only be applied to the value defined in
-        ``include`` (default = REM sleep). ``hypno`` MUST be a 1D array of
-        integers with the same size as data and where -1 = Artefact, 0 = Wake,
-        1 = N1, 2 = N2, 3 = N3, 4 = REM.
+        ``include`` (default = REM sleep).
 
-        ..note::
-            YASA provides several
-            convenient functions to load and upsample hypnogram data:
-            https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html
+        The hypnogram must have the same number of samples as ``data``.
+        To upsample your hypnogram, please refer to
+        :py:func:`yasa.hypno_upsample_to_data`.
+
+        .. note::
+            The default hypnogram format in YASA is a 1D integer
+            vector where:
+
+            - -1 = Artefact / Movement
+            - 0 = Wake
+            - 1 = N1 sleep
+            - 2 = N2 sleep
+            - 3 = N3 sleep
+            - 4 = REM
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
-        (4), meaning that the detection is applied only on REM sleep.
-        This has no effect is ``hypno`` is None.
+        (4), meaning that the detection is applied on REM sleep.
+        This has no effect when ``hypno`` is None.
     amplitude : tuple or list
         Minimum and maximum amplitude of the peak of the REM.
         Default is 50 uV to 325 uV.
@@ -1377,15 +1439,15 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         respectively).
     remove_outliers : boolean
         If True, YASA will automatically detect and remove outliers REMs
-        using an Isolation Forest (implemented in the scikit-learn package).
+        using :py:class:`sklearn.ensemble.IsolationForest`.
         YASA uses a random seed (42) to ensure reproducible results.
         Note that this step will only be applied if there are more than
         100 detected REMs in the first place. Default to False.
 
     Returns
     -------
-    df_rem : pd.DataFrame
-        Pandas DataFrame:
+    df_rem : :py:class:`pandas.DataFrame`
+        Ouput detection dataframe::
 
             'Start' : Start of each detected REM (in seconds of data)
             'Peak' : Location of the peak (in seconds of data)
@@ -1405,17 +1467,6 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
 
     Note that all the output parameters are computed on the filtered LOC and
     ROC signals.
-
-    References
-    ----------
-    - Agarwal, R., Takeuchi, T., Laroche, S., & Gotman, J. (2005).
-    Detection of rapid-eye movements in sleep studies. IEEE
-    Transactions on biomedical engineering, 52(8), 1390-1396.
-
-    - Yetton, B. D., Niknazar, M., Duggan, K. A., McDevitt, E. A.,
-    Whitehurst, L. N., Sattari, N., & Mednick, S. C. (2016). Automatic
-    detection of rapid eye movements (REMs): A machine learning
-    approach. Journal of neuroscience methods, 259, 72-82.
     """
     # Safety checks
     loc = np.squeeze(np.asarray(loc, dtype=np.float64))

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>API reference &#8212; yasa 0.1.6 documentation</title>
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script type="text/javascript" src="_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html"><span><img src="_static/yasa_128x128.png"></span>
+          yasa</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.6</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="#">Functions</a></li>
+                <li><a href="changelog.html">What's new</a></li>
+                <li><a href="contributing.html">Contribute</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="api-reference">
+<span id="api-ref"></span><h1>API reference</h1>
+<div class="section" id="detection">
+<h2>Detection</h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.rem_detect.html#yasa.rem_detect" title="yasa.rem_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rem_detect</span></code></a>(loc, roc, sf[, hypno, include, …])</p></td>
+<td><p>Rapid Eye Movements (REMs) detection.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spindles_detect</span></code></a>(data, sf[, hypno, include, …])</p></td>
+<td><p>Spindles detection.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.spindles_detect_multi.html#yasa.spindles_detect_multi" title="yasa.spindles_detect_multi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spindles_detect_multi</span></code></a>(data[, sf, ch_names, …])</p></td>
+<td><p>Multi-channel spindles detection.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sw_detect</span></code></a>(data, sf[, hypno, include, …])</p></td>
+<td><p>Slow-waves detection.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.sw_detect_multi.html#yasa.sw_detect_multi" title="yasa.sw_detect_multi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sw_detect_multi</span></code></a>(data[, sf, ch_names])</p></td>
+<td><p>Multi-channel slow-waves detection.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.get_bool_vector.html#yasa.get_bool_vector" title="yasa.get_bool_vector"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_bool_vector</span></code></a>([data, sf, detection])</p></td>
+<td><p>Return a Boolean vector given the original data and sf and a YASA’s detection dataframe.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.get_sync_sw.html#yasa.get_sync_sw" title="yasa.get_sync_sw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sync_sw</span></code></a>([data, sf, sw, event, …])</p></td>
+<td><p>Synchronize the timing of detected slow-waves at a specific landmark timepoint.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="bandpower">
+<h2>Bandpower</h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.bandpower.html#yasa.bandpower" title="yasa.bandpower"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bandpower</span></code></a>(data[, sf, ch_names, hypno, …])</p></td>
+<td><p>Calculate the Welch bandpower for each channel and, if specified, for each sleep stage.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.bandpower_from_psd.html#yasa.bandpower_from_psd" title="yasa.bandpower_from_psd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bandpower_from_psd</span></code></a>(psd, freqs[, ch_names, …])</p></td>
+<td><p>Compute the average power of the EEG in specified frequency band(s) given a pre-computed PSD.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.stft_power.html#yasa.stft_power" title="yasa.stft_power"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stft_power</span></code></a>(data, sf[, window, step, band, …])</p></td>
+<td><p>Compute the pointwise power via STFT and interpolation.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="hypnogram">
+<h2>Hypnogram</h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.hypno_upsample_to_data.html#yasa.hypno_upsample_to_data" title="yasa.hypno_upsample_to_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hypno_upsample_to_data</span></code></a>(hypno, sf_hypno, data)</p></td>
+<td><p>Upsample an hypnogram to a given sampling frequency and fit the resulting hypnogram to corresponding EEG data, such that the hypnogram and EEG data have the exact same number of samples.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.hypno_upsample_to_sf.html#yasa.hypno_upsample_to_sf" title="yasa.hypno_upsample_to_sf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hypno_upsample_to_sf</span></code></a>(hypno, sf_hypno, sf_data)</p></td>
+<td><p>Upsample the hypnogram to a given sampling frequency.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.hypno_str_to_int.html#yasa.hypno_str_to_int" title="yasa.hypno_str_to_int"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hypno_str_to_int</span></code></a>(hypno[, mapping_dict])</p></td>
+<td><p>Convert a string hypnogram array to integer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.hypno_int_to_str.html#yasa.hypno_int_to_str" title="yasa.hypno_int_to_str"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hypno_int_to_str</span></code></a>(hypno[, mapping_dict])</p></td>
+<td><p>Convert an integer hypnogram array to a string array.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="others">
+<h2>Others</h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.moving_transform.html#yasa.moving_transform" title="yasa.moving_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">moving_transform</span></code></a>(x[, y, sf, window, step, …])</p></td>
+<td><p>Moving transformation of one or two time-series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.trimbothstd.html#yasa.trimbothstd" title="yasa.trimbothstd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trimbothstd</span></code></a>(x[, cut])</p></td>
+<td><p>Slices off a proportion of items from both ends of an array and then compute the sample standard deviation.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+      
+    </p>
+    <p>
+        &copy; Copyright 2018-2019, Raphael Vallat.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

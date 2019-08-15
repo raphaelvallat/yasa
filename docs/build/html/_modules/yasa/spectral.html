@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>yasa.spectral &#8212; yasa 0.1.6 documentation</title>
+    <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../../_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="../../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../../_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
+          yasa</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.6</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../../api.html">Functions</a></li>
+                <li><a href="../../changelog.html">What's new</a></li>
+                <li><a href="../../contributing.html">Contribute</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <h1>Source code for yasa.spectral</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file contains several helper functions to calculate spectral power from</span>
+<span class="sd">1D and 2D EEG data.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">mne</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">signal</span>
+<span class="kn">from</span> <span class="nn">scipy.integrate</span> <span class="k">import</span> <span class="n">simps</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">RectBivariateSpline</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;bandpower&#39;</span><span class="p">,</span> <span class="s1">&#39;bandpower_from_psd&#39;</span><span class="p">,</span> <span class="s1">&#39;stft_power&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="bandpower"><a class="viewcode-back" href="../../generated/yasa.bandpower.html#yasa.bandpower">[docs]</a><span class="k">def</span> <span class="nf">bandpower</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ch_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+              <span class="n">win_sec</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">relative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+              <span class="n">bands</span><span class="o">=</span><span class="p">[(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;Delta&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="s1">&#39;Theta&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="s1">&#39;Alpha&#39;</span><span class="p">),</span>
+                     <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="s1">&#39;Beta&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="s1">&#39;Gamma&#39;</span><span class="p">)],</span>
+              <span class="n">kwargs_welch</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">average</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="s1">&#39;hamming&#39;</span><span class="p">)):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the Welch bandpower for each channel and, if specified,</span>
+<span class="sd">    for each sleep stage.</span>
+
+<span class="sd">    .. versionadded:: 0.1.6</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : np.array_like or :py:class:`mne.io.BaseRaw`</span>
+<span class="sd">        1D or 2D EEG data. Can also be a :py:class:`mne.io.BaseRaw`, in which</span>
+<span class="sd">        case ``data``, ``sf``, and ``ch_names`` will be automatically</span>
+<span class="sd">        extracted, and ``data`` will also be converted from Volts (MNE default)</span>
+<span class="sd">        to micro-Volts (YASA).</span>
+<span class="sd">    sf : float</span>
+<span class="sd">        The sampling frequency of data AND the hypnogram.</span>
+<span class="sd">        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.</span>
+<span class="sd">    ch_names : list</span>
+<span class="sd">        List of channel names, e.g. [&#39;Cz&#39;, &#39;F3&#39;, &#39;F4&#39;, ...]. If None,</span>
+<span class="sd">        channels will be labelled [&#39;CHAN001&#39;, &#39;CHAN002&#39;, ...].</span>
+<span class="sd">        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        Sleep stage vector (hypnogram). If the hypnogram is loaded, the</span>
+<span class="sd">        bandpower will be extracted for each sleep stage defined in</span>
+<span class="sd">        ``include``.</span>
+
+<span class="sd">        The hypnogram must have the exact same number of samples as ``data``.</span>
+<span class="sd">        To upsample your hypnogram, please refer to</span>
+<span class="sd">        :py:func:`yasa.hypno_upsample_to_data`.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            The default hypnogram format in YASA is a 1D integer</span>
+<span class="sd">            vector where:</span>
+
+<span class="sd">            - -1 = Artefact / Movement</span>
+<span class="sd">            - 0 = Wake</span>
+<span class="sd">            - 1 = N1 sleep</span>
+<span class="sd">            - 2 = N2 sleep</span>
+<span class="sd">            - 3 = N3 sleep</span>
+<span class="sd">            - 4 = REM</span>
+<span class="sd">    include : tuple, list or int</span>
+<span class="sd">        Values in ``hypno`` that will be included in the mask. The default is</span>
+<span class="sd">        (2, 3), meaning that the bandpower are sequentially calculated</span>
+<span class="sd">        for N2 and N3 sleep. This has no effect when ``hypno`` is None.</span>
+<span class="sd">    relative : boolean</span>
+<span class="sd">        If True, bandpower is divided by the total power between the min and</span>
+<span class="sd">        max frequencies defined in ``band``.</span>
+<span class="sd">    bands : list of tuples</span>
+<span class="sd">        List of frequency bands of interests. Each tuple must contain the</span>
+<span class="sd">        lower and upper frequencies, as well as the band name</span>
+<span class="sd">        (e.g. (0.5, 4, &#39;Delta&#39;)).</span>
+<span class="sd">    kwargs_welch : dict</span>
+<span class="sd">        Optional keywords arguments that are passed to the</span>
+<span class="sd">        :py:func:`scipy.signal.welch` function.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bandpowers : :py:class:`pandas.DataFrame`</span>
+<span class="sd">        Bandpower dataframe, in which each row is a channel and each column</span>
+<span class="sd">        a spectral band.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check if input data is a MNE Raw object</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">BaseRaw</span><span class="p">):</span>
+        <span class="n">sf</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;sfreq&#39;</span><span class="p">]</span>  <span class="c1"># Extract sampling frequency</span>
+        <span class="n">ch_names</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">ch_names</span>  <span class="c1"># Extract channel names</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span> <span class="o">*</span> <span class="mf">1e6</span>  <span class="c1"># Convert from V to uV</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">npts</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Safety checks</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span> <span class="s1">&#39;Data must be a numpy array.&#39;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Data must be of shape (nchan, n_samples).&#39;</span>
+        <span class="n">nchan</span><span class="p">,</span> <span class="n">npts</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">assert</span> <span class="n">nchan</span> <span class="o">&lt;</span> <span class="n">npts</span><span class="p">,</span> <span class="s1">&#39;Data must be of shape (nchan, n_samples).&#39;</span>
+        <span class="k">assert</span> <span class="n">sf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;sf must be specified if passing a numpy array.&#39;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">ch_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ch_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;CHAN&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nchan</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ch_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ch_names</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">))</span>
+            <span class="k">assert</span> <span class="n">ch_names</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;ch_names must be 1D.&#39;</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">ch_names</span><span class="p">)</span> <span class="o">==</span> <span class="n">nchan</span><span class="p">,</span> <span class="s1">&#39;ch_names must match data.shape[0].&#39;</span>
+
+    <span class="n">win</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">win_sec</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span>  <span class="c1"># nperseg</span>
+
+    <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Calculate the PSD over the whole data</span>
+        <span class="n">freqs</span><span class="p">,</span> <span class="n">psd</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">welch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">nperseg</span><span class="o">=</span><span class="n">win</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs_welch</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bandpower_from_psd</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span>
+                                  <span class="n">bands</span><span class="o">=</span><span class="n">bands</span><span class="p">,</span>
+                                  <span class="n">relative</span><span class="o">=</span><span class="n">relative</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;Chan&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Per each sleep stage defined in ``include``.</span>
+        <span class="n">hypno</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">include</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;include cannot be None if hypno is given&#39;</span>
+        <span class="n">include</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">include</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="n">hypno</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Hypno must be a 1D array.&#39;</span>
+        <span class="k">assert</span> <span class="n">hypno</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">npts</span><span class="p">,</span> <span class="s1">&#39;Hypno must have same size as data.shape[1]&#39;</span>
+        <span class="k">assert</span> <span class="n">include</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;`include` must have at least one element.&#39;</span>
+        <span class="k">assert</span> <span class="n">hypno</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">include</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;hypno and include &#39;</span>
+                                                        <span class="s1">&#39;must have same dtype&#39;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(),</span> <span class="p">(</span><span class="s1">&#39;None of the stages &#39;</span>
+                                               <span class="s1">&#39;specified in `include` &#39;</span>
+                                               <span class="s1">&#39;are present in hypno.&#39;</span><span class="p">)</span>
+        <span class="c1"># Initialize empty dataframe and loop over stages</span>
+        <span class="n">df_bp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([])</span>
+        <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">include</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">stage</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">hypno</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">data_stage</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="n">hypno</span> <span class="o">==</span> <span class="n">stage</span><span class="p">]</span>
+            <span class="n">freqs</span><span class="p">,</span> <span class="n">psd</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">welch</span><span class="p">(</span><span class="n">data_stage</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">nperseg</span><span class="o">=</span><span class="n">win</span><span class="p">,</span>
+                                      <span class="o">**</span><span class="n">kwargs_welch</span><span class="p">)</span>
+            <span class="n">bp_stage</span> <span class="o">=</span> <span class="n">bandpower_from_psd</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="n">bands</span><span class="p">,</span>
+                                          <span class="n">relative</span><span class="o">=</span><span class="n">relative</span><span class="p">)</span>
+            <span class="n">bp_stage</span><span class="p">[</span><span class="s1">&#39;Stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stage</span>
+            <span class="n">df_bp</span> <span class="o">=</span> <span class="n">df_bp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bp_stage</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df_bp</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s1">&#39;Stage&#39;</span><span class="p">,</span> <span class="s1">&#39;Chan&#39;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="bandpower_from_psd"><a class="viewcode-back" href="../../generated/yasa.bandpower_from_psd.html#yasa.bandpower_from_psd">[docs]</a><span class="k">def</span> <span class="nf">bandpower_from_psd</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">ch_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="p">[(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;Delta&#39;</span><span class="p">),</span>
+                       <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="s1">&#39;Theta&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="s1">&#39;Alpha&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="s1">&#39;Beta&#39;</span><span class="p">),</span>
+                       <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="s1">&#39;Gamma&#39;</span><span class="p">)],</span> <span class="n">relative</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute the average power of the EEG in specified frequency band(s)</span>
+<span class="sd">    given a pre-computed PSD.</span>
+
+<span class="sd">    .. versionadded:: 0.1.5</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    psd : array_like</span>
+<span class="sd">        Power spectral density of data, in uV^2/Hz.</span>
+<span class="sd">        Must be of shape (n_channels, n_freqs).</span>
+<span class="sd">        See :py:func:`scipy.signal.welch` for more details.</span>
+<span class="sd">    freqs : array_like</span>
+<span class="sd">        Array of frequencies.</span>
+<span class="sd">    ch_names : list</span>
+<span class="sd">        List of channel names, e.g. [&#39;Cz&#39;, &#39;F3&#39;, &#39;F4&#39;, ...]. If None,</span>
+<span class="sd">        channels will be labelled [&#39;CHAN001&#39;, &#39;CHAN002&#39;, ...].</span>
+<span class="sd">    bands : list of tuples</span>
+<span class="sd">        List of frequency bands of interests. Each tuple must contain the</span>
+<span class="sd">        lower and upper frequencies, as well as the band name</span>
+<span class="sd">        (e.g. (0.5, 4, &#39;Delta&#39;)).</span>
+<span class="sd">    relative : boolean</span>
+<span class="sd">        If True, bandpower is divided by the total power between the min and</span>
+<span class="sd">        max frequencies defined in ``band`` (default 0.5 to 40 Hz).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bandpowers : :py:class:`pandas.DataFrame`</span>
+<span class="sd">        Bandpower dataframe, in which each row is a channel and each column</span>
+<span class="sd">        a spectral band.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Safety checks</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">freqs</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="n">psd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">psd</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">psd</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;PSD must be of shape (n_channels, n_freqs).&#39;</span>
+    <span class="n">all_freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([[</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bands</span><span class="p">])</span>
+    <span class="n">fmin</span><span class="p">,</span> <span class="n">fmax</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">all_freqs</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">all_freqs</span><span class="p">)</span>
+    <span class="n">idx_good_freq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">freqs</span> <span class="o">&gt;=</span> <span class="n">fmin</span><span class="p">,</span> <span class="n">freqs</span> <span class="o">&lt;=</span> <span class="n">fmax</span><span class="p">)</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">freqs</span><span class="p">[</span><span class="n">idx_good_freq</span><span class="p">]</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">freqs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">freqs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">nchan</span> <span class="o">=</span> <span class="n">psd</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">nchan</span> <span class="o">&lt;</span> <span class="n">psd</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;PSD must be of shape (n_channels, n_freqs).&#39;</span>
+    <span class="k">if</span> <span class="n">ch_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ch_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ch_names</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="n">ch_names</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;ch_names must be 1D.&#39;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">ch_names</span><span class="p">)</span> <span class="o">==</span> <span class="n">nchan</span><span class="p">,</span> <span class="s1">&#39;ch_names must match psd.shape[0].&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ch_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;CHAN&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nchan</span><span class="p">)]</span>
+    <span class="n">bp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nchan</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">bands</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    <span class="n">psd</span> <span class="o">=</span> <span class="n">psd</span><span class="p">[:,</span> <span class="n">idx_good_freq</span><span class="p">]</span>
+    <span class="n">total_power</span> <span class="o">=</span> <span class="n">simps</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">dx</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+    <span class="n">total_power</span> <span class="o">=</span> <span class="n">total_power</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+
+    <span class="c1"># Enumerate over the frequency bands</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">band</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bands</span><span class="p">):</span>
+        <span class="n">b0</span><span class="p">,</span> <span class="n">b1</span><span class="p">,</span> <span class="n">la</span> <span class="o">=</span> <span class="n">band</span>
+        <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">la</span><span class="p">)</span>
+        <span class="n">idx_band</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">freqs</span> <span class="o">&gt;=</span> <span class="n">b0</span><span class="p">,</span> <span class="n">freqs</span> <span class="o">&lt;=</span> <span class="n">b1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">psd</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">bp</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">simps</span><span class="p">(</span><span class="n">psd</span><span class="p">[:,</span> <span class="n">idx_band</span><span class="p">],</span> <span class="n">dx</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">simps</span><span class="p">(</span><span class="n">psd</span><span class="p">[</span><span class="n">idx_band</span><span class="p">],</span> <span class="n">dx</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">relative</span><span class="p">:</span>
+        <span class="n">bp</span> <span class="o">/=</span> <span class="n">total_power</span>
+
+    <span class="c1"># Convert to DataFrame</span>
+    <span class="n">bp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">bp</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+    <span class="n">bp</span><span class="p">[</span><span class="s1">&#39;FreqRes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span>
+    <span class="c1"># bp[&#39;WindowSec&#39;] = 1 / res</span>
+    <span class="n">bp</span><span class="p">[</span><span class="s1">&#39;Relative&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">relative</span>
+    <span class="n">bp</span><span class="p">[</span><span class="s1">&#39;Chan&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ch_names</span>
+    <span class="n">bp</span> <span class="o">=</span> <span class="n">bp</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;Chan&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+    <span class="c1"># Add hidden attributes</span>
+    <span class="n">bp</span><span class="o">.</span><span class="n">bands_</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">bands</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">bp</span></div>
+
+
+<div class="viewcode-block" id="stft_power"><a class="viewcode-back" href="../../generated/yasa.stft_power.html#yasa.stft_power">[docs]</a><span class="k">def</span> <span class="nf">stft_power</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">step</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="n">interp</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+               <span class="n">norm</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute the pointwise power via STFT and interpolation.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : array_like</span>
+<span class="sd">        Single-channel data.</span>
+<span class="sd">    sf : float</span>
+<span class="sd">        Sampling frequency of the data.</span>
+<span class="sd">    window : int</span>
+<span class="sd">        Window size in seconds for STFT.</span>
+<span class="sd">        2 or 4 seconds are usually a good default.</span>
+<span class="sd">        Higher values = higher frequency resolution = lower time resolution.</span>
+<span class="sd">    step : int</span>
+<span class="sd">        Step in seconds for the STFT.</span>
+<span class="sd">        A step of 0.2 second (200 ms) is usually a good default.</span>
+
+<span class="sd">        * If ``step`` == 0, overlap at every sample (slowest)</span>
+<span class="sd">        * If ``step`` == nperseg, no overlap (fastest)</span>
+
+<span class="sd">        Higher values = higher precision = slower computation.</span>
+<span class="sd">    band : tuple or None</span>
+<span class="sd">        Broad band frequency range.</span>
+<span class="sd">        Default is 1 to 30 Hz.</span>
+<span class="sd">    interp : boolean</span>
+<span class="sd">        If True, a cubic interpolation is performed to ensure that the output</span>
+<span class="sd">        is the same size as the input (= pointwise power).</span>
+<span class="sd">    norm : bool</span>
+<span class="sd">        If True, return bandwise normalized band power, i.e. for each time</span>
+<span class="sd">        point, the sum of power in all the frequency bins equals 1.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f : ndarray</span>
+<span class="sd">        Frequency vector</span>
+<span class="sd">    t : ndarray</span>
+<span class="sd">        Time vector</span>
+<span class="sd">    Sxx : ndarray</span>
+<span class="sd">        Power in the specified frequency bins of shape (f, t)</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    2D Interpolation is done using</span>
+<span class="sd">    :py:class:`scipy.interpolate.RectBivariateSpline`</span>
+<span class="sd">    which is much faster than :py:class:`scipy.interpolate.interp2d`</span>
+<span class="sd">    for a rectangular grid. The default is to use a bivariate spline with</span>
+<span class="sd">    3 degrees.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Safety check</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">step</span> <span class="o">&lt;=</span> <span class="n">window</span>
+
+    <span class="n">step</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">sf</span> <span class="k">if</span> <span class="n">step</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">step</span>
+
+    <span class="c1"># Define STFT parameters</span>
+    <span class="n">nperseg</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">window</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span>
+    <span class="n">noverlap</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">nperseg</span> <span class="o">-</span> <span class="p">(</span><span class="n">step</span> <span class="o">*</span> <span class="n">sf</span><span class="p">))</span>
+
+    <span class="c1"># Compute STFT and remove the last epoch</span>
+    <span class="n">f</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">Sxx</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">stft</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">nperseg</span><span class="o">=</span><span class="n">nperseg</span><span class="p">,</span> <span class="n">noverlap</span><span class="o">=</span><span class="n">noverlap</span><span class="p">,</span>
+                            <span class="n">detrend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">padded</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Let&#39;s keep only the frequency of interest</span>
+    <span class="k">if</span> <span class="n">band</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">idx_band</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">f</span> <span class="o">&gt;=</span> <span class="n">band</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">f</span> <span class="o">&lt;=</span> <span class="n">band</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">idx_band</span><span class="p">]</span>
+        <span class="n">Sxx</span> <span class="o">=</span> <span class="n">Sxx</span><span class="p">[</span><span class="n">idx_band</span><span class="p">,</span> <span class="p">:]</span>
+
+    <span class="c1"># Compute power</span>
+    <span class="n">Sxx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">Sxx</span><span class="p">))</span>
+
+    <span class="c1"># Interpolate</span>
+    <span class="k">if</span> <span class="n">interp</span><span class="p">:</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="n">RectBivariateSpline</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">Sxx</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">/</span> <span class="n">sf</span>
+        <span class="n">Sxx</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">norm</span><span class="p">:</span>
+        <span class="n">sum_pow</span> <span class="o">=</span> <span class="n">Sxx</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">Sxx</span><span class="p">,</span> <span class="n">sum_pow</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">Sxx</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">f</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">Sxx</span></div>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+      
+    </p>
+    <p>
+        &copy; Copyright 2018-2019, Raphael Vallat.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

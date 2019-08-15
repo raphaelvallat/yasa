@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Installation &#8212; yasa 0.1.6 documentation</title>
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script type="text/javascript" src="_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#"><span><img src="_static/yasa_128x128.png"></span>
+          yasa</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.6</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="api.html">Functions</a></li>
+                <li><a href="changelog.html">What's new</a></li>
+                <li><a href="contributing.html">Contribute</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="line-block">
+<div class="line"><br /></div>
+</div>
+<a class="reference external image-reference" href="https://badge.fury.io/py/yasa"><img alt="https://badge.fury.io/py/yasa.svg" src="https://badge.fury.io/py/yasa.svg" /></a>
+<a class="reference external image-reference" href="https://www.python.org/downloads/"><img alt="https://img.shields.io/badge/python-3.5%20%7C%203.6%20%7C%203.7-blue.svg" src="https://img.shields.io/badge/python-3.5%20%7C%203.6%20%7C%203.7-blue.svg" /></a>
+<a class="reference external image-reference" href="https://github.com/raphaelvallat/yasa/blob/master/LICENSE"><img alt="https://img.shields.io/github/license/raphaelvallat/yasa.svg" src="https://img.shields.io/github/license/raphaelvallat/yasa.svg" /></a>
+<a class="reference external image-reference" href="https://travis-ci.org/raphaelvallat/yasa"><img alt="https://travis-ci.org/raphaelvallat/yasa.svg?branch=master" src="https://travis-ci.org/raphaelvallat/yasa.svg?branch=master" /></a>
+<a class="reference external image-reference" href="https://codecov.io/gh/raphaelvallat/yasa"><img alt="https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg" src="https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg" /></a>
+<a class="reference external image-reference" href="https://pepy.tech/badge/yasa"><img alt="https://pepy.tech/badge/yasa" src="https://pepy.tech/badge/yasa" /></a>
+<hr class="docutils" />
+<div class="figure align-center">
+<img alt="_images/yasa_logo.png" src="_images/yasa_logo.png" />
+</div>
+<p><strong>YASA</strong> (<em>Yet Another Spindle Algorithm</em>) is a fast and robust Python 3 toolbox to detect sleep microstructure events from EEG recordings.</p>
+<p>The <strong>sleep spindles</strong> algorithm of YASA is largely inspired by the method described in:</p>
+<ul class="simple">
+<li><p>Lacourse, …, &amp; Warby. (2018). <a class="reference external" href="https://doi.org/10.1016/j.jneumeth.2018.08.014">A sleep spindle detection algorithm that emulates human expert spindle scoring</a>. <em>J. Neurosci. Methods</em>.</p></li>
+</ul>
+<p>The <strong>slow-waves</strong> detection algorithm is adapted from:</p>
+<ul class="simple">
+<li><p>Massimini, …, &amp; Tononi. (2004). <a class="reference external" href="https://doi.org/10.1523/JNEUROSCI.1318-04.2004">The sleep slow oscillation as a traveling wave</a>. <em>J. Neurosci</em>.</p></li>
+<li><p>Carrier, …, &amp; Filipini. (2011). <a class="reference external" href="https://doi.org/10.1111/j.1460-9568.2010.07543.x">Sleep slow wave changes during the middle years of life</a>. <em>Eur. J. Neurosci</em>.</p></li>
+</ul>
+<p>The <strong>rapid eye movements (REMs)</strong> detection algorithm is a custom adaptation inspired by:</p>
+<ul class="simple">
+<li><p>Agarwal, …, &amp; Gotman. (2005). <a class="reference external" href="https://ieeexplore.ieee.org/abstract/document/1463327/">Detection of rapid-eye movements in sleep studies</a>. <em>IEEE Transactions on biomedical engineering</em>.</p></li>
+<li><p>Yetton, …, &amp; Mednick. (2016). <a class="reference external" href="https://www.sciencedirect.com/science/article/pii/S0165027015004173">Automatic detection of rapid eye movements (REMs): A machine learning approach</a>. <em>Journal of neuroscience methods</em>.</p></li>
+</ul>
+<p>In addition, YASA also provides some convenient functions to <strong>load and manipulate hypnogram</strong> (sleep stages vector), and to perform <strong>spectral analysis</strong>.</p>
+<div class="section" id="installation">
+<h1>Installation</h1>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip install --upgrade yasa
+</pre></div>
+</div>
+<p><strong>Dependencies</strong></p>
+<ul class="simple">
+<li><p>python&gt;=3.5</p></li>
+<li><p>numpy&gt;=1.14</p></li>
+<li><p>scipy&gt;=1.1.0</p></li>
+<li><p>pandas&gt;=0.23,</p></li>
+<li><p>mne&gt;=0.17.0</p></li>
+<li><p>numba&gt;=0.39.0</p></li>
+<li><p>scikit-learn&gt;=0.20</p></li>
+</ul>
+<p>Several functions of YASA are written using <a class="reference external" href="http://numba.pydata.org/">Numba</a>, a just-in-time compiler for Python. This allows to greatly speed up the computation time (typically a few seconds for a full night recording).</p>
+<p><strong>What are the prerequisites for using YASA?</strong></p>
+<p>In order to use YASA, you need:</p>
+<ul class="simple">
+<li><p>Some basic knowledge of Python and especially the <a class="reference external" href="https://docs.scipy.org/doc/numpy/user/quickstart.html">NumPy</a>, <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html">Pandas</a> and <a class="reference external" href="https://martinos.org/mne/stable/index.html">MNE</a> libraries.</p></li>
+<li><p>A Python editor: YASA works best with <a class="reference external" href="https://jupyterlab.readthedocs.io/en/stable/index.html">Jupyter Lab</a>, a web-based interactive user interface.</p></li>
+<li><p>Some sleep EEG data, either as a NumPy array, or as a raw MNE object (for instance, using the <a class="reference external" href="https://mne-tools.github.io/stable/generated/mne.io.read_raw_edf.html">mne.io.read_raw_edf</a> function for EDF file). The units of the data MUST be uV.</p></li>
+<li><p>Optionally, a sleep staging vector (a.k.a hypnogram) to run the detections on specific sleep stages. To facilitate masking and indexing operations, the data and hypnogram MUST have the same sampling frequency and number of samples. Fortunately, YASA provide some <a class="reference external" href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html">convenient functions</a> to load and upsample hypnogram data to the desired shape.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>The default hypnogram format in YASA is a one dimensional integer vector where:</dt><dd><ul class="simple">
+<li><p>-1 = Artefact / Movement</p></li>
+<li><p>0 = Wake</p></li>
+<li><p>1 = N1 sleep</p></li>
+<li><p>2 = N2 sleep</p></li>
+<li><p>3 = N3 sleep</p></li>
+<li><p>4 = REM</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="examples">
+<h1>Examples</h1>
+<p>Check out the <a class="reference internal" href="api.html#api-ref"><span class="std std-ref">API reference</span></a> for more details on YASA’s functions.</p>
+<div class="section" id="notebooks">
+<h2>Notebooks</h2>
+<p>The examples Jupyter notebooks are really what make YASA great! In addition to showing how to use the main functions of YASA, they also provide an extensive step-by-step description of the detection algorithms, as well as several useful code snippets to analyze and plot your data.</p>
+<p><strong>Spindles</strong></p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb">01_spindles_detection.ipynb</a>: single-channel spindles detection and step-by-step description of the algorithm.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/02_spindles_detection_multi.ipynb">02_spindles_detection_multi.ipynb</a>: multi-channel spindles detection using MNE data.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/03_spindles_detection_NREM_only.ipynb">03_spindles_detection_NREM_only.ipynb</a>: spindles detection on NREM sleep only.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/04_spindles_slow_fast.ipynb">04_spindles_slow_fast.ipynb</a>: slow and fast spindles analysis.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_run_visbrain.py">05_run_visbrain.py</a>: interactive display with the Visbrain graphical user interface.</p></li>
+</ul>
+<p><strong>Slow-waves</strong></p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb">06_sw_detection.ipynb</a>: single-channel slow-waves detection and step-by-step description of the algorithm.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_sw_detection_multi.ipynb">07_sw_detection_multi.ipynb</a>: multi-channel slow-waves detection using MNE data.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_sw_average.ipynb">08_sw_average.ipynb</a>: plot the average template of the detected slow-waves, per channel.</p></li>
+</ul>
+<p><strong>Rapid Eye Movements (REMs)</strong></p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_REMs_detection.ipynb">09_REMs_detection.ipynb</a>: REMs detection.</p></li>
+</ul>
+<p><strong>Spectral analysis</strong></p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_bandpower.ipynb">10_bandpower.ipynb</a>: bandpower per channel and per sleep stage.</p></li>
+</ul>
+</div>
+<div class="section" id="typical-uses">
+<h2>Typical uses</h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">yasa</span>
+
+<span class="c1"># SLEEP SPINDLES</span>
+<span class="c1"># ==============</span>
+<span class="c1"># Single-channel spindles detection</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">)</span>
+
+<span class="c1"># Single-channel full command (shows all the default implicit parameters)</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+                     <span class="n">freq_sp</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="n">duration</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">freq_broad</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
+                     <span class="n">min_distance</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">downsample</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                     <span class="n">thresh</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="mf">0.65</span><span class="p">,</span> <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">},</span>
+                     <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+<span class="c1"># Multi-channels detection on NREM sleep only (requires an hypnogram)</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect_multi</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">)</span>
+
+<span class="c1"># Multi-channels detection on N2 sleep only with automatic outlier rejection</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect_multi</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c1"># SLOW-WAVES</span>
+<span class="c1"># ==========</span>
+<span class="c1"># Single-channel slow-wave detection</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">sw_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">)</span>
+
+<span class="c1"># Single-channel full command (shows all the default implicit parameters)</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">sw_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">freq_sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">),</span>
+               <span class="n">dur_neg</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">dur_pos</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">amp_neg</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">300</span><span class="p">),</span>
+               <span class="n">amp_pos</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="n">amp_ptp</span><span class="o">=</span><span class="p">(</span><span class="mi">75</span><span class="p">,</span> <span class="mi">400</span><span class="p">),</span> <span class="n">downsample</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+               <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+<span class="c1"># Multi-channel slow-waves detection on N2 + N3 sleep only (requires an hypnogram)</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">sw_detect_multi</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">)</span>
+
+<span class="c1"># RAPID EYE MOVEMENTS</span>
+<span class="c1"># ===================</span>
+<span class="c1"># Default detection (requires both LOC and ROC EOG channels)</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">rem_detect</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">roc</span><span class="p">,</span> <span class="n">sf</span><span class="p">)</span>
+
+<span class="c1"># On REM sleep only + all implicit parameters</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">rem_detect</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">roc</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">325</span><span class="p">),</span>
+                <span class="n">duration</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">freq_rem</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">downsample</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The result of the detection is a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">pandas DataFrame</a> where each row is a unique detected event (e.g. spindle, slow-waves, REMs) and each column a parameter of this event, including, the start and end timestamps, duration, amplitude, etc.</p>
+<table class="colwidths-auto docutils align-default" id="id1">
+<caption><span class="caption-text">Output dataframe</span></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Start</p></th>
+<th class="head"><p>End</p></th>
+<th class="head"><p>Duration</p></th>
+<th class="head"><p>Amplitude</p></th>
+<th class="head"><p>RMS</p></th>
+<th class="head"><p>AbsPower</p></th>
+<th class="head"><p>RelPower</p></th>
+<th class="head"><p>Frequency</p></th>
+<th class="head"><p>Oscillations</p></th>
+<th class="head"><p>Symmetry</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>3.32</p></td>
+<td><p>4.06</p></td>
+<td><p>0.74</p></td>
+<td><p>81.80</p></td>
+<td><p>19.65</p></td>
+<td><p>2.72</p></td>
+<td><p>0.49</p></td>
+<td><p>12.85</p></td>
+<td><p>10</p></td>
+<td><p>0.67</p></td>
+</tr>
+<tr class="row-odd"><td><p>13.26</p></td>
+<td><p>13.85</p></td>
+<td><p>0.59</p></td>
+<td><p>99.30</p></td>
+<td><p>24.49</p></td>
+<td><p>2.82</p></td>
+<td><p>0.24</p></td>
+<td><p>12.15</p></td>
+<td><p>7</p></td>
+<td><p>0.25</p></td>
+</tr>
+</tbody>
+</table>
+<p>In turn, the detection dataframe can be easily used to plot the events.</p>
+<div class="figure align-center">
+<img alt="https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/detection.png" src="https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/detection.png" />
+</div>
+</div>
+<div class="section" id="interactive-visualization-with-visbrain">
+<h2>Interactive visualization with Visbrain</h2>
+<p>YASA can also be used in combination with the <a class="reference external" href="http://visbrain.org/sleep.html">Sleep</a> module of the <a class="reference external" href="http://visbrain.org/index.html">Visbrain visualization package</a>. The result of the detection can then easily be displayed and checked in an interactive graphical user interface. To do so, load Visbrain using the following python file (make sure to update <em>‘PATH/TO/EEGFILE’</em>).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">visbrain.gui</span> <span class="kn">import</span> <span class="n">Sleep</span>
+<span class="kn">from</span> <span class="nn">yasa</span> <span class="kn">import</span> <span class="n">spindles_detect</span>
+
+<span class="n">sl</span> <span class="o">=</span> <span class="n">Sleep</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="s1">&#39;PATH/TO/EEGFILE&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">fcn_spindle</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">hypno</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Replace Visbrain built-in spindles detection by YASA algorithm.</span>
+<span class="sd">    See http://visbrain.org/sleep.html#use-your-own-detections-in-sleep</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Apply on the full recording...</span>
+    <span class="c1"># sp = spindles_detect(data, sf)</span>
+    <span class="c1"># ...or on NREM sleep only</span>
+    <span class="n">sp</span> <span class="o">=</span> <span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">sp</span><span class="p">[[</span><span class="s1">&#39;Start&#39;</span><span class="p">,</span> <span class="s1">&#39;End&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+<span class="n">sl</span><span class="o">.</span><span class="n">replace_detections</span><span class="p">(</span><span class="s1">&#39;spindle&#39;</span><span class="p">,</span> <span class="n">fcn_spindle</span><span class="p">)</span>
+<span class="n">sl</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Then navigate to the <em>Detection</em> tab and click on <em>Apply</em> to run the YASA algorithm on the specified channel.</p>
+<div class="figure align-center">
+<img alt="https://raw.githubusercontent.com/raphaelvallat/yasa/master/images/visbrain.PNG" src="https://raw.githubusercontent.com/raphaelvallat/yasa/master/images/visbrain.PNG" />
+</div>
+</div>
+<div class="section" id="outlier-rejection">
+<h2>Outlier rejection</h2>
+<p>YASA incorporates an optional post-processing step to identify and remove pseudo (fake) events.
+The method is based on a machine-learning algorithm (the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html">Isolation Forest</a>, implemented in the <a class="reference external" href="https://scikit-learn.org/stable/index.html">scikit-learn</a> package),
+which uses the events parameters (e.g. amplitude, duration, frequency, etc) as input features to identify <em>aberrant</em> spindles / slow-waves / REMs.</p>
+<p>To activate this post-processing step, simply use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">yasa</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>  <span class="c1"># Spindles</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">sw_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>        <span class="c1"># Slow-waves</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">rem_detect</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">roc</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>   <span class="c1"># REMs</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="development">
+<h1>Development</h1>
+<p>YASA was created and is maintained by <a class="reference external" href="https://raphaelvallat.com">Raphael Vallat</a>. Contributions are more than welcome so feel free to contact me, open an issue or submit a pull request!</p>
+<p>To see the code or report a bug, please visit the <a class="reference external" href="https://github.com/raphaelvallat/yasa">GitHub repository</a>.</p>
+<p>Note that this program is provided with NO WARRANTY OF ANY KIND.</p>
+</div>
+<div class="section" id="citation">
+<h1>Citation</h1>
+<p>To cite YASA, please use the Zenodo DOI:</p>
+<a class="reference external image-reference" href="https://doi.org/10.5281/zenodo.2370600"><img alt="https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg" src="https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg" /></a>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+      
+    </p>
+    <p>
+        &copy; Copyright 2018-2019, Raphael Vallat.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

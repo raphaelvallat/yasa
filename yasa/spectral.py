@@ -26,21 +26,41 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
 
     Parameters
     ----------
-    data : np.array_like or mne.io.Raw
-        1D or 2D EEG data. Can also be a MNE Raw object, in which case
-        ``data``, ``sf``, and ``ch_names`` will be automatically extracted.
-        ``data`` will also be internally converted from Volts (MNE default)
+    data : np.array_like or :py:class:`mne.io.BaseRaw`
+        1D or 2D EEG data. Can also be a :py:class:`mne.io.BaseRaw`, in which
+        case ``data``, ``sf``, and ``ch_names`` will be automatically
+        extracted, and ``data`` will also be converted from Volts (MNE default)
         to micro-Volts (YASA).
     sf : float
         The sampling frequency of data AND the hypnogram.
-        Can be omitted if ``data`` is a MNE Raw object.
+        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
     ch_names : list
         List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None,
         channels will be labelled ['CHAN001', 'CHAN002', ...].
-        Can be omitted if ``data`` is a MNE Raw object.
+        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
     hypno : array_like
-        The sleep staging (hypnogram) 1D array. Must have the same
-        sampling frequency and number of samples as ``data``.
+        Sleep stage vector (hypnogram). If the hypnogram is loaded, the
+        bandpower will be extracted for each sleep stage defined in
+        ``include``.
+
+        The hypnogram must have the exact same number of samples as ``data``.
+        To upsample your hypnogram, please refer to
+        :py:func:`yasa.hypno_upsample_to_data`.
+
+        .. note::
+            The default hypnogram format in YASA is a 1D integer
+            vector where:
+
+            - -1 = Artefact / Movement
+            - 0 = Wake
+            - 1 = N1 sleep
+            - 2 = N2 sleep
+            - 3 = N3 sleep
+            - 4 = REM
+    include : tuple, list or int
+        Values in ``hypno`` that will be included in the mask. The default is
+        (2, 3), meaning that the bandpower are sequentially calculated
+        for N2 and N3 sleep. This has no effect when ``hypno`` is None.
     relative : boolean
         If True, bandpower is divided by the total power between the min and
         max frequencies defined in ``band``.
@@ -50,11 +70,11 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         (e.g. (0.5, 4, 'Delta')).
     kwargs_welch : dict
         Optional keywords arguments that are passed to the
-        ``scipy.signal.welch`` function.
+        :py:func:`scipy.signal.welch` function.
 
     Returns
     -------
-    bandpowers : pandas.DataFrame
+    bandpowers : :py:class:`pandas.DataFrame`
         Bandpower dataframe, in which each row is a channel and each column
         a spectral band.
     """
@@ -129,9 +149,9 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
     psd : array_like
         Power spectral density of data, in uV^2/Hz.
         Must be of shape (n_channels, n_freqs).
-        See ``scipy.signal.welch`` for more details.
+        See :py:func:`scipy.signal.welch` for more details.
     freqs : array_like
-        Array of sample frequencies.
+        Array of frequencies.
     ch_names : list
         List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None,
         channels will be labelled ['CHAN001', 'CHAN002', ...].
@@ -145,7 +165,7 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
 
     Returns
     -------
-    bandpowers : pandas.DataFrame
+    bandpowers : :py:class:`pandas.DataFrame`
         Bandpower dataframe, in which each row is a channel and each column
         a spectral band.
     """
@@ -215,8 +235,10 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
     step : int
         Step in seconds for the STFT.
         A step of 0.2 second (200 ms) is usually a good default.
-        If step == 0, overlap at every sample (slowest)
-        If step == nperseg, no overlap (fastest)
+
+        * If ``step`` == 0, overlap at every sample (slowest)
+        * If ``step`` == nperseg, no overlap (fastest)
+
         Higher values = higher precision = slower computation.
     band : tuple or None
         Broad band frequency range.
@@ -239,9 +261,11 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
 
     Notes
     -----
-    2D Interpolation is done using `scipy.interpolate.RectBivariateSpline`
-    which is much faster than `scipy.interpolate.interp2d` for a rectangular
-    grid. The default is to use a bivariate spline with 3 degrees.
+    2D Interpolation is done using
+    :py:class:`scipy.interpolate.RectBivariateSpline`
+    which is much faster than :py:class:`scipy.interpolate.interp2d`
+    for a rectangular grid. The default is to use a bivariate spline with
+    3 degrees.
     """
     # Safety check
     data = np.asarray(data)

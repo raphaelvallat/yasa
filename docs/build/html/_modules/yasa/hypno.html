@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>yasa.hypno &#8212; yasa 0.1.6 documentation</title>
+    <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../../_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="../../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../../_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
+          yasa</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.6</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../../api.html">Functions</a></li>
+                <li><a href="../../changelog.html">What's new</a></li>
+                <li><a href="../../contributing.html">Contribute</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <h1>Source code for yasa.hypno</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This file contains several helper functions to manipulate sleep staging</span>
+<span class="sd">(hypnogram) data. The default hypnogram format in YASA is a one dimensional</span>
+<span class="sd">integer array where:</span>
+
+<span class="sd">* -1  = Artefact / Undefined / Movement</span>
+<span class="sd">* 0   = Wake</span>
+<span class="sd">* 1   = N1 sleep</span>
+<span class="sd">* 2   = N2 sleep</span>
+<span class="sd">* 3   = N3 sleep</span>
+<span class="sd">* 4   = REM sleep</span>
+
+<span class="sd">For more details, please refer to the following references:</span>
+
+<span class="sd">- Iber, C. (2007). The AASM manual for the scoring of sleep and</span>
+<span class="sd">associated events: rules, terminology and technical specifications.</span>
+<span class="sd">American Academy of Sleep Medicine.</span>
+
+<span class="sd">- Silber, M. H., Ancoli-Israel, S., Bonnet, M. H., Chokroverty, S.,</span>
+<span class="sd">Grigg-Damberger, M. M., Hirshkowitz, M., … Iber, C. (2007). The visual scoring</span>
+<span class="sd">of sleep in adults. Journal of Clinical Sleep Medicine: JCSM: Official</span>
+<span class="sd">Publication of the American Academy of Sleep Medicine, 3(2), 121–131.</span>
+
+<span class="sd">- Combrisson, E., Vallat, R., Eichenlaub, J.-B., O’Reilly, C., Lajnef, T.,</span>
+<span class="sd">Guillot, A., … Jerbi, K. (2017). Sleep: An Open-Source Python Software for</span>
+<span class="sd">Visualization, Analysis, and Staging of Sleep Data. Frontiers in</span>
+<span class="sd">Neuroinformatics, 11, 60. https://doi.org/10.3389/fninf.2017.00060</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">mne</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;hypno_str_to_int&#39;</span><span class="p">,</span> <span class="s1">&#39;hypno_int_to_str&#39;</span><span class="p">,</span> <span class="s1">&#39;hypno_upsample_to_sf&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;hypno_upsample_to_data&#39;</span><span class="p">]</span>
+
+
+<span class="c1">#############################################################################</span>
+<span class="c1"># STR &lt;--&gt; INT CONVERSION</span>
+<span class="c1">#############################################################################</span>
+
+<div class="viewcode-block" id="hypno_str_to_int"><a class="viewcode-back" href="../../generated/yasa.hypno_str_to_int.html#yasa.hypno_str_to_int">[docs]</a><span class="k">def</span> <span class="nf">hypno_str_to_int</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">mapping_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;w&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;wake&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;n1&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;s1&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                                          <span class="s1">&#39;n2&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;s2&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;n3&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;s3&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+                                          <span class="s1">&#39;r&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;rem&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;art&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">}):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a string hypnogram array to integer.</span>
+
+<span class="sd">    [&#39;W&#39;, &#39;N2&#39;, &#39;N2&#39;, &#39;N3&#39;, &#39;R&#39;] ==&gt; [0, 2, 2, 3, 4]</span>
+
+<span class="sd">    .. versionadded:: 0.1.5</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        The sleep staging (hypnogram) 1D array.</span>
+<span class="sd">    mapping_dict : dict</span>
+<span class="sd">        The mapping dictionnary, in lowercase. Note that this function is</span>
+<span class="sd">        essentially a wrapper around :py:meth:`pandas.Series.map`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        The corresponding integer hypnogram.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)),</span> <span class="s1">&#39;Not an array.&#39;</span>
+    <span class="n">hypno</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">hypno</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">(),</span> <span class="s1">&#39;Hypno contains numeric values.&#39;</span>
+    <span class="k">return</span> <span class="n">hypno</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">mapping_dict</span><span class="p">)</span><span class="o">.</span><span class="n">values</span></div>
+
+
+<div class="viewcode-block" id="hypno_int_to_str"><a class="viewcode-back" href="../../generated/yasa.hypno_int_to_str.html#yasa.hypno_int_to_str">[docs]</a><span class="k">def</span> <span class="nf">hypno_int_to_str</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">mapping_dict</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s1">&#39;W&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s1">&#39;N1&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s1">&#39;N2&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s1">&#39;N3&#39;</span><span class="p">,</span>
+                                          <span class="mi">4</span><span class="p">:</span> <span class="s1">&#39;R&#39;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span> <span class="s1">&#39;Art&#39;</span><span class="p">}):</span>
+    <span class="sd">&quot;&quot;&quot;Convert an integer hypnogram array to a string array.</span>
+
+<span class="sd">    [0, 2, 2, 3, 4] ==&gt; [&#39;W&#39;, &#39;N2&#39;, &#39;N2&#39;, &#39;N3&#39;, &#39;R&#39;]</span>
+
+<span class="sd">    .. versionadded:: 0.1.5</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        The sleep staging (hypnogram) 1D array.</span>
+<span class="sd">    mapping_dict : dict</span>
+<span class="sd">        The mapping dictionnary. Note that this function is</span>
+<span class="sd">        essentially a wrapper around :py:meth:`pandas.Series.map`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        The corresponding integer hypnogram.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)),</span> <span class="s1">&#39;Not an array.&#39;</span>
+    <span class="n">hypno</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">hypno</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">mapping_dict</span><span class="p">)</span><span class="o">.</span><span class="n">values</span></div>
+
+<span class="c1">#############################################################################</span>
+<span class="c1"># UPSAMPLING</span>
+<span class="c1">#############################################################################</span>
+
+
+<div class="viewcode-block" id="hypno_upsample_to_sf"><a class="viewcode-back" href="../../generated/yasa.hypno_upsample_to_sf.html#yasa.hypno_upsample_to_sf">[docs]</a><span class="k">def</span> <span class="nf">hypno_upsample_to_sf</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hypno</span><span class="p">,</span> <span class="n">sf_data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Upsample the hypnogram to a given sampling frequency.</span>
+
+<span class="sd">    .. versionadded:: 0.1.5</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        The sleep staging (hypnogram) 1D array.</span>
+<span class="sd">    sf_hypno : float</span>
+<span class="sd">        The current sampling frequency of the hypnogram, in Hz, e.g.</span>
+
+<span class="sd">        * 1/30 = 1 value per each 30 seconds of EEG data,</span>
+<span class="sd">        * 1 = 1 value per second of EEG data</span>
+<span class="sd">    sf_data : float</span>
+<span class="sd">        The desired sampling frequency of the hypnogram, in Hz</span>
+<span class="sd">        (e.g. 100 Hz, 256 Hz, ...)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        The hypnogram, upsampled to ``sf_data``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">repeats</span> <span class="o">=</span> <span class="n">sf_data</span> <span class="o">/</span> <span class="n">sf_hypno</span>
+    <span class="k">assert</span> <span class="n">sf_hypno</span> <span class="o">&lt;=</span> <span class="n">sf_data</span><span class="p">,</span> <span class="s1">&#39;sf_hypno must be less than sf_data.&#39;</span>
+    <span class="k">assert</span> <span class="n">repeats</span><span class="o">.</span><span class="n">is_integer</span><span class="p">(),</span> <span class="s1">&#39;sf_hypno / sf_data must be a whole number.&#39;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypno</span><span class="p">),</span> <span class="n">repeats</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">hypno_fit_to_data</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Crop or pad the hypnogram to fit the length of data.</span>
+
+<span class="sd">    Hypnogram and data MUST have the SAME sampling frequency.</span>
+
+<span class="sd">    This is an internal function.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        The sleep staging (hypnogram) 1D array.</span>
+<span class="sd">    data : np.array_like or mne.io.Raw</span>
+<span class="sd">        1D or 2D EEG data. Can also be a MNE Raw object, in which case data and</span>
+<span class="sd">        sf will be automatically extracted.</span>
+<span class="sd">    sf : float, optional</span>
+<span class="sd">        The sampling frequency of data AND the hypnogram.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        Hypnogram, with the same number of samples as data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check if data is an MNE raw object</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">BaseRaw</span><span class="p">):</span>
+        <span class="n">sf</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;sfreq&#39;</span><span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">times</span>  <span class="c1"># 1D array and does not require to preload data</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">hypno</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">hypno</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Hypno must be 1D.&#39;</span>
+    <span class="n">npts_hyp</span> <span class="o">=</span> <span class="n">hypno</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">npts_data</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>  <span class="c1"># Support for 2D data</span>
+    <span class="k">if</span> <span class="n">npts_hyp</span> <span class="o">&lt;</span> <span class="n">npts_data</span><span class="p">:</span>
+        <span class="c1"># Hypnogram is shorter than data</span>
+        <span class="n">npts_diff</span> <span class="o">=</span> <span class="n">npts_data</span> <span class="o">-</span> <span class="n">npts_hyp</span>
+        <span class="k">if</span> <span class="n">sf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dur_diff</span> <span class="o">=</span> <span class="n">npts_diff</span> <span class="o">/</span> <span class="n">sf</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Hypnogram is SHORTER then data by </span><span class="si">%.2f</span><span class="s1"> seconds. &#39;</span>
+                          <span class="s1">&#39;Padding hypnogram (with last value) to match &#39;</span>
+                          <span class="s1">&#39;data.size.&#39;</span> <span class="o">%</span> <span class="n">dur_diff</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Hypnogram is SHORTER then data by </span><span class="si">%i</span><span class="s1"> samples. &#39;</span>
+                          <span class="s1">&#39;Padding hypnogram (with last value) to match &#39;</span>
+                          <span class="s1">&#39;data.size.&#39;</span> <span class="o">%</span> <span class="n">npts_diff</span><span class="p">)</span>
+        <span class="n">hypno</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">npts_diff</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;edge&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">npts_hyp</span> <span class="o">&gt;</span> <span class="n">npts_data</span><span class="p">:</span>
+        <span class="c1"># Hypnogram is longer than data</span>
+        <span class="n">npts_diff</span> <span class="o">=</span> <span class="n">npts_hyp</span> <span class="o">-</span> <span class="n">npts_data</span>
+        <span class="k">if</span> <span class="n">sf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dur_diff</span> <span class="o">=</span> <span class="n">npts_diff</span> <span class="o">/</span> <span class="n">sf</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Hypnogram is LONGER then data by </span><span class="si">%.2f</span><span class="s1"> seconds. &#39;</span>
+                          <span class="s1">&#39;Cropping hypnogram to match data.size.&#39;</span> <span class="o">%</span> <span class="n">dur_diff</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Hypnogram is LONGER then data by </span><span class="si">%i</span><span class="s1"> samples. &#39;</span>
+                          <span class="s1">&#39;Cropping hypnogram to match data.size.&#39;</span> <span class="o">%</span> <span class="n">npts_diff</span><span class="p">)</span>
+        <span class="n">hypno</span> <span class="o">=</span> <span class="n">hypno</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npts_data</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">hypno</span>
+
+
+<div class="viewcode-block" id="hypno_upsample_to_data"><a class="viewcode-back" href="../../generated/yasa.hypno_upsample_to_data.html#yasa.hypno_upsample_to_data">[docs]</a><span class="k">def</span> <span class="nf">hypno_upsample_to_data</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hypno</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sf_data</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Upsample an hypnogram to a given sampling frequency and fit the</span>
+<span class="sd">    resulting hypnogram to corresponding EEG data, such that the hypnogram</span>
+<span class="sd">    and EEG data have the exact same number of samples.</span>
+
+<span class="sd">    .. versionadded:: 0.1.5</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        The sleep staging (hypnogram) 1D array.</span>
+<span class="sd">    sf_hypno : float</span>
+<span class="sd">        The current sampling frequency of the hypnogram, in Hz, e.g.</span>
+
+<span class="sd">        * 1/30 = 1 value per each 30 seconds of EEG data,</span>
+<span class="sd">        * 1 = 1 value per second of EEG data</span>
+<span class="sd">    data : array_like or :py:class:`mne.io.BaseRaw`</span>
+<span class="sd">        1D or 2D EEG data. Can also be a :py:class:`mne.io.BaseRaw`, in which</span>
+<span class="sd">        case ``data`` and ``sf_data`` will be automatically extracted.</span>
+<span class="sd">    sf_data : float</span>
+<span class="sd">        The sampling frequency of ``data``, in Hz (e.g. 100 Hz, 256 Hz, ...).</span>
+<span class="sd">        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        The hypnogram, upsampled to ``sf_data`` and cropped/padded to</span>
+<span class="sd">        ``max(data.shape)``.</span>
+
+<span class="sd">    Warns</span>
+<span class="sd">    -----</span>
+<span class="sd">    UserWarning</span>
+<span class="sd">        If the upsampled ``hypno`` is shorter / longer than ``max(data.shape)``</span>
+<span class="sd">        and therefore needs to be padded/cropped respectively.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">BaseRaw</span><span class="p">):</span>
+        <span class="n">sf_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;sfreq&#39;</span><span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">times</span>
+    <span class="n">hypno_up</span> <span class="o">=</span> <span class="n">hypno_upsample_to_sf</span><span class="p">(</span><span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hypno</span><span class="o">=</span><span class="n">sf_hypno</span><span class="p">,</span>
+                                    <span class="n">sf_data</span><span class="o">=</span><span class="n">sf_data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">hypno_fit_to_data</span><span class="p">(</span><span class="n">hypno</span><span class="o">=</span><span class="n">hypno_up</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="n">sf_data</span><span class="p">)</span></div>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+      
+    </p>
+    <p>
+        &copy; Copyright 2018-2019, Raphael Vallat.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

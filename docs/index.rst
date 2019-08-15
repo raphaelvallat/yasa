@@ -23,10 +23,13 @@
 .. image:: https://pepy.tech/badge/yasa
     :target: https://pepy.tech/badge/yasa
 
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg
-   :target: https://doi.org/10.5281/zenodo.2370600
+.. .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg
+..    :target: https://doi.org/10.5281/zenodo.2370600
 
 ----------------
+
+.. figure::  /pictures/yasa_logo.png
+  :align:   center
 
 **YASA** (*Yet Another Spindle Algorithm*) is a fast and robust Python 3 toolbox to detect sleep microstructure events from EEG recordings.
 
@@ -74,15 +77,21 @@ In order to use YASA, you need:
 - Some basic knowledge of Python and especially the `NumPy <https://docs.scipy.org/doc/numpy/user/quickstart.html>`_, `Pandas <https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html>`_ and `MNE <https://martinos.org/mne/stable/index.html>`_ libraries.
 - A Python editor: YASA works best with `Jupyter Lab <https://jupyterlab.readthedocs.io/en/stable/index.html>`_, a web-based interactive user interface.
 - Some sleep EEG data, either as a NumPy array, or as a raw MNE object (for instance, using the `mne.io.read_raw_edf <https://mne-tools.github.io/stable/generated/mne.io.read_raw_edf.html>`_ function for EDF file). The units of the data MUST be uV.
-- Optionally, a sleep staging vector (a.k.a hypnogram) to run the detections on specific sleep stages. To facilitate masking and indexing operations, the data and hypnogram MUST have the same sampling frequency and number of samples. Fortunately, YASA provide some `convenient functions <https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html>`_ to load and upsample hypnogram data to the desired shape. The default hypnogram format in YASA is a one dimensional integer vector where 0 = Wake, 1 = N1 sleep, 2 = N2 sleep, 3 = N3 sleep, 4 = REM and -1 = Artefact / Movement.
+- Optionally, a sleep staging vector (a.k.a hypnogram) to run the detections on specific sleep stages. To facilitate masking and indexing operations, the data and hypnogram MUST have the same sampling frequency and number of samples. Fortunately, YASA provide some `convenient functions <https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html>`_ to load and upsample hypnogram data to the desired shape.
+
+.. note::
+      The default hypnogram format in YASA is a one dimensional integer vector where:
+        - -1 = Artefact / Movement
+        - 0 = Wake
+        - 1 = N1 sleep
+        - 2 = N2 sleep
+        - 3 = N3 sleep
+        - 4 = REM
 
 Examples
 ~~~~~~~~
 
-API
----
-
-Check out the `API documentation <http://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/main.html>`_ for more details on YASA's functions.
+Check out the :ref:`api_ref` for more details on YASA's functions.
 
 Notebooks
 ---------
@@ -91,25 +100,25 @@ The examples Jupyter notebooks are really what make YASA great! In addition to s
 
 **Spindles**
 
-1. `notebooks/01_spindles_detection.ipynb <notebooks/01_spindles_detection.ipynb>`_: single-channel spindles detection and step-by-step description of the algorithm.
-2. `notebooks/02_spindles_detection_multi.ipynb <notebooks/02_spindles_detection_multi.ipynb>`_: multi-channel spindles detection using MNE data.
-3. `notebooks/03_spindles_detection_NREM_only.ipynb <notebooks/03_spindles_detection_NREM_only.ipynb>`_: spindles detection on NREM sleep only.
-4. `notebooks/04_spindles_slow_fast.ipynb <notebooks/04_spindles_slow_fast.ipynb>`_: slow and fast spindles analysis.
-5. `notebooks/05_run_visbrain.py <notebooks/05_run_visbrain.py>`_: interactive display with the Visbrain graphical user interface.
+* `01_spindles_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb>`_: single-channel spindles detection and step-by-step description of the algorithm.
+* `02_spindles_detection_multi.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/02_spindles_detection_multi.ipynb>`_: multi-channel spindles detection using MNE data.
+* `03_spindles_detection_NREM_only.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/03_spindles_detection_NREM_only.ipynb>`_: spindles detection on NREM sleep only.
+* `04_spindles_slow_fast.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/04_spindles_slow_fast.ipynb>`_: slow and fast spindles analysis.
+* `05_run_visbrain.py <https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_run_visbrain.py>`_: interactive display with the Visbrain graphical user interface.
 
 **Slow-waves**
 
-6. `notebooks/06_sw_detection.ipynb <notebooks/06_sw_detection.ipynb>`_: single-channel slow-waves detection and step-by-step description of the algorithm.
-7. `notebooks/07_sw_detection_multi.ipynb <notebooks/07_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection using MNE data.
-8. `notebooks/08_sw_average.ipynb <notebooks/08_sw_average.ipynb>`_: plot the average template of the detected slow-waves, per channel.
+* `06_sw_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb>`_: single-channel slow-waves detection and step-by-step description of the algorithm.
+* `07_sw_detection_multi.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection using MNE data.
+* `08_sw_average.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_sw_average.ipynb>`_: plot the average template of the detected slow-waves, per channel.
 
 **Rapid Eye Movements (REMs)**
 
-9. `notebooks/09_REMs_detection.ipynb <notebooks/09_REMs_detection.ipynb>`_: REMs detection.
+* `09_REMs_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_REMs_detection.ipynb>`_: REMs detection.
 
-**Bandpower & hypnogram handling**
+**Spectral analysis**
 
-10. `notebooks/10_bandpower.ipynb <notebooks/10_bandpower.ipynb>`_: spectral bandpower per channel and per sleep stage.
+* `10_bandpower.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_bandpower.ipynb>`_: bandpower per channel and per sleep stage.
 
 Typical uses
 ------------
@@ -162,19 +171,19 @@ Typical uses
 
 The result of the detection is a `pandas DataFrame <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>`_ where each row is a unique detected event (e.g. spindle, slow-waves, REMs) and each column a parameter of this event, including, the start and end timestamps, duration, amplitude, etc.
 
-.. table:: Output
+.. table:: Output dataframe
    :widths: auto
 
-=======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
-  Start    End    Duration    Amplitude    RMS    AbsPower    RelPower    Frequency    Oscillations    Symmetry
-=======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
-   3.32   4.06        0.74        81.80  19.65        2.72        0.49        12.85              10        0.67
-  13.26  13.85        0.59        99.30  24.49        2.82        0.24        12.15               7        0.25
-=======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
+   =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
+     Start    End    Duration    Amplitude    RMS    AbsPower    RelPower    Frequency    Oscillations    Symmetry
+   =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
+      3.32   4.06        0.74        81.80  19.65        2.72        0.49        12.85              10        0.67
+     13.26  13.85        0.59        99.30  24.49        2.82        0.24        12.15               7        0.25
+   =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
 
 In turn, the detection dataframe can be easily used to plot the events.
 
-.. figure::  notebooks/detection.png
+.. figure::  https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/detection.png
    :align:   center
 
 Interactive visualization with Visbrain
@@ -204,7 +213,7 @@ YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.
 
 Then navigate to the *Detection* tab and click on *Apply* to run the YASA algorithm on the specified channel.
 
-.. figure::  images/visbrain.PNG
+.. figure::  https://raw.githubusercontent.com/raphaelvallat/yasa/master/images/visbrain.PNG
    :align:   center
 
 
@@ -241,3 +250,5 @@ To cite YASA, please use the Zenodo DOI:
 
 .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg
    :target: https://doi.org/10.5281/zenodo.2370600
+
+|

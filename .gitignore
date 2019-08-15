@@ -8,7 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
+# build/
 develop-eggs/
 dist/
 downloads/
@@ -65,7 +65,27 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+docs/generated/
+docs/build/doctrees/
+docs/build/html/_sources/
+docs/build/html/_static/bootstrap-2.3.2/
+docs/build/html/_static/bootswatch-2.3.2/
+docs/build/html/_static/bootswatch-3.3.7/cerulean/
+docs/build/html/_static/bootswatch-3.3.7/cosmo/
+docs/build/html/_static/bootswatch-3.3.7/cyborg/
+docs/build/html/_static/bootswatch-3.3.7/darkly/
+docs/build/html/_static/bootswatch-3.3.7/journal/
+docs/build/html/_static/bootswatch-3.3.7/lumen/
+docs/build/html/_static/bootswatch-3.3.7/paper/
+docs/build/html/_static/bootswatch-3.3.7/readable/
+docs/build/html/_static/bootswatch-3.3.7/sandstone/
+docs/build/html/_static/bootswatch-3.3.7/simplex/
+docs/build/html/_static/bootswatch-3.3.7/slate/
+docs/build/html/_static/bootswatch-3.3.7/solar/
+docs/build/html/_static/bootswatch-3.3.7/spacelab/
+docs/build/html/_static/bootswatch-3.3.7/superhero/
+docs/build/html/_static/bootswatch-3.3.7/united/
+docs/build/html/_static/bootswatch-3.3.7/yeti/
 
 # PyBuilder
 target/
