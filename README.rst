@@ -28,6 +28,9 @@
 
 ----------------
 
+.. figure::  https://raphaelvallat.com/yasa/build/html/_images/yasa_logo.png
+   :align:   center
+
 **YASA** (*Yet Another Spindle Algorithm*) is a fast and robust Python 3 toolbox to detect sleep microstructure events from EEG recordings.
 
 The **sleep spindles** algorithm of YASA is largely inspired by the method described in:
@@ -74,7 +77,7 @@ In order to use YASA, you need:
 - Some basic knowledge of Python and especially the `NumPy <https://docs.scipy.org/doc/numpy/user/quickstart.html>`_, `Pandas <https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html>`_ and `MNE <https://martinos.org/mne/stable/index.html>`_ libraries.
 - A Python editor: YASA works best with `Jupyter Lab <https://jupyterlab.readthedocs.io/en/stable/index.html>`_, a web-based interactive user interface.
 - Some sleep EEG data, either as a NumPy array, or as a raw MNE object (for instance, using the `mne.io.read_raw_edf <https://mne-tools.github.io/stable/generated/mne.io.read_raw_edf.html>`_ function for EDF file). The units of the data MUST be uV.
-- Optionally, a sleep staging vector (a.k.a hypnogram) to run the detections on specific sleep stages. To facilitate masking and indexing operations, the data and hypnogram MUST have the same sampling frequency and number of samples. Fortunately, YASA provide some `convenient functions <https://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/hypno.html>`_ to load and upsample hypnogram data to the desired shape. The default hypnogram format in YASA is a one dimensional integer vector where 0 = Wake, 1 = N1 sleep, 2 = N2 sleep, 3 = N3 sleep, 4 = REM and -1 = Artefact / Movement.
+- Optionally, a sleep staging vector (a.k.a hypnogram) to run the detections on specific sleep stages. To facilitate masking and indexing operations, the data and hypnogram MUST have the same sampling frequency and number of samples. Fortunately, YASA provide some `convenient functions <https://raphaelvallat.com/yasa/build/html/api.html>`_ to load and upsample hypnogram data to the desired shape. The default hypnogram format in YASA is a one dimensional integer vector where 0 = Wake, 1 = N1 sleep, 2 = N2 sleep, 3 = N3 sleep, 4 = REM and -1 = Artefact / Movement.
 
 Examples
 ~~~~~~~~
@@ -82,7 +85,7 @@ Examples
 API
 ---
 
-Check out the `API documentation <http://htmlpreview.github.io/?https://raw.githubusercontent.com/raphaelvallat/yasa/master/html/main.html>`_ for more details on YASA's functions.
+Check out the `API documentation <https://raphaelvallat.com/yasa/build/html/api.html>`_ for more details on YASA's functions.
 
 Notebooks
 ---------
