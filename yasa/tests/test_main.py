@@ -6,14 +6,11 @@ import pytest
 import unittest
 import numpy as np
 from itertools import product
-from scipy.signal import detrend
 from mne.filter import filter_data, resample
-from yasa import hypno_str_to_int, hypno_upsample_to_data
-from yasa.main import (_corr, _covar, _rms, _slope_lstsq, _detrend,
-                       moving_transform, get_sync_sw,
-                       _index_to_events, get_bool_vector, trimbothstd,
+from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
+from yasa.main import (get_sync_sw, _index_to_events, get_bool_vector,
                        _merge_close, spindles_detect, spindles_detect_multi,
-                       _zerocrossings, sw_detect, sw_detect_multi, rem_detect)
+                       sw_detect, sw_detect_multi, rem_detect)
 
 # Load data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -57,27 +54,6 @@ hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30),
 
 
 class TestStringMethods(unittest.TestCase):
-
-    def test_numba(self):
-        """Test numba functions
-        """
-        x = np.asarray([4, 5, 7, 8, 5, 6], dtype=np.float64)
-        y = np.asarray([1, 5, 4, 6, 8, 5], dtype=np.float64)
-
-        np.testing.assert_almost_equal(_corr(x, y), np.corrcoef(x, y)[0][1])
-        assert _covar(x, y) == np.cov(x, y)[0][1]
-        assert _rms(x) == np.sqrt(np.mean(np.square(x)))
-
-        # Least square slope and detrending
-        y = np.arange(30) + 3 * np.random.random(30)
-        times = np.arange(y.size, dtype=np.float64)
-        slope = _slope_lstsq(times, y)
-        np.testing.assert_array_almost_equal(_detrend(times, y),
-                                             detrend(y, type='linear'))
-        X = times[..., np.newaxis]
-        X = np.column_stack((np.ones(X.shape[0]), X))
-        slope_np = np.linalg.lstsq(X, y, rcond=None)[0][1]
-        np.round(slope, 5) == np.round(slope_np, 5)
 
     def test_index_to_events(self):
         """Test functions _index_to_events"""
@@ -135,23 +111,6 @@ class TestStringMethods(unittest.TestCase):
         # Events that are less than 100 ms apart (i.e. 10 points at 100 Hz sf)
         out = _merge_close(a, 100, 100)
         np.testing.assert_equal(good, out)
-
-    def test_moving_transform(self):
-        """Test moving_transform"""
-        method = ['mean', 'min', 'max', 'ptp', 'rms', 'prop_above_zero',
-                  'slope', 'corr', 'covar']
-        interp = [False, True]
-        win = [.3, .5]
-        step = [0, .5]
-
-        prod_args = product(win, step, method, interp)
-
-        for i, (w, s, m, i) in enumerate(prod_args):
-            moving_transform(data, data_sigma, sf, w, s, m, i)
-
-        t, out = moving_transform(data, None, sf, w, s, 'rms', True)
-        assert t.size == out.size
-        assert out.size == data.size
 
     def test_spindles_detect(self):
         """Test spindles_detect"""
@@ -263,19 +222,6 @@ class TestStringMethods(unittest.TestCase):
         with self.assertLogs('yasa', level='WARNING'):
             sp = spindles_detect_multi(data_full, sf_full, chan_full)
             assert sp is None
-
-    def test_trimbothstd(self):
-        """Test function trimbothstd
-        """
-        x = [4, 5, 7, 0, 18, 6, 7, 8, 9, 10]
-        assert trimbothstd(x) < np.std(x, ddof=1)
-
-    def test_zerocrossings(self):
-        """Test _zerocrossings
-        """
-        a = np.array([4, 2, -1, -3, 1, 2, 3, -2, -5])
-        idx_zc = _zerocrossings(a)
-        np.testing.assert_equal(idx_zc, [1, 3, 6])
 
     def test_sw_detect(self):
         """Test function slow-wave detect

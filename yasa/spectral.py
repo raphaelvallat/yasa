@@ -198,10 +198,7 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
         b0, b1, la = band
         labels.append(la)
         idx_band = np.logical_and(freqs >= b0, freqs <= b1)
-        if psd.ndim == 2:
-            bp[:, i] = simps(psd[:, idx_band], dx=res)
-        else:
-            bp[i] = simps(psd[idx_band], dx=res)
+        bp[:, i] = simps(psd[:, idx_band], dx=res)
 
     if relative:
         bp /= total_power

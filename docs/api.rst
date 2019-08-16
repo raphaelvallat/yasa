@@ -55,4 +55,5 @@ Others
    :toctree: generated/
 
     moving_transform
+    sliding_window
     trimbothstd

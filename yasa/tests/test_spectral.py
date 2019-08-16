@@ -49,6 +49,7 @@ class TestStringMethods(unittest.TestCase):
         # 1-D EEG data
         win = int(2 * sf)
         freqs, psd = welch(data, sf, nperseg=win)
+        bp = bandpower_from_psd(psd, freqs, relative=False)
         bp = bandpower_from_psd(psd, freqs, ch_names=['F4'])
         assert bp.shape[0] == 1
         assert bp.at[0, 'Chan'] == 'F4'
@@ -67,7 +68,7 @@ class TestStringMethods(unittest.TestCase):
         assert bp.at[0, 'Chan'].upper() == 'CZ'
         assert bp.at[1, 'FreqRes'] == 1 / (win / sf_full)
         # Unlabelled
-        bp = bandpower_from_psd(psd, freqs, ch_names=None)
+        bp = bandpower_from_psd(psd, freqs, ch_names=None, relative=False)
         assert np.array_equal(bp.loc[:, 'Chan'],
                               ['CHAN001', 'CHAN002', 'CHAN003'])
 
