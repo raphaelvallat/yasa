@@ -21,18 +21,6 @@ Detection
     get_bool_vector
     get_sync_sw
 
-Bandpower
----------
-
-.. _bpower:
-
-.. autosummary::
-   :toctree: generated/
-
-    bandpower
-    bandpower_from_psd
-    stft_power
-
 Hypnogram
 ---------
 
@@ -46,8 +34,8 @@ Hypnogram
     hypno_str_to_int
     hypno_int_to_str
 
-Others
-------
+Signal processing
+-----------------
 
 .. _others:
 
@@ -57,3 +45,16 @@ Others
     moving_transform
     sliding_window
     trimbothstd
+
+Spectral analyses
+-----------------
+
+.. _bpower:
+
+.. autosummary::
+   :toctree: generated/
+
+    bandpower
+    bandpower_from_psd
+    irasa
+    stft_power

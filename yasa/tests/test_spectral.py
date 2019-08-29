@@ -7,7 +7,7 @@ import numpy as np
 from itertools import product
 from scipy.signal import welch
 from yasa import hypno_str_to_int, hypno_upsample_to_data
-from yasa.spectral import (bandpower, bandpower_from_psd, stft_power)
+from yasa.spectral import (bandpower, bandpower_from_psd, irasa, stft_power)
 
 # Load 1D data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -71,6 +71,22 @@ class TestStringMethods(unittest.TestCase):
         bp = bandpower_from_psd(psd, freqs, ch_names=None, relative=False)
         assert np.array_equal(bp.loc[:, 'Chan'],
                               ['CHAN001', 'CHAN002', 'CHAN003'])
+
+    def test_irasa(self):
+        """Test function IRASA.
+        """
+        # 1D Numpy
+        freqs, psd_aperiodic, psd_osc, fit_params = irasa(data=data, sf=sf)
+        assert np.isin(freqs, np.arange(1, 30.25, 0.25), True).all()
+        assert np.median(psd_aperiodic) > np.median(psd_osc)
+
+        # 2D Numpy
+        irasa(data=data_full, sf=sf_full, ch_names=chan_full)
+        irasa(data=data_full, sf=sf_full, ch_names=None)
+
+        # 2D MNE
+        assert len(irasa(data_mne, return_fit=False)) == 3
+        assert len(irasa(data_mne, band=(2, 24), win_sec=2)) == 4
 
     def test_stft_power(self):
         """Test function stft_power
