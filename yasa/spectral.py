@@ -413,8 +413,9 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
             r_squared.append(1 - (ss_res / ss_tot))
 
         # Create fit parameters dataframe
-        fit_params = {'ch_names': ch_names, 'Intercept': intercepts,
-                      'Slope': slopes, 'R^2': r_squared}
+        fit_params = {'Chan': ch_names, 'Intercept': intercepts,
+                      'Slope': slopes, 'R^2': r_squared,
+                      'std(osc)': np.std(psd_osc, axis=-1, ddof=1)}
         return freqs, psd_aperiodic, psd_osc, pd.DataFrame(fit_params)
     else:
         return freqs, psd_aperiodic, psd_osc

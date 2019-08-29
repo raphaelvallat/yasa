@@ -110,9 +110,10 @@ The examples Jupyter notebooks are really what make YASA great! In addition to s
 
 9. `notebooks/09_REMs_detection.ipynb <notebooks/09_REMs_detection.ipynb>`_: REMs detection.
 
-**Bandpower & hypnogram handling**
+**Spectral analysis**
 
 10. `notebooks/10_bandpower.ipynb <notebooks/10_bandpower.ipynb>`_: spectral bandpower per channel and per sleep stage.
+11. `notebooks/11_IRASA.ipynb <notebooks/11_IRASA.ipynb>`_: separate the aperiodic (= fractal = 1/f) components of the EEG power spectra using the IRASA technique.
 
 Typical uses
 ------------

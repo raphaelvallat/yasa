@@ -119,6 +119,7 @@ The examples Jupyter notebooks are really what make YASA great! In addition to s
 **Spectral analysis**
 
 * `10_bandpower.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_bandpower.ipynb>`_: bandpower per channel and per sleep stage.
+* `11_IRASA.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_IRASA.ipynb>`_: separate the aperiodic (= fractal = 1/f) components of the EEG power spectra using the IRASA method.
 
 Typical uses
 ------------
