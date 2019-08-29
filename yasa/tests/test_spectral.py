@@ -29,6 +29,13 @@ hypno_mne = hypno_str_to_int(hypno_mne)
 hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30),
                                    data=data_mne)
 
+# Eyes-open 6 minutes resting-state, 2 channels, 200 Hz
+raw_eo = mne.io.read_raw_fif('notebooks/data_resting_EO_200Hz_raw.fif',
+                             verbose=0)
+data_eo = raw_eo.get_data() * 1e6
+sf_eo = raw_eo.info['sfreq']
+chan_eo = raw_eo.ch_names
+
 
 class TestStringMethods(unittest.TestCase):
 
@@ -81,8 +88,8 @@ class TestStringMethods(unittest.TestCase):
         assert np.median(psd_aperiodic) > np.median(psd_osc)
 
         # 2D Numpy
-        irasa(data=data_full, sf=sf_full, ch_names=chan_full)
-        irasa(data=data_full, sf=sf_full, ch_names=None)
+        irasa(data=data_eo, sf=sf_eo, ch_names=chan_eo)
+        irasa(data=data_eo, sf=sf_eo, ch_names=None)
 
         # 2D MNE
         assert len(irasa(data_mne, return_fit=False)) == 3
