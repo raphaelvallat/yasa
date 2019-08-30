@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>yasa.irasa &#8212; yasa 0.1.7 documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/copybutton.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
+          yasa</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.7</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">Functions</a></li>
+                <li><a href="../changelog.html">What's new</a></li>
+                <li><a href="../contributing.html">Contribute</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="yasa-irasa">
+<h1>yasa.irasa</h1>
+<dl class="function">
+<dt id="yasa.irasa">
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">irasa</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf=None</em>, <em class="sig-param">ch_names=None</em>, <em class="sig-param">band=(1</em>, <em class="sig-param">30)</em>, <em class="sig-param">hset=array([1.1</em>, <em class="sig-param">1.15</em>, <em class="sig-param">1.2</em>, <em class="sig-param">1.25</em>, <em class="sig-param">1.3</em>, <em class="sig-param">1.35</em>, <em class="sig-param">1.4</em>, <em class="sig-param">1.45</em>, <em class="sig-param">1.5</em>, <em class="sig-param">1.55</em>, <em class="sig-param">1.6</em>, <em class="sig-param">1.65</em>, <em class="sig-param">1.7</em>, <em class="sig-param">1.75</em>, <em class="sig-param">1.8</em>, <em class="sig-param">1.85</em>, <em class="sig-param">1.9 ])</em>, <em class="sig-param">return_fit=True</em>, <em class="sig-param">win_sec=4</em>, <em class="sig-param">kwargs_welch={'average': 'median'</em>, <em class="sig-param">'window': 'hamming'}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/spectral.html#irasa"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Separate the aperiodic (= fractal, or 1/f) and oscillatory component of the
+power spectra of EEG data using the IRASA method.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.1.7.</span></p>
+</div>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>data</strong><span class="classifier"><a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a> or <a class="reference external" href="https://martinos.org/mne/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.18.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>1D or 2D EEG data. Can also be a <a class="reference external" href="https://martinos.org/mne/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.18.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which
+case <code class="docutils literal notranslate"><span class="pre">data</span></code>, <code class="docutils literal notranslate"><span class="pre">sf</span></code>, and <code class="docutils literal notranslate"><span class="pre">ch_names</span></code> will be automatically
+extracted, and <code class="docutils literal notranslate"><span class="pre">data</span></code> will also be converted from Volts (MNE default)
+to micro-Volts (YASA).</p>
+</dd>
+<dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency of data AND the hypnogram.
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://martinos.org/mne/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.18.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+</dd>
+<dt><strong>ch_names</strong><span class="classifier">list</span></dt><dd><p>List of channel names, e.g. [‘Cz’, ‘F3’, ‘F4’, …]. If None,
+channels will be labelled [‘CHAN001’, ‘CHAN002’, …].
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://martinos.org/mne/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.18.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+</dd>
+<dt><strong>band</strong><span class="classifier">tuple or None</span></dt><dd><p>Broad band frequency range.
+Default is 1 to 30 Hz.</p>
+</dd>
+<dt><strong>hset</strong><span class="classifier"><a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Resampling factors used in IRASA calculation. Default is to use a range
+of values from 1.1 to 1.9 with an increment of 0.05.</p>
+</dd>
+<dt><strong>return_fit</strong><span class="classifier">boolean</span></dt><dd><p>If True (default), fit an exponential function to the aperiodic PSD
+and return the fit parameters (intercept, slope) and <span class="math notranslate nohighlight">\(R^2\)</span> of
+the fit.</p>
+<p>The aperiodic signal, <span class="math notranslate nohighlight">\(L\)</span>, is modeled using an exponential
+function in semilog-power space (linear frequencies and log PSD) as:</p>
+<div class="math notranslate nohighlight">
+\[L = a + \text{log}(F^b)\]</div>
+<p>where <span class="math notranslate nohighlight">\(a\)</span> is the intercept, <span class="math notranslate nohighlight">\(b\)</span> is the slope, and
+<span class="math notranslate nohighlight">\(F\)</span> the vector of input frequencies.</p>
+</dd>
+<dt><strong>win_sec</strong><span class="classifier">int or float</span></dt><dd><p>The length of the sliding window, in seconds, used for the Welch PSD
+calculation. Ideally, this should be at least two times the inverse of
+the lower frequency of interest (e.g. for a lower frequency of interest
+of 0.5 Hz, the window length should be at least 2 * 1 / 0.5 =
+4 seconds).</p>
+</dd>
+<dt><strong>kwargs_welch</strong><span class="classifier">dict</span></dt><dd><p>Optional keywords arguments that are passed to the
+<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.welch.html#scipy.signal.welch" title="(in SciPy v1.3.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.signal.welch()</span></code></a> function.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>freqs</strong><span class="classifier"><a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Frequency vector.</p>
+</dd>
+<dt><strong>psd_aperiodic</strong><span class="classifier"><a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>The fractal (= aperiodic) component of the PSD.</p>
+</dd>
+<dt><strong>psd_oscillatory</strong><span class="classifier"><a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>The oscillatory (= periodic) component of the PSD.</p>
+</dd>
+<dt><strong>fit_params</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v0.25.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> (optional)</span></dt><dd><p>Dataframe of fit parameters. Only if <code class="docutils literal notranslate"><span class="pre">return_fit=True</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The Irregular-Resampling Auto-Spectral Analysis (IRASA) method is
+described in Wen &amp; Liu (2016). In a nutshell, the goal is to separate the
+fractal and oscillatory components in the power spectrum of EEG signals.</p>
+<p>The steps are:</p>
+<ol class="arabic simple">
+<li><p>Compute the original power spectral density (PSD) using Welch’s method.</p></li>
+<li><p>Resample the EEG data by multiple non-integer factors and their
+reciprocals (<span class="math notranslate nohighlight">\(h\)</span> and <span class="math notranslate nohighlight">\(1/h\)</span>).</p></li>
+<li><p>For every pair of resampled signals, calculate the PSD and take the
+geometric mean of both. In the resulting PSD, the power associated with
+the oscillatory component is redistributed away from its original
+(fundamental and harmonic) frequencies by a frequency offset that varies
+with the resampling factor, whereas the power solely attributed to the
+fractal component remains the same power-law statistical distribution
+independent of the resampling factor.</p></li>
+<li><p>It follows that taking the median of the PSD of the variously
+resampled signals can extract the power spectrum of the fractal
+component, and the difference between the original power spectrum and
+the extracted fractal spectrum offers an approximate estimate of the
+power spectrum of the oscillatory component.</p></li>
+</ol>
+<p>Note that an estimate of the original PSD can be calculated by simply
+adding <code class="docutils literal notranslate"><span class="pre">psd</span> <span class="pre">=</span> <span class="pre">psd_aperiodic</span> <span class="pre">+</span> <span class="pre">psd_oscillatory</span></code>.</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r4a993b80bc5e-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>Wen, H., &amp; Liu, Z. (2016). Separating Fractal and Oscillatory
+Components in the Power Spectrum of Neurophysiological Signal.
+Brain Topography, 29(1), 13–26.
+<a class="reference external" href="https://doi.org/10.1007/s10548-015-0448-0">https://doi.org/10.1007/s10548-015-0448-0</a></p>
+</dd>
+<dt class="label" id="r4a993b80bc5e-2"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><p><a class="reference external" href="https://github.com/fieldtrip/fieldtrip/blob/master/specest/">https://github.com/fieldtrip/fieldtrip/blob/master/specest/</a></p>
+</dd>
+<dt class="label" id="r4a993b80bc5e-3"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd><p><a class="reference external" href="https://github.com/fooof-tools/fooof">https://github.com/fooof-tools/fooof</a></p>
+</dd>
+<dt class="label" id="r4a993b80bc5e-4"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd><p><a class="reference external" href="https://www.biorxiv.org/content/10.1101/299859v1">https://www.biorxiv.org/content/10.1101/299859v1</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+      
+    </p>
+    <p>
+        &copy; Copyright 2018-2019, Raphael Vallat.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

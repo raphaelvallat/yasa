@@ -3,12 +3,12 @@
 What's new
 ##########
 
-v0.1.7
-------
+v0.1.7 (August 2019)
+--------------------
 
 a. Added :py:func:`yasa.sliding_window` function.
 b. Added :py:func:`yasa.irasa` function.
-b. Reorganized code into several sub-files for readability (internal changes with no effect on user experience).
+c. Reorganized code into several sub-files for readability (internal changes with no effect on user experience).
 
 v0.1.6 (August 2019)
 --------------------

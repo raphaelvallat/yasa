@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.bandpower_from_psd &#8212; yasa 0.1.7 documentation</title>
+    <title>yasa.sliding_window &#8212; yasa 0.1.7 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -85,45 +85,46 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="yasa-bandpower-from-psd">
-<h1>yasa.bandpower_from_psd</h1>
+  <div class="section" id="yasa-sliding-window">
+<h1>yasa.sliding_window</h1>
 <dl class="function">
-<dt id="yasa.bandpower_from_psd">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">bandpower_from_psd</code><span class="sig-paren">(</span><em class="sig-param">psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'), (12, 30, 'Beta'), (30, 40, 'Gamma')], relative=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/spectral.html#bandpower_from_psd"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Compute the average power of the EEG in specified frequency band(s)
-given a pre-computed PSD.</p>
+<dt id="yasa.sliding_window">
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sliding_window</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf</em>, <em class="sig-param">window</em>, <em class="sig-param">step=None</em>, <em class="sig-param">axis=-1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/others.html#sliding_window"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Calculate a sliding window of a 1D or 2D EEG signal.</p>
 <div class="versionadded">
-<p><span class="versionmodified added">New in version 0.1.5.</span></p>
+<p><span class="versionmodified added">New in version 0.1.7.</span></p>
 </div>
-<dl class="field-list">
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>psd</strong><span class="classifier">array_like</span></dt><dd><p>Power spectral density of data, in uV^2/Hz.
-Must be of shape (n_channels, n_freqs).
-See <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.welch.html#scipy.signal.welch" title="(in SciPy v1.3.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.signal.welch()</span></code></a> for more details.</p>
+<dt><strong>data</strong><span class="classifier">numpy array</span></dt><dd><p>The 1D or 2D EEG data.</p>
 </dd>
-<dt><strong>freqs</strong><span class="classifier">array_like</span></dt><dd><p>Array of frequencies.</p>
+<dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency of <code class="docutils literal notranslate"><span class="pre">data</span></code>.</p>
 </dd>
-<dt><strong>ch_names</strong><span class="classifier">list</span></dt><dd><p>List of channel names, e.g. [‘Cz’, ‘F3’, ‘F4’, …]. If None,
-channels will be labelled [‘CHAN001’, ‘CHAN002’, …].</p>
+<dt><strong>window</strong><span class="classifier">int</span></dt><dd><p>The sliding window length, in seconds.</p>
 </dd>
-<dt><strong>bands</strong><span class="classifier">list of tuples</span></dt><dd><p>List of frequency bands of interests. Each tuple must contain the
-lower and upper frequencies, as well as the band name
-(e.g. (0.5, 4, ‘Delta’)).</p>
+<dt><strong>step</strong><span class="classifier">int</span></dt><dd><p>The sliding window step length, in seconds.
+If None (default), <code class="docutils literal notranslate"><span class="pre">step</span></code> is set to <code class="docutils literal notranslate"><span class="pre">window</span></code>,
+which results in no overlap between the sliding windows.</p>
 </dd>
-<dt><strong>relative</strong><span class="classifier">boolean</span></dt><dd><p>If True, bandpower is divided by the total power between the min and
-max frequencies defined in <code class="docutils literal notranslate"><span class="pre">band</span></code> (default 0.5 to 40 Hz).</p>
+<dt><strong>axis</strong><span class="classifier">int</span></dt><dd><p>The axis to slide over. Defaults to the last axis.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><dl>
-<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v0.25.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Bandpower dataframe, in which each row is a channel and each column
-a spectral band.</p>
+<dd class="field-even"><dl class="simple">
+<dt><strong>times</strong><span class="classifier">numpy array</span></dt><dd><p>Time vector, in seconds, corresponding to the START of each sliding
+epoch in <code class="docutils literal notranslate"><span class="pre">strided</span></code>.</p>
+</dd>
+<dt><strong>strided</strong><span class="classifier">numpy array</span></dt><dd><p>A matrix where row in last dimension consists of one instance
+of the sliding window.</p>
 </dd>
 </dl>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>This is a wrapper around the
+<a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.stride_tricks.as_strided.html#numpy.lib.stride_tricks.as_strided" title="(in NumPy v1.17)"><code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.lib.stride_tricks.as_strided()</span></code></a> function.</p>
 </dd></dl>
 
 </div>

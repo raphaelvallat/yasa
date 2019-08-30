@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.bandpower &#8212; yasa 0.1.6 documentation</title>
+    <title>yasa.bandpower &#8212; yasa 0.1.7 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -12,6 +12,7 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <script type="text/javascript" src="../_static/language_data.js"></script>
     <script type="text/javascript" src="../_static/copybutton.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -37,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.6</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.7</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -133,6 +134,12 @@ vector where:</p>
 (2, 3), meaning that the bandpower are sequentially calculated
 for N2 and N3 sleep. This has no effect when <code class="docutils literal notranslate"><span class="pre">hypno</span></code> is None.</p>
 </dd>
+<dt><strong>win_sec</strong><span class="classifier">int or float</span></dt><dd><p>The length of the sliding window, in seconds, used for the Welch PSD
+calculation. Ideally, this should be at least two times the inverse of
+the lower frequency of interest (e.g. for a lower frequency of interest
+of 0.5 Hz, the window length should be at least 2 * 1 / 0.5 =
+4 seconds).</p>
+</dd>
 <dt><strong>relative</strong><span class="classifier">boolean</span></dt><dd><p>If True, bandpower is divided by the total power between the min and
 max frequencies defined in <code class="docutils literal notranslate"><span class="pre">band</span></code>.</p>
 </dd>
@@ -147,7 +154,7 @@ lower and upper frequencies, as well as the band name
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v0.25.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Bandpower dataframe, in which each row is a channel and each column
+<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v0.25.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Bandpower dataframe, in which each row is a channel and each column
 a spectral band.</p>
 </dd>
 </dl>

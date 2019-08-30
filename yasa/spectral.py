@@ -293,22 +293,22 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
 
     1. Compute the original power spectral density (PSD) using Welch's method.
     2. Resample the EEG data by multiple non-integer factors and their
-    reciprocals (:math:`h` and :math:`1/h`).
+       reciprocals (:math:`h` and :math:`1/h`).
     3. For every pair of resampled signals, calculate the PSD and take the
-    geometric mean of both. In the resulting PSD, the power associated with the
-    oscillatory component is redistributed away from its original
-    (fundamental and harmonic) frequencies by a frequency offset that varies
-    with the resampling factor, whereas the power solely attributed to the
-    fractal component remains the same power-law statistical distribution
-    independent of the resampling factor.
+       geometric mean of both. In the resulting PSD, the power associated with
+       the oscillatory component is redistributed away from its original
+       (fundamental and harmonic) frequencies by a frequency offset that varies
+       with the resampling factor, whereas the power solely attributed to the
+       fractal component remains the same power-law statistical distribution
+       independent of the resampling factor.
     4. It follows that taking the median of the PSD of the variously
-    resampled signals can extract the power spectrum of the fractal component,
-    and the difference between the original power spectrum and the extracted
-    fractal spectrum offers an approximate estimate of the power spectrum of
-    the oscillatory component.
+       resampled signals can extract the power spectrum of the fractal
+       component, and the difference between the original power spectrum and
+       the extracted fractal spectrum offers an approximate estimate of the
+       power spectrum of the oscillatory component.
 
-    Note that the original PSD can be calculated by simply adding
-    ``psd_aperiodic`` and ``psd_oscillatory``.
+    Note that an estimate of the original PSD can be calculated by simply
+    adding ``psd = psd_aperiodic + psd_oscillatory``.
 
     References
     ----------

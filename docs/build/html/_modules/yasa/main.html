@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.main &#8212; yasa 0.1.6 documentation</title>
+    <title>yasa.main &#8212; yasa 0.1.7 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -12,6 +12,7 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <script type="text/javascript" src="../../_static/language_data.js"></script>
     <script type="text/javascript" src="../../_static/copybutton.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -37,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.6</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.7</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -97,294 +98,27 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">numba</span> <span class="k">import</span> <span class="n">jit</span>
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">signal</span>
 <span class="kn">from</span> <span class="nn">mne.filter</span> <span class="k">import</span> <span class="n">filter_data</span>
 <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">interp1d</span>
 <span class="kn">from</span> <span class="nn">scipy.fftpack</span> <span class="k">import</span> <span class="n">next_fast_len</span>
 
+<span class="kn">from</span> <span class="nn">.numba</span> <span class="k">import</span> <span class="n">_detrend</span><span class="p">,</span> <span class="n">_rms</span>
+<span class="kn">from</span> <span class="nn">.others</span> <span class="k">import</span> <span class="n">moving_transform</span><span class="p">,</span> <span class="n">trimbothstd</span><span class="p">,</span> <span class="n">_zerocrossings</span>
 <span class="kn">from</span> <span class="nn">.spectral</span> <span class="k">import</span> <span class="n">stft_power</span>
 
-
+<span class="c1"># Define YASA logger</span>
 <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> | </span><span class="si">%(levelname)s</span><span class="s1"> | </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">,</span>
                     <span class="n">datefmt</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">-%b-%y %H:%M:%S&#39;</span><span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;yasa&#39;</span><span class="p">)</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;spindles_detect&#39;</span><span class="p">,</span> <span class="s1">&#39;spindles_detect_multi&#39;</span><span class="p">,</span> <span class="s1">&#39;sw_detect&#39;</span><span class="p">,</span>
-           <span class="s1">&#39;sw_detect_multi&#39;</span><span class="p">,</span> <span class="s1">&#39;rem_detect&#39;</span><span class="p">,</span> <span class="s1">&#39;trimbothstd&#39;</span><span class="p">,</span>
-           <span class="s1">&#39;moving_transform&#39;</span><span class="p">,</span> <span class="s1">&#39;get_bool_vector&#39;</span><span class="p">,</span> <span class="s1">&#39;get_sync_sw&#39;</span><span class="p">]</span>
-
-
-<span class="c1">#############################################################################</span>
-<span class="c1"># NUMBA JIT UTILITY FUNCTIONS</span>
-<span class="c1">#############################################################################</span>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="s1">&#39;float64(float64[:], float64[:])&#39;</span><span class="p">,</span> <span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">_corr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Fast Pearson correlation.&quot;&quot;&quot;</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
-    <span class="n">mx</span><span class="p">,</span> <span class="n">my</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-    <span class="n">xm2s</span><span class="p">,</span> <span class="n">ym2s</span><span class="p">,</span> <span class="n">r_num</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
-        <span class="n">xm</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">mx</span>
-        <span class="n">ym</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">my</span>
-        <span class="n">r_num</span> <span class="o">+=</span> <span class="p">(</span><span class="n">xm</span> <span class="o">*</span> <span class="n">ym</span><span class="p">)</span>
-        <span class="n">xm2s</span> <span class="o">+=</span> <span class="n">xm</span><span class="o">**</span><span class="mi">2</span>
-        <span class="n">ym2s</span> <span class="o">+=</span> <span class="n">ym</span><span class="o">**</span><span class="mi">2</span>
-    <span class="n">r_d1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">xm2s</span><span class="p">)</span>
-    <span class="n">r_d2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">ym2s</span><span class="p">)</span>
-    <span class="n">r_den</span> <span class="o">=</span> <span class="n">r_d1</span> <span class="o">*</span> <span class="n">r_d2</span>
-    <span class="k">return</span> <span class="n">r_num</span> <span class="o">/</span> <span class="n">r_den</span>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="s1">&#39;float64(float64[:], float64[:])&#39;</span><span class="p">,</span> <span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">_covar</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Fast Covariance.&quot;&quot;&quot;</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
-    <span class="n">mx</span><span class="p">,</span> <span class="n">my</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-    <span class="n">cov</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
-        <span class="n">xm</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">mx</span>
-        <span class="n">ym</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">my</span>
-        <span class="n">cov</span> <span class="o">+=</span> <span class="p">(</span><span class="n">xm</span> <span class="o">*</span> <span class="n">ym</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">cov</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="s1">&#39;float64(float64[:])&#39;</span><span class="p">,</span> <span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">_rms</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Fast root mean square.&quot;&quot;&quot;</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
-    <span class="n">ms</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
-        <span class="n">ms</span> <span class="o">+=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
-    <span class="n">ms</span> <span class="o">/=</span> <span class="n">n</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">ms</span><span class="p">)</span>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="s1">&#39;float64(float64[:], float64[:])&#39;</span><span class="p">,</span> <span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">_slope_lstsq</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Slope of a 1D least-squares regression.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">n_times</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">sx2</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">sx</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">sy</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">sxy</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_times</span><span class="p">):</span>
-        <span class="n">sx2</span> <span class="o">+=</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span>
-        <span class="n">sx</span> <span class="o">+=</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
-        <span class="n">sxy</span> <span class="o">+=</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
-        <span class="n">sy</span> <span class="o">+=</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
-    <span class="n">den</span> <span class="o">=</span> <span class="n">n_times</span> <span class="o">*</span> <span class="n">sx2</span> <span class="o">-</span> <span class="p">(</span><span class="n">sx</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
-    <span class="n">num</span> <span class="o">=</span> <span class="n">n_times</span> <span class="o">*</span> <span class="n">sxy</span> <span class="o">-</span> <span class="n">sx</span> <span class="o">*</span> <span class="n">sy</span>
-    <span class="k">return</span> <span class="n">num</span> <span class="o">/</span> <span class="n">den</span>
-
-
-<span class="nd">@jit</span><span class="p">(</span><span class="s1">&#39;float64[:](float64[:], float64[:])&#39;</span><span class="p">,</span> <span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">_detrend</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Fast linear detrending.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">slope</span> <span class="o">=</span> <span class="n">_slope_lstsq</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-    <span class="n">intercept</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">x</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">*</span> <span class="n">slope</span>
-    <span class="k">return</span> <span class="n">y</span> <span class="o">-</span> <span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">slope</span> <span class="o">+</span> <span class="n">intercept</span><span class="p">)</span>
+           <span class="s1">&#39;sw_detect_multi&#39;</span><span class="p">,</span> <span class="s1">&#39;rem_detect&#39;</span><span class="p">,</span> <span class="s1">&#39;get_bool_vector&#39;</span><span class="p">,</span> <span class="s1">&#39;get_sync_sw&#39;</span><span class="p">]</span>
 
 <span class="c1">#############################################################################</span>
 <span class="c1"># HELPER FUNCTIONS</span>
 <span class="c1">#############################################################################</span>
-
-
-<div class="viewcode-block" id="moving_transform"><a class="viewcode-back" href="../../generated/yasa.moving_transform.html#yasa.moving_transform">[docs]</a><span class="k">def</span> <span class="nf">moving_transform</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">window</span><span class="o">=.</span><span class="mi">3</span><span class="p">,</span> <span class="n">step</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;corr&#39;</span><span class="p">,</span>
-                     <span class="n">interp</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Moving transformation of one or two time-series.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    x : array_like</span>
-<span class="sd">        Single-channel data</span>
-<span class="sd">    y : array_like, optional</span>
-<span class="sd">        Second single-channel data (only used if method in [&#39;corr&#39;, &#39;covar&#39;]).</span>
-<span class="sd">    sf : float</span>
-<span class="sd">        Sampling frequency.</span>
-<span class="sd">    window : int</span>
-<span class="sd">        Window size in seconds.</span>
-<span class="sd">    step : int</span>
-<span class="sd">        Step in seconds.</span>
-<span class="sd">        A step of 0.1 second (100 ms) is usually a good default.</span>
-<span class="sd">        If step == 0, overlap at every sample (slowest)</span>
-<span class="sd">        If step == nperseg, no overlap (fastest)</span>
-<span class="sd">        Higher values = higher precision = slower computation.</span>
-<span class="sd">    method : str</span>
-<span class="sd">        Transformation to use.</span>
-<span class="sd">        Available methods are::</span>
-
-<span class="sd">            &#39;mean&#39; : arithmetic mean of x</span>
-<span class="sd">            &#39;min&#39; : minimum value of x</span>
-<span class="sd">            &#39;max&#39; : maximum value of x</span>
-<span class="sd">            &#39;ptp&#39; : peak-to-peak amplitude of x</span>
-<span class="sd">            &#39;prop_above_zero&#39; : proportion of values of x that are above zero</span>
-<span class="sd">            &#39;rms&#39; : root mean square of x</span>
-<span class="sd">            &#39;slope&#39; : slope of the least-square regression of x (in a.u / sec)</span>
-<span class="sd">            &#39;corr&#39; : Correlation between x and y</span>
-<span class="sd">            &#39;covar&#39; : Covariance between x and y</span>
-<span class="sd">    interp : boolean</span>
-<span class="sd">        If True, a cubic interpolation is performed to ensure that the output</span>
-<span class="sd">        has the same size as the input.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    t : np.array</span>
-<span class="sd">        Time vector</span>
-<span class="sd">    out : np.array</span>
-<span class="sd">        Transformed signal</span>
-
-<span class="sd">    Notes</span>
-<span class="sd">    -----</span>
-<span class="sd">    This function was inspired by the `transform_signal` function of the</span>
-<span class="sd">    Wonambi package (https://github.com/wonambi-python/wonambi).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Safety checks</span>
-    <span class="k">assert</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="s1">&#39;ptp&#39;</span><span class="p">,</span> <span class="s1">&#39;rms&#39;</span><span class="p">,</span>
-                      <span class="s1">&#39;prop_above_zero&#39;</span><span class="p">,</span> <span class="s1">&#39;slope&#39;</span><span class="p">,</span> <span class="s1">&#39;covar&#39;</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">]</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">y</span><span class="o">.</span><span class="n">size</span>
-
-    <span class="k">if</span> <span class="n">step</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">step</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">sf</span>
-
-    <span class="n">halfdur</span> <span class="o">=</span> <span class="n">window</span> <span class="o">/</span> <span class="mi">2</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
-    <span class="n">total_dur</span> <span class="o">=</span> <span class="n">n</span> <span class="o">/</span> <span class="n">sf</span>
-    <span class="n">last</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span>
-    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">total_dur</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
-
-    <span class="c1"># Define beginning, end and time (centered) vector</span>
-    <span class="n">beg</span> <span class="o">=</span> <span class="p">((</span><span class="n">idx</span> <span class="o">-</span> <span class="n">halfdur</span><span class="p">)</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-    <span class="n">end</span> <span class="o">=</span> <span class="p">((</span><span class="n">idx</span> <span class="o">+</span> <span class="n">halfdur</span><span class="p">)</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-    <span class="n">beg</span><span class="p">[</span><span class="n">beg</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">end</span><span class="p">[</span><span class="n">end</span> <span class="o">&gt;</span> <span class="n">last</span><span class="p">]</span> <span class="o">=</span> <span class="n">last</span>
-    <span class="c1"># Alternatively, to cut off incomplete windows (comment the 2 lines above)</span>
-    <span class="c1"># mask = ~((beg &lt; 0) | (end &gt; last))</span>
-    <span class="c1"># beg, end = beg[mask], end[mask]</span>
-    <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">beg</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">sf</span>
-
-    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;mean&#39;</span><span class="p">:</span>
-        <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-
-    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;min&#39;</span><span class="p">:</span>
-        <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-
-    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span>
-        <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-
-    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;ptp&#39;</span><span class="p">:</span>
-        <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ptp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-
-    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;prop_above_zero&#39;</span><span class="p">:</span>
-        <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
-
-    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;slope&#39;</span><span class="p">:</span>
-        <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">/</span> <span class="n">sf</span>
-            <span class="k">return</span> <span class="n">_slope_lstsq</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-
-    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;covar&#39;</span><span class="p">:</span>
-        <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">_covar</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-
-    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span>
-        <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">_corr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">_rms</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-
-    <span class="c1"># Now loop over successive epochs</span>
-    <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;covar&#39;</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">]:</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
-            <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">beg</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">end</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span> <span class="n">y</span><span class="p">[</span><span class="n">beg</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">end</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
-            <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">beg</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">end</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
-
-    <span class="c1"># Finally interpolate</span>
-    <span class="k">if</span> <span class="n">interp</span> <span class="ow">and</span> <span class="n">step</span> <span class="o">!=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">sf</span><span class="p">:</span>
-        <span class="n">f</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">out</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;cubic&#39;</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                     <span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">assume_sorted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="n">sf</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">t</span><span class="p">,</span> <span class="n">out</span></div>
-
-
-<span class="k">def</span> <span class="nf">_zerocrossings</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Find indices of zero-crossings in a 1D array.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    x : np.array</span>
-<span class="sd">        One dimensional data vector.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    idx_zc : np.array</span>
-<span class="sd">        Indices of zero-crossings</span>
-
-<span class="sd">    Examples</span>
-<span class="sd">    --------</span>
-
-<span class="sd">        &gt;&gt;&gt; import numpy as np</span>
-<span class="sd">        &gt;&gt;&gt; from yasa.main import _zerocrossings</span>
-<span class="sd">        &gt;&gt;&gt; a = np.array([4, 2, -1, -3, 1, 2, 3, -2, -5])</span>
-<span class="sd">        &gt;&gt;&gt; _zerocrossings(a)</span>
-<span class="sd">            array([1, 3, 6], dtype=int64)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">pos</span> <span class="o">=</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="mi">0</span>
-    <span class="n">npos</span> <span class="o">=</span> <span class="o">~</span><span class="n">pos</span>
-    <span class="k">return</span> <span class="p">((</span><span class="n">pos</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">npos</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="o">|</span> <span class="p">(</span><span class="n">npos</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-
-
-<div class="viewcode-block" id="trimbothstd"><a class="viewcode-back" href="../../generated/yasa.trimbothstd.html#yasa.trimbothstd">[docs]</a><span class="k">def</span> <span class="nf">trimbothstd</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">cut</span><span class="o">=</span><span class="mf">0.10</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Slices off a proportion of items from both ends of an array and then</span>
-<span class="sd">    compute the sample standard deviation.</span>
-
-<span class="sd">    Slices off the passed proportion of items from both ends of the passed</span>
-<span class="sd">    array (i.e., with ``cut`` = 0.1, slices leftmost 10% **and**</span>
-<span class="sd">    rightmost 10% of scores). The trimmed values are the lowest and</span>
-<span class="sd">    highest ones.</span>
-<span class="sd">    Slices off less if proportion results in a non-integer slice index.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    x : 1D np.array</span>
-<span class="sd">        Input array.</span>
-<span class="sd">    cut : float</span>
-<span class="sd">        Proportion (in range 0-1) of total data to trim of each end.</span>
-<span class="sd">        Default is 0.10, i.e. 10% lowest and 10% highest values are removed.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    trimmed_std : float</span>
-<span class="sd">        Sample standard deviation of the trimmed array.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
-    <span class="n">lowercut</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cut</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span>
-    <span class="n">uppercut</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="n">lowercut</span>
-    <span class="n">atmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">lowercut</span><span class="p">,</span> <span class="n">uppercut</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
-    <span class="n">sl</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">lowercut</span><span class="p">,</span> <span class="n">uppercut</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">atmp</span><span class="p">[</span><span class="n">sl</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
 
 
 <span class="k">def</span> <span class="nf">_merge_close</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">min_distance_ms</span><span class="p">,</span> <span class="n">sf</span><span class="p">):</span>

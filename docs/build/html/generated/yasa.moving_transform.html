@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.moving_transform &#8212; yasa 0.1.6 documentation</title>
+    <title>yasa.moving_transform &#8212; yasa 0.1.7 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -12,6 +12,7 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <script type="text/javascript" src="../_static/language_data.js"></script>
     <script type="text/javascript" src="../_static/copybutton.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -37,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.6</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.7</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -88,7 +89,7 @@
 <h1>yasa.moving_transform</h1>
 <dl class="function">
 <dt id="yasa.moving_transform">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">moving_transform</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y=None</em>, <em class="sig-param">sf=100</em>, <em class="sig-param">window=0.3</em>, <em class="sig-param">step=0.1</em>, <em class="sig-param">method='corr'</em>, <em class="sig-param">interp=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#moving_transform"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">moving_transform</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y=None</em>, <em class="sig-param">sf=100</em>, <em class="sig-param">window=0.3</em>, <em class="sig-param">step=0.1</em>, <em class="sig-param">method='corr'</em>, <em class="sig-param">interp=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/others.html#moving_transform"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Moving transformation of one or two time-series.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
@@ -128,7 +129,7 @@ has the same size as the input.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>t</strong><span class="classifier">np.array</span></dt><dd><p>Time vector</p>
+<dt><strong>t</strong><span class="classifier">np.array</span></dt><dd><p>Time vector, in seconds, corresponding to the MIDDLE of each epoch.</p>
 </dd>
 <dt><strong>out</strong><span class="classifier">np.array</span></dt><dd><p>Transformed signal</p>
 </dd>
