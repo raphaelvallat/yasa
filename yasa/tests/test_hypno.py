@@ -17,9 +17,11 @@ def create_raw(npts, ch_names=['F4-M1', 'F3-M2'], sf=100):
     nchan = len(ch_names)
     info = mne.create_info(ch_names=ch_names, sfreq=sf,
                            ch_types=['eeg'] * nchan,
-                           montage='standard_1020', verbose=0)
+                           verbose=0)
     data = np.random.rand(nchan, npts)
-    return mne.io.RawArray(data, info, verbose=0)
+    raw = mne.io.RawArray(data, info, verbose=0)
+    raw.set_montage('standard_1020', raise_if_subset=False)
+    return raw
 
 
 class TestStringMethods(unittest.TestCase):

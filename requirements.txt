@@ -1,6 +1,6 @@
 numpy>=1.14
 scipy>=1.2.0
 pandas>=0.23
-mne<0.19
+mne>=0.19
 numba>=0.39.0
 scikit-learn>=0.20
