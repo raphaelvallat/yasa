@@ -23,7 +23,8 @@ INSTALL_REQUIRES = [
     'seaborn>=0.9.0',
     'mne>=0.19.0',
     'numba>=0.39.0',
-    'scikit-learn>=0.20'
+    'scikit-learn>=0.20',
+    'lspopt'
 ]
 
 PACKAGES = [

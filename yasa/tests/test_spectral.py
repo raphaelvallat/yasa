@@ -8,6 +8,7 @@ from itertools import product
 from scipy.signal import welch
 from yasa import hypno_str_to_int, hypno_upsample_to_data
 from yasa.spectral import (bandpower, bandpower_from_psd, irasa, stft_power)
+from yasa.plotting import plot_spectrogram
 
 # Load 1D data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -117,3 +118,13 @@ class TestStringMethods(unittest.TestCase):
         assert t.size == data.size
         assert max(f) == 16
         assert min(f) == 11
+
+    def test_plot_spectrogram(self):
+        """Test function plot_spectrogram
+        """
+
+        plot_spectrogram(data_full[0, :], sf_full, fmin=0.5, fmax=30)
+        plot_spectrogram(data_full[0, :], sf_full, hypno_full, trimperc=5)
+        hypno_full_art = np.copy(hypno_full)
+        hypno_full_art[hypno_full_art == 3.] = -1
+        plot_spectrogram(data_full[0, :], sf_full, hypno_full_art, trimperc=5)

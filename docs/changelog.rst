@@ -3,6 +3,12 @@
 What's new
 ##########
 
+v0.1.8 (dev)
+------------
+
+a. Added :py:func:`yasa.plot_spectrogram` function.
+
+
 v0.1.7 (August 2019)
 --------------------
 

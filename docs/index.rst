@@ -67,6 +67,8 @@ Installation
 - mne>=0.17.0
 - numba>=0.39.0
 - scikit-learn>=0.20
+- matplotlib
+- `lspopt <https://github.com/hbldh/lspopt>`_
 
 Several functions of YASA are written using `Numba <http://numba.pydata.org/>`_, a just-in-time compiler for Python. This allows to greatly speed up the computation time (typically a few seconds for a full night recording).
 
@@ -120,6 +122,7 @@ The examples Jupyter notebooks are really what make YASA great! In addition to s
 
 * `10_bandpower.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_bandpower.ipynb>`_: bandpower per channel and per sleep stage.
 * `11_IRASA.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_IRASA.ipynb>`_: separate the aperiodic (= fractal = 1/f) components of the EEG power spectra using the IRASA method.
+* `12_spectrogram.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spectrogram.ipynb>`_: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.
 
 Typical uses
 ------------
