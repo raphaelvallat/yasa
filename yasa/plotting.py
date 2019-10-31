@@ -1,11 +1,10 @@
 """
-This file contains several helper functions to calculate spectral power from
-1D and 2D EEG data.
+Plotting functions of YASA.
 """
 import numpy as np
 import pandas as pd
-from lspopt import spectrogram_lspopt
 import matplotlib.pyplot as plt
+from lspopt import spectrogram_lspopt
 from matplotlib.colors import Normalize
 
 # Set default font size to 12
@@ -15,22 +14,22 @@ plt.rcParams.update({'font.size': 12})
 __all__ = ['plot_spectrogram']
 
 
-def plot_spectrogram(data, sf, hypno=None, include=(2, 3), win_sec=30,
-                     fmin=0.5, fmax=25, trimperc=2.5, cmap='RdBu_r'):
+def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
+                     trimperc=2.5, cmap='RdBu_r'):
     """
-    Plot a full-night multi-taper spectrogram,
-    optionally with the hypnogram on top.
+    Plot a full-night multi-taper spectrogram, optionally with the hypnogram
+    on top.
 
     .. versionadded:: 0.1.8
 
     Parameters
     ----------
     data : :py:class:`numpy.ndarray`
-        1D EEG data.
+        Single-channel EEG data. Must be a 1D NumPy array.
     sf : float
         The sampling frequency of data AND the hypnogram.
     hypno : array_like
-        Sleep stage vector (hypnogram).
+        Sleep stage vector (hypnogram), optional.
 
         The hypnogram must have the exact same number of samples as ``data``.
         To upsample your hypnogram, please refer to
@@ -40,6 +39,7 @@ def plot_spectrogram(data, sf, hypno=None, include=(2, 3), win_sec=30,
             The default hypnogram format in YASA is a 1D integer
             vector where:
 
+            - -1 = Artefact / Movement
             - 0 = Wake
             - 1 = N1 sleep
             - 2 = N2 sleep
@@ -47,7 +47,8 @@ def plot_spectrogram(data, sf, hypno=None, include=(2, 3), win_sec=30,
             - 4 = REM
     win_sec : int or float
         The length of the sliding window, in seconds, used for multitaper PSD
-        calculation. Default is 30 seconds.
+        calculation. Default is 30 seconds. Note that ``data`` must be at least
+        twice longer than ``win_sec`` (e.g. 60 seconds).
     fmin, fmax : int or float
         The lower and upper frequency of the spectrogram. Default 0.5 to 25 Hz.
     trimperc : int or float
@@ -64,12 +65,47 @@ def plot_spectrogram(data, sf, hypno=None, include=(2, 3), win_sec=30,
     -------
     fig : :py:class:`matplotlib.pyplot.Figure`
         Matplotlib Figure
+
+    Examples
+    --------
+
+    1. Full-night multitaper spectrogram on Cz, no hypnogram
+
+    .. plot::
+
+        >>> import yasa
+        >>> import numpy as np
+        >>> # In the next 5 lines, we're loading the data from GitHub.
+        >>> import requests
+        >>> from io import BytesIO
+        >>> r = requests.get('https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_Cz%2BFz%2BPz.npz', stream=True)
+        >>> npz = np.load(BytesIO(r.raw.read()))
+        >>> data = npz.get('data')[0, :]
+        >>> sf = 100
+        >>> fig = yasa.plot_spectrogram(data, sf)
+
+    2. Full-night multitaper spectrogram on Cz with the hypnogram on top
+
+    .. plot::
+
+        >>> import yasa
+        >>> import numpy as np
+        >>> # In the next lines, we're loading the data from GitHub.
+        >>> import requests
+        >>> from io import BytesIO
+        >>> r = requests.get('https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_Cz%2BFz%2BPz.npz', stream=True)
+        >>> npz = np.load(BytesIO(r.raw.read()))
+        >>> data = npz.get('data')[0, :]
+        >>> sf = 100
+        >>> # Load the 30-sec hypnogram and upsample to data
+        >>> hypno = np.loadtxt('https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt')
+        >>> hypno = yasa.hypno_upsample_to_data(hypno, 1/30, data, sf)
+        >>> fig = yasa.plot_spectrogram(data, sf, hypno, cmap='Spectral_r')
     """
     # Safety checks
     assert isinstance(data, np.ndarray), 'Data must be a 1D NumPy array.'
     assert isinstance(sf, (int, float)), 'sf must be int or float.'
     assert data.ndim == 1, 'Data must be a 1D (single-channel) NumPy array.'
-    assert data.size > (60 * sf), 'At least 60 seconds of data is required.'
     assert isinstance(win_sec, (int, float)), 'win_sec must be int or float.'
     assert isinstance(fmin, (int, float)), 'fmin must be int or float.'
     assert isinstance(fmax, (int, float)), 'fmax must be int or float.'
@@ -78,8 +114,9 @@ def plot_spectrogram(data, sf, hypno=None, include=(2, 3), win_sec=30,
 
     # Calculate multi-taper spectrogram
     nperseg = int(win_sec * sf)
+    assert data.size > 2 * nperseg, 'Data length must be at least 2 * win_sec.'
     f, t, Sxx = spectrogram_lspopt(data, sf, nperseg=nperseg, noverlap=0)
-    Sxx = 10 * np.log10(Sxx)  # Convert to dB
+    Sxx = 10 * np.log10(Sxx)  # Convert uV^2 / Hz --> dB / Hz
 
     # Select only relevant frequencies (up to 30 Hz)
     good_freqs = np.logical_and(f >= fmin, f <= fmax)
@@ -99,8 +136,7 @@ def plot_spectrogram(data, sf, hypno=None, include=(2, 3), win_sec=30,
         ax.set_xlabel('Time [sec]')
 
         # Add colorbar
-        cbar = fig.colorbar(im, ax=ax, shrink=0.95, pad=0.05, fraction=0.1,
-                            aspect=25)
+        cbar = fig.colorbar(im, ax=ax, shrink=0.95, fraction=0.1, aspect=25)
         cbar.ax.set_ylabel('Log Power (dB / Hz)', rotation=270, labelpad=20)
         return fig
     else:
