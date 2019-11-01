@@ -83,6 +83,11 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     bandpowers : :py:class:`pandas.DataFrame`
         Bandpower dataframe, in which each row is a channel and each column
         a spectral band.
+
+    Notes
+    -----
+    For an example of how to use this function, please refer to
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_bandpower.ipynb
     """
     # Check if input data is a MNE Raw object
     if isinstance(data, mne.io.BaseRaw):
@@ -309,6 +314,9 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
 
     Note that an estimate of the original PSD can be calculated by simply
     adding ``psd = psd_aperiodic + psd_oscillatory``.
+
+    For an example of how to use this function, please refer to
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_IRASA.ipynb
 
     References
     ----------

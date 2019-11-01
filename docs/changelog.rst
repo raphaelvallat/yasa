@@ -3,11 +3,12 @@
 What's new
 ##########
 
-v0.1.8 (dev)
-------------
+v0.1.8 (October 2019)
+---------------------
 
 a. Added :py:func:`yasa.plot_spectrogram` function.
-
+b. Added `lspopt <https://github.com/hbldh/lspopt>`_ in the depencencies
+c. YASA now requires `MNE <https://mne.tools/stable/index.html>`_>0.19.
 
 v0.1.7 (August 2019)
 --------------------

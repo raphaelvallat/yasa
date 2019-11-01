@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>Installation &#8212; yasa 0.1.7 documentation</title>
+    <title>Installation &#8212; yasa 0.1.8 documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="#"><span><img src="_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.7</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.8</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -128,6 +128,8 @@
 <li><p>mne&gt;=0.17.0</p></li>
 <li><p>numba&gt;=0.39.0</p></li>
 <li><p>scikit-learn&gt;=0.20</p></li>
+<li><p>matplotlib</p></li>
+<li><p><a class="reference external" href="https://github.com/hbldh/lspopt">lspopt</a></p></li>
 </ul>
 <p>Several functions of YASA are written using <a class="reference external" href="http://numba.pydata.org/">Numba</a>, a just-in-time compiler for Python. This allows to greatly speed up the computation time (typically a few seconds for a full night recording).</p>
 <p><strong>What are the prerequisites for using YASA?</strong></p>
@@ -181,6 +183,7 @@
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_bandpower.ipynb">10_bandpower.ipynb</a>: bandpower per channel and per sleep stage.</p></li>
 <li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_IRASA.ipynb">11_IRASA.ipynb</a>: separate the aperiodic (= fractal = 1/f) components of the EEG power spectra using the IRASA method.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spectrogram.ipynb">12_spectrogram.ipynb</a>: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.</p></li>
 </ul>
 </div>
 <div class="section" id="typical-uses">

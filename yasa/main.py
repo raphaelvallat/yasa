@@ -264,7 +264,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
             you need to multiply the data by 1e6 to convert to micro-Volts
             (1 V = 1,000,000 uV), e.g.:
 
-            .. code-block:: ruby
+            .. code-block:: python
 
                 data = raw.get_data() * 1e6  # Make sure that data is in uV
     sf : float
@@ -345,6 +345,9 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     Notes
     -----
     For better results, apply this detection only on artefact-free NREM sleep.
+
+    For an example on how to run the detection, please refer to
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb
     """
     # Safety check
     data = np.asarray(data, dtype=np.float64)
@@ -648,6 +651,11 @@ def spindles_detect_multi(data, sf=None, ch_names=None, multi_only=False,
             'Channel' : Channel name
             'IdxChannel' : Integer index of channel in data
             'Stage' : Sleep stage (only if hypno was provided)
+
+    Notes
+    -----
+    For an example of how to run the detection, please refer to
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/02_spindles_detection_multi.ipynb
     """
     # Check if input data is a MNE Raw object
     if isinstance(data, mne.io.BaseRaw):
@@ -803,6 +811,9 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
 
     Note that the ``PTP``, ``Slope``, ``ValNegPeak`` and ``ValPosPeak`` are
     all computed on the filtered signal.
+
+    For an example of how to run the detection, please refer to
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb
     """
     # Safety check
     data = np.asarray(data, dtype=np.float64)
@@ -1061,6 +1072,9 @@ def sw_detect_multi(data, sf=None, ch_names=None, **kwargs):
 
     Note that the ``PTP``, ``Slope``, ``ValNegPeak`` and ``ValPosPeak`` are
     computed on the filtered signal.
+
+    For an example of how to run the detection, please refer to
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_sw_detection_multi.ipynb
     """
     # Check if input data is a MNE Raw object
     if isinstance(data, mne.io.BaseRaw):
@@ -1200,6 +1214,9 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
 
     Note that all the output parameters are computed on the filtered LOC and
     ROC signals.
+
+    For an example of how to run the detection, please refer to
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_REMs_detection.ipynb
     """
     # Safety checks
     loc = np.squeeze(np.asarray(loc, dtype=np.float64))

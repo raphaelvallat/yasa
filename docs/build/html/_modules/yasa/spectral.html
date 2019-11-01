@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.spectral &#8212; yasa 0.1.7 documentation</title>
+    <title>yasa.spectral &#8212; yasa 0.1.8 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.7</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.8</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -171,6 +171,11 @@
 <span class="sd">    bandpowers : :py:class:`pandas.DataFrame`</span>
 <span class="sd">        Bandpower dataframe, in which each row is a channel and each column</span>
 <span class="sd">        a spectral band.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    For an example of how to use this function, please refer to</span>
+<span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_bandpower.ipynb</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Check if input data is a MNE Raw object</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">BaseRaw</span><span class="p">):</span>
@@ -397,6 +402,9 @@
 
 <span class="sd">    Note that an estimate of the original PSD can be calculated by simply</span>
 <span class="sd">    adding ``psd = psd_aperiodic + psd_oscillatory``.</span>
+
+<span class="sd">    For an example of how to use this function, please refer to</span>
+<span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_IRASA.ipynb</span>
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>

@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.sw_detect_multi &#8212; yasa 0.1.7 documentation</title>
+    <title>yasa.sw_detect_multi &#8212; yasa 0.1.8 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.7</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.8</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -95,16 +95,16 @@
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>data</strong><span class="classifier">array_like</span></dt><dd><p>Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-Can also be a <a class="reference external" href="https://martinos.org/mne/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.18.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>,
+Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>,
 <code class="docutils literal notranslate"><span class="pre">sf</span></code>, and <code class="docutils literal notranslate"><span class="pre">ch_names</span></code> will be automatically extracted,
 and <code class="docutils literal notranslate"><span class="pre">data</span></code> will also be automatically converted from Volts (MNE)
 to micro-Volts (YASA).</p>
 </dd>
 <dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>Sampling frequency of the data in Hz.
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://martinos.org/mne/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.18.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
 <dt><strong>ch_names</strong><span class="classifier">list of str</span></dt><dd><p>Channel names. Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a
-<a class="reference external" href="https://martinos.org/mne/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.18.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+<a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
 <dt><strong>**kwargs</strong></dt><dd><p>Keywords arguments that are passed to the <a class="reference internal" href="yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a>
 function.</p>
@@ -113,7 +113,7 @@ function.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>sw_params</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v0.25.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
+<dt><strong>sw_params</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v0.25.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>&#39;Start&#39; : Start of each detected slow-wave (in seconds of data)
 &#39;NegPeak&#39; : Location of the negative peak (in seconds of data)
 &#39;MidCrossing&#39; : Location of the negative-to-positive zero-crossing
@@ -138,6 +138,8 @@ function.</p>
 <p>For better results, apply this detection only on artefact-free NREM sleep.</p>
 <p>Note that the <code class="docutils literal notranslate"><span class="pre">PTP</span></code>, <code class="docutils literal notranslate"><span class="pre">Slope</span></code>, <code class="docutils literal notranslate"><span class="pre">ValNegPeak</span></code> and <code class="docutils literal notranslate"><span class="pre">ValPosPeak</span></code> are
 computed on the filtered signal.</p>
+<p>For an example of how to run the detection, please refer to
+<a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_sw_detection_multi.ipynb">https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_sw_detection_multi.ipynb</a></p>
 </dd></dl>
 
 </div>
