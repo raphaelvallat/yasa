@@ -26,7 +26,8 @@ logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s',
 logger = logging.getLogger('yasa')
 
 __all__ = ['spindles_detect', 'spindles_detect_multi', 'sw_detect',
-           'sw_detect_multi', 'rem_detect', 'get_bool_vector', 'get_sync_sw']
+           'sw_detect_multi', 'rem_detect', 'get_bool_vector',
+           'get_sync_events']
 
 #############################################################################
 # HELPER FUNCTIONS
@@ -148,13 +149,14 @@ def get_bool_vector(data=None, sf=None, detection=None):
     return bool_vector
 
 
-def get_sync_sw(data=None, sf=None, sw=None, event='NegPeak', time_before=0.4,
-                time_after=0.8):
-    """Synchronize the timing of detected slow-waves at a specific
-    landmark timepoint.
+def get_sync_events(data=None, sf=None, detection=None, center='NegPeak',
+                    time_before=0.4, time_after=0.8):
+    """
+    Return the raw data of each detected slow-waves / spindles, after
+    centering to a specific timepoint.
 
     This function can be used to plot an average template of the
-    detected slow-waves.
+    detected slow-waves / spindles.
 
     Parameters
     ----------
@@ -164,26 +166,28 @@ def get_sync_sw(data=None, sf=None, sw=None, event='NegPeak', time_before=0.4,
     sf : float
         The sampling frequency of ``data``.
         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
-    sw : :py:class:`pandas.DataFrame`
+    detection : :py:class:`pandas.DataFrame`
         YASA's detection dataframe returned by the
-        :py:func:`yasa.sw_detect` or :py:func:`yasa.sw_detect_multi` functions.
-    event : str
-        Landmark of the slow-waves to synchronize the timing on.
+        :py:func:`yasa.sw_detect`, :py:func:`yasa.sp_detect`,
+        :py:func:`yasa.sw_detect_multi`, or
+        :py:func:`yasa.sp_detect_multi`,
+         functions.
+    center : str
+        Landmark of the slow-waves / spindles to synchronize the timing on.
         Default is to use the negative peak.
     time_before : float
-        Time (in seconds) before ``event``.
+        Time (in seconds) before ``center``.
     time_after : float
-        Time (in seconds) after ``event``.
+        Time (in seconds) after ``center``.
 
     Returns
     -------
     df_sw : :py:class:`pandas.DataFrame`
         Ouput detection dataframe::
 
-        'Time' : Timing of the events (in seconds)
         'Event' : Event number
+        'Time' : Timing of the events (in seconds)
         'Amplitude' : Raw data for event
-        'Amplitude' : Amplitude (in uV)
         'Chan' : Channel (only in multi-channel detection)
     """
     # Check if input data is a MNE Raw object
@@ -192,20 +196,21 @@ def get_sync_sw(data=None, sf=None, sw=None, event='NegPeak', time_before=0.4,
         data = data.get_data() * 1e6  # Convert from V to uV
 
     # Safety checks
-    assert isinstance(data, np.ndarray)
-    assert isinstance(sw, pd.DataFrame)
-    assert isinstance(sf, (int, float))
-    assert event in ['PosPeak', 'NegPeak', 'MidCrossing', 'Start', 'End']
+    assert isinstance(data, np.ndarray), 'data must be a numpy array'
+    assert isinstance(detection, pd.DataFrame), 'detection must be a dataframe'
+    assert isinstance(sf, (int, float)), 'sf must be a float or an int'
+    assert center in ['PosPeak', 'NegPeak', 'Peak', 'MidCrossing', 'Start',
+                      'End'], 'center timepoint not recognized'
 
-    if 'Channel' in sw.columns:
+    if 'Channel' in detection.columns:
         # Multi-channel (recursive call)
         assert data.ndim > 1, 'Data must be 2D for multi-channel detection.'
         df_sync = pd.DataFrame()
-        for c, sw_c in sw.groupby('Channel'):
-            idx_chan = sw_c.iloc[0, -1]
-            df_tmp = get_sync_sw(data[idx_chan, :], sf, sw_c.iloc[:, :-2],
-                                 event=event, time_before=time_before,
-                                 time_after=time_after)
+        for c, k in detection.groupby('Channel'):
+            idx_chan = k.iloc[0, -1]
+            df_tmp = get_sync_events(data[idx_chan, :], sf, k.iloc[:, :-2],
+                                     center=center, time_before=time_before,
+                                     time_after=time_after)
             df_tmp['Channel'] = c
             df_tmp['IdxChannel'] = idx_chan
             df_sync = df_sync.append(df_tmp, ignore_index=True)
@@ -219,7 +224,7 @@ def get_sync_sw(data=None, sf=None, sw=None, event='NegPeak', time_before=0.4,
         N_bef = int(sf * time_before)
         N_aft = int(sf * time_after)
         # Convert to integer sample indices in data
-        idx_peak = (sw[event] * sf).astype(int).values[..., np.newaxis]
+        idx_peak = (detection[center] * sf).astype(int).values[..., np.newaxis]
 
         def rng(x):
             """Utility function to create a range before and after
@@ -231,11 +236,11 @@ def get_sync_sw(data=None, sf=None, sw=None, event='NegPeak', time_before=0.4,
         # We drop the events for which the indices exceed data
         idx_mask = np.ma.mask_rows(np.ma.masked_outside(idx, 0, data.shape[0]))
         idx = np.ma.compress_rows(idx_mask)
-        dtsw = data[idx]
+        amps = data[idx]
         time = rng(0) / sf
 
         # Convert to dataframe
-        df_sync = pd.DataFrame(dtsw.T)
+        df_sync = pd.DataFrame(amps.T)
         df_sync['Time'] = time
         df_sync = df_sync.melt(id_vars='Time', var_name='Event',
                                value_name='Amplitude')
@@ -316,6 +321,13 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
             'rel_pow' : Relative power (= power ratio freq_sp / freq_broad).
             'corr' : Pearson correlation coefficient.
             'rms' : Mean(RMS) + 1.5 * STD(RMS).
+
+        You can disable one or more threshold by putting ``None`` instead:
+
+        .. code-block:: python
+
+            thresh = {'rel_pow': None, 'corr': 0.65, 'rms': 1.5}
+            thresh = {'rel_pow': None, 'corr': None, 'rms': 3}
     remove_outliers : boolean
         If True, YASA will automatically detect and remove outliers spindles
         using :py:class:`sklearn.ensemble.IsolationForest`.
@@ -331,6 +343,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         Ouput detection dataframe::
 
             'Start' : Start time of each detected spindles (in seconds)
+            'Peak': Timing of the most prominent spindles peak (in seconds)
             'End' : End time (in seconds)
             'Duration' : Duration (in seconds)
             'Amplitude' : Amplitude (in uV)
@@ -388,12 +401,20 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         logger.error('Wrong data amplitude. Unit must be uV. Returning None.')
         return None
 
+    # Check thresholds
     if 'rel_pow' not in thresh.keys():
         thresh['rel_pow'] = 0.20
     if 'corr' not in thresh.keys():
         thresh['corr'] = 0.65
     if 'rms' not in thresh.keys():
         thresh['rms'] = 1.5
+
+    # Define which thresholds to use
+    do_rel_pow = thresh['rel_pow'] not in [None, "none", "None"]
+    do_corr = thresh['corr'] not in [None, "none", "None"]
+    do_rms = thresh['rms'] not in [None, "none", "None"]
+    n_thresh = sum([do_rel_pow, do_corr, do_rms])
+    assert n_thresh >= 1, 'At least one threshold must be defined.'
 
     # Check if we can downsample to 100 or 128 Hz
     if downsample is True and sf > 128:
@@ -429,14 +450,16 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
 
     # Compute the pointwise relative power using interpolated STFT
     # Here we use a step of 200 ms to speed up the computation.
+    # Note that even if the threshold is None we still need to calculate it for
+    # the individual spindles parameter (RelPow).
     f, t, Sxx = stft_power(data, sf, window=2, step=.2, band=freq_broad,
                            interp=False, norm=True)
     idx_sigma = np.logical_and(f >= freq_sp[0], f <= freq_sp[1])
     rel_pow = Sxx[idx_sigma].sum(0)
 
     # Let's interpolate `rel_pow` to get one value per sample
-    # Note that we could also have use the `interp=True` in the `stft_power`
-    # function, however 2D interpolation is much slower than
+    # Note that we could also have use the `interp=True` in the
+    # `stft_power` function, however 2D interpolation is much slower than
     # 1D interpolation.
     func = interp1d(t, rel_pow, kind='cubic', bounds_error=False,
                     fill_value=0)
@@ -444,10 +467,22 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     rel_pow = func(t)
 
     # Now we apply moving RMS and correlation on the sigma-filtered signal
-    _, mcorr = moving_transform(data_sigma, data, sf, window=.3, step=.1,
-                                method='corr', interp=True)
-    _, mrms = moving_transform(data_sigma, data, sf, window=.3, step=.1,
-                               method='rms', interp=True)
+    if do_corr:
+        _, mcorr = moving_transform(data_sigma, data, sf, window=.3, step=.1,
+                                    method='corr', interp=True)
+    if do_rms:
+        _, mrms = moving_transform(data_sigma, data, sf, window=.3, step=.1,
+                                   method='rms', interp=True)
+        # Let's define the thresholds
+        if hypno is None:
+            thresh_rms = mrms.mean() + thresh['rms'] * \
+                trimbothstd(mrms, cut=0.10)
+        else:
+            thresh_rms = mrms[mask].mean() + thresh['rms'] * \
+                trimbothstd(mrms[mask], cut=0.10)
+        # Avoid too high threshold caused by Artefacts / Motion during Wake.
+        thresh_rms = min(thresh_rms, 10)
+        logger.info('Moving RMS threshold = %.3f', thresh_rms)
 
     # Hilbert power (to define the instantaneous frequency / power)
     n = data_sigma.size
@@ -455,35 +490,26 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     analytic = signal.hilbert(data_sigma, N=nfast)[:n]
     inst_phase = np.angle(analytic)
     inst_pow = np.square(np.abs(analytic))
-    # inst_freq = sf / 2pi * 1st-derivative of the phase of the analytic signal
     inst_freq = (sf / (2 * np.pi) * np.ediff1d(inst_phase))
 
-    # Let's define the thresholds
-    if hypno is None:
-        thresh_rms = mrms.mean() + thresh['rms'] * trimbothstd(mrms, cut=0.10)
-    else:
-        thresh_rms = mrms[mask].mean() + thresh['rms'] * \
-            trimbothstd(mrms[mask], cut=0.10)
-
-    # Avoid too high threshold caused by Artefacts / Motion during Wake.
-    thresh_rms = min(thresh_rms, 10)
-    idx_rel_pow = (rel_pow >= thresh['rel_pow']).astype(int)
-    idx_mcorr = (mcorr >= thresh['corr']).astype(int)
-    idx_mrms = (mrms >= thresh_rms).astype(int)
-    idx_sum = (idx_rel_pow + idx_mcorr + idx_mrms).astype(int)
+    # Boolean vector of supra-threshold indices
+    idx_sum = np.zeros(n)
+    if do_rel_pow:
+        idx_rel_pow = (rel_pow >= thresh['rel_pow']).astype(int)
+        idx_sum += idx_rel_pow
+        logger.info('N supra-theshold relative power = %i', idx_rel_pow.sum())
+    if do_corr:
+        idx_mcorr = (mcorr >= thresh['corr']).astype(int)
+        idx_sum += idx_mcorr
+        logger.info('N supra-theshold moving corr = %i', idx_mcorr.sum())
+    if do_rms:
+        idx_mrms = (mrms >= thresh_rms).astype(int)
+        idx_sum += idx_mrms
+        logger.info('N supra-theshold moving RMS = %i', idx_mrms.sum())
 
     # Make sure that we do not detect spindles in REM or Wake if hypno != None
     if hypno is not None:
         idx_sum[~mask] = 0
-
-    # For debugging
-    logger.info('Moving RMS threshold = %.3f', thresh_rms)
-    logger.info('Number of supra-theshold samples for relative power = %i',
-                idx_rel_pow.sum())
-    logger.info('Number of supra-theshold samples for moving correlation = %i',
-                idx_mcorr.sum())
-    logger.info('Number of supra-theshold samples for moving RMS = %i',
-                idx_mrms.sum())
 
     # The detection using the three thresholds tends to underestimate the
     # real duration of the spindle. To overcome this, we compute a soft
@@ -493,7 +519,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     # And we then find indices that are strictly greater than 2, i.e. we find
     # the 'true' beginning and 'true' end of the events by finding where at
     # least two out of the three treshold were crossed.
-    where_sp = np.where(idx_sum > 2)[0]
+    where_sp = np.where(idx_sum > (n_thresh - 1))[0]
 
     # If no events are found, return an empty dataframe
     if not len(where_sp):
@@ -528,6 +554,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     sp_abs = np.zeros(n_sp)
     sp_rel = np.zeros(n_sp)
     sp_sta = np.zeros(n_sp)
+    sp_pro = np.zeros(n_sp)
 
     # Number of oscillations (= number of peaks separated by at least 60 ms)
     # --> 60 ms because 1000 ms / 16 Hz = 62.5 ms, in other words, at 16 Hz,
@@ -561,8 +588,11 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         # sp_freq[i] = sf / np.mean(np.diff(peaks))
         # sp_amp[i] = peaks_params['prominences'].max()
 
-        # Symmetry index
-        sp_sym[i] = peaks[peaks_params['prominences'].argmax()] / sp_det.size
+        # Peak location & symmetry index
+        # pk is expressed in sample since the beginning of the spindle
+        pk = peaks[peaks_params['prominences'].argmax()]
+        sp_pro[i] = sp_start[i] + pk / sf
+        sp_sym[i] = pk / sp_det.size
 
         # Sleep stage
         if hypno is not None:
@@ -570,6 +600,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
 
     # Create a dictionnary
     sp_params = {'Start': sp_start,
+                 'Peak': sp_pro,
                  'End': sp_end,
                  'Duration': sp_dur,
                  'Amplitude': sp_amp,
@@ -639,6 +670,7 @@ def spindles_detect_multi(data, sf=None, ch_names=None, multi_only=False,
         Ouput detection dataframe::
 
             'Start' : Start time of each detected spindles (in seconds)
+            'Peak': Timing of the most prominent spindles peak (in seconds)
             'End' : End time (in seconds)
             'Duration' : Duration (in seconds)
             'Amplitude' : Amplitude (in uV)

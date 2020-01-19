@@ -8,7 +8,7 @@ import numpy as np
 from itertools import product
 from mne.filter import filter_data, resample
 from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
-from yasa.main import (get_sync_sw, _index_to_events, get_bool_vector,
+from yasa.main import (get_sync_events, _index_to_events, get_bool_vector,
                        _merge_close, spindles_detect, spindles_detect_multi,
                        sw_detect, sw_detect_multi, rem_detect)
 
@@ -81,26 +81,27 @@ class TestStringMethods(unittest.TestCase):
         assert out.size == data_mne.get_data().size
         assert np.unique(out).size == 2
 
-    def test_get_sync_sw(self):
-        """Test functions get_sync_sw"""
+    def test_get_sync_events(self):
+        """Test functions get_sync_events"""
         sw = sw_detect_multi(data_full, sf_full, chan_full)
         # Multi-channel with negative slow-wave peak
-        df_sync = get_sync_sw(data_full, sf, sw)
+        df_sync = get_sync_events(data_full, sf, sw)
         assert df_sync['Channel'].nunique() == 3
         # Single-channel with positive slow-wave peak
         sw_c = sw[sw['Channel'] == sw.at[0, 'Channel']].iloc[:, :-2]
-        df_sync = get_sync_sw(data_full[0, :], sf_full, sw_c,
-                              event='PosPeak', time_before=0, time_after=2)
+        df_sync = get_sync_events(data_full[0, :], sf_full, sw_c,
+                                  center='PosPeak', time_before=0,
+                                  time_after=2)
         assert df_sync.shape[1] == 3
         # MNE
         # Single channel
         sw = sw_detect_multi(data_mne_single, amp_neg=(20, 300),
                              amp_ptp=(60, 500))
-        df_sync = get_sync_sw(data_mne_single, sw=sw)
+        df_sync = get_sync_events(data_mne_single, detection=sw)
         assert df_sync['Channel'].nunique() == 1
         # Multi channel
         sw = sw_detect_multi(data_mne, amp_neg=(20, 300), amp_ptp=(60, 500))
-        df_sync = get_sync_sw(data_mne, sw=sw)
+        df_sync = get_sync_events(data_mne, detection=sw)
         assert df_sync['Channel'].nunique() == 6
 
     def test_merge_close(self):
@@ -133,6 +134,14 @@ class TestStringMethods(unittest.TestCase):
         spindles_detect(data, sf, thresh={'rel_pow': 0.25})
         spindles_detect(data, sf, thresh={'rms': 1.25})
         spindles_detect(data, sf, thresh={'rel_pow': 0.25, 'corr': .60})
+
+        # Test with disabled thresholds
+        spindles_detect(data, sf, thresh={'rel_pow': None})
+        spindles_detect(data, sf, thresh={'corr': None})
+        spindles_detect(data, sf, thresh={'rms': None})
+        spindles_detect(data, sf, thresh={'rms': None, 'corr': None})
+        spindles_detect(data, sf, thresh={'rms': None, 'rel_pow': None})
+        spindles_detect(data, sf, thresh={'corr': None, 'rel_pow': None})
 
         # Test with downsampling is False
         spindles_detect(data, sf, downsample=False)
@@ -205,8 +214,8 @@ class TestStringMethods(unittest.TestCase):
         spindles_detect_multi(data_full, sf_full, chan_full, hypno=hypno_full,
                               include=2)
 
-        # Using a MNE raw object
-        spindles_detect_multi(data_mne)
+        # Using a MNE raw object (and disabling one threshold)
+        spindles_detect_multi(data_mne, thresh={'corr': None, 'rms': 3})
         spindles_detect_multi(data_mne, hypno=hypno_mne, include=2)
 
         # Now we replace one channel with no spindle / bad data

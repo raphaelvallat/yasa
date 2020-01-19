@@ -3,12 +3,21 @@
 What's new
 ##########
 
+v0.1.9 (dev)
+------------
+
+a. It is now possible to disable one or two out of the three thresholds in the :py:func:`yasa.spindles_detect`. This allows the users to run a simpler detection (for example focusing exclusively on the moving root mean square signal) and save some computation time.
+b. The :py:func:`yasa.spindles_detect` now returns the timing (in seconds) of the most prominent peak of each spindles (``Peak``). This can be used to perform spindles-SO coupling, as explained in the Jupyter notebooks.
+c. The yasa.get_sync_sw has been renamed to :py:func:`yasa.get_sync_events` and several arguments have been renamed to accomodate the output from the spindles detection as well as the slow-waves detection (for which the function was originally intended).
+d. Added a notebook on spindles-SO coupling.
+
 v0.1.8 (October 2019)
 ---------------------
 
 a. Added :py:func:`yasa.plot_spectrogram` function.
 b. Added `lspopt <https://github.com/hbldh/lspopt>`_ in the depencencies
 c. YASA now requires `MNE <https://mne.tools/stable/index.html>`_>0.19.
+d. Added a notebook on non-linear features.
 
 v0.1.7 (August 2019)
 --------------------
