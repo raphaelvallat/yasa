@@ -5,7 +5,7 @@
 .. image:: https://badge.fury.io/py/yasa.svg
     :target: https://badge.fury.io/py/yasa
 
-.. image:: https://img.shields.io/badge/python-3.5%20%7C%203.6%20%7C%203.7-blue.svg
+.. image:: https://img.shields.io/badge/python-3.6%20%7C%203.7-blue.svg
     :target: https://www.python.org/downloads/
 
 .. image:: https://img.shields.io/github/license/raphaelvallat/yasa.svg
