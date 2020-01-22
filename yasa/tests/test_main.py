@@ -136,7 +136,7 @@ class TestStringMethods(unittest.TestCase):
         spindles_detect(data, sf, thresh={'rel_pow': 0.25, 'corr': .60})
 
         # Test with disabled thresholds
-        spindles_detect(data, sf, thresh={'rel_pow': None})
+        spindles_detect(data, sf, thresh={'rel_pow': None}, coupling=True)
         spindles_detect(data, sf, thresh={'corr': None})
         spindles_detect(data, sf, thresh={'rms': None})
         spindles_detect(data, sf, thresh={'rms': None, 'corr': None})
@@ -147,7 +147,7 @@ class TestStringMethods(unittest.TestCase):
         spindles_detect(data, sf, downsample=False)
 
         # Power of 2 resampling
-        spindles_detect(data_128, sf_128)
+        spindles_detect(data_128, sf_128, coupling=True, freq_so=(0.5, 2))
 
         # Test with hypnogram
         spindles_detect(data_full[0, :], sf_full, hypno=hypno_full)
@@ -212,7 +212,7 @@ class TestStringMethods(unittest.TestCase):
 
         # Test with hypnogram
         spindles_detect_multi(data_full, sf_full, chan_full, hypno=hypno_full,
-                              include=2)
+                              include=2, coupling=True)
 
         # Using a MNE raw object (and disabling one threshold)
         spindles_detect_multi(data_mne, thresh={'corr': None, 'rms': 3})

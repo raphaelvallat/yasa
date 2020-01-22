@@ -7,9 +7,9 @@ v0.1.9 (dev)
 ------------
 
 a. It is now possible to disable one or two out of the three thresholds in the :py:func:`yasa.spindles_detect`. This allows the users to run a simpler detection (for example focusing exclusively on the moving root mean square signal) and save some computation time.
-b. The :py:func:`yasa.spindles_detect` now returns the timing (in seconds) of the most prominent peak of each spindles (``Peak``). This can be used to perform spindles-SO coupling, as explained in the Jupyter notebooks.
-c. The yasa.get_sync_sw has been renamed to :py:func:`yasa.get_sync_events` and several arguments have been renamed to accomodate the output from the spindles detection as well as the slow-waves detection (for which the function was originally intended).
-d. Added a notebook on spindles-SO coupling.
+b. The :py:func:`yasa.spindles_detect` now returns the timing (in seconds) of the most prominent peak of each spindles (``Peak``).
+c. Added the ``coupling`` and ``freq_so`` keyword-arguments to the :py:func:`yasa.spindles_detect` function. If ``coupling=True``, the function will also returns the phase of the slow-waves (in radians) at the most prominent peak of the spindles. This can be used to perform spindles-SO coupling, as explained in the new Jupyter notebooks on spindles-SO coupling.
+d. The yasa.get_sync_sw has been renamed to :py:func:`yasa.get_sync_events` and several arguments have been renamed to accommodate the output from the spindles detection as well as the slow-waves detection (for which the function was originally intended).
 e. Removed Travis and AppVeyor testing for Python 3.5.
 
 v0.1.8 (October 2019)

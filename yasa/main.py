@@ -170,8 +170,7 @@ def get_sync_events(data=None, sf=None, detection=None, center='NegPeak',
         YASA's detection dataframe returned by the
         :py:func:`yasa.sw_detect`, :py:func:`yasa.sp_detect`,
         :py:func:`yasa.sw_detect_multi`, or
-        :py:func:`yasa.sp_detect_multi`,
-         functions.
+        :py:func:`yasa.sp_detect_multi`, functions.
     center : str
         Landmark of the slow-waves / spindles to synchronize the timing on.
         Default is to use the negative peak.
@@ -255,7 +254,8 @@ def get_sync_events(data=None, sf=None, detection=None, center='NegPeak',
 def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
                     duration=(0.5, 2), freq_broad=(1, 30), min_distance=500,
                     downsample=True, thresh={'rel_pow': 0.2, 'corr': 0.65,
-                    'rms': 1.5}, remove_outliers=False):
+                    'rms': 1.5}, remove_outliers=False, coupling=False,
+                    freq_so=(0.1, 1.25)):
     """Spindles detection.
 
     Parameters
@@ -332,10 +332,36 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         If True, YASA will automatically detect and remove outliers spindles
         using :py:class:`sklearn.ensemble.IsolationForest`.
         The outliers detection is performed on all the spindles
-        parameters with the exception of the ``Start`` and ``End`` columns.
+        parameters with the exception of the ``Start``, ``Peak``, ``End``,
+        and ``SOPhase`` columns.
         YASA uses a random seed (42) to ensure reproducible results.
         Note that this step will only be applied if there are more than 50
         detected spindles in the first place. Default to False.
+    coupling : boolean
+        If True, YASA will also calculate the coupling between each detected
+        spindles and the slow-oscillation signal. The coupling is given by the
+        phase (in radians) of the filtered slow-oscillation signal
+        at the most prominent peak of the spindles.
+
+        Importantly, since the resulting variable is expressed in radians,
+        one should use a circular mean to calculate the average across all
+        events:
+
+        .. code-block:: python
+
+            from scipy.stats import circmean
+            avg_SOPhase = circmean(sp['SOPhase'])
+
+        For more details, please refer to the `Jupyter notebook
+        <https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_spindles-SO_coupling.ipynb>`_
+
+        .. versionadded:: 0.1.9
+
+    freq_so : tuple or list
+        Slow-oscillations frequency of interest. This is only relevant if
+        ``coupling=True``. Default is 0.1 to 1.25 Hz.
+
+        .. versionadded:: 0.1.9
 
     Returns
     -------
@@ -353,6 +379,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
             'Frequency' : Median frequency (in Hz)
             'Oscillations' : Number of oscillations (peaks)
             'Symmetry' : Symmetry index, ranging from 0 to 1
+            'SOPhase': SO phase (radians) at the most prominent spindle peak
             'Stage' : Sleep stage (only if hypno was provided)
 
     Notes
@@ -437,6 +464,18 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     else:
         mask = np.ones(data.size, dtype=bool)
 
+    # Get data size and next fast length for Hilbert transform
+    n = data.size
+    nfast = next_fast_len(n)
+
+    # Extract the SO signal for coupling
+    if coupling:
+        data_so = filter_data(data, sf, freq_so[0], freq_so[1], method='fir',
+                              l_trans_bandwidth=0.1, h_trans_bandwidth=0.1,
+                              verbose=0)
+        # Now extract the instantaneous phase using Hilbert transform
+        so_phase = np.angle(signal.hilbert(data_so, N=nfast)[:n])
+
     # Bandpass filter
     data = filter_data(data, sf, freq_broad[0], freq_broad[1], method='fir',
                        verbose=0)
@@ -485,8 +524,6 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         logger.info('Moving RMS threshold = %.3f', thresh_rms)
 
     # Hilbert power (to define the instantaneous frequency / power)
-    n = data_sigma.size
-    nfast = next_fast_len(n)
     analytic = signal.hilbert(data_sigma, N=nfast)[:n]
     inst_phase = np.angle(analytic)
     inst_pow = np.square(np.abs(analytic))
@@ -555,6 +592,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     sp_rel = np.zeros(n_sp)
     sp_sta = np.zeros(n_sp)
     sp_pro = np.zeros(n_sp)
+    sp_cou = np.zeros(n_sp)
 
     # Number of oscillations (= number of peaks separated by at least 60 ms)
     # --> 60 ms because 1000 ms / 16 Hz = 62.5 ms, in other words, at 16 Hz,
@@ -594,6 +632,10 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         sp_pro[i] = sp_start[i] + pk / sf
         sp_sym[i] = pk / sp_det.size
 
+        # SO-spindles coupling
+        if coupling:
+            sp_cou[i] = so_phase[sp[i]][pk]
+
         # Sleep stage
         if hypno is not None:
             sp_sta[i] = hypno[sp[i]][0]
@@ -610,6 +652,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
                  'Frequency': sp_freq,
                  'Oscillations': sp_osc,
                  'Symmetry': sp_sym,
+                 'SOPhase': sp_cou,
                  'Stage': sp_sta}
 
     df_sp = pd.DataFrame.from_dict(sp_params)[good_dur].reset_index(drop=True)
@@ -619,11 +662,15 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     else:
         df_sp['Stage'] = df_sp['Stage'].astype(int).astype('category')
 
+    if not coupling:
+        df_sp = df_sp.drop(columns=['SOPhase'])
+
     # We need at least 50 detected spindles to apply the Isolation Forest.
     if remove_outliers and df_sp.shape[0] >= 50:
         from sklearn.ensemble import IsolationForest
         df_sp_dummies = pd.get_dummies(df_sp)
-        col_keep = df_sp_dummies.columns.difference(['Start', 'End'])
+        col_keep = df_sp_dummies.columns.difference(['Start', 'Peak', 'End',
+                                                     'SOPhase'])
         ilf = IsolationForest(behaviour='new', contamination='auto',
                               max_samples='auto', verbose=0, random_state=42)
 

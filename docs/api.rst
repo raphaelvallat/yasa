@@ -19,7 +19,7 @@ Detection
     sw_detect
     sw_detect_multi
     get_bool_vector
-    get_sync_sw
+    get_sync_events
 
 Hypnogram
 ---------

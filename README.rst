@@ -117,7 +117,8 @@ The examples Jupyter notebooks are really what make YASA great! In addition to s
 10. `notebooks/10_bandpower.ipynb <notebooks/10_bandpower.ipynb>`_: spectral bandpower per channel and per sleep stage.
 11. `notebooks/11_IRASA.ipynb <notebooks/11_IRASA.ipynb>`_: separate the aperiodic (= fractal = 1/f) components of the EEG power spectra using the IRASA technique.
 12. `notebooks/12_spectrogram.ipynb <notebooks/12_spectrogram.ipynb>`_: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.
-
+13. `notebooks/13_nonlinear_features.ipynb <notebooks/13_nonlinear_features.ipynb>`_: extract epoch-based non-linear features of sleep EEG.
+14. `notebooks/14_spindles-SO_coupling.ipynb <notebooks/14_spindles-SO_coupling.ipynb>`_: perform event-locked spindles-SO coupling, as well as data-driven Phase-Amplitude Coupling.
 
 Typical uses
 ------------
