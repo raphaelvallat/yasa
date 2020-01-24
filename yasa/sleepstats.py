@@ -37,7 +37,7 @@ def transition_matrix(hypno):
         the next state is Y.
         ``probs`` is a right stochastic matrix, i.e. each row sums to 1.
         See more details at:
-        https://en.wikipedia.org/wiki/Doubly_stochastic_matrix
+        https://en.wikipedia.org/wiki/Stochastic_matrix
 
     Examples
     --------
