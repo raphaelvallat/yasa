@@ -34,7 +34,9 @@ def transition_matrix(hypno):
     probs : array
         Conditional probability transition matrix, i.e.
         given that current state is X, what is the probability that
-        the next state is Y. See  more details at:
+        the next state is Y.
+        ``probs`` is a right stochastic matrix, i.e. each row sums to 1.
+        See more details at:
         https://en.wikipedia.org/wiki/Doubly_stochastic_matrix
 
     Examples
