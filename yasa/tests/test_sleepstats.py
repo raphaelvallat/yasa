@@ -21,7 +21,16 @@ class TestStringMethods(unittest.TestCase):
         assert pd.DataFrame(c).equals(counts)
         assert pd.DataFrame(p).equals(probs)
         assert (probs.sum(1) == 1).all()
-        counts, probs = transition_matrix(hypno)
+        # Second example, with only Wake, N2 and REM
+        x = np.asarray([0, 2, 2, 0, 0, 2, 0, 4, 4, 0, 0])
+        counts, probs = transition_matrix(x)
+        c = np.array([[2, 2, 1], [2, 1, 0], [1, 0, 1]])
+        p = np.array([[0.4, 0.4, 0.2], [2 / 3, 1 / 3, 0], [0.5, 0, 0.5]])
+        assert pd.DataFrame(c, index=[0, 2, 4],
+                            columns=[0, 2, 4]).equals(counts)
+        assert pd.DataFrame(p, index=[0, 2, 4],
+                            columns=[0, 2, 4]).equals(probs)
+        assert (probs.sum(1) == 1).all()
 
     def test_sleepstatistics(self):
         """Test sleep statistics.

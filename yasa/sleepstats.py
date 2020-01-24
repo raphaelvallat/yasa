@@ -57,11 +57,11 @@ def transition_matrix(hypno):
     2      0.666667  0.0  0.333333
     """
     x = np.asarray(hypno, dtype=int)
-    unique = np.unique(x)
+    unique, inverse = np.unique(x, return_inverse=True)
     n = unique.size
     # Integer transition counts
     counts = np.zeros((n, n), dtype=int)
-    np.add.at(counts, (x[:-1], x[1:]), 1)
+    np.add.at(counts, (inverse[:-1], inverse[1:]), 1)
     # Conditional probabilities
     probs = counts / counts.sum(axis=-1, keepdims=True)
     # Optional, convert to Pandas
