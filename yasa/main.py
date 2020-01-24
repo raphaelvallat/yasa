@@ -292,7 +292,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
             - 1 = N1 sleep
             - 2 = N2 sleep
             - 3 = N3 sleep
-            - 4 = REM
+            - 4 = REM sleep
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
         (1, 2, 3), meaning that the detection is applied on N1, N2 and N3
@@ -828,7 +828,7 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
             - 1 = N1 sleep
             - 2 = N2 sleep
             - 3 = N3 sleep
-            - 4 = REM
+            - 4 = REM sleep
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
         (2, 3), meaning that the detection is applied on N2 and N3

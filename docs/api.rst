@@ -33,6 +33,8 @@ Hypnogram
     hypno_upsample_to_sf
     hypno_str_to_int
     hypno_int_to_str
+    transition_matrix
+    sleep_statistics
 
 Signal processing
 -----------------
