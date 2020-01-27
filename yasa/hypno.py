@@ -163,11 +163,11 @@ def hypno_fit_to_data(hypno, data, sf=None):
         npts_diff = npts_data - npts_hyp
         if sf is not None:
             dur_diff = npts_diff / sf
-            warnings.warn('Hypnogram is SHORTER then data by %.2f seconds. '
+            warnings.warn('Hypnogram is SHORTER than data by %.2f seconds. '
                           'Padding hypnogram (with last value) to match '
                           'data.size.' % dur_diff)
         else:
-            warnings.warn('Hypnogram is SHORTER then data by %i samples. '
+            warnings.warn('Hypnogram is SHORTER than data by %i samples. '
                           'Padding hypnogram (with last value) to match '
                           'data.size.' % npts_diff)
         hypno = np.pad(hypno, (0, npts_diff), mode='edge')
@@ -176,10 +176,10 @@ def hypno_fit_to_data(hypno, data, sf=None):
         npts_diff = npts_hyp - npts_data
         if sf is not None:
             dur_diff = npts_diff / sf
-            warnings.warn('Hypnogram is LONGER then data by %.2f seconds. '
+            warnings.warn('Hypnogram is LONGER than data by %.2f seconds. '
                           'Cropping hypnogram to match data.size.' % dur_diff)
         else:
-            warnings.warn('Hypnogram is LONGER then data by %i samples. '
+            warnings.warn('Hypnogram is LONGER than data by %i samples. '
                           'Cropping hypnogram to match data.size.' % npts_diff)
         hypno = hypno[0:npts_data]
     return hypno
