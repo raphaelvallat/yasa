@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.sliding_window &#8212; yasa 0.1.9 documentation</title>
+    <title>yasa.transition_matrix &#8212; yasa 0.1.9 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -85,46 +85,63 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="yasa-sliding-window">
-<h1>yasa.sliding_window</h1>
+  <div class="section" id="yasa-transition-matrix">
+<h1>yasa.transition_matrix</h1>
 <dl class="function">
-<dt id="yasa.sliding_window">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sliding_window</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf</em>, <em class="sig-param">window</em>, <em class="sig-param">step=None</em>, <em class="sig-param">axis=-1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/others.html#sliding_window"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Calculate a sliding window of a 1D or 2D EEG signal.</p>
+<dt id="yasa.transition_matrix">
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">transition_matrix</code><span class="sig-paren">(</span><em class="sig-param">hypno</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/sleepstats.html#transition_matrix"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Create a state-transition matrix from an hypnogram.</p>
 <div class="versionadded">
-<p><span class="versionmodified added">New in version 0.1.7.</span></p>
+<p><span class="versionmodified added">New in version 0.1.9.</span></p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>data</strong><span class="classifier">numpy array</span></dt><dd><p>The 1D or 2D EEG data.</p>
-</dd>
-<dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency of <code class="docutils literal notranslate"><span class="pre">data</span></code>.</p>
-</dd>
-<dt><strong>window</strong><span class="classifier">int</span></dt><dd><p>The sliding window length, in seconds.</p>
-</dd>
-<dt><strong>step</strong><span class="classifier">int</span></dt><dd><p>The sliding window step length, in seconds.
-If None (default), <code class="docutils literal notranslate"><span class="pre">step</span></code> is set to <code class="docutils literal notranslate"><span class="pre">window</span></code>,
-which results in no overlap between the sliding windows.</p>
-</dd>
-<dt><strong>axis</strong><span class="classifier">int</span></dt><dd><p>The axis to slide over. Defaults to the last axis.</p>
+<dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Hypnogram. The dtype of <code class="docutils literal notranslate"><span class="pre">hypno</span></code> must be integer
+(e.g. [0, 2, 2, 1, 1, 1, …]). The sampling frequency must be the
+original one, i.e. 1 value per 30 seconds if the staging was done in
+30 seconds epochs. Using an upsampled hypnogram will result in an
+incorrect transition matrix.
+For best results, we recommend using an hypnogram cropped to
+either the time in bed (TIB) or the sleep period time (SPT).</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>times</strong><span class="classifier">numpy array</span></dt><dd><p>Time vector, in seconds, corresponding to the START of each sliding
-epoch in <code class="docutils literal notranslate"><span class="pre">strided</span></code>.</p>
+<dt><strong>counts</strong><span class="classifier">array</span></dt><dd><p>Counts transition matrix (number of transitions from stage X to
+stage Y).</p>
 </dd>
-<dt><strong>strided</strong><span class="classifier">numpy array</span></dt><dd><p>A matrix where row in last dimension consists of one instance
-of the sliding window.</p>
+<dt><strong>probs</strong><span class="classifier">array</span></dt><dd><p>Conditional probability transition matrix, i.e.
+given that current state is X, what is the probability that
+the next state is Y.
+<code class="docutils literal notranslate"><span class="pre">probs</span></code> is a right stochastic matrix, i.e. each row sums to 1.
+See more details at:
+<a class="reference external" href="https://en.wikipedia.org/wiki/Stochastic_matrix">https://en.wikipedia.org/wiki/Stochastic_matrix</a></p>
 </dd>
 </dl>
 </dd>
 </dl>
-<p class="rubric">Notes</p>
-<p>This is a wrapper around the
-<a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.stride_tricks.as_strided.html#numpy.lib.stride_tricks.as_strided" title="(in NumPy v1.17)"><code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.lib.stride_tricks.as_strided()</span></code></a> function.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">yasa</span> <span class="k">import</span> <span class="n">transition_matrix</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">counts</span><span class="p">,</span> <span class="n">probs</span> <span class="o">=</span> <span class="n">transition_matrix</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">counts</span>
+<span class="go">       0  1  2</span>
+<span class="go">Stage</span>
+<span class="go">0      2  1  2</span>
+<span class="go">1      2  3  0</span>
+<span class="go">2      2  0  1</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">probs</span>
+<span class="go">              0    1         2</span>
+<span class="go">Stage</span>
+<span class="go">0      0.400000  0.2  0.400000</span>
+<span class="go">1      0.400000  0.6  0.000000</span>
+<span class="go">2      0.666667  0.0  0.333333</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </div>

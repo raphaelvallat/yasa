@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>What’s new &#8212; yasa 0.1.8 documentation</title>
+    <title>What’s new &#8212; yasa 0.1.9 documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="index.html"><span><img src="_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.8</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -87,12 +87,32 @@
       
   <div class="section" id="what-s-new">
 <span id="changelog"></span><h1>What’s new</h1>
+<div class="section" id="v0-1-9-february-2020">
+<h2>v0.1.9 (February 2020)</h2>
+<p><strong>New functions</strong></p>
+<ol class="loweralpha simple">
+<li><p>Added <a class="reference internal" href="generated/yasa.transition_matrix.html#yasa.transition_matrix" title="yasa.transition_matrix"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.transition_matrix()</span></code></a> to calculate the state-transition matrix of an hypnogram.</p></li>
+<li><p>Added <a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sleep_statistics()</span></code></a> to extract the sleep statistics from an hypnogram.</p></li>
+<li><p>Added the <code class="docutils literal notranslate"><span class="pre">coupling</span></code> and <code class="docutils literal notranslate"><span class="pre">freq_so</span></code> keyword-arguments to the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> function. If <code class="docutils literal notranslate"><span class="pre">coupling=True</span></code>, the function will also returns the phase of the slow-waves (in radians) at the most prominent peak of the spindles. This can be used to perform spindles-SO coupling, as explained in the new Jupyter notebooks on PAC and spindles-SO coupling.</p></li>
+</ol>
+<p><strong>Enhancements</strong></p>
+<ol class="loweralpha simple">
+<li><p>It is now possible to disable one or two out of the three thresholds in the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>. This allows the users to run a simpler detection (for example focusing exclusively on the moving root mean square signal).</p></li>
+<li><p>The <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> now returns the timing (in seconds) of the most prominent peak of each spindles (<code class="docutils literal notranslate"><span class="pre">Peak</span></code>).</p></li>
+<li><p>The yasa.get_sync_sw has been renamed to <a class="reference internal" href="generated/yasa.get_sync_events.html#yasa.get_sync_events" title="yasa.get_sync_events"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.get_sync_events()</span></code></a> and is now compatible with spindles detection. This can be used for instance to plot the peak-locked grand averaged spindle.</p></li>
+</ol>
+<p><strong>Code testing</strong></p>
+<ol class="loweralpha simple">
+<li><p>Removed Travis and AppVeyor testing for Python 3.5.</p></li>
+</ol>
+</div>
 <div class="section" id="v0-1-8-october-2019">
 <h2>v0.1.8 (October 2019)</h2>
 <ol class="loweralpha simple">
 <li><p>Added <a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.plot_spectrogram()</span></code></a> function.</p></li>
-<li><p>Added <a class="reference external" href="https://github.com/hbldh/lspopt">lspopt</a> in the depencencies</p></li>
+<li><p>Added <a class="reference external" href="https://github.com/hbldh/lspopt">lspopt</a> in the dependencies.</p></li>
 <li><p>YASA now requires <a class="reference external" href="https://mne.tools/stable/index.html">MNE</a>&gt;0.19.</p></li>
+<li><p>Added a notebook on non-linear features.</p></li>
 </ol>
 </div>
 <div class="section" id="v0-1-7-august-2019">
@@ -173,8 +193,8 @@
       
     </p>
     <p>
-        &copy; Copyright 2018-2019, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.<br/>
+        &copy; Copyright 2018-2020, Raphael Vallat.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
     </p>
   </div>
 </footer>

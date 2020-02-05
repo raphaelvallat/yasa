@@ -15,6 +15,8 @@ __all__ = ['transition_matrix', 'sleep_statistics']
 def transition_matrix(hypno):
     """Create a state-transition matrix from an hypnogram.
 
+    .. versionadded:: 0.1.9
+
     Parameters
     ----------
     hypno : array_like
@@ -80,6 +82,8 @@ def transition_matrix(hypno):
 
 def sleep_statistics(hypno, sf_hyp):
     """Compute sleep stats from an hypnogram vector.
+
+    .. versionadded:: 0.1.9
 
     Parameters
     ----------

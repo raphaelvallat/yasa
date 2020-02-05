@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.main &#8212; yasa 0.1.8 documentation</title>
+    <title>yasa.main &#8212; yasa 0.1.9 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.8</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -114,7 +114,8 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;yasa&#39;</span><span class="p">)</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;spindles_detect&#39;</span><span class="p">,</span> <span class="s1">&#39;spindles_detect_multi&#39;</span><span class="p">,</span> <span class="s1">&#39;sw_detect&#39;</span><span class="p">,</span>
-           <span class="s1">&#39;sw_detect_multi&#39;</span><span class="p">,</span> <span class="s1">&#39;rem_detect&#39;</span><span class="p">,</span> <span class="s1">&#39;get_bool_vector&#39;</span><span class="p">,</span> <span class="s1">&#39;get_sync_sw&#39;</span><span class="p">]</span>
+           <span class="s1">&#39;sw_detect_multi&#39;</span><span class="p">,</span> <span class="s1">&#39;rem_detect&#39;</span><span class="p">,</span> <span class="s1">&#39;get_bool_vector&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;get_sync_events&#39;</span><span class="p">]</span>
 
 <span class="c1">#############################################################################</span>
 <span class="c1"># HELPER FUNCTIONS</span>
@@ -236,13 +237,17 @@
     <span class="k">return</span> <span class="n">bool_vector</span></div>
 
 
-<div class="viewcode-block" id="get_sync_sw"><a class="viewcode-back" href="../../generated/yasa.get_sync_sw.html#yasa.get_sync_sw">[docs]</a><span class="k">def</span> <span class="nf">get_sync_sw</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sw</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="s1">&#39;NegPeak&#39;</span><span class="p">,</span> <span class="n">time_before</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
-                <span class="n">time_after</span><span class="o">=</span><span class="mf">0.8</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Synchronize the timing of detected slow-waves at a specific</span>
-<span class="sd">    landmark timepoint.</span>
+<div class="viewcode-block" id="get_sync_events"><a class="viewcode-back" href="../../generated/yasa.get_sync_events.html#yasa.get_sync_events">[docs]</a><span class="k">def</span> <span class="nf">get_sync_events</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">detection</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="s1">&#39;NegPeak&#39;</span><span class="p">,</span>
+                    <span class="n">time_before</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">time_after</span><span class="o">=</span><span class="mf">0.8</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the raw data of each detected slow-waves / spindles, after</span>
+<span class="sd">    centering to a specific timepoint.</span>
 
 <span class="sd">    This function can be used to plot an average template of the</span>
-<span class="sd">    detected slow-waves.</span>
+<span class="sd">    detected slow-waves / spindles.</span>
+
+<span class="sd">    For more details, please refer to the `Jupyter notebook</span>
+<span class="sd">    &lt;https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_sw_average.ipynb&gt;`_</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -252,26 +257,28 @@
 <span class="sd">    sf : float</span>
 <span class="sd">        The sampling frequency of ``data``.</span>
 <span class="sd">        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.</span>
-<span class="sd">    sw : :py:class:`pandas.DataFrame`</span>
+<span class="sd">    detection : :py:class:`pandas.DataFrame`</span>
 <span class="sd">        YASA&#39;s detection dataframe returned by the</span>
-<span class="sd">        :py:func:`yasa.sw_detect` or :py:func:`yasa.sw_detect_multi` functions.</span>
-<span class="sd">    event : str</span>
-<span class="sd">        Landmark of the slow-waves to synchronize the timing on.</span>
+<span class="sd">        :py:func:`yasa.sw_detect`,</span>
+<span class="sd">        :py:func:`yasa.spindles_detect`,</span>
+<span class="sd">        :py:func:`yasa.sw_detect_multi`, and</span>
+<span class="sd">        :py:func:`yasa.spindles_detect_multi` functions.</span>
+<span class="sd">    center : str</span>
+<span class="sd">        Landmark of the slow-waves / spindles to synchronize the timing on.</span>
 <span class="sd">        Default is to use the negative peak.</span>
 <span class="sd">    time_before : float</span>
-<span class="sd">        Time (in seconds) before ``event``.</span>
+<span class="sd">        Time (in seconds) before ``center``.</span>
 <span class="sd">    time_after : float</span>
-<span class="sd">        Time (in seconds) after ``event``.</span>
+<span class="sd">        Time (in seconds) after ``center``.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    df_sw : :py:class:`pandas.DataFrame`</span>
 <span class="sd">        Ouput detection dataframe::</span>
 
-<span class="sd">        &#39;Time&#39; : Timing of the events (in seconds)</span>
 <span class="sd">        &#39;Event&#39; : Event number</span>
+<span class="sd">        &#39;Time&#39; : Timing of the events (in seconds)</span>
 <span class="sd">        &#39;Amplitude&#39; : Raw data for event</span>
-<span class="sd">        &#39;Amplitude&#39; : Amplitude (in uV)</span>
 <span class="sd">        &#39;Chan&#39; : Channel (only in multi-channel detection)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Check if input data is a MNE Raw object</span>
@@ -280,20 +287,21 @@
         <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span> <span class="o">*</span> <span class="mf">1e6</span>  <span class="c1"># Convert from V to uV</span>
 
     <span class="c1"># Safety checks</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sw</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span>
-    <span class="k">assert</span> <span class="n">event</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;PosPeak&#39;</span><span class="p">,</span> <span class="s1">&#39;NegPeak&#39;</span><span class="p">,</span> <span class="s1">&#39;MidCrossing&#39;</span><span class="p">,</span> <span class="s1">&#39;Start&#39;</span><span class="p">,</span> <span class="s1">&#39;End&#39;</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span> <span class="s1">&#39;data must be a numpy array&#39;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">detection</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">),</span> <span class="s1">&#39;detection must be a dataframe&#39;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s1">&#39;sf must be a float or an int&#39;</span>
+    <span class="k">assert</span> <span class="n">center</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;PosPeak&#39;</span><span class="p">,</span> <span class="s1">&#39;NegPeak&#39;</span><span class="p">,</span> <span class="s1">&#39;Peak&#39;</span><span class="p">,</span> <span class="s1">&#39;MidCrossing&#39;</span><span class="p">,</span> <span class="s1">&#39;Start&#39;</span><span class="p">,</span>
+                      <span class="s1">&#39;End&#39;</span><span class="p">],</span> <span class="s1">&#39;center timepoint not recognized&#39;</span>
 
-    <span class="k">if</span> <span class="s1">&#39;Channel&#39;</span> <span class="ow">in</span> <span class="n">sw</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s1">&#39;Channel&#39;</span> <span class="ow">in</span> <span class="n">detection</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
         <span class="c1"># Multi-channel (recursive call)</span>
         <span class="k">assert</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Data must be 2D for multi-channel detection.&#39;</span>
         <span class="n">df_sync</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">sw_c</span> <span class="ow">in</span> <span class="n">sw</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;Channel&#39;</span><span class="p">):</span>
-            <span class="n">idx_chan</span> <span class="o">=</span> <span class="n">sw_c</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="n">df_tmp</span> <span class="o">=</span> <span class="n">get_sync_sw</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">idx_chan</span><span class="p">,</span> <span class="p">:],</span> <span class="n">sf</span><span class="p">,</span> <span class="n">sw_c</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span>
-                                 <span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">,</span> <span class="n">time_before</span><span class="o">=</span><span class="n">time_before</span><span class="p">,</span>
-                                 <span class="n">time_after</span><span class="o">=</span><span class="n">time_after</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">detection</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;Channel&#39;</span><span class="p">):</span>
+            <span class="n">idx_chan</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">df_tmp</span> <span class="o">=</span> <span class="n">get_sync_events</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">idx_chan</span><span class="p">,</span> <span class="p">:],</span> <span class="n">sf</span><span class="p">,</span> <span class="n">k</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span>
+                                     <span class="n">center</span><span class="o">=</span><span class="n">center</span><span class="p">,</span> <span class="n">time_before</span><span class="o">=</span><span class="n">time_before</span><span class="p">,</span>
+                                     <span class="n">time_after</span><span class="o">=</span><span class="n">time_after</span><span class="p">)</span>
             <span class="n">df_tmp</span><span class="p">[</span><span class="s1">&#39;Channel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span>
             <span class="n">df_tmp</span><span class="p">[</span><span class="s1">&#39;IdxChannel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx_chan</span>
             <span class="n">df_sync</span> <span class="o">=</span> <span class="n">df_sync</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df_tmp</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -307,7 +315,7 @@
         <span class="n">N_bef</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sf</span> <span class="o">*</span> <span class="n">time_before</span><span class="p">)</span>
         <span class="n">N_aft</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sf</span> <span class="o">*</span> <span class="n">time_after</span><span class="p">)</span>
         <span class="c1"># Convert to integer sample indices in data</span>
-        <span class="n">idx_peak</span> <span class="o">=</span> <span class="p">(</span><span class="n">sw</span><span class="p">[</span><span class="n">event</span><span class="p">]</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+        <span class="n">idx_peak</span> <span class="o">=</span> <span class="p">(</span><span class="n">detection</span><span class="p">[</span><span class="n">center</span><span class="p">]</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
 
         <span class="k">def</span> <span class="nf">rng</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Utility function to create a range before and after</span>
@@ -319,11 +327,11 @@
         <span class="c1"># We drop the events for which the indices exceed data</span>
         <span class="n">idx_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mask_rows</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_outside</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">compress_rows</span><span class="p">(</span><span class="n">idx_mask</span><span class="p">)</span>
-        <span class="n">dtsw</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">amps</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
         <span class="n">time</span> <span class="o">=</span> <span class="n">rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="n">sf</span>
 
         <span class="c1"># Convert to dataframe</span>
-        <span class="n">df_sync</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">dtsw</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="n">df_sync</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">amps</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
         <span class="n">df_sync</span><span class="p">[</span><span class="s1">&#39;Time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span>
         <span class="n">df_sync</span> <span class="o">=</span> <span class="n">df_sync</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">id_vars</span><span class="o">=</span><span class="s1">&#39;Time&#39;</span><span class="p">,</span> <span class="n">var_name</span><span class="o">=</span><span class="s1">&#39;Event&#39;</span><span class="p">,</span>
                                <span class="n">value_name</span><span class="o">=</span><span class="s1">&#39;Amplitude&#39;</span><span class="p">)</span>
@@ -338,7 +346,8 @@
 <div class="viewcode-block" id="spindles_detect"><a class="viewcode-back" href="../../generated/yasa.spindles_detect.html#yasa.spindles_detect">[docs]</a><span class="k">def</span> <span class="nf">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">freq_sp</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span>
                     <span class="n">duration</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">freq_broad</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="n">min_distance</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
                     <span class="n">downsample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="mf">0.65</span><span class="p">,</span>
-                    <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">},</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                    <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">},</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">coupling</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">freq_so</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.25</span><span class="p">)):</span>
     <span class="sd">&quot;&quot;&quot;Spindles detection.</span>
 
 <span class="sd">    Parameters</span>
@@ -375,7 +384,7 @@
 <span class="sd">            - 1 = N1 sleep</span>
 <span class="sd">            - 2 = N2 sleep</span>
 <span class="sd">            - 3 = N3 sleep</span>
-<span class="sd">            - 4 = REM</span>
+<span class="sd">            - 4 = REM sleep</span>
 <span class="sd">    include : tuple, list or int</span>
 <span class="sd">        Values in ``hypno`` that will be included in the mask. The default is</span>
 <span class="sd">        (1, 2, 3), meaning that the detection is applied on N1, N2 and N3</span>
@@ -404,14 +413,47 @@
 <span class="sd">            &#39;rel_pow&#39; : Relative power (= power ratio freq_sp / freq_broad).</span>
 <span class="sd">            &#39;corr&#39; : Pearson correlation coefficient.</span>
 <span class="sd">            &#39;rms&#39; : Mean(RMS) + 1.5 * STD(RMS).</span>
+
+<span class="sd">        You can disable one or more threshold by putting ``None`` instead:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            thresh = {&#39;rel_pow&#39;: None, &#39;corr&#39;: 0.65, &#39;rms&#39;: 1.5}</span>
+<span class="sd">            thresh = {&#39;rel_pow&#39;: None, &#39;corr&#39;: None, &#39;rms&#39;: 3}</span>
 <span class="sd">    remove_outliers : boolean</span>
 <span class="sd">        If True, YASA will automatically detect and remove outliers spindles</span>
 <span class="sd">        using :py:class:`sklearn.ensemble.IsolationForest`.</span>
 <span class="sd">        The outliers detection is performed on all the spindles</span>
-<span class="sd">        parameters with the exception of the ``Start`` and ``End`` columns.</span>
+<span class="sd">        parameters with the exception of the ``Start``, ``Peak``, ``End``,</span>
+<span class="sd">        and ``SOPhase`` columns.</span>
 <span class="sd">        YASA uses a random seed (42) to ensure reproducible results.</span>
 <span class="sd">        Note that this step will only be applied if there are more than 50</span>
 <span class="sd">        detected spindles in the first place. Default to False.</span>
+<span class="sd">    coupling : boolean</span>
+<span class="sd">        If True, YASA will also calculate the coupling between each detected</span>
+<span class="sd">        spindles and the slow-oscillation signal. The coupling is given by the</span>
+<span class="sd">        phase (in radians) of the filtered slow-oscillation signal</span>
+<span class="sd">        at the most prominent peak of the spindles.</span>
+
+<span class="sd">        Importantly, since the resulting variable is expressed in radians,</span>
+<span class="sd">        one should use a circular mean to calculate the average across all</span>
+<span class="sd">        events:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            from scipy.stats import circmean</span>
+<span class="sd">            avg_SOPhase = circmean(sp[&#39;SOPhase&#39;])</span>
+
+<span class="sd">        For more details, please refer to the `Jupyter notebook</span>
+<span class="sd">        &lt;https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_spindles-SO_coupling.ipynb&gt;`_</span>
+
+<span class="sd">        .. versionadded:: 0.1.9</span>
+
+<span class="sd">    freq_so : tuple or list</span>
+<span class="sd">        Slow-oscillations frequency of interest. This is only relevant if</span>
+<span class="sd">        ``coupling=True``. Default is 0.1 to 1.25 Hz.</span>
+
+<span class="sd">        .. versionadded:: 0.1.9</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -419,6 +461,7 @@
 <span class="sd">        Ouput detection dataframe::</span>
 
 <span class="sd">            &#39;Start&#39; : Start time of each detected spindles (in seconds)</span>
+<span class="sd">            &#39;Peak&#39;: Timing of the most prominent spindles peak (in seconds)</span>
 <span class="sd">            &#39;End&#39; : End time (in seconds)</span>
 <span class="sd">            &#39;Duration&#39; : Duration (in seconds)</span>
 <span class="sd">            &#39;Amplitude&#39; : Amplitude (in uV)</span>
@@ -428,6 +471,7 @@
 <span class="sd">            &#39;Frequency&#39; : Median frequency (in Hz)</span>
 <span class="sd">            &#39;Oscillations&#39; : Number of oscillations (peaks)</span>
 <span class="sd">            &#39;Symmetry&#39; : Symmetry index, ranging from 0 to 1</span>
+<span class="sd">            &#39;SOPhase&#39;: SO phase (radians) at the most prominent spindle peak</span>
 <span class="sd">            &#39;Stage&#39; : Sleep stage (only if hypno was provided)</span>
 
 <span class="sd">    Notes</span>
@@ -476,12 +520,20 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Wrong data amplitude. Unit must be uV. Returning None.&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
+    <span class="c1"># Check thresholds</span>
     <span class="k">if</span> <span class="s1">&#39;rel_pow&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">thresh</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
         <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.20</span>
     <span class="k">if</span> <span class="s1">&#39;corr&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">thresh</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
         <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;corr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.65</span>
     <span class="k">if</span> <span class="s1">&#39;rms&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">thresh</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
         <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;rms&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.5</span>
+
+    <span class="c1"># Define which thresholds to use</span>
+    <span class="n">do_rel_pow</span> <span class="o">=</span> <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">]</span>
+    <span class="n">do_corr</span> <span class="o">=</span> <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;corr&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">]</span>
+    <span class="n">do_rms</span> <span class="o">=</span> <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;rms&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">]</span>
+    <span class="n">n_thresh</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">do_rel_pow</span><span class="p">,</span> <span class="n">do_corr</span><span class="p">,</span> <span class="n">do_rms</span><span class="p">])</span>
+    <span class="k">assert</span> <span class="n">n_thresh</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;At least one threshold must be defined.&#39;</span>
 
     <span class="c1"># Check if we can downsample to 100 or 128 Hz</span>
     <span class="k">if</span> <span class="n">downsample</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">and</span> <span class="n">sf</span> <span class="o">&gt;</span> <span class="mi">128</span><span class="p">:</span>
@@ -504,6 +556,18 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
 
+    <span class="c1"># Get data size and next fast length for Hilbert transform</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">nfast</span> <span class="o">=</span> <span class="n">next_fast_len</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="c1"># Extract the SO signal for coupling</span>
+    <span class="k">if</span> <span class="n">coupling</span><span class="p">:</span>
+        <span class="n">data_so</span> <span class="o">=</span> <span class="n">filter_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">freq_so</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">freq_so</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;fir&#39;</span><span class="p">,</span>
+                              <span class="n">l_trans_bandwidth</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">h_trans_bandwidth</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                              <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># Now extract the instantaneous phase using Hilbert transform</span>
+        <span class="n">so_phase</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">hilbert</span><span class="p">(</span><span class="n">data_so</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="n">nfast</span><span class="p">)[:</span><span class="n">n</span><span class="p">])</span>
+
     <span class="c1"># Bandpass filter</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">filter_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">freq_broad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">freq_broad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;fir&#39;</span><span class="p">,</span>
                        <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -517,14 +581,16 @@
 
     <span class="c1"># Compute the pointwise relative power using interpolated STFT</span>
     <span class="c1"># Here we use a step of 200 ms to speed up the computation.</span>
+    <span class="c1"># Note that even if the threshold is None we still need to calculate it for</span>
+    <span class="c1"># the individual spindles parameter (RelPow).</span>
     <span class="n">f</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">Sxx</span> <span class="o">=</span> <span class="n">stft_power</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">step</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="n">freq_broad</span><span class="p">,</span>
                            <span class="n">interp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">idx_sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">f</span> <span class="o">&gt;=</span> <span class="n">freq_sp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">f</span> <span class="o">&lt;=</span> <span class="n">freq_sp</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
     <span class="n">rel_pow</span> <span class="o">=</span> <span class="n">Sxx</span><span class="p">[</span><span class="n">idx_sigma</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
     <span class="c1"># Let&#39;s interpolate `rel_pow` to get one value per sample</span>
-    <span class="c1"># Note that we could also have use the `interp=True` in the `stft_power`</span>
-    <span class="c1"># function, however 2D interpolation is much slower than</span>
+    <span class="c1"># Note that we could also have use the `interp=True` in the</span>
+    <span class="c1"># `stft_power` function, however 2D interpolation is much slower than</span>
     <span class="c1"># 1D interpolation.</span>
     <span class="n">func</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">rel_pow</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;cubic&#39;</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -532,46 +598,47 @@
     <span class="n">rel_pow</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
 
     <span class="c1"># Now we apply moving RMS and correlation on the sigma-filtered signal</span>
-    <span class="n">_</span><span class="p">,</span> <span class="n">mcorr</span> <span class="o">=</span> <span class="n">moving_transform</span><span class="p">(</span><span class="n">data_sigma</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=.</span><span class="mi">3</span><span class="p">,</span> <span class="n">step</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span>
-                                <span class="n">method</span><span class="o">=</span><span class="s1">&#39;corr&#39;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">_</span><span class="p">,</span> <span class="n">mrms</span> <span class="o">=</span> <span class="n">moving_transform</span><span class="p">(</span><span class="n">data_sigma</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=.</span><span class="mi">3</span><span class="p">,</span> <span class="n">step</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span>
-                               <span class="n">method</span><span class="o">=</span><span class="s1">&#39;rms&#39;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">do_corr</span><span class="p">:</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">mcorr</span> <span class="o">=</span> <span class="n">moving_transform</span><span class="p">(</span><span class="n">data_sigma</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=.</span><span class="mi">3</span><span class="p">,</span> <span class="n">step</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span>
+                                    <span class="n">method</span><span class="o">=</span><span class="s1">&#39;corr&#39;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">do_rms</span><span class="p">:</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">mrms</span> <span class="o">=</span> <span class="n">moving_transform</span><span class="p">(</span><span class="n">data_sigma</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=.</span><span class="mi">3</span><span class="p">,</span> <span class="n">step</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span>
+                                   <span class="n">method</span><span class="o">=</span><span class="s1">&#39;rms&#39;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># Let&#39;s define the thresholds</span>
+        <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">thresh_rms</span> <span class="o">=</span> <span class="n">mrms</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">+</span> <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;rms&#39;</span><span class="p">]</span> <span class="o">*</span> \
+                <span class="n">trimbothstd</span><span class="p">(</span><span class="n">mrms</span><span class="p">,</span> <span class="n">cut</span><span class="o">=</span><span class="mf">0.10</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">thresh_rms</span> <span class="o">=</span> <span class="n">mrms</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">+</span> <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;rms&#39;</span><span class="p">]</span> <span class="o">*</span> \
+                <span class="n">trimbothstd</span><span class="p">(</span><span class="n">mrms</span><span class="p">[</span><span class="n">mask</span><span class="p">],</span> <span class="n">cut</span><span class="o">=</span><span class="mf">0.10</span><span class="p">)</span>
+        <span class="c1"># Avoid too high threshold caused by Artefacts / Motion during Wake.</span>
+        <span class="n">thresh_rms</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">thresh_rms</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Moving RMS threshold = </span><span class="si">%.3f</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">thresh_rms</span><span class="p">)</span>
 
     <span class="c1"># Hilbert power (to define the instantaneous frequency / power)</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="n">data_sigma</span><span class="o">.</span><span class="n">size</span>
-    <span class="n">nfast</span> <span class="o">=</span> <span class="n">next_fast_len</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
     <span class="n">analytic</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">hilbert</span><span class="p">(</span><span class="n">data_sigma</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="n">nfast</span><span class="p">)[:</span><span class="n">n</span><span class="p">]</span>
     <span class="n">inst_phase</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">analytic</span><span class="p">)</span>
     <span class="n">inst_pow</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">analytic</span><span class="p">))</span>
-    <span class="c1"># inst_freq = sf / 2pi * 1st-derivative of the phase of the analytic signal</span>
     <span class="n">inst_freq</span> <span class="o">=</span> <span class="p">(</span><span class="n">sf</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ediff1d</span><span class="p">(</span><span class="n">inst_phase</span><span class="p">))</span>
 
-    <span class="c1"># Let&#39;s define the thresholds</span>
-    <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">thresh_rms</span> <span class="o">=</span> <span class="n">mrms</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">+</span> <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;rms&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">trimbothstd</span><span class="p">(</span><span class="n">mrms</span><span class="p">,</span> <span class="n">cut</span><span class="o">=</span><span class="mf">0.10</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">thresh_rms</span> <span class="o">=</span> <span class="n">mrms</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">+</span> <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;rms&#39;</span><span class="p">]</span> <span class="o">*</span> \
-            <span class="n">trimbothstd</span><span class="p">(</span><span class="n">mrms</span><span class="p">[</span><span class="n">mask</span><span class="p">],</span> <span class="n">cut</span><span class="o">=</span><span class="mf">0.10</span><span class="p">)</span>
-
-    <span class="c1"># Avoid too high threshold caused by Artefacts / Motion during Wake.</span>
-    <span class="n">thresh_rms</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">thresh_rms</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-    <span class="n">idx_rel_pow</span> <span class="o">=</span> <span class="p">(</span><span class="n">rel_pow</span> <span class="o">&gt;=</span> <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-    <span class="n">idx_mcorr</span> <span class="o">=</span> <span class="p">(</span><span class="n">mcorr</span> <span class="o">&gt;=</span> <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;corr&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-    <span class="n">idx_mrms</span> <span class="o">=</span> <span class="p">(</span><span class="n">mrms</span> <span class="o">&gt;=</span> <span class="n">thresh_rms</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-    <span class="n">idx_sum</span> <span class="o">=</span> <span class="p">(</span><span class="n">idx_rel_pow</span> <span class="o">+</span> <span class="n">idx_mcorr</span> <span class="o">+</span> <span class="n">idx_mrms</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="c1"># Boolean vector of supra-threshold indices</span>
+    <span class="n">idx_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">do_rel_pow</span><span class="p">:</span>
+        <span class="n">idx_rel_pow</span> <span class="o">=</span> <span class="p">(</span><span class="n">rel_pow</span> <span class="o">&gt;=</span> <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">idx_sum</span> <span class="o">+=</span> <span class="n">idx_rel_pow</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;N supra-theshold relative power = </span><span class="si">%i</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">idx_rel_pow</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">do_corr</span><span class="p">:</span>
+        <span class="n">idx_mcorr</span> <span class="o">=</span> <span class="p">(</span><span class="n">mcorr</span> <span class="o">&gt;=</span> <span class="n">thresh</span><span class="p">[</span><span class="s1">&#39;corr&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">idx_sum</span> <span class="o">+=</span> <span class="n">idx_mcorr</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;N supra-theshold moving corr = </span><span class="si">%i</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">idx_mcorr</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">do_rms</span><span class="p">:</span>
+        <span class="n">idx_mrms</span> <span class="o">=</span> <span class="p">(</span><span class="n">mrms</span> <span class="o">&gt;=</span> <span class="n">thresh_rms</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">idx_sum</span> <span class="o">+=</span> <span class="n">idx_mrms</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;N supra-theshold moving RMS = </span><span class="si">%i</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">idx_mrms</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
 
     <span class="c1"># Make sure that we do not detect spindles in REM or Wake if hypno != None</span>
     <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">idx_sum</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-
-    <span class="c1"># For debugging</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Moving RMS threshold = </span><span class="si">%.3f</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">thresh_rms</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Number of supra-theshold samples for relative power = </span><span class="si">%i</span><span class="s1">&#39;</span><span class="p">,</span>
-                <span class="n">idx_rel_pow</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Number of supra-theshold samples for moving correlation = </span><span class="si">%i</span><span class="s1">&#39;</span><span class="p">,</span>
-                <span class="n">idx_mcorr</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Number of supra-theshold samples for moving RMS = </span><span class="si">%i</span><span class="s1">&#39;</span><span class="p">,</span>
-                <span class="n">idx_mrms</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
 
     <span class="c1"># The detection using the three thresholds tends to underestimate the</span>
     <span class="c1"># real duration of the spindle. To overcome this, we compute a soft</span>
@@ -581,7 +648,7 @@
     <span class="c1"># And we then find indices that are strictly greater than 2, i.e. we find</span>
     <span class="c1"># the &#39;true&#39; beginning and &#39;true&#39; end of the events by finding where at</span>
     <span class="c1"># least two out of the three treshold were crossed.</span>
-    <span class="n">where_sp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">idx_sum</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">where_sp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">idx_sum</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">n_thresh</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="c1"># If no events are found, return an empty dataframe</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">where_sp</span><span class="p">):</span>
@@ -616,6 +683,8 @@
     <span class="n">sp_abs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_sp</span><span class="p">)</span>
     <span class="n">sp_rel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_sp</span><span class="p">)</span>
     <span class="n">sp_sta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_sp</span><span class="p">)</span>
+    <span class="n">sp_pro</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_sp</span><span class="p">)</span>
+    <span class="n">sp_cou</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_sp</span><span class="p">)</span>
 
     <span class="c1"># Number of oscillations (= number of peaks separated by at least 60 ms)</span>
     <span class="c1"># --&gt; 60 ms because 1000 ms / 16 Hz = 62.5 ms, in other words, at 16 Hz,</span>
@@ -649,8 +718,15 @@
         <span class="c1"># sp_freq[i] = sf / np.mean(np.diff(peaks))</span>
         <span class="c1"># sp_amp[i] = peaks_params[&#39;prominences&#39;].max()</span>
 
-        <span class="c1"># Symmetry index</span>
-        <span class="n">sp_sym</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">peaks</span><span class="p">[</span><span class="n">peaks_params</span><span class="p">[</span><span class="s1">&#39;prominences&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">argmax</span><span class="p">()]</span> <span class="o">/</span> <span class="n">sp_det</span><span class="o">.</span><span class="n">size</span>
+        <span class="c1"># Peak location &amp; symmetry index</span>
+        <span class="c1"># pk is expressed in sample since the beginning of the spindle</span>
+        <span class="n">pk</span> <span class="o">=</span> <span class="n">peaks</span><span class="p">[</span><span class="n">peaks_params</span><span class="p">[</span><span class="s1">&#39;prominences&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">argmax</span><span class="p">()]</span>
+        <span class="n">sp_pro</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp_start</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">pk</span> <span class="o">/</span> <span class="n">sf</span>
+        <span class="n">sp_sym</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pk</span> <span class="o">/</span> <span class="n">sp_det</span><span class="o">.</span><span class="n">size</span>
+
+        <span class="c1"># SO-spindles coupling</span>
+        <span class="k">if</span> <span class="n">coupling</span><span class="p">:</span>
+            <span class="n">sp_cou</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">so_phase</span><span class="p">[</span><span class="n">sp</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="n">pk</span><span class="p">]</span>
 
         <span class="c1"># Sleep stage</span>
         <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -658,6 +734,7 @@
 
     <span class="c1"># Create a dictionnary</span>
     <span class="n">sp_params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Start&#39;</span><span class="p">:</span> <span class="n">sp_start</span><span class="p">,</span>
+                 <span class="s1">&#39;Peak&#39;</span><span class="p">:</span> <span class="n">sp_pro</span><span class="p">,</span>
                  <span class="s1">&#39;End&#39;</span><span class="p">:</span> <span class="n">sp_end</span><span class="p">,</span>
                  <span class="s1">&#39;Duration&#39;</span><span class="p">:</span> <span class="n">sp_dur</span><span class="p">,</span>
                  <span class="s1">&#39;Amplitude&#39;</span><span class="p">:</span> <span class="n">sp_amp</span><span class="p">,</span>
@@ -667,6 +744,7 @@
                  <span class="s1">&#39;Frequency&#39;</span><span class="p">:</span> <span class="n">sp_freq</span><span class="p">,</span>
                  <span class="s1">&#39;Oscillations&#39;</span><span class="p">:</span> <span class="n">sp_osc</span><span class="p">,</span>
                  <span class="s1">&#39;Symmetry&#39;</span><span class="p">:</span> <span class="n">sp_sym</span><span class="p">,</span>
+                 <span class="s1">&#39;SOPhase&#39;</span><span class="p">:</span> <span class="n">sp_cou</span><span class="p">,</span>
                  <span class="s1">&#39;Stage&#39;</span><span class="p">:</span> <span class="n">sp_sta</span><span class="p">}</span>
 
     <span class="n">df_sp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">sp_params</span><span class="p">)[</span><span class="n">good_dur</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -676,11 +754,15 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">df_sp</span><span class="p">[</span><span class="s1">&#39;Stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_sp</span><span class="p">[</span><span class="s1">&#39;Stage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;category&#39;</span><span class="p">)</span>
 
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">coupling</span><span class="p">:</span>
+        <span class="n">df_sp</span> <span class="o">=</span> <span class="n">df_sp</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;SOPhase&#39;</span><span class="p">])</span>
+
     <span class="c1"># We need at least 50 detected spindles to apply the Isolation Forest.</span>
     <span class="k">if</span> <span class="n">remove_outliers</span> <span class="ow">and</span> <span class="n">df_sp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">50</span><span class="p">:</span>
         <span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="k">import</span> <span class="n">IsolationForest</span>
         <span class="n">df_sp_dummies</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">df_sp</span><span class="p">)</span>
-        <span class="n">col_keep</span> <span class="o">=</span> <span class="n">df_sp_dummies</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">difference</span><span class="p">([</span><span class="s1">&#39;Start&#39;</span><span class="p">,</span> <span class="s1">&#39;End&#39;</span><span class="p">])</span>
+        <span class="n">col_keep</span> <span class="o">=</span> <span class="n">df_sp_dummies</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">difference</span><span class="p">([</span><span class="s1">&#39;Start&#39;</span><span class="p">,</span> <span class="s1">&#39;Peak&#39;</span><span class="p">,</span> <span class="s1">&#39;End&#39;</span><span class="p">,</span>
+                                                     <span class="s1">&#39;SOPhase&#39;</span><span class="p">])</span>
         <span class="n">ilf</span> <span class="o">=</span> <span class="n">IsolationForest</span><span class="p">(</span><span class="n">behaviour</span><span class="o">=</span><span class="s1">&#39;new&#39;</span><span class="p">,</span> <span class="n">contamination</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
                               <span class="n">max_samples</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 
@@ -727,6 +809,7 @@
 <span class="sd">        Ouput detection dataframe::</span>
 
 <span class="sd">            &#39;Start&#39; : Start time of each detected spindles (in seconds)</span>
+<span class="sd">            &#39;Peak&#39;: Timing of the most prominent spindles peak (in seconds)</span>
 <span class="sd">            &#39;End&#39; : End time (in seconds)</span>
 <span class="sd">            &#39;Duration&#39; : Duration (in seconds)</span>
 <span class="sd">            &#39;Amplitude&#39; : Amplitude (in uV)</span>
@@ -837,7 +920,7 @@
 <span class="sd">            - 1 = N1 sleep</span>
 <span class="sd">            - 2 = N2 sleep</span>
 <span class="sd">            - 3 = N3 sleep</span>
-<span class="sd">            - 4 = REM</span>
+<span class="sd">            - 4 = REM sleep</span>
 <span class="sd">    include : tuple, list or int</span>
 <span class="sd">        Values in ``hypno`` that will be included in the mask. The default is</span>
 <span class="sd">        (2, 3), meaning that the detection is applied on N2 and N3</span>
@@ -1489,8 +1572,8 @@
       
     </p>
     <p>
-        &copy; Copyright 2018-2019, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.<br/>
+        &copy; Copyright 2018-2020, Raphael Vallat.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
     </p>
   </div>
 </footer>

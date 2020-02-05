@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>API reference &#8212; yasa 0.1.8 documentation</title>
+    <title>API reference &#8212; yasa 0.1.9 documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="index.html"><span><img src="_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.8</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -113,8 +113,8 @@
 <tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.get_bool_vector.html#yasa.get_bool_vector" title="yasa.get_bool_vector"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_bool_vector</span></code></a>([data, sf, detection])</p></td>
 <td><p>Return a Boolean vector given the original data and sf and a YASA’s detection dataframe.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.get_sync_sw.html#yasa.get_sync_sw" title="yasa.get_sync_sw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sync_sw</span></code></a>([data, sf, sw, event, …])</p></td>
-<td><p>Synchronize the timing of detected slow-waves at a specific landmark timepoint.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.get_sync_events.html#yasa.get_sync_events" title="yasa.get_sync_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sync_events</span></code></a>([data, sf, detection, …])</p></td>
+<td><p>Return the raw data of each detected slow-waves / spindles, after centering to a specific timepoint.</p></td>
 </tr>
 </tbody>
 </table>
@@ -138,6 +138,12 @@
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.hypno_int_to_str.html#yasa.hypno_int_to_str" title="yasa.hypno_int_to_str"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hypno_int_to_str</span></code></a>(hypno[, mapping_dict])</p></td>
 <td><p>Convert an integer hypnogram array to a string array.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.transition_matrix.html#yasa.transition_matrix" title="yasa.transition_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transition_matrix</span></code></a>(hypno)</p></td>
+<td><p>Create a state-transition matrix from an hypnogram.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sleep_statistics</span></code></a>(hypno, sf_hyp)</p></td>
+<td><p>Compute sleep stats from an hypnogram vector.</p></td>
 </tr>
 </tbody>
 </table>
@@ -205,8 +211,8 @@
       
     </p>
     <p>
-        &copy; Copyright 2018-2019, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.<br/>
+        &copy; Copyright 2018-2020, Raphael Vallat.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
     </p>
   </div>
 </footer>

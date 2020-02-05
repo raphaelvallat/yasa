@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.spindles_detect &#8212; yasa 0.1.8 documentation</title>
+    <title>yasa.spindles_detect &#8212; yasa 0.1.9 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.8</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -89,7 +89,7 @@
 <h1>yasa.spindles_detect</h1>
 <dl class="function">
 <dt id="yasa.spindles_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">spindles_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(1</em>, <em class="sig-param">2</em>, <em class="sig-param">3)</em>, <em class="sig-param">freq_sp=(12</em>, <em class="sig-param">15)</em>, <em class="sig-param">duration=(0.5</em>, <em class="sig-param">2)</em>, <em class="sig-param">freq_broad=(1</em>, <em class="sig-param">30)</em>, <em class="sig-param">min_distance=500</em>, <em class="sig-param">downsample=True</em>, <em class="sig-param">thresh={'corr': 0.65</em>, <em class="sig-param">'rel_pow': 0.2</em>, <em class="sig-param">'rms': 1.5}</em>, <em class="sig-param">remove_outliers=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#spindles_detect"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">spindles_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(1</em>, <em class="sig-param">2</em>, <em class="sig-param">3)</em>, <em class="sig-param">freq_sp=(12</em>, <em class="sig-param">15)</em>, <em class="sig-param">duration=(0.5</em>, <em class="sig-param">2)</em>, <em class="sig-param">freq_broad=(1</em>, <em class="sig-param">30)</em>, <em class="sig-param">min_distance=500</em>, <em class="sig-param">downsample=True</em>, <em class="sig-param">thresh={'corr': 0.65</em>, <em class="sig-param">'rel_pow': 0.2</em>, <em class="sig-param">'rms': 1.5}</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">coupling=False</em>, <em class="sig-param">freq_so=(0.1</em>, <em class="sig-param">1.25)</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#spindles_detect"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Spindles detection.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
@@ -97,8 +97,8 @@
 <dt><strong>data</strong><span class="classifier">array_like</span></dt><dd><p>Single-channel continuous EEG data. Unit must be uV.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The default unit of <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> is Volts.
-Therefore, if passing data from a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
+<p>The default unit of <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> is Volts.
+Therefore, if passing data from a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
 you need to multiply the data by 1e6 to convert to micro-Volts
 (1 V = 1,000,000 uV), e.g.:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span> <span class="o">*</span> <span class="mf">1e6</span>  <span class="c1"># Make sure that data is in uV</span>
@@ -124,7 +124,7 @@ vector where:</p>
 <li><p>1 = N1 sleep</p></li>
 <li><p>2 = N2 sleep</p></li>
 <li><p>3 = N3 sleep</p></li>
-<li><p>4 = REM</p></li>
+<li><p>4 = REM sleep</p></li>
 </ul>
 </div>
 </dd>
@@ -156,21 +156,50 @@ respectively).</p>
 <span class="s1">&#39;rms&#39;</span> <span class="p">:</span> <span class="n">Mean</span><span class="p">(</span><span class="n">RMS</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">STD</span><span class="p">(</span><span class="n">RMS</span><span class="p">)</span><span class="o">.</span>
 </pre></div>
 </div>
+<p>You can disable one or more threshold by putting <code class="docutils literal notranslate"><span class="pre">None</span></code> instead:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">thresh</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="mf">0.65</span><span class="p">,</span> <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">}</span>
+<span class="n">thresh</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}</span>
+</pre></div>
+</div>
 </dd>
 <dt><strong>remove_outliers</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will automatically detect and remove outliers spindles
-using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.21.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
+using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
 The outliers detection is performed on all the spindles
-parameters with the exception of the <code class="docutils literal notranslate"><span class="pre">Start</span></code> and <code class="docutils literal notranslate"><span class="pre">End</span></code> columns.
+parameters with the exception of the <code class="docutils literal notranslate"><span class="pre">Start</span></code>, <code class="docutils literal notranslate"><span class="pre">Peak</span></code>, <code class="docutils literal notranslate"><span class="pre">End</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">SOPhase</span></code> columns.
 YASA uses a random seed (42) to ensure reproducible results.
 Note that this step will only be applied if there are more than 50
 detected spindles in the first place. Default to False.</p>
+</dd>
+<dt><strong>coupling</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will also calculate the coupling between each detected
+spindles and the slow-oscillation signal. The coupling is given by the
+phase (in radians) of the filtered slow-oscillation signal
+at the most prominent peak of the spindles.</p>
+<p>Importantly, since the resulting variable is expressed in radians,
+one should use a circular mean to calculate the average across all
+events:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">circmean</span>
+<span class="n">avg_SOPhase</span> <span class="o">=</span> <span class="n">circmean</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="s1">&#39;SOPhase&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>For more details, please refer to the <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_spindles-SO_coupling.ipynb">Jupyter notebook</a></p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.1.9.</span></p>
+</div>
+</dd>
+<dt><strong>freq_so</strong><span class="classifier">tuple or list</span></dt><dd><p>Slow-oscillations frequency of interest. This is only relevant if
+<code class="docutils literal notranslate"><span class="pre">coupling=True</span></code>. Default is 0.1 to 1.25 Hz.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.1.9.</span></p>
+</div>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>sp_params</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v0.25.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
+<dt><strong>sp_params</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Start&#39;</span> <span class="p">:</span> <span class="n">Start</span> <span class="n">time</span> <span class="n">of</span> <span class="n">each</span> <span class="n">detected</span> <span class="n">spindles</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
+<span class="s1">&#39;Peak&#39;</span><span class="p">:</span> <span class="n">Timing</span> <span class="n">of</span> <span class="n">the</span> <span class="n">most</span> <span class="n">prominent</span> <span class="n">spindles</span> <span class="n">peak</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;End&#39;</span> <span class="p">:</span> <span class="n">End</span> <span class="n">time</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;Duration&#39;</span> <span class="p">:</span> <span class="n">Duration</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;Amplitude&#39;</span> <span class="p">:</span> <span class="n">Amplitude</span> <span class="p">(</span><span class="ow">in</span> <span class="n">uV</span><span class="p">)</span>
@@ -180,6 +209,7 @@ detected spindles in the first place. Default to False.</p>
 <span class="s1">&#39;Frequency&#39;</span> <span class="p">:</span> <span class="n">Median</span> <span class="n">frequency</span> <span class="p">(</span><span class="ow">in</span> <span class="n">Hz</span><span class="p">)</span>
 <span class="s1">&#39;Oscillations&#39;</span> <span class="p">:</span> <span class="n">Number</span> <span class="n">of</span> <span class="n">oscillations</span> <span class="p">(</span><span class="n">peaks</span><span class="p">)</span>
 <span class="s1">&#39;Symmetry&#39;</span> <span class="p">:</span> <span class="n">Symmetry</span> <span class="n">index</span><span class="p">,</span> <span class="n">ranging</span> <span class="kn">from</span> <span class="mi">0</span> <span class="n">to</span> <span class="mi">1</span>
+<span class="s1">&#39;SOPhase&#39;</span><span class="p">:</span> <span class="n">SO</span> <span class="n">phase</span> <span class="p">(</span><span class="n">radians</span><span class="p">)</span> <span class="n">at</span> <span class="n">the</span> <span class="n">most</span> <span class="n">prominent</span> <span class="n">spindle</span> <span class="n">peak</span>
 <span class="s1">&#39;Stage&#39;</span> <span class="p">:</span> <span class="n">Sleep</span> <span class="n">stage</span> <span class="p">(</span><span class="n">only</span> <span class="k">if</span> <span class="n">hypno</span> <span class="n">was</span> <span class="n">provided</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -210,8 +240,8 @@ detected spindles in the first place. Default to False.</p>
       
     </p>
     <p>
-        &copy; Copyright 2018-2019, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.<br/>
+        &copy; Copyright 2018-2020, Raphael Vallat.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
     </p>
   </div>
 </footer>

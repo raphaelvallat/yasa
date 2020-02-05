@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>yasa.sleep_statistics &#8212; yasa 0.1.9 documentation</title>
+    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/copybutton.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
+          yasa</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">Functions</a></li>
+                <li><a href="../changelog.html">What's new</a></li>
+                <li><a href="../contributing.html">Contribute</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="yasa-sleep-statistics">
+<h1>yasa.sleep_statistics</h1>
+<dl class="function">
+<dt id="yasa.sleep_statistics">
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sleep_statistics</code><span class="sig-paren">(</span><em class="sig-param">hypno</em>, <em class="sig-param">sf_hyp</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/sleepstats.html#sleep_statistics"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Compute sleep stats from an hypnogram vector.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.1.9.</span></p>
+</div>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Hypnogram vector, assumed to be already cropped to time in bed (TIB).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The default hypnogram format in YASA is a 1D integer
+vector where:</p>
+<ul class="simple">
+<li><p>-1 = Artefact / Movement</p></li>
+<li><p>0 = Wake</p></li>
+<li><p>1 = N1 sleep</p></li>
+<li><p>2 = N2 sleep</p></li>
+<li><p>3 = N3 sleep</p></li>
+<li><p>4 = REM sleep</p></li>
+</ul>
+</div>
+</dd>
+<dt><strong>sf_hyp</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency of the hypnogram. Should be 1/30 if there is one
+value per 30-seconds, 1/20 if there is one value per 20-seconds,
+1 if there is one value per second, and so on.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>stats: dict</strong></dt><dd><p>Sleep statistics (expressed in minutes)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>All values except SE and percentages are expressed in minutes.</p>
+<ul class="simple">
+<li><p>Time in Bed (TIB): total duration of the hypnogram.</p></li>
+<li><p>Sleep Period Time (SPT): duration from first to last period of sleep.</p></li>
+<li><p>Wake After Sleep Onset (WASO): duration of wake periods within SPT.</p></li>
+<li><p>Total Sleep Time (TST): SPT - WASO.</p></li>
+<li><p>Sleep Efficiency (SE): TST / SPT * 100 (%).</p></li>
+<li><p>W, N1, N2, N3 and REM: sleep stages duration. NREM = N1 + N2 + N3.</p></li>
+<li><p>% (W, … REM): sleep stages duration expressed in percentages of TST.</p></li>
+<li><p>Latencies: latencies of sleep stages from the beginning of the record.</p></li>
+</ul>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">yasa</span> <span class="k">import</span> <span class="n">sleep_statistics</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hypno</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Assuming that we have one-value per 30-second.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sleep_statistics</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hyp</span><span class="o">=</span><span class="mi">1</span><span class="o">/</span><span class="mi">30</span><span class="p">)</span>
+<span class="go">{&#39;TIB&#39;: 10.0,</span>
+<span class="go"> &#39;N1&#39;: 1.5,</span>
+<span class="go"> &#39;N2&#39;: 2.0,</span>
+<span class="go"> &#39;N3&#39;: 2.5,</span>
+<span class="go"> &#39;REM&#39;: 2.0,</span>
+<span class="go"> &#39;NREM&#39;: 6.0,</span>
+<span class="go"> &#39;Lat_N1&#39;: 1.0,</span>
+<span class="go"> &#39;Lat_N2&#39;: 2.5,</span>
+<span class="go"> &#39;Lat_N3&#39;: 4.0,</span>
+<span class="go"> &#39;Lat_REM&#39;: 7.0,</span>
+<span class="go"> &#39;SPT&#39;: 8.0,</span>
+<span class="go"> &#39;WASO&#39;: 0.0,</span>
+<span class="go"> &#39;TST&#39;: 8.0,</span>
+<span class="go"> &#39;%N1&#39;: 18.75,</span>
+<span class="go"> &#39;%N2&#39;: 25.0,</span>
+<span class="go"> &#39;%N3&#39;: 31.25,</span>
+<span class="go"> &#39;%REM&#39;: 25.0,</span>
+<span class="go"> &#39;%NREM&#39;: 75.0,</span>
+<span class="go"> &#39;SE&#39;: 100.0}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+      
+    </p>
+    <p>
+        &copy; Copyright 2018-2020, Raphael Vallat.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

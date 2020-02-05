@@ -158,6 +158,9 @@ def get_sync_events(data=None, sf=None, detection=None, center='NegPeak',
     This function can be used to plot an average template of the
     detected slow-waves / spindles.
 
+    For more details, please refer to the `Jupyter notebook
+    <https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_sw_average.ipynb>`_
+
     Parameters
     ----------
     data : array_like or :py:class:`mne.io.BaseRaw`
@@ -168,9 +171,10 @@ def get_sync_events(data=None, sf=None, detection=None, center='NegPeak',
         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
     detection : :py:class:`pandas.DataFrame`
         YASA's detection dataframe returned by the
-        :py:func:`yasa.sw_detect`, :py:func:`yasa.sp_detect`,
-        :py:func:`yasa.sw_detect_multi`, or
-        :py:func:`yasa.sp_detect_multi`, functions.
+        :py:func:`yasa.sw_detect`,
+        :py:func:`yasa.spindles_detect`,
+        :py:func:`yasa.sw_detect_multi`, and
+        :py:func:`yasa.spindles_detect_multi` functions.
     center : str
         Landmark of the slow-waves / spindles to synchronize the timing on.
         Default is to use the negative peak.

@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.get_sync_sw &#8212; yasa 0.1.8 documentation</title>
+    <title>yasa.get_sync_events &#8212; yasa 0.1.9 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.8</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -85,43 +85,46 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="yasa-get-sync-sw">
-<h1>yasa.get_sync_sw</h1>
+  <div class="section" id="yasa-get-sync-events">
+<h1>yasa.get_sync_events</h1>
 <dl class="function">
-<dt id="yasa.get_sync_sw">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">get_sync_sw</code><span class="sig-paren">(</span><em class="sig-param">data=None</em>, <em class="sig-param">sf=None</em>, <em class="sig-param">sw=None</em>, <em class="sig-param">event='NegPeak'</em>, <em class="sig-param">time_before=0.4</em>, <em class="sig-param">time_after=0.8</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#get_sync_sw"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Synchronize the timing of detected slow-waves at a specific
-landmark timepoint.</p>
+<dt id="yasa.get_sync_events">
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">get_sync_events</code><span class="sig-paren">(</span><em class="sig-param">data=None</em>, <em class="sig-param">sf=None</em>, <em class="sig-param">detection=None</em>, <em class="sig-param">center='NegPeak'</em>, <em class="sig-param">time_before=0.4</em>, <em class="sig-param">time_after=0.8</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#get_sync_events"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Return the raw data of each detected slow-waves / spindles, after
+centering to a specific timepoint.</p>
 <p>This function can be used to plot an average template of the
-detected slow-waves.</p>
+detected slow-waves / spindles.</p>
+<p>For more details, please refer to the <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_sw_average.ipynb">Jupyter notebook</a></p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>data</strong><span class="classifier">array_like or <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>1D or 2D EEG data. Can also be <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
+<dt><strong>data</strong><span class="classifier">array_like or <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>1D or 2D EEG data. Can also be <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
 in which case <code class="docutils literal notranslate"><span class="pre">data</span></code> and <code class="docutils literal notranslate"><span class="pre">sf</span></code> will be automatically extracted.</p>
 </dd>
 <dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency of <code class="docutils literal notranslate"><span class="pre">data</span></code>.
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
-<dt><strong>sw</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v0.25.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>YASA’s detection dataframe returned by the
-<a class="reference internal" href="yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> or <a class="reference internal" href="yasa.sw_detect_multi.html#yasa.sw_detect_multi" title="yasa.sw_detect_multi"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect_multi()</span></code></a> functions.</p>
+<dt><strong>detection</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>YASA’s detection dataframe returned by the
+<a class="reference internal" href="yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a>,
+<a class="reference internal" href="yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>,
+<a class="reference internal" href="yasa.sw_detect_multi.html#yasa.sw_detect_multi" title="yasa.sw_detect_multi"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect_multi()</span></code></a>, and
+<a class="reference internal" href="yasa.spindles_detect_multi.html#yasa.spindles_detect_multi" title="yasa.spindles_detect_multi"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect_multi()</span></code></a> functions.</p>
 </dd>
-<dt><strong>event</strong><span class="classifier">str</span></dt><dd><p>Landmark of the slow-waves to synchronize the timing on.
+<dt><strong>center</strong><span class="classifier">str</span></dt><dd><p>Landmark of the slow-waves / spindles to synchronize the timing on.
 Default is to use the negative peak.</p>
 </dd>
-<dt><strong>time_before</strong><span class="classifier">float</span></dt><dd><p>Time (in seconds) before <code class="docutils literal notranslate"><span class="pre">event</span></code>.</p>
+<dt><strong>time_before</strong><span class="classifier">float</span></dt><dd><p>Time (in seconds) before <code class="docutils literal notranslate"><span class="pre">center</span></code>.</p>
 </dd>
-<dt><strong>time_after</strong><span class="classifier">float</span></dt><dd><p>Time (in seconds) after <code class="docutils literal notranslate"><span class="pre">event</span></code>.</p>
+<dt><strong>time_after</strong><span class="classifier">float</span></dt><dd><p>Time (in seconds) after <code class="docutils literal notranslate"><span class="pre">center</span></code>.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>df_sw</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v0.25.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Time&#39;</span> <span class="p">:</span> <span class="n">Timing</span> <span class="n">of</span> <span class="n">the</span> <span class="n">events</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
-<span class="s1">&#39;Event&#39;</span> <span class="p">:</span> <span class="n">Event</span> <span class="n">number</span>
+<dt><strong>df_sw</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Event&#39;</span> <span class="p">:</span> <span class="n">Event</span> <span class="n">number</span>
+<span class="s1">&#39;Time&#39;</span> <span class="p">:</span> <span class="n">Timing</span> <span class="n">of</span> <span class="n">the</span> <span class="n">events</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;Amplitude&#39;</span> <span class="p">:</span> <span class="n">Raw</span> <span class="n">data</span> <span class="k">for</span> <span class="n">event</span>
-<span class="s1">&#39;Amplitude&#39;</span> <span class="p">:</span> <span class="n">Amplitude</span> <span class="p">(</span><span class="ow">in</span> <span class="n">uV</span><span class="p">)</span>
 <span class="s1">&#39;Chan&#39;</span> <span class="p">:</span> <span class="n">Channel</span> <span class="p">(</span><span class="n">only</span> <span class="ow">in</span> <span class="n">multi</span><span class="o">-</span><span class="n">channel</span> <span class="n">detection</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -148,8 +151,8 @@ Default is to use the negative peak.</p>
       
     </p>
     <p>
-        &copy; Copyright 2018-2019, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.<br/>
+        &copy; Copyright 2018-2020, Raphael Vallat.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
     </p>
   </div>
 </footer>

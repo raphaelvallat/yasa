@@ -20,6 +20,9 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
     Plot a full-night multi-taper spectrogram, optionally with the hypnogram
     on top.
 
+    For more details, please refer to the `Jupyter notebook
+    <https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spectrogram.ipynb>`_
+
     .. versionadded:: 0.1.8
 
     Parameters
