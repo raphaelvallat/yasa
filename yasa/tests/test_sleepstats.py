@@ -36,11 +36,12 @@ class TestStringMethods(unittest.TestCase):
         """Test sleep statistics.
         """
         a = [0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 2, 3, 3, 4, 4, 4, 4, 0, 0]
-        validation = {'TIB': 10.0, 'N1': 1.5, 'N2': 2.0, 'N3': 2.5, 'REM': 2.0,
-                      'NREM': 6.0, 'Lat_N1': 1.0, 'Lat_N2': 2.5, 'Lat_N3': 4.0,
-                      'Lat_REM': 7.0, 'SPT': 8.0, 'WASO': 0.0, 'TST': 8.0,
+        validation = {'TIB': 10.0, 'SPT': 8.0, 'WASO': 0.0, 'TST': 8.0,
+                      'N1': 1.5, 'N2': 2.0, 'N3': 2.5, 'REM': 2.0,
+                      'NREM': 6.0, 'SOL': 1.0, 'Lat_N1': 1.0, 'Lat_N2': 2.5,
+                      'Lat_N3': 4.0, 'Lat_REM': 7.0,
                       '%N1': 18.75, '%N2': 25.0, '%N3': 31.25, '%REM': 25.0,
-                      '%NREM': 75.0, 'SE': 100.0}
+                      '%NREM': 75.0, 'SE': 80.0}
 
         s = sleep_statistics(a, sf_hyp=1 / 30)
         # Compare with different sampling frequencies

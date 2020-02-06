@@ -3,6 +3,17 @@
 What's new
 ##########
 
+v0.2.0 (dev)
+------------
+
+**Bugfixes**
+
+a. Sleep efficiency in the :py:func:`yasa.sleep_statistics` is now calculated using time in bed (TIB) as the denominator instead of sleep period time (SPT), in agreement with the AASM guidelines.
+
+**Enhancements**
+
+a. :py:func:`yasa.sleep_statistics` now also returns the sleep onset latency, i.e. the latency to the first epoch of any sleep.
+
 v0.1.9 (February 2020)
 ----------------------
 

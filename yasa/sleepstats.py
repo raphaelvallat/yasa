@@ -88,7 +88,9 @@ def sleep_statistics(hypno, sf_hyp):
     Parameters
     ----------
     hypno : array_like
-        Hypnogram vector, assumed to be already cropped to time in bed (TIB).
+        Hypnogram vector, assumed to be already cropped to time in bed (TIB,
+        also referred to as Total Recording Time,
+        i.e. "lights out" to "lights on").
 
         .. note::
             The default hypnogram format in YASA is a 1D integer
@@ -112,16 +114,31 @@ def sleep_statistics(hypno, sf_hyp):
 
     Notes
     -----
-    All values except SE and percentages are expressed in minutes.
+    All values except SE and percentages are expressed in minutes. YASA follows
+    the AASM guidelines to calculate these parameters:
 
     * Time in Bed (TIB): total duration of the hypnogram.
     * Sleep Period Time (SPT): duration from first to last period of sleep.
     * Wake After Sleep Onset (WASO): duration of wake periods within SPT.
     * Total Sleep Time (TST): SPT - WASO.
-    * Sleep Efficiency (SE): TST / SPT * 100 (%).
+    * Sleep Efficiency (SE): TST / TIB * 100 (%).
     * W, N1, N2, N3 and REM: sleep stages duration. NREM = N1 + N2 + N3.
     * % (W, ... REM): sleep stages duration expressed in percentages of TST.
     * Latencies: latencies of sleep stages from the beginning of the record.
+    * Sleep Onset Latency (SOL): Latency to first epoch of any sleep.
+
+    References
+    ----------
+    .. [1] Iber, C. (2007). The AASM manual for the scoring of sleep and
+    associated events: rules, terminology and technical specifications.
+    American Academy of Sleep Medicine.
+
+    .. [2] Silber, M. H., Ancoli-Israel, S., Bonnet, M. H., Chokroverty, S.,
+    Grigg-Damberger, M. M., Hirshkowitz, M., Kapen, S., Keenan, S. A., Kryger,
+    M. H., Penzel, T., Pressman, M. R., & Iber, C. (2007). The visual scoring
+    of sleep in adults. Journal of Clinical Sleep Medicine: JCSM: Official
+    Publication of the American Academy of Sleep Medicine, 3(2), 121–131.
+    https://www.ncbi.nlm.nih.gov/pubmed/17557422
 
     Examples
     --------
@@ -130,24 +147,25 @@ def sleep_statistics(hypno, sf_hyp):
     >>> # Assuming that we have one-value per 30-second.
     >>> sleep_statistics(hypno, sf_hyp=1/30)
     {'TIB': 10.0,
+     'SPT': 8.0,
+     'WASO': 0.0,
+     'TST': 8.0,
      'N1': 1.5,
      'N2': 2.0,
      'N3': 2.5,
      'REM': 2.0,
      'NREM': 6.0,
+     'SOL': 1.0,
      'Lat_N1': 1.0,
      'Lat_N2': 2.5,
      'Lat_N3': 4.0,
      'Lat_REM': 7.0,
-     'SPT': 8.0,
-     'WASO': 0.0,
-     'TST': 8.0,
      '%N1': 18.75,
      '%N2': 25.0,
      '%N3': 31.25,
      '%REM': 25.0,
      '%NREM': 75.0,
-     'SE': 100.0}
+     'SE': 80.0}
     """
     stats = {}
     hypno = np.asarray(hypno)
@@ -159,6 +177,12 @@ def sleep_statistics(hypno, sf_hyp):
     first_sleep = np.where(hypno > 0)[0][0]
     last_sleep = np.where(hypno > 0)[0][-1]
 
+    # Crop to SPT
+    hypno_s = hypno[first_sleep:(last_sleep + 1)]
+    stats['SPT'] = hypno_s.size
+    stats['WASO'] = hypno_s[hypno_s == 0].size
+    stats['TST'] = stats['SPT'] - stats['WASO']
+
     # Duration of each sleep stages
     stats['N1'] = hypno[hypno == 1].size
     stats['N2'] = hypno[hypno == 2].size
@@ -167,16 +191,11 @@ def sleep_statistics(hypno, sf_hyp):
     stats['NREM'] = stats['N1'] + stats['N2'] + stats['N3']
 
     # Sleep stage latencies
+    stats['SOL'] = first_sleep
     stats['Lat_N1'] = np.where(hypno == 1)[0].min() if 1 in hypno else np.nan
     stats['Lat_N2'] = np.where(hypno == 2)[0].min() if 2 in hypno else np.nan
     stats['Lat_N3'] = np.where(hypno == 3)[0].min() if 3 in hypno else np.nan
     stats['Lat_REM'] = np.where(hypno == 4)[0].min() if 4 in hypno else np.nan
-
-    # Crop to SPT
-    hypno_s = hypno[first_sleep:(last_sleep + 1)]
-    stats['SPT'] = hypno_s.size
-    stats['WASO'] = hypno_s[hypno_s == 0].size
-    stats['TST'] = stats['SPT'] - stats['WASO']
 
     # Convert to minutes
     for key, value in stats.items():
@@ -188,5 +207,5 @@ def sleep_statistics(hypno, sf_hyp):
     stats['%N3'] = 100 * stats['N3'] / stats['TST']
     stats['%REM'] = 100 * stats['REM'] / stats['TST']
     stats['%NREM'] = 100 * stats['NREM'] / stats['TST']
-    stats['SE'] = 100 * stats['TST'] / stats['SPT']
+    stats['SE'] = 100 * stats['TST'] / stats['TIB']
     return stats
