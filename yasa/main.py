@@ -239,6 +239,12 @@ def get_sync_events(data=None, sf=None, detection=None, center='NegPeak',
         # We drop the events for which the indices exceed data
         idx_mask = np.ma.mask_rows(np.ma.masked_outside(idx, 0, data.shape[0]))
         idx = np.ma.compress_rows(idx_mask)
+        if len(idx) == 0:
+            logging.warning(
+                'Time before and/or time after exceed data bounds, please '
+                'lower the temporal window around center; returning None.'
+            )
+            return None
         amps = data[idx]
         time = rng(0) / sf
 
