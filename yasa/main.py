@@ -681,8 +681,8 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         df_sp_dummies = pd.get_dummies(df_sp)
         col_keep = df_sp_dummies.columns.difference(['Start', 'Peak', 'End',
                                                      'SOPhase'])
-        ilf = IsolationForest(behaviour='new', contamination='auto',
-                              max_samples='auto', verbose=0, random_state=42)
+        ilf = IsolationForest(contamination='auto', max_samples='auto',
+                              verbose=0, random_state=42)
 
         good = ilf.fit_predict(df_sp_dummies[col_keep])
         good[good == -1] = 0
@@ -1101,8 +1101,8 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         from sklearn.ensemble import IsolationForest
         col_keep = ['Duration', 'ValNegPeak', 'ValPosPeak', 'PTP', 'Slope',
                     'Frequency']
-        ilf = IsolationForest(behaviour='new', contamination='auto',
-                              max_samples='auto', verbose=0, random_state=42)
+        ilf = IsolationForest(contamination='auto', max_samples='auto',
+                              verbose=0, random_state=42)
 
         good = ilf.fit_predict(df_sw[col_keep])
         good[good == -1] = 0
@@ -1464,8 +1464,8 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         col_keep = ['Duration', 'LOCAbsValPeak', 'ROCAbsValPeak',
                     'LOCAbsRiseSlope', 'ROCAbsRiseSlope', 'LOCAbsFallSlope',
                     'ROCAbsFallSlope']
-        ilf = IsolationForest(behaviour='new', contamination='auto',
-                              max_samples='auto', verbose=0, random_state=42)
+        ilf = IsolationForest(contamination='auto', max_samples='auto',
+                              verbose=0, random_state=42)
         good = ilf.fit_predict(df_rem[col_keep])
         good[good == -1] = 0
         logger.info('%i outliers were removed.', (good == 0).sum())

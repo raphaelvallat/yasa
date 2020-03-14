@@ -14,6 +14,10 @@ a. Sleep efficiency in the :py:func:`yasa.sleep_statistics` is now calculated us
 
 a. :py:func:`yasa.sleep_statistics` now also returns the sleep onset latency, i.e. the latency to the first epoch of any sleep.
 
+**Dependencies**
+
+a. Removed deprecated ``behavior`` argument to avoid warning when calling :py:class:`sklearn.ensemble.IsolationForest`. 
+
 v0.1.9 (February 2020)
 ----------------------
 
