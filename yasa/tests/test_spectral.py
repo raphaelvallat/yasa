@@ -7,7 +7,8 @@ import numpy as np
 from itertools import product
 from scipy.signal import welch
 from yasa import hypno_str_to_int, hypno_upsample_to_data
-from yasa.spectral import (bandpower, bandpower_from_psd, irasa, stft_power)
+from yasa.spectral import (bandpower, bandpower_from_psd,
+                           bandpower_from_psd_ndarray, irasa, stft_power)
 from yasa.plotting import plot_spectrogram
 
 # Load 1D data
@@ -85,6 +86,22 @@ class TestStringMethods(unittest.TestCase):
         bp = bandpower_from_psd(psd, freqs, ch_names=None, relative=False)
         assert np.array_equal(bp.loc[:, 'Chan'],
                               ['CHAN001', 'CHAN002', 'CHAN003'])
+
+        # Bandpower from PSD with NDarray
+        n_chan = 4
+        n_epochs = 400
+        n_times = 3000
+        data_1d = np.random.rand(n_times)
+        data_2d = np.random.rand(n_chan, n_times)
+        data_3d = np.random.rand(n_chan, n_epochs, n_times)
+        freqs, psd_1d = welch(data_1d, sf, nperseg=int(4 * sf), axis=-1)
+        freqs, psd_2d = welch(data_2d, sf, nperseg=int(4 * sf), axis=-1)
+        freqs, psd_3d = welch(data_3d, sf, nperseg=int(4 * sf), axis=-1)
+        bandpower_from_psd_ndarray(psd_1d, freqs, relative=True)
+        bandpower_from_psd_ndarray(psd_2d, freqs, relative=False)
+        assert (bandpower_from_psd_ndarray(psd_3d, freqs,
+                                           bands=[(0.5, 4, 'Delta')],
+                                           relative=True) == 1).all()
 
     def test_irasa(self):
         """Test function IRASA.

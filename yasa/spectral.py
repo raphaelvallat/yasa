@@ -10,7 +10,8 @@ from scipy.integrate import simps
 from scipy.interpolate import RectBivariateSpline
 
 
-__all__ = ['bandpower', 'bandpower_from_psd', 'irasa', 'stft_power']
+__all__ = ['bandpower', 'bandpower_from_psd', 'bandpower_from_psd_ndarray',
+           'irasa', 'stft_power']
 
 
 def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
@@ -244,6 +245,81 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
     bp = bp.set_index('Chan').reset_index()
     # Add hidden attributes
     bp.bands_ = str(bands)
+    return bp
+
+
+def bandpower_from_psd_ndarray(psd, freqs, bands=[(0.5, 4, 'Delta'),
+                               (4, 8, 'Theta'), (8, 12, 'Alpha'),
+                               (12, 16, 'Sigma'), (16, 30, 'Beta'),
+                               (30, 40, 'Gamma')], relative=True):
+    """Compute bandpowers in N-dimensional PSD.
+
+    This is a NumPy-only implementation of the
+    :py:func:`yasa.bandpower_from_psd` function,
+    which supports 1-D arrays of shape (n_freqs),
+    or N-dimensional arays
+    (e.g. 2-D (n_chan, n_freqs) or 3-D (n_chan, n_epochs, n_freqs))
+
+    .. versionadded:: 0.2.0
+
+    Parameters
+    ----------
+    psd : :py:class:`numpy.ndarray`
+        Power spectral density of data, in uV^2/Hz.
+        Must be a N-D array of shape (..., n_freqs).
+        See :py:func:`scipy.signal.welch` for more details.
+    freqs : :py:class:`numpy.ndarray`
+        Array of frequencies. Must be a 1-D array of shape (n_freqs,)
+    bands : list of tuples
+        List of frequency bands of interests. Each tuple must contain the
+        lower and upper frequencies, as well as the band name
+        (e.g. (0.5, 4, 'Delta')).
+    relative : boolean
+        If True, bandpower is divided by the total power between the min and
+        max frequencies defined in ``band`` (default 0.5 to 40 Hz).
+
+    Returns
+    -------
+    bandpowers : :py:class:`numpy.ndarray`
+        Bandpower array of shape (n_bands, ...).
+    """
+    # Type checks
+    assert isinstance(bands, list), 'bands must be a list of tuple(s)'
+    assert isinstance(relative, bool), 'relative must be a boolean'
+
+    # Safety checks
+    freqs = np.asarray(freqs)
+    psd = np.asarray(psd)
+    assert freqs.ndim == 1, 'freqs must be a 1-D array of shape (n_freqs,)'
+    assert psd.shape[-1] == freqs.shape[-1], 'n_freqs must be last axis of psd'
+
+    # Extract frequencies of interest
+    all_freqs = np.hstack([[b[0], b[1]] for b in bands])
+    fmin, fmax = min(all_freqs), max(all_freqs)
+    idx_good_freq = np.logical_and(freqs >= fmin, freqs <= fmax)
+    freqs = freqs[idx_good_freq]
+    res = freqs[1] - freqs[0]
+
+    # Trim PSD to frequencies of interest
+    psd = psd[..., idx_good_freq]
+
+    # Calculate total power
+    total_power = simps(psd, dx=res, axis=-1)
+    total_power = total_power[np.newaxis, ...]
+
+    # Initialize empty array
+    bp = np.zeros((len(bands), *psd.shape[:-1]), dtype=np.float)
+
+    # Enumerate over the frequency bands
+    labels = []
+    for i, band in enumerate(bands):
+        b0, b1, la = band
+        labels.append(la)
+        idx_band = np.logical_and(freqs >= b0, freqs <= b1)
+        bp[i] = simps(psd[..., idx_band], dx=res, axis=-1)
+
+    if relative:
+        bp /= total_power
     return bp
 
 
