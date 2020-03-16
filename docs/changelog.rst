@@ -21,6 +21,7 @@ a. :py:func:`yasa.sleep_statistics` now also returns the sleep onset latency, i.
 b. Added the `bandpass` argument to :py:func:`yasa.bandpower` to apply a FIR bandpass filter using the lowest and highest frequencies defined in `bands`. This is useful if you work with absolute power and want to remove contributions from frequency bands of non-interests.
 c. The :py:func:`yasa.bandpower_from_psd` now always return the total absolute physical power (`TotalAbsPow`) of the signal, in units of uV^2 / Hz. This allows to quickly calculate the absolute bandpower from the relative bandpower.
 d. Added sigma (12-16Hz) to the default frequency bands (`bands`) in :py:func:`yasa.bandpower` and :py:func:`yasa.bandpower_from_psd`.
+e. Added an section in the `06_sw_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb>`_ notebooks on how to use relative amplitude thresholds (e.g. z-scores) instead of absolute thresholds in physical units.
 
 **Dependencies**
 
