@@ -41,7 +41,7 @@ class TestStringMethods(unittest.TestCase):
                       'NREM': 6.0, 'SOL': 1.0, 'Lat_N1': 1.0, 'Lat_N2': 2.5,
                       'Lat_N3': 4.0, 'Lat_REM': 7.0,
                       '%N1': 18.75, '%N2': 25.0, '%N3': 31.25, '%REM': 25.0,
-                      '%NREM': 75.0, 'SE': 80.0}
+                      '%NREM': 75.0, 'SE': 80.0, 'SME': 100.0}
 
         s = sleep_statistics(a, sf_hyp=1 / 30)
         # Compare with different sampling frequencies

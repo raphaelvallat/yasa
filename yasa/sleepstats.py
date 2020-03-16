@@ -122,6 +122,7 @@ def sleep_statistics(hypno, sf_hyp):
     * Wake After Sleep Onset (WASO): duration of wake periods within SPT.
     * Total Sleep Time (TST): SPT - WASO.
     * Sleep Efficiency (SE): TST / TIB * 100 (%).
+    * Sleep Maintenance Efficiency (SME): TST / SPT * 100 (%).
     * W, N1, N2, N3 and REM: sleep stages duration. NREM = N1 + N2 + N3.
     * % (W, ... REM): sleep stages duration expressed in percentages of TST.
     * Latencies: latencies of sleep stages from the beginning of the record.
@@ -165,7 +166,8 @@ def sleep_statistics(hypno, sf_hyp):
      '%N3': 31.25,
      '%REM': 25.0,
      '%NREM': 75.0,
-     'SE': 80.0}
+     'SE': 80.0,
+     'SME': 100.0}
     """
     stats = {}
     hypno = np.asarray(hypno)
@@ -208,4 +210,5 @@ def sleep_statistics(hypno, sf_hyp):
     stats['%REM'] = 100 * stats['REM'] / stats['TST']
     stats['%NREM'] = 100 * stats['NREM'] / stats['TST']
     stats['SE'] = 100 * stats['TST'] / stats['TIB']
+    stats['SME'] = 100 * stats['TST'] / stats['SPT']
     return stats
