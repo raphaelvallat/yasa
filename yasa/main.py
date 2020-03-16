@@ -856,13 +856,16 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         slow wave. Default is 0.1 to 1 second.
     amp_neg : tuple or list
         Absolute minimum and maximum negative trough amplitude of the
-        slow-wave. Default is 40 uV to 300 uV.
+        slow-wave. Default is 40 uV to 300 uV. Can also be in unit of standard
+        deviations if the data has been previously z-scored.
     amp_pos : tuple or list
         Absolute minimum and maximum positive peak amplitude of the
-        slow-wave. Default is 10 uV to 200 uV.
+        slow-wave. Default is 10 uV to 200 uV. Can also be in unit of standard
+        deviations if the data has been previously z-scored.
     amp_ptp : tuple or list
         Minimum and maximum peak-to-peak amplitude of the slow-wave.
-        Default is 75 uV to 500 uV.
+        Default is 75 uV to 500 uV. Can also be in unit of standard
+        deviations if the data has been previously z-scored.
     downsample : boolean
         If True, the data will be downsampled to 100 Hz or 128 Hz (depending
         on whether the original sampling frequency is a multiple of 100 or 128,
