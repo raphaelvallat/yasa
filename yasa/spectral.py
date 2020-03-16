@@ -14,9 +14,9 @@ __all__ = ['bandpower', 'bandpower_from_psd', 'irasa', 'stft_power']
 
 
 def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
-              win_sec=4, relative=True,
+              win_sec=4, relative=True, bandpass=False,
               bands=[(0.5, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'),
-                     (12, 30, 'Beta'), (30, 40, 'Gamma')],
+                     (12, 16, 'Sigma'), (16, 30, 'Beta'), (30, 40, 'Gamma')],
               kwargs_welch=dict(average='median', window='hamming')):
     """
     Calculate the Welch bandpower for each channel and, if specified,
@@ -70,6 +70,10 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     relative : boolean
         If True, bandpower is divided by the total power between the min and
         max frequencies defined in ``band``.
+    bandpass : boolean
+        If True, apply a standard FIR bandpass filter using the minimum and
+        maximum frequencies in ``bands``. Fore more details, refer to
+        :py:func:`mne.filter.filter_data`.
     bands : list of tuples
         List of frequency bands of interests. Each tuple must contain the
         lower and upper frequencies, as well as the band name
@@ -89,6 +93,11 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     For an example of how to use this function, please refer to
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_bandpower.ipynb
     """
+    # Type checks
+    assert isinstance(bands, list), 'bands must be a list of tuple(s)'
+    assert isinstance(relative, bool), 'relative must be a boolean'
+    assert isinstance(bandpass, bool), 'bandpass must be a boolean'
+
     # Check if input data is a MNE Raw object
     if isinstance(data, mne.io.BaseRaw):
         sf = data.info['sfreq']  # Extract sampling frequency
@@ -110,6 +119,13 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
             ch_names = np.atleast_1d(np.asarray(ch_names, dtype=str))
             assert ch_names.ndim == 1, 'ch_names must be 1D.'
             assert len(ch_names) == nchan, 'ch_names must match data.shape[0].'
+
+    if bandpass:
+        # Apply FIR bandpass filter
+        all_freqs = np.hstack([[b[0], b[1]] for b in bands])
+        fmin, fmax = min(all_freqs), max(all_freqs)
+        data = mne.filter.filter_data(data.astype('float64'), sf, fmin, fmax,
+                                      verbose=0)
 
     win = int(win_sec * sf)  # nperseg
 
@@ -148,8 +164,8 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
 
 
 def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
-                       (4, 8, 'Theta'), (8, 12, 'Alpha'), (12, 30, 'Beta'),
-                       (30, 40, 'Gamma')], relative=True):
+                       (4, 8, 'Theta'), (8, 12, 'Alpha'), (12, 16, 'Sigma'),
+                       (16, 30, 'Beta'), (30, 40, 'Gamma')], relative=True):
     """Compute the average power of the EEG in specified frequency band(s)
     given a pre-computed PSD.
 
@@ -180,6 +196,10 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
         Bandpower dataframe, in which each row is a channel and each column
         a spectral band.
     """
+    # Type checks
+    assert isinstance(bands, list), 'bands must be a list of tuple(s)'
+    assert isinstance(relative, bool), 'relative must be a boolean'
+
     # Safety checks
     freqs = np.asarray(freqs)
     assert freqs.ndim == 1
@@ -216,6 +236,7 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
 
     # Convert to DataFrame
     bp = pd.DataFrame(bp, columns=labels)
+    bp['TotalAbsPow'] = np.squeeze(total_power)
     bp['FreqRes'] = res
     # bp['WindowSec'] = 1 / res
     bp['Relative'] = relative

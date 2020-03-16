@@ -45,28 +45,34 @@ class TestStringMethods(unittest.TestCase):
         """
         # BANDPOWER
         bandpower(data_mne)  # Raw MNE multi-channel
-        bandpower(data, sf=sf)  # Single channel Numpy
+        bandpower(data, sf=sf, bandpass=True)  # Single channel Numpy
         bandpower(data, sf=sf, ch_names='F4')  # Single channel Numpy labelled
         bandpower(data_full, sf=sf_full, ch_names=chan_full, hypno=hypno_full,
                   include=(2, 3))  # Multi channel numpy
         bandpower(data_full, sf=sf_full, hypno=hypno_full,
-                  include=(3, 4, 5))  # Multi channel numpy
+                  include=(3, 4, 5), bandpass=True)  # Multi channel numpy
         bandpower(data_mne, hypno=hypno_mne, include=2)  # Raw MNE with hypno
 
         # BANDPOWER_FROM_PSD
         # 1-D EEG data
         win = int(2 * sf)
         freqs, psd = welch(data, sf, nperseg=win)
-        bp = bandpower_from_psd(psd, freqs, relative=False)
+        bp_abs_true = bandpower_from_psd(psd, freqs, relative=False)
         bp = bandpower_from_psd(psd, freqs, ch_names=['F4'])
+        bands = ['Delta', 'Theta', 'Alpha', 'Sigma', 'Beta', 'Gamma']
         assert bp.shape[0] == 1
         assert bp.at[0, 'Chan'] == 'F4'
         assert bp.at[0, 'FreqRes'] == 1 / (win / sf)
-        assert np.isclose(bp.loc[0, ['Delta', 'Theta', 'Alpha',
-                                     'Beta', 'Gamma']].sum(), 1, atol=1e-2)
+        assert np.isclose(bp.loc[0, bands].sum(), 1, atol=1e-2)
         assert (bp.bands_ == "[(0.5, 4, 'Delta'), (4, 8, 'Theta'), "
-                             "(8, 12, 'Alpha'), (12, 30, 'Beta'), "
-                             "(30, 40, 'Gamma')]")
+                             "(8, 12, 'Alpha'), (12, 16, 'Sigma'), "
+                             "(16, 30, 'Beta'), (30, 40, 'Gamma')]")
+
+        # Check that we can recover the physical power using TotalAbsPow
+        bands = ['Delta', 'Theta', 'Alpha', 'Sigma', 'Beta', 'Gamma']
+        bp_abs = (bp[bands] * bp['TotalAbsPow'].values[..., None])
+        np.testing.assert_array_almost_equal(bp_abs[bands].values,
+                                             bp_abs_true[bands].values)
 
         # 2-D EEG data
         win = int(4 * sf)
