@@ -174,14 +174,13 @@ place. Default to False.</p>
 </dd>
 <dt><strong>coupling</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will also calculate the phase-amplitude coupling between
 the slow-waves phase and the spindles-related sigma band
-amplitude. Specifically, the output will be the
-phase of the bandpas-filtered slow-wave signal (in radians) at the
-maximum sigma peak amplitude within an 4-seconds epoch centered around
-the negative peak (through) of the current slow-wave.
-The lower and upper frequencies for the slow-waves and
-spindles-related sigma signals are defined in <code class="docutils literal notranslate"><span class="pre">freq_sw</span></code> and
-<code class="docutils literal notranslate"><span class="pre">freq_sp</span></code>, respectively.</p>
-<p>Importantly, since the resulting variable is expressed in radians,
+amplitude. Specifically, two PAC metrics will be calculated:</p>
+<ol class="arabic">
+<li><p><code class="docutils literal notranslate"><span class="pre">PhaseAtSigmaPeak</span></code>: the phase of the bandpas-filtered slow-wave
+signal (in radians) at the maximum sigma peak amplitude within an
+4-seconds epoch centered around the negative peak (through) of the
+current slow-wave.</p>
+<p>Importantly, since <code class="docutils literal notranslate"><span class="pre">PhaseAtSigmaPeak</span></code> is expressed in radians,
 one should use circular statistics to calculate the mean direction
 and vector length:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pingouin</span> <span class="kn">as</span> <span class="nn">pg</span>
@@ -189,7 +188,15 @@ and vector length:</p>
 <span class="n">vector_length</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">circ_r</span><span class="p">(</span><span class="n">sw</span><span class="p">[</span><span class="s1">&#39;PhaseAtSigmaPeak&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>For more details, please refer to the <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb">Jupyter notebook</a></p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ndPAC</span></code>: the normalized and thresholded Mean Vector Length
+(also called the normalized direct PAC, or ndPAC) within a 4-sec
+epoch centered around the negative peak of the slow-wave.</p></li>
+</ol>
+<p>The lower and upper frequencies for the slow-waves and
+spindles-related sigma signals are defined in <code class="docutils literal notranslate"><span class="pre">freq_sw</span></code> and
+<code class="docutils literal notranslate"><span class="pre">freq_sp</span></code>, respectively.
+For more details, please refer to the <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb">Jupyter notebook</a></p>
 <p>Note that setting <code class="docutils literal notranslate"><span class="pre">coupling=True</span></code> may significantly increase
 computation time.</p>
 <div class="versionadded">
@@ -220,6 +227,7 @@ bandwidth of 1.5 Hz.</p>
 &#39;Slope&#39; : Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec)
 &#39;Frequency&#39; : Frequency of the slow-wave (1 / ``Duration``)
 &#39;PhaseAtSigmaPeak&#39;: SW phase at max sigma amplitude in 4-sec epoch
+&#39;ndPAC&#39;: Normalized direct PAC within centered 4-sec epoch
 &#39;Stage&#39; : Sleep stage (only if hypno was provided)
 </pre></div>
 </div>

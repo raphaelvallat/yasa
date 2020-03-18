@@ -5,4 +5,5 @@ mne>=0.19
 numba>=0.39.0
 matplotlib
 lspopt
+tensorpac>=0.6.2
 scikit-learn>=0.20

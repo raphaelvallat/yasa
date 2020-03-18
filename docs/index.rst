@@ -64,10 +64,11 @@ Installation
 - numpy>=1.14
 - scipy>=1.1.0
 - pandas>=0.23,
-- mne>=0.17.0
+- mne>=0.19
 - numba>=0.39.0
 - scikit-learn>=0.20
 - matplotlib
+- tensorpac>=0.6.2
 - `lspopt <https://github.com/hbldh/lspopt>`_
 
 Several functions of YASA are written using `Numba <http://numba.pydata.org/>`_, a just-in-time compiler for Python. This allows to greatly speed up the computation time (typically a few seconds for a full night recording).

@@ -64,9 +64,10 @@ Installation
 - numpy>=1.14
 - scipy>=1.1.0
 - pandas>=0.23,
-- mne>=0.17.0
+- mne>=0.19
 - numba>=0.39.0
 - scikit-learn>=0.20
+- tensorpac>=0.6.2
 - matplotlib
 - `lspopt <https://github.com/hbldh/lspopt>`_
 

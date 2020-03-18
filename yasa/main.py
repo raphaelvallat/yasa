@@ -889,24 +889,30 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 2),
     coupling : boolean
         If True, YASA will also calculate the phase-amplitude coupling between
         the slow-waves phase and the spindles-related sigma band
-        amplitude. Specifically, the output will be the
-        phase of the bandpas-filtered slow-wave signal (in radians) at the
-        maximum sigma peak amplitude within an 4-seconds epoch centered around
-        the negative peak (through) of the current slow-wave.
+        amplitude. Specifically, two PAC metrics will be calculated:
+
+        1. ``PhaseAtSigmaPeak``: the phase of the bandpas-filtered slow-wave
+           signal (in radians) at the maximum sigma peak amplitude within an
+           4-seconds epoch centered around the negative peak (through) of the
+           current slow-wave.
+
+           Importantly, since ``PhaseAtSigmaPeak`` is expressed in radians,
+           one should use circular statistics to calculate the mean direction
+           and vector length:
+
+           .. code-block:: python
+
+               import pingouin as pg
+               mean_direction = pg.circ_mean(sw['PhaseAtSigmaPeak'])
+               vector_length = pg.circ_r(sw['PhaseAtSigmaPeak'])
+
+        2. ``ndPAC``: the normalized and thresholded Mean Vector Length
+           (also called the normalized direct PAC, or ndPAC) within a 4-sec
+           epoch centered around the negative peak of the slow-wave.
+
         The lower and upper frequencies for the slow-waves and
         spindles-related sigma signals are defined in ``freq_sw`` and
         ``freq_sp``, respectively.
-
-        Importantly, since the resulting variable is expressed in radians,
-        one should use circular statistics to calculate the mean direction
-        and vector length:
-
-        .. code-block:: python
-
-            import pingouin as pg
-            mean_direction = pg.circ_mean(sw['PhaseAtSigmaPeak'])
-            vector_length = pg.circ_r(sw['PhaseAtSigmaPeak'])
-
         For more details, please refer to the `Jupyter notebook
         <https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb>`_
 
@@ -940,6 +946,7 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 2),
             'Slope' : Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec)
             'Frequency' : Frequency of the slow-wave (1 / ``Duration``)
             'PhaseAtSigmaPeak': SW phase at max sigma amplitude in 4-sec epoch
+            'ndPAC': Normalized direct PAC within centered 4-sec epoch
             'Stage' : Sleep stage (only if hypno was provided)
 
     Notes
@@ -1155,6 +1162,12 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 2),
     # Add phase (in radians) of slow-oscillation signal at maximum
     # spindles-related sigma amplitude within a 4-seconds centered epochs.
     if coupling:
+        try:
+            import tensorpac.methods as tpm
+        except IOError:  # pragma: no cover
+            raise IOError("tensorpac needs to be installed. Please use `pip "
+                          "install tensorpac -U`.")
+
         # The following lines are borrowed from yasa.get_sync_events
         time_before = time_after = 2
         N_bef = int(sf * time_before)
@@ -1177,11 +1190,21 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 2),
         sw_pha_ev = sw_pha[idx]
         sp_amp_ev = sp_amp[idx]
         # Find SW phase at max sigma amplitude in epoch
-        pha_at_max = sw_pha_ev.take(sp_amp_ev.argmax(axis=1))
+        idx_max_amp = sp_amp_ev.argmax(axis=1)[..., None]
+        pha_at_max = np.take_along_axis(sw_pha_ev, idx_max_amp, axis=1)
+        pha_at_max = np.squeeze(pha_at_max)
         # Now we need to append it back to the original unmasked shape
         pha_at_max_full = np.ones(n_peaks) * np.nan
         pha_at_max_full[idx_nomask] = pha_at_max
         sw_params['PhaseAtSigmaPeak'] = pha_at_max_full
+
+        # Normalized Direct PAC
+        ndp = tpm.ndpac(sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=0.05)
+        ndp = np.squeeze(ndp)
+        ndp_full = np.ones(n_peaks) * np.nan
+        ndp_full[idx_nomask] = ndp
+        sw_params['ndPAC'] = ndp_full
+
         # Make sure that Stage is the last column of the dataframe
         sw_params.move_to_end('Stage')
 
@@ -1252,6 +1275,7 @@ def sw_detect_multi(data, sf=None, ch_names=None, **kwargs):
             'Slope' : Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec)
             'Frequency' : Frequency of the slow-wave (1 / ``Duration``)
             'PhaseAtSigmaPeak': SW phase at max sigma amplitude in 4-sec epoch
+            'ndPAC': Normalized direct PAC within centered 4-sec epoch
             'Stage' : Sleep stage (only if hypno was provided)
             'Channel' : Channel name
             'IdxChannel' : Integer index of channel in data
