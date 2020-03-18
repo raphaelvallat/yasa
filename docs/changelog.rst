@@ -9,7 +9,7 @@ v0.2.0 (dev)
 **Bugfixes**
 
 a. Sleep efficiency in the :py:func:`yasa.sleep_statistics` is now calculated using time in bed (TIB) as the denominator instead of sleep period time (SPT), in agreement with the AASM guidelines. The old way of computing the efficiency (TST / SPT) has now been renamed Sleep Maintenance Efficiency (SME).
-b. Added the ``coupling`` and ``freq_sp`` keyword-arguments to the :py:func:`yasa.sw_detect` function. If ``coupling=True``, the function will return the phase of the slow-waves (in radians) at the most prominent peak of sigma-filtered band (``PhaseAtSigmaPeak``), as well as the normalized and thresholded mean vector length (``ndPAC``).
+b. Added the ``coupling`` and ``freq_sp`` keyword-arguments to the :py:func:`yasa.sw_detect` function. If ``coupling=True``, the function will return the phase of the slow-waves (in radians) at the most prominent peak of sigma-filtered band (``PhaseAtSigmaPeak``), as well as the normalized mean vector length (``ndPAC``).
 
 **New functions**
 

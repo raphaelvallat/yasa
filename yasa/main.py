@@ -906,7 +906,7 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 2),
                mean_direction = pg.circ_mean(sw['PhaseAtSigmaPeak'])
                vector_length = pg.circ_r(sw['PhaseAtSigmaPeak'])
 
-        2. ``ndPAC``: the normalized and thresholded Mean Vector Length
+        2. ``ndPAC``: the normalized Mean Vector Length
            (also called the normalized direct PAC, or ndPAC) within a 4-sec
            epoch centered around the negative peak of the slow-wave.
 
@@ -1198,8 +1198,8 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 2),
         pha_at_max_full[idx_nomask] = pha_at_max
         sw_params['PhaseAtSigmaPeak'] = pha_at_max_full
 
-        # Normalized Direct PAC
-        ndp = tpm.ndpac(sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=0.05)
+        # Normalized Direct PAC, without thresholding
+        ndp = tpm.ndpac(sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=1)
         ndp = np.squeeze(ndp)
         ndp_full = np.ones(n_peaks) * np.nan
         ndp_full[idx_nomask] = ndp

@@ -994,7 +994,7 @@
 <span class="sd">               mean_direction = pg.circ_mean(sw[&#39;PhaseAtSigmaPeak&#39;])</span>
 <span class="sd">               vector_length = pg.circ_r(sw[&#39;PhaseAtSigmaPeak&#39;])</span>
 
-<span class="sd">        2. ``ndPAC``: the normalized and thresholded Mean Vector Length</span>
+<span class="sd">        2. ``ndPAC``: the normalized Mean Vector Length</span>
 <span class="sd">           (also called the normalized direct PAC, or ndPAC) within a 4-sec</span>
 <span class="sd">           epoch centered around the negative peak of the slow-wave.</span>
 
@@ -1286,8 +1286,8 @@
         <span class="n">pha_at_max_full</span><span class="p">[</span><span class="n">idx_nomask</span><span class="p">]</span> <span class="o">=</span> <span class="n">pha_at_max</span>
         <span class="n">sw_params</span><span class="p">[</span><span class="s1">&#39;PhaseAtSigmaPeak&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pha_at_max_full</span>
 
-        <span class="c1"># Normalized Direct PAC</span>
-        <span class="n">ndp</span> <span class="o">=</span> <span class="n">tpm</span><span class="o">.</span><span class="n">ndpac</span><span class="p">(</span><span class="n">sw_pha_ev</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">sp_amp_ev</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+        <span class="c1"># Normalized Direct PAC, without thresholding</span>
+        <span class="n">ndp</span> <span class="o">=</span> <span class="n">tpm</span><span class="o">.</span><span class="n">ndpac</span><span class="p">(</span><span class="n">sw_pha_ev</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">sp_amp_ev</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">ndp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">ndp</span><span class="p">)</span>
         <span class="n">ndp_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_peaks</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
         <span class="n">ndp_full</span><span class="p">[</span><span class="n">idx_nomask</span><span class="p">]</span> <span class="o">=</span> <span class="n">ndp</span>
