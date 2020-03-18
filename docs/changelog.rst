@@ -31,6 +31,7 @@ i. Reorganized Jupyter notebooks.
 **Dependencies**
 
 a. Removed deprecated ``behavior`` argument to avoid warning when calling :py:class:`sklearn.ensemble.IsolationForest`.
+b. Added `tensorpac <https://etiennecmb.github.io/tensorpac/index.html>`_ to dependencies.
 
 v0.1.9 (February 2020)
 ----------------------
