@@ -92,7 +92,7 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     Notes
     -----
     For an example of how to use this function, please refer to
-    https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_bandpower.ipynb
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_bandpower.ipynb
     """
     # Type checks
     assert isinstance(bands, list), 'bands must be a list of tuple(s)'
@@ -413,7 +413,7 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
     adding ``psd = psd_aperiodic + psd_oscillatory``.
 
     For an example of how to use this function, please refer to
-    https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_IRASA.ipynb
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_IRASA.ipynb
 
     References
     ----------

@@ -12,8 +12,10 @@ import numpy as np
 import pandas as pd
 from scipy import signal
 from mne.filter import filter_data
+from collections import OrderedDict
 from scipy.interpolate import interp1d
 from scipy.fftpack import next_fast_len
+
 
 from .numba import _detrend, _rms
 from .others import moving_transform, trimbothstd, _zerocrossings
@@ -159,7 +161,7 @@ def get_sync_events(data=None, sf=None, detection=None, center='NegPeak',
     detected slow-waves / spindles.
 
     For more details, please refer to the `Jupyter notebook
-    <https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_sw_average.ipynb>`_
+    <https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection_multi.ipynb>`_
 
     Parameters
     ----------
@@ -185,8 +187,8 @@ def get_sync_events(data=None, sf=None, detection=None, center='NegPeak',
 
     Returns
     -------
-    df_sw : :py:class:`pandas.DataFrame`
-        Ouput detection dataframe::
+    df_sync : :py:class:`pandas.DataFrame`
+        Ouput long-format dataframe::
 
         'Event' : Event number
         'Time' : Timing of the events (in seconds)
@@ -232,7 +234,7 @@ def get_sync_events(data=None, sf=None, detection=None, center='NegPeak',
         def rng(x):
             """Utility function to create a range before and after
             a given value."""
-            return np.arange(x - N_bef, x + N_aft + 1)
+            return np.arange(x - N_bef, x + N_aft + 1, dtype='int')
 
         # Extract indices, data, and time vector
         idx = np.apply_along_axis(rng, 1, idx_peak)
@@ -354,22 +356,24 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
         at the most prominent peak of the spindles.
 
         Importantly, since the resulting variable is expressed in radians,
-        one should use a circular mean to calculate the average across all
-        events:
+        one should use circular statistics to calculate the mean direction
+        and vector length:
 
         .. code-block:: python
 
-            from scipy.stats import circmean
-            avg_SOPhase = circmean(sp['SOPhase'])
+            import pingouin as pg
+            mean_direction = pg.circ_mean(sp['SOPhase'])
+            vector_length = pg.circ_r(sp['SOPhase'])
 
         For more details, please refer to the `Jupyter notebook
-        <https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_spindles-SO_coupling.ipynb>`_
+        <https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb>`_
 
         .. versionadded:: 0.1.9
 
     freq_so : tuple or list
         Slow-oscillations frequency of interest. This is only relevant if
-        ``coupling=True``. Default is 0.1 to 1.25 Hz.
+        ``coupling=True``. Default is 0.1 to 1.25 Hz, with a narrow transition
+        bandwidth of 0.1 Hz.
 
         .. versionadded:: 0.1.9
 
@@ -665,7 +669,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
                  'SOPhase': sp_cou,
                  'Stage': sp_sta}
 
-    df_sp = pd.DataFrame.from_dict(sp_params)[good_dur].reset_index(drop=True)
+    df_sp = pd.DataFrame.from_dict(sp_params)[good_dur]
 
     if hypno is None:
         df_sp = df_sp.drop(columns=['Stage'])
@@ -678,20 +682,18 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
     # We need at least 50 detected spindles to apply the Isolation Forest.
     if remove_outliers and df_sp.shape[0] >= 50:
         from sklearn.ensemble import IsolationForest
-        df_sp_dummies = pd.get_dummies(df_sp)
-        col_keep = df_sp_dummies.columns.difference(['Start', 'Peak', 'End',
-                                                     'SOPhase'])
+        col_keep = ['Duration', 'Amplitude', 'RMS', 'AbsPower', 'RelPower',
+                    'Frequency', 'Oscillations', 'Symmetry']
         ilf = IsolationForest(contamination='auto', max_samples='auto',
                               verbose=0, random_state=42)
-
-        good = ilf.fit_predict(df_sp_dummies[col_keep])
+        good = ilf.fit_predict(df_sp[col_keep])
         good[good == -1] = 0
         logger.info('%i outliers were removed.', (good == 0).sum())
         # Remove outliers from DataFrame
-        df_sp = df_sp[good.astype(bool)].reset_index(drop=True)
+        df_sp = df_sp[good.astype(bool)]
 
     logger.info('%i spindles were found in data.', df_sp.shape[0])
-    return df_sp
+    return df_sp.reset_index(drop=True)
 
 
 def spindles_detect_multi(data, sf=None, ch_names=None, multi_only=False,
@@ -737,9 +739,10 @@ def spindles_detect_multi(data, sf=None, ch_names=None, multi_only=False,
             'Frequency' : Median frequency (in Hz)
             'Oscillations' : Number of oscillations (peaks)
             'Symmetry' : Symmetry index, ranging from 0 to 1
+            'SOPhase': SO phase (radians) at the most prominent spindle peak
+            'Stage' : Sleep stage (only if hypno was provided)
             'Channel' : Channel name
             'IdxChannel' : Integer index of channel in data
-            'Stage' : Sleep stage (only if hypno was provided)
 
     Notes
     -----
@@ -798,10 +801,10 @@ def spindles_detect_multi(data, sf=None, ch_names=None, multi_only=False,
 #############################################################################
 
 
-def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
+def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 2),
               dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 300),
               amp_pos=(10, 200), amp_ptp=(75, 500), downsample=True,
-              remove_outliers=False):
+              remove_outliers=False, coupling=False, freq_sp=(12, 16)):
     """Slow-waves detection.
 
     Parameters
@@ -844,10 +847,9 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         (2, 3), meaning that the detection is applied on N2 and N3
         sleep. This has no effect when ``hypno`` is None.
     freq_sw : tuple or list
-        Slow wave frequency range. Default is 0.3 to 3.5 Hz. Please note that
-        YASA uses a FIR filter (implemented in MNE) with a 0.2Hz transition
-        band, which means that for `freq_sw = (.3, 3.5 Hz)`, the -6 dB points
-        are located at 0.2 and 3.6 Hz.
+        Slow wave frequency range. Default is 0.3 to 2 Hz. Please note that
+        YASA uses a FIR filter (implemented in MNE) with a 0.2 Hz transition
+        band, which means that the -6 dB points are located at 0.2 and 2.1 Hz.
     dur_neg : tuple or list
         The minimum and maximum duration of the negative deflection of the
         slow wave. Default is 0.3 to 1.5 second.
@@ -857,15 +859,21 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
     amp_neg : tuple or list
         Absolute minimum and maximum negative trough amplitude of the
         slow-wave. Default is 40 uV to 300 uV. Can also be in unit of standard
-        deviations if the data has been previously z-scored.
+        deviations if the data has been previously z-scored. If you do not want
+        to specify any negative amplitude thresholds,
+        use ``amp_neg=(None, None)``.
     amp_pos : tuple or list
         Absolute minimum and maximum positive peak amplitude of the
         slow-wave. Default is 10 uV to 200 uV. Can also be in unit of standard
         deviations if the data has been previously z-scored.
+        If you do not want to specify any positive amplitude thresholds,
+        use ``amp_pos=(None, None)``.
     amp_ptp : tuple or list
         Minimum and maximum peak-to-peak amplitude of the slow-wave.
         Default is 75 uV to 500 uV. Can also be in unit of standard
         deviations if the data has been previously z-scored.
+        Use ``np.inf`` to set no upper amplitude threshold
+        (e.g. ``amp_ptp=(75, np.inf)``).
     downsample : boolean
         If True, the data will be downsampled to 100 Hz or 128 Hz (depending
         on whether the original sampling frequency is a multiple of 100 or 128,
@@ -876,8 +884,44 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         The outliers detection is performed on the frequency, amplitude and
         duration parameters of the detected slow-waves. YASA uses a random seed
         (42) to ensure reproducible results. Note that this step will only be
-        applied if there are more than 100 detected slow-waves in the first
+        applied if there are more than 50 detected slow-waves in the first
         place. Default to False.
+    coupling : boolean
+        If True, YASA will also calculate the phase-amplitude coupling between
+        the slow-waves phase and the spindles-related sigma band
+        amplitude. Specifically, the output will be the
+        phase of the bandpas-filtered slow-wave signal (in radians) at the
+        maximum sigma peak amplitude within an 4-seconds epoch centered around
+        the negative peak (through) of the current slow-wave.
+        The lower and upper frequencies for the slow-waves and
+        spindles-related sigma signals are defined in ``freq_sw`` and
+        ``freq_sp``, respectively.
+
+        Importantly, since the resulting variable is expressed in radians,
+        one should use circular statistics to calculate the mean direction
+        and vector length:
+
+        .. code-block:: python
+
+            import pingouin as pg
+            mean_direction = pg.circ_mean(sw['PhaseAtSigmaPeak'])
+            vector_length = pg.circ_r(sw['PhaseAtSigmaPeak'])
+
+        For more details, please refer to the `Jupyter notebook
+        <https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb>`_
+
+        Note that setting ``coupling=True`` may significantly increase
+        computation time.
+
+        .. versionadded:: 0.2.0
+
+    freq_sp : tuple or list
+        Spindles-related frequency of interest. This is only relevant if
+        ``coupling=True``. Default is 12 to 16 Hz, with a wide transition
+        bandwidth of 1.5 Hz.
+
+        .. versionadded:: 0.2.0
+
 
     Returns
     -------
@@ -895,6 +939,7 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
             'PTP' : Peak to peak amplitude (ValPosPeak - ValNegPeak)
             'Slope' : Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec)
             'Frequency' : Frequency of the slow-wave (1 / ``Duration``)
+            'PhaseAtSigmaPeak': SW phase at max sigma amplitude in 4-sec epoch
             'Stage' : Sleep stage (only if hypno was provided)
 
     Notes
@@ -905,7 +950,7 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
     all computed on the filtered signal.
 
     For an example of how to run the detection, please refer to
-    https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb
     """
     # Safety check
     data = np.asarray(data, dtype=np.float64)
@@ -964,10 +1009,29 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
     # Define time vector
     times = np.arange(data.size) / sf
 
+    # Get data size and next fast length for Hilbert transform
+    n = data.size
+    nfast = next_fast_len(n)
+
     # Bandpass filter
     data_filt = filter_data(data, sf, freq_sw[0], freq_sw[1], method='fir',
                             verbose=0, l_trans_bandwidth=0.2,
                             h_trans_bandwidth=0.2)
+
+    # Extract the spindles-related sigma signal for coupling
+    if coupling:
+        # The width of the transition band is set to 1.5 Hz on each side,
+        # meaning that for freq_sp = (12, 15 Hz), the -6 dB points are located
+        # at 11.25 and 15.75 Hz. The frequency band for the amplitude signal
+        # must be large enough to fit the sidebands caused by the assumed
+        # modulating lower frequency band (Aru et al. 2015).
+        # https://doi.org/10.1016/j.conb.2014.08.002
+        data_sp = filter_data(data, sf, freq_sp[0], freq_sp[1], method='fir',
+                              l_trans_bandwidth=1.5, h_trans_bandwidth=1.5,
+                              verbose=0)
+        # Now extract the instantaneous phase/amplitude using Hilbert transform
+        sw_pha = np.angle(signal.hilbert(data_filt, N=nfast)[:n])
+        sp_amp = np.abs(signal.hilbert(data_sp, N=nfast)[:n])
 
     # Find peaks in data
     # Negative peaks with value comprised between -40 to -300 uV
@@ -1074,20 +1138,54 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
         return None
 
     # Create a dictionnary and then a dataframe (much faster)
-    sw_params = {'Start': sw_start,
-                 'NegPeak': sw_idx_neg,
-                 'MidCrossing': sw_midcrossing,
-                 'PosPeak': sw_idx_pos,
-                 'End': sw_end,
-                 'Duration': sw_dur,
-                 'ValNegPeak': data_filt[idx_neg_peaks],
-                 'ValPosPeak': data_filt[idx_pos_peaks],
-                 'PTP': sw_ptp,
-                 'Slope': sw_slope,
-                 'Frequency': 1 / sw_dur,
-                 'Stage': sw_sta,
-                 }
+    sw_params = OrderedDict({'Start': sw_start,
+                             'NegPeak': sw_idx_neg,
+                             'MidCrossing': sw_midcrossing,
+                             'PosPeak': sw_idx_pos,
+                             'End': sw_end,
+                             'Duration': sw_dur,
+                             'ValNegPeak': data_filt[idx_neg_peaks],
+                             'ValPosPeak': data_filt[idx_pos_peaks],
+                             'PTP': sw_ptp,
+                             'Slope': sw_slope,
+                             'Frequency': 1 / sw_dur,
+                             'Stage': sw_sta,
+                             })
 
+    # Add phase (in radians) of slow-oscillation signal at maximum
+    # spindles-related sigma amplitude within a 4-seconds centered epochs.
+    if coupling:
+        # The following lines are borrowed from yasa.get_sync_events
+        time_before = time_after = 2
+        N_bef = int(sf * time_before)
+        N_aft = int(sf * time_after)
+        # Convert to integer sample indices in data
+        n_peaks = idx_neg_peaks.shape[0]
+        idx_peak = (idx_neg_peaks).astype(int)[..., np.newaxis]
+
+        def rng(x):
+            """Utility function to create a range before and after
+            a given value."""
+            return np.arange(x - N_bef, x + N_aft + 1, dtype='int')
+
+        idx = np.apply_along_axis(rng, 1, idx_peak)
+        # We drop the events for which the indices exceed data
+        idx = np.ma.mask_rows(np.ma.masked_outside(idx, 0, data.shape[0]))
+        idx_nomask = np.unique(idx.nonzero()[0])
+        idx = np.ma.compress_rows(idx)
+        # sw_pha is a 2-D array of shape (n_events, N_bef + N_aft + 1)
+        sw_pha_ev = sw_pha[idx]
+        sp_amp_ev = sp_amp[idx]
+        # Find SW phase at max sigma amplitude in epoch
+        pha_at_max = sw_pha_ev.take(sp_amp_ev.argmax(axis=1))
+        # Now we need to append it back to the original unmasked shape
+        pha_at_max_full = np.ones(n_peaks) * np.nan
+        pha_at_max_full[idx_nomask] = pha_at_max
+        sw_params['PhaseAtSigmaPeak'] = pha_at_max_full
+        # Make sure that Stage is the last column of the dataframe
+        sw_params.move_to_end('Stage')
+
+    # Convert to dataframe, keeping only good events
     df_sw = pd.DataFrame.from_dict(sw_params)[good_sw]
 
     # Remove all duplicates
@@ -1099,14 +1197,13 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 3.5),
     else:
         df_sw['Stage'] = df_sw['Stage'].astype(int).astype('category')
 
-    # We need at least 100 detected slow waves to apply the Isolation Forest.
-    if remove_outliers and df_sw.shape[0] >= 100:
+    # We need at least 50 detected slow waves to apply the Isolation Forest.
+    if remove_outliers and df_sw.shape[0] >= 50:
         from sklearn.ensemble import IsolationForest
         col_keep = ['Duration', 'ValNegPeak', 'ValPosPeak', 'PTP', 'Slope',
                     'Frequency']
         ilf = IsolationForest(contamination='auto', max_samples='auto',
                               verbose=0, random_state=42)
-
         good = ilf.fit_predict(df_sw[col_keep])
         good[good == -1] = 0
         logger.info('%i outliers were removed.', (good == 0).sum())
@@ -1154,6 +1251,7 @@ def sw_detect_multi(data, sf=None, ch_names=None, **kwargs):
             'PTP' : Peak to peak amplitude (ValPosPeak - ValNegPeak)
             'Slope' : Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec)
             'Frequency' : Frequency of the slow-wave (1 / ``Duration``)
+            'PhaseAtSigmaPeak': SW phase at max sigma amplitude in 4-sec epoch
             'Stage' : Sleep stage (only if hypno was provided)
             'Channel' : Channel name
             'IdxChannel' : Integer index of channel in data
@@ -1166,7 +1264,7 @@ def sw_detect_multi(data, sf=None, ch_names=None, **kwargs):
     computed on the filtered signal.
 
     For an example of how to run the detection, please refer to
-    https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_sw_detection_multi.ipynb
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection_multi.ipynb
     """
     # Check if input data is a MNE Raw object
     if isinstance(data, mne.io.BaseRaw):
@@ -1281,7 +1379,7 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         using :py:class:`sklearn.ensemble.IsolationForest`.
         YASA uses a random seed (42) to ensure reproducible results.
         Note that this step will only be applied if there are more than
-        100 detected REMs in the first place. Default to False.
+        50 detected REMs in the first place. Default to False.
 
     Returns
     -------
@@ -1308,7 +1406,7 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
     ROC signals.
 
     For an example of how to run the detection, please refer to
-    https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_REMs_detection.ipynb
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb
     """
     # Safety checks
     loc = np.squeeze(np.asarray(loc, dtype=np.float64))
@@ -1462,7 +1560,7 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         df_rem['Stage'] = df_rem['Stage'].astype(int).astype('category')
 
     # We need at least 100 detected REMs to apply the Isolation Forest.
-    if remove_outliers and df_rem.shape[0] >= 100:
+    if remove_outliers and df_rem.shape[0] >= 50:
         from sklearn.ensemble import IsolationForest
         col_keep = ['Duration', 'LOCAbsValPeak', 'ROCAbsValPeak',
                     'LOCAbsRiseSlope', 'ROCAbsRiseSlope', 'LOCAbsFallSlope',

@@ -133,7 +133,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 *.ini
-notebooks/10_catch_errors.ipynb
+notebooks/20_catch_errors.ipynb
 
 # Illustrator
 *.ai

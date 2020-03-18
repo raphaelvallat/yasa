@@ -257,7 +257,7 @@ class TestStringMethods(unittest.TestCase):
                       amp_ptp=aptp)
 
         # With N3 hypnogram
-        sw_detect(data_sw, sf_full, hypno=hypno_sw)
+        sw_detect(data_sw, sf_full, hypno=hypno_sw, coupling=True)
 
         # With 2D data
         sw_detect(data_sw[np.newaxis, ...], sf_full)
@@ -270,7 +270,7 @@ class TestStringMethods(unittest.TestCase):
 
         # Downsampling without hypnogram
         data_sw_200 = resample(data_sw, up=2)
-        sw_detect(data_sw_200, 200)
+        sw_detect(data_sw_200, 200, coupling=True, freq_sp=(11, 15))
 
         # Non-integer sampling frequency
         data_sw_250 = resample(data_sw, up=2.5)

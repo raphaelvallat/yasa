@@ -106,25 +106,24 @@ The examples Jupyter notebooks are really what make YASA great! In addition to s
 * `02_spindles_detection_multi.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/02_spindles_detection_multi.ipynb>`_: multi-channel spindles detection using MNE data.
 * `03_spindles_detection_NREM_only.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/03_spindles_detection_NREM_only.ipynb>`_: spindles detection on NREM sleep only.
 * `04_spindles_slow_fast.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/04_spindles_slow_fast.ipynb>`_: slow and fast spindles analysis.
-* `05_run_visbrain.py <https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_run_visbrain.py>`_: interactive display with the Visbrain graphical user interface.
+* `run_visbrain.py <https://github.com/raphaelvallat/yasa/blob/master/notebooks/run_visbrain.py>`_: interactive display with the Visbrain graphical user interface.
 
 **Slow-waves**
 
-* `06_sw_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb>`_: single-channel slow-waves detection and step-by-step description of the algorithm.
-* `07_sw_detection_multi.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection using MNE data.
-* `08_sw_average.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_sw_average.ipynb>`_: plot the average template of the detected slow-waves, per channel.
+* `05_sw_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb>`_: single-channel slow-waves detection and step-by-step description of the algorithm.
+* `06_sw_detection_multi.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection using MNE data.
 
 **Rapid Eye Movements (REMs)**
 
-* `09_REMs_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_REMs_detection.ipynb>`_: REMs detection.
+* `07_REMs_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb>`_: REMs detection.
 
 **Spectral analysis**
 
-* `10_bandpower.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_bandpower.ipynb>`_: bandpower per channel and per sleep stage.
-* `11_IRASA.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_IRASA.ipynb>`_: separate the aperiodic (= fractal = 1/f) components of the EEG power spectra using the IRASA method.
-* `12_spectrogram.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spectrogram.ipynb>`_: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.
-* `13_nonlinear_features.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_nonlinear_features.ipynb>`_: extract epoch-based non-linear features of sleep EEG.
-* `14_spindles-SO_coupling.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_spindles-SO_coupling.ipynb>`_: performs event-locked spindles-SO coupling, as well as data-driven Phase-Amplitude Coupling.
+* `08_bandpower.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_bandpower.ipynb>`_: bandpower per channel and per sleep stage.
+* `09_IRASA.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_IRASA.ipynb>`_: separate the aperiodic (= fractal = 1/f) components of the EEG power spectra using the IRASA method.
+* `10_spectrogram.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_spectrogram.ipynb>`_: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.
+* `11_nonlinear_features.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_nonlinear_features.ipynb>`_: extract epoch-based non-linear features of sleep EEG.
+* `12_spindles-SO_coupling.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb>`_: performs event-locked spindles-SO coupling, as well as data-driven Phase-Amplitude Coupling.
 
 Typical uses
 ------------
@@ -143,7 +142,7 @@ Typical uses
                        freq_sp=(12, 15), duration=(0.5, 2), freq_broad=(1, 30),
                        min_distance=500, downsample=True,
                        thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
-                       remove_outliers=False)
+                       remove_outliers=False, coupling=False)
 
   # Multi-channels detection on NREM sleep only (requires an hypnogram)
   yasa.spindles_detect_multi(data, sf, ch_names, hypno=hypno)
@@ -157,10 +156,10 @@ Typical uses
   yasa.sw_detect(data, sf)
 
   # Single-channel full command (shows all the default implicit parameters)
-  yasa.sw_detect(data, sf, hypno=hypno, include=(2, 3), freq_sw=(0.3, 3.5),
+  yasa.sw_detect(data, sf, hypno=hypno, include=(2, 3), freq_sw=(0.3, 2),
                  dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 300),
                  amp_pos=(10, 150), amp_ptp=(75, 400), downsample=True,
-                 remove_outliers=False)
+                 remove_outliers=False, coupling=False)
 
   # Multi-channel slow-waves detection on N2 + N3 sleep only (requires an hypnogram)
   yasa.sw_detect_multi(data, sf, ch_names, hypno=hypno)
