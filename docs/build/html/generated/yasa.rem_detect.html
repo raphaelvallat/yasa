@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.rem_detect &#8212; yasa 0.1.9 documentation</title>
+    <title>yasa.rem_detect &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -156,13 +156,13 @@ respectively).</p>
 using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
 YASA uses a random seed (42) to ensure reproducible results.
 Note that this step will only be applied if there are more than
-100 detected REMs in the first place. Default to False.</p>
+50 detected REMs in the first place. Default to False.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>df_rem</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
+<dt><strong>df_rem</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Start&#39;</span> <span class="p">:</span> <span class="n">Start</span> <span class="n">of</span> <span class="n">each</span> <span class="n">detected</span> <span class="n">REM</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span> <span class="n">of</span> <span class="n">data</span><span class="p">)</span>
 <span class="s1">&#39;Peak&#39;</span> <span class="p">:</span> <span class="n">Location</span> <span class="n">of</span> <span class="n">the</span> <span class="n">peak</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span> <span class="n">of</span> <span class="n">data</span><span class="p">)</span>
 <span class="s1">&#39;End&#39;</span> <span class="p">:</span> <span class="n">End</span> <span class="n">time</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
@@ -185,7 +185,7 @@ Note that this step will only be applied if there are more than
 <p>Note that all the output parameters are computed on the filtered LOC and
 ROC signals.</p>
 <p>For an example of how to run the detection, please refer to
-<a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_REMs_detection.ipynb">https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_REMs_detection.ipynb</a></p>
+<a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb">https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb</a></p>
 </dd></dl>
 
 </div>

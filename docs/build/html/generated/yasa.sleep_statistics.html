@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.sleep_statistics &#8212; yasa 0.1.9 documentation</title>
+    <title>yasa.sleep_statistics &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -90,14 +90,16 @@
 <dl class="function">
 <dt id="yasa.sleep_statistics">
 <code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sleep_statistics</code><span class="sig-paren">(</span><em class="sig-param">hypno</em>, <em class="sig-param">sf_hyp</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/sleepstats.html#sleep_statistics"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Compute sleep stats from an hypnogram vector.</p>
+<dd><p>Compute standard sleep statistics from an hypnogram.</p>
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 0.1.9.</span></p>
 </div>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Hypnogram vector, assumed to be already cropped to time in bed (TIB).</p>
+<dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Hypnogram vector, assumed to be already cropped to time in bed (TIB,
+also referred to as Total Recording Time,
+i.e. “lights out” to “lights on”).</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The default hypnogram format in YASA is a 1D integer
@@ -120,22 +122,37 @@ value per 30-seconds, 1/20 if there is one value per 20-seconds,
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>stats: dict</strong></dt><dd><p>Sleep statistics (expressed in minutes)</p>
+<dt><strong>stats</strong><span class="classifier">dict</span></dt><dd><p>Sleep statistics (expressed in minutes)</p>
 </dd>
 </dl>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>All values except SE and percentages are expressed in minutes.</p>
+<p>All values except SE, SME and percentages of each stage are expressed in
+minutes. YASA follows the AASM guidelines to calculate these parameters:</p>
 <ul class="simple">
 <li><p>Time in Bed (TIB): total duration of the hypnogram.</p></li>
 <li><p>Sleep Period Time (SPT): duration from first to last period of sleep.</p></li>
 <li><p>Wake After Sleep Onset (WASO): duration of wake periods within SPT.</p></li>
 <li><p>Total Sleep Time (TST): SPT - WASO.</p></li>
-<li><p>Sleep Efficiency (SE): TST / SPT * 100 (%).</p></li>
+<li><p>Sleep Efficiency (SE): TST / TIB * 100 (%).</p></li>
+<li><p>Sleep Maintenance Efficiency (SME): TST / SPT * 100 (%).</p></li>
 <li><p>W, N1, N2, N3 and REM: sleep stages duration. NREM = N1 + N2 + N3.</p></li>
 <li><p>% (W, … REM): sleep stages duration expressed in percentages of TST.</p></li>
 <li><p>Latencies: latencies of sleep stages from the beginning of the record.</p></li>
+<li><p>Sleep Onset Latency (SOL): Latency to first epoch of any sleep.</p></li>
+</ul>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><p>Iber, C. (2007). The AASM manual for the scoring of sleep and
+associated events: rules, terminology and technical specifications.
+American Academy of Sleep Medicine.</p></li>
+<li><p>Silber, M. H., Ancoli-Israel, S., Bonnet, M. H., Chokroverty, S.,
+Grigg-Damberger, M. M., Hirshkowitz, M., Kapen, S., Keenan, S. A.,
+Kryger, M. H., Penzel, T., Pressman, M. R., &amp; Iber, C. (2007).
+<a class="reference external" href="https://www.ncbi.nlm.nih.gov/pubmed/17557422">The visual scoring of sleep in adults</a>. Journal of Clinical
+Sleep Medicine: JCSM: Official Publication of the American Academy of
+Sleep Medicine, 3(2), 121–131.</p></li>
 </ul>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">yasa</span> <span class="k">import</span> <span class="n">sleep_statistics</span>
@@ -143,24 +160,26 @@ value per 30-seconds, 1/20 if there is one value per 20-seconds,
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Assuming that we have one-value per 30-second.</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sleep_statistics</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hyp</span><span class="o">=</span><span class="mi">1</span><span class="o">/</span><span class="mi">30</span><span class="p">)</span>
 <span class="go">{&#39;TIB&#39;: 10.0,</span>
+<span class="go"> &#39;SPT&#39;: 8.0,</span>
+<span class="go"> &#39;WASO&#39;: 0.0,</span>
+<span class="go"> &#39;TST&#39;: 8.0,</span>
 <span class="go"> &#39;N1&#39;: 1.5,</span>
 <span class="go"> &#39;N2&#39;: 2.0,</span>
 <span class="go"> &#39;N3&#39;: 2.5,</span>
 <span class="go"> &#39;REM&#39;: 2.0,</span>
 <span class="go"> &#39;NREM&#39;: 6.0,</span>
+<span class="go"> &#39;SOL&#39;: 1.0,</span>
 <span class="go"> &#39;Lat_N1&#39;: 1.0,</span>
 <span class="go"> &#39;Lat_N2&#39;: 2.5,</span>
 <span class="go"> &#39;Lat_N3&#39;: 4.0,</span>
 <span class="go"> &#39;Lat_REM&#39;: 7.0,</span>
-<span class="go"> &#39;SPT&#39;: 8.0,</span>
-<span class="go"> &#39;WASO&#39;: 0.0,</span>
-<span class="go"> &#39;TST&#39;: 8.0,</span>
 <span class="go"> &#39;%N1&#39;: 18.75,</span>
 <span class="go"> &#39;%N2&#39;: 25.0,</span>
 <span class="go"> &#39;%N3&#39;: 31.25,</span>
 <span class="go"> &#39;%REM&#39;: 25.0,</span>
 <span class="go"> &#39;%NREM&#39;: 75.0,</span>
-<span class="go"> &#39;SE&#39;: 100.0}</span>
+<span class="go"> &#39;SE&#39;: 80.0,</span>
+<span class="go"> &#39;SME&#39;: 100.0}</span>
 </pre></div>
 </div>
 </dd></dl>

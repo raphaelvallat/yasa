@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>What’s new &#8212; yasa 0.1.9 documentation</title>
+    <title>What’s new &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="index.html"><span><img src="_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -87,6 +87,32 @@
       
   <div class="section" id="what-s-new">
 <span id="changelog"></span><h1>What’s new</h1>
+<div class="section" id="v0-2-0-dev">
+<h2>v0.2.0 (dev)</h2>
+<p><strong>Bugfixes</strong></p>
+<ol class="loweralpha simple">
+<li><p>Sleep efficiency in the <a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sleep_statistics()</span></code></a> is now calculated using time in bed (TIB) as the denominator instead of sleep period time (SPT), in agreement with the AASM guidelines. The old way of computing the efficiency (TST / SPT) has now been renamed Sleep Maintenance Efficiency (SME).</p></li>
+</ol>
+<p><strong>New functions</strong></p>
+<p>a. Added <a class="reference internal" href="generated/yasa.bandpower_from_psd_ndarray.html#yasa.bandpower_from_psd_ndarray" title="yasa.bandpower_from_psd_ndarray"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower_from_psd_ndarray()</span></code></a> to calculate band power from a multi-dimensional PSD. This is a Numpy-only implementation and this function will return a np.array and not a pandas DataFrame.
+This function is useful if you need to calculate the bandpower from a 3-D PSD array, e.g. of shape (n_chan, n_epochs, n_freqs).</p>
+<p><strong>Enhancements</strong></p>
+<ol class="loweralpha simple">
+<li><p><a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sleep_statistics()</span></code></a> now also returns the sleep onset latency, i.e. the latency to the first epoch of any sleep.</p></li>
+<li><p>Added the <cite>bandpass</cite> argument to <a class="reference internal" href="generated/yasa.bandpower.html#yasa.bandpower" title="yasa.bandpower"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower()</span></code></a> to apply a FIR bandpass filter using the lowest and highest frequencies defined in <cite>bands</cite>. This is useful if you work with absolute power and want to remove contributions from frequency bands of non-interests.</p></li>
+<li><p>The <a class="reference internal" href="generated/yasa.bandpower_from_psd.html#yasa.bandpower_from_psd" title="yasa.bandpower_from_psd"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower_from_psd()</span></code></a> now always return the total absolute physical power (<cite>TotalAbsPow</cite>) of the signal, in units of uV^2 / Hz. This allows to quickly calculate the absolute bandpower from the relative bandpower.</p></li>
+<li><p>Added sigma (12-16Hz) to the default frequency bands (<cite>bands</cite>) in <a class="reference internal" href="generated/yasa.bandpower.html#yasa.bandpower" title="yasa.bandpower"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower()</span></code></a> and <a class="reference internal" href="generated/yasa.bandpower_from_psd.html#yasa.bandpower_from_psd" title="yasa.bandpower_from_psd"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower_from_psd()</span></code></a>.</p></li>
+<li><p>Added an section in the <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb">06_sw_detection.ipynb</a> notebooks on how to use relative amplitude thresholds (e.g. z-scores or percentiles) instead of absolute thresholds in physical units.</p></li>
+<li><p>The upper frequency band for <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> has been changed from <code class="docutils literal notranslate"><span class="pre">freq_sw=(0.3,</span> <span class="pre">3.5)</span></code> to <code class="docutils literal notranslate"><span class="pre">freq_sw=(0.3,</span> <span class="pre">2)</span></code> Hz to comply with AASM guidelines.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Stage</span></code> is no longer taken into account when calculating outliers with <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a> in <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>.</p></li>
+<li><p>To be consistent with <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>, <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a> requires at least 50 (instead of 100) detected events in <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> and <a class="reference internal" href="generated/yasa.rem_detect.html#yasa.rem_detect" title="yasa.rem_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.rem_detect()</span></code></a>.</p></li>
+<li><p>Reorganized Jupyter notebooks.</p></li>
+</ol>
+<p><strong>Dependencies</strong></p>
+<ol class="loweralpha simple">
+<li><p>Removed deprecated <code class="docutils literal notranslate"><span class="pre">behavior</span></code> argument to avoid warning when calling <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.</p></li>
+</ol>
+</div>
 <div class="section" id="v0-1-9-february-2020">
 <h2>v0.1.9 (February 2020)</h2>
 <p><strong>New functions</strong></p>

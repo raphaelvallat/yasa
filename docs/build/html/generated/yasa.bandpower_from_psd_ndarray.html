@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.hypno_upsample_to_sf &#8212; yasa 0.2.0 documentation</title>
+    <title>yasa.bandpower_from_psd_ndarray &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -85,34 +85,41 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="yasa-hypno-upsample-to-sf">
-<h1>yasa.hypno_upsample_to_sf</h1>
+  <div class="section" id="yasa-bandpower-from-psd-ndarray">
+<h1>yasa.bandpower_from_psd_ndarray</h1>
 <dl class="function">
-<dt id="yasa.hypno_upsample_to_sf">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">hypno_upsample_to_sf</code><span class="sig-paren">(</span><em class="sig-param">hypno</em>, <em class="sig-param">sf_hypno</em>, <em class="sig-param">sf_data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/hypno.html#hypno_upsample_to_sf"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Upsample the hypnogram to a given sampling frequency.</p>
+<dt id="yasa.bandpower_from_psd_ndarray">
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">bandpower_from_psd_ndarray</code><span class="sig-paren">(</span><em class="sig-param">psd, freqs, bands=[(0.5, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'), (12, 16, 'Sigma'), (16, 30, 'Beta'), (30, 40, 'Gamma')], relative=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/spectral.html#bandpower_from_psd_ndarray"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Compute bandpowers in N-dimensional PSD.</p>
+<p>This is a NumPy-only implementation of the
+<a class="reference internal" href="yasa.bandpower_from_psd.html#yasa.bandpower_from_psd" title="yasa.bandpower_from_psd"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower_from_psd()</span></code></a> function,
+which supports 1-D arrays of shape (n_freqs),
+or N-dimensional arays
+(e.g. 2-D (n_chan, n_freqs) or 3-D (n_chan, n_epochs, n_freqs))</p>
 <div class="versionadded">
-<p><span class="versionmodified added">New in version 0.1.5.</span></p>
+<p><span class="versionmodified added">New in version 0.2.0.</span></p>
 </div>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>The sleep staging (hypnogram) 1D array.</p>
+<dd class="field-odd"><dl>
+<dt><strong>psd</strong><span class="classifier"><a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Power spectral density of data, in uV^2/Hz.
+Must be a N-D array of shape (…, n_freqs).
+See <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.welch.html#scipy.signal.welch" title="(in SciPy v1.4.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.signal.welch()</span></code></a> for more details.</p>
 </dd>
-<dt><strong>sf_hypno</strong><span class="classifier">float</span></dt><dd><p>The current sampling frequency of the hypnogram, in Hz, e.g.</p>
-<ul class="simple">
-<li><p>1/30 = 1 value per each 30 seconds of EEG data,</p></li>
-<li><p>1 = 1 value per second of EEG data</p></li>
-</ul>
+<dt><strong>freqs</strong><span class="classifier"><a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Array of frequencies. Must be a 1-D array of shape (n_freqs,)</p>
 </dd>
-<dt><strong>sf_data</strong><span class="classifier">float</span></dt><dd><p>The desired sampling frequency of the hypnogram, in Hz
-(e.g. 100 Hz, 256 Hz, …)</p>
+<dt><strong>bands</strong><span class="classifier">list of tuples</span></dt><dd><p>List of frequency bands of interests. Each tuple must contain the
+lower and upper frequencies, as well as the band name
+(e.g. (0.5, 4, ‘Delta’)).</p>
+</dd>
+<dt><strong>relative</strong><span class="classifier">boolean</span></dt><dd><p>If True, bandpower is divided by the total power between the min and
+max frequencies defined in <code class="docutils literal notranslate"><span class="pre">band</span></code> (default 0.5 to 40 Hz).</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>The hypnogram, upsampled to <code class="docutils literal notranslate"><span class="pre">sf_data</span></code>.</p>
+<dd class="field-even"><dl>
+<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Bandpower array of shape (n_bands, …).</p>
 </dd>
 </dl>
 </dd>

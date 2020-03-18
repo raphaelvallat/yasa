@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.sw_detect &#8212; yasa 0.1.9 documentation</title>
+    <title>yasa.sw_detect &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -89,7 +89,7 @@
 <h1>yasa.sw_detect</h1>
 <dl class="function">
 <dt id="yasa.sw_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sw_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(2</em>, <em class="sig-param">3)</em>, <em class="sig-param">freq_sw=(0.3</em>, <em class="sig-param">3.5)</em>, <em class="sig-param">dur_neg=(0.3</em>, <em class="sig-param">1.5)</em>, <em class="sig-param">dur_pos=(0.1</em>, <em class="sig-param">1)</em>, <em class="sig-param">amp_neg=(40</em>, <em class="sig-param">300)</em>, <em class="sig-param">amp_pos=(10</em>, <em class="sig-param">200)</em>, <em class="sig-param">amp_ptp=(75</em>, <em class="sig-param">500)</em>, <em class="sig-param">downsample=True</em>, <em class="sig-param">remove_outliers=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#sw_detect"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sw_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(2</em>, <em class="sig-param">3)</em>, <em class="sig-param">freq_sw=(0.3</em>, <em class="sig-param">2)</em>, <em class="sig-param">dur_neg=(0.3</em>, <em class="sig-param">1.5)</em>, <em class="sig-param">dur_pos=(0.1</em>, <em class="sig-param">1)</em>, <em class="sig-param">amp_neg=(40</em>, <em class="sig-param">300)</em>, <em class="sig-param">amp_pos=(10</em>, <em class="sig-param">200)</em>, <em class="sig-param">amp_ptp=(75</em>, <em class="sig-param">500)</em>, <em class="sig-param">downsample=True</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">coupling=False</em>, <em class="sig-param">freq_sp=(12</em>, <em class="sig-param">16)</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#sw_detect"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Slow-waves detection.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
@@ -132,10 +132,9 @@ vector where:</p>
 (2, 3), meaning that the detection is applied on N2 and N3
 sleep. This has no effect when <code class="docutils literal notranslate"><span class="pre">hypno</span></code> is None.</p>
 </dd>
-<dt><strong>freq_sw</strong><span class="classifier">tuple or list</span></dt><dd><p>Slow wave frequency range. Default is 0.3 to 3.5 Hz. Please note that
-YASA uses a FIR filter (implemented in MNE) with a 0.2Hz transition
-band, which means that for <cite>freq_sw = (.3, 3.5 Hz)</cite>, the -6 dB points
-are located at 0.2 and 3.6 Hz.</p>
+<dt><strong>freq_sw</strong><span class="classifier">tuple or list</span></dt><dd><p>Slow wave frequency range. Default is 0.3 to 2 Hz. Please note that
+YASA uses a FIR filter (implemented in MNE) with a 0.2 Hz transition
+band, which means that the -6 dB points are located at 0.2 and 2.1 Hz.</p>
 </dd>
 <dt><strong>dur_neg</strong><span class="classifier">tuple or list</span></dt><dd><p>The minimum and maximum duration of the negative deflection of the
 slow wave. Default is 0.3 to 1.5 second.</p>
@@ -144,13 +143,22 @@ slow wave. Default is 0.3 to 1.5 second.</p>
 slow wave. Default is 0.1 to 1 second.</p>
 </dd>
 <dt><strong>amp_neg</strong><span class="classifier">tuple or list</span></dt><dd><p>Absolute minimum and maximum negative trough amplitude of the
-slow-wave. Default is 40 uV to 300 uV.</p>
+slow-wave. Default is 40 uV to 300 uV. Can also be in unit of standard
+deviations if the data has been previously z-scored. If you do not want
+to specify any negative amplitude thresholds,
+use <code class="docutils literal notranslate"><span class="pre">amp_neg=(None,</span> <span class="pre">None)</span></code>.</p>
 </dd>
 <dt><strong>amp_pos</strong><span class="classifier">tuple or list</span></dt><dd><p>Absolute minimum and maximum positive peak amplitude of the
-slow-wave. Default is 10 uV to 200 uV.</p>
+slow-wave. Default is 10 uV to 200 uV. Can also be in unit of standard
+deviations if the data has been previously z-scored.
+If you do not want to specify any positive amplitude thresholds,
+use <code class="docutils literal notranslate"><span class="pre">amp_pos=(None,</span> <span class="pre">None)</span></code>.</p>
 </dd>
 <dt><strong>amp_ptp</strong><span class="classifier">tuple or list</span></dt><dd><p>Minimum and maximum peak-to-peak amplitude of the slow-wave.
-Default is 75 uV to 500 uV.</p>
+Default is 75 uV to 500 uV. Can also be in unit of standard
+deviations if the data has been previously z-scored.
+Use <code class="docutils literal notranslate"><span class="pre">np.inf</span></code> to set no upper amplitude threshold
+(e.g. <code class="docutils literal notranslate"><span class="pre">amp_ptp=(75,</span> <span class="pre">np.inf)</span></code>).</p>
 </dd>
 <dt><strong>downsample</strong><span class="classifier">boolean</span></dt><dd><p>If True, the data will be downsampled to 100 Hz or 128 Hz (depending
 on whether the original sampling frequency is a multiple of 100 or 128,
@@ -161,14 +169,45 @@ using <a class="reference external" href="https://scikit-learn.org/stable/module
 The outliers detection is performed on the frequency, amplitude and
 duration parameters of the detected slow-waves. YASA uses a random seed
 (42) to ensure reproducible results. Note that this step will only be
-applied if there are more than 100 detected slow-waves in the first
+applied if there are more than 50 detected slow-waves in the first
 place. Default to False.</p>
+</dd>
+<dt><strong>coupling</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will also calculate the phase-amplitude coupling between
+the slow-waves phase and the spindles-related sigma band
+amplitude. Specifically, the output will be the
+phase of the bandpas-filtered slow-wave signal (in radians) at the
+maximum sigma peak amplitude within an 4-seconds epoch centered around
+the negative peak (through) of the current slow-wave.
+The lower and upper frequencies for the slow-waves and
+spindles-related sigma signals are defined in <code class="docutils literal notranslate"><span class="pre">freq_sw</span></code> and
+<code class="docutils literal notranslate"><span class="pre">freq_sp</span></code>, respectively.</p>
+<p>Importantly, since the resulting variable is expressed in radians,
+one should use circular statistics to calculate the mean direction
+and vector length:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pingouin</span> <span class="kn">as</span> <span class="nn">pg</span>
+<span class="n">mean_direction</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">circ_mean</span><span class="p">(</span><span class="n">sw</span><span class="p">[</span><span class="s1">&#39;PhaseAtSigmaPeak&#39;</span><span class="p">])</span>
+<span class="n">vector_length</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">circ_r</span><span class="p">(</span><span class="n">sw</span><span class="p">[</span><span class="s1">&#39;PhaseAtSigmaPeak&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>For more details, please refer to the <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb">Jupyter notebook</a></p>
+<p>Note that setting <code class="docutils literal notranslate"><span class="pre">coupling=True</span></code> may significantly increase
+computation time.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.2.0.</span></p>
+</div>
+</dd>
+<dt><strong>freq_sp</strong><span class="classifier">tuple or list</span></dt><dd><p>Spindles-related frequency of interest. This is only relevant if
+<code class="docutils literal notranslate"><span class="pre">coupling=True</span></code>. Default is 12 to 16 Hz, with a wide transition
+bandwidth of 1.5 Hz.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.2.0.</span></p>
+</div>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>sw_params</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
+<dt><strong>sw_params</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>&#39;Start&#39; : Start of each detected slow-wave (in seconds of data)
 &#39;NegPeak&#39; : Location of the negative peak (in seconds of data)
 &#39;MidCrossing&#39; : Location of the negative-to-positive zero-crossing
@@ -180,6 +219,7 @@ place. Default to False.</p>
 &#39;PTP&#39; : Peak to peak amplitude (ValPosPeak - ValNegPeak)
 &#39;Slope&#39; : Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec)
 &#39;Frequency&#39; : Frequency of the slow-wave (1 / ``Duration``)
+&#39;PhaseAtSigmaPeak&#39;: SW phase at max sigma amplitude in 4-sec epoch
 &#39;Stage&#39; : Sleep stage (only if hypno was provided)
 </pre></div>
 </div>
@@ -192,7 +232,7 @@ place. Default to False.</p>
 <p>Note that the <code class="docutils literal notranslate"><span class="pre">PTP</span></code>, <code class="docutils literal notranslate"><span class="pre">Slope</span></code>, <code class="docutils literal notranslate"><span class="pre">ValNegPeak</span></code> and <code class="docutils literal notranslate"><span class="pre">ValPosPeak</span></code> are
 all computed on the filtered signal.</p>
 <p>For an example of how to run the detection, please refer to
-<a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb">https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb</a></p>
+<a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb">https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb</a></p>
 </dd></dl>
 
 </div>

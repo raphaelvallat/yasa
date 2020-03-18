@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.sleepstats &#8212; yasa 0.1.9 documentation</title>
+    <title>yasa.sleepstats &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -169,14 +169,16 @@
 
 
 <div class="viewcode-block" id="sleep_statistics"><a class="viewcode-back" href="../../generated/yasa.sleep_statistics.html#yasa.sleep_statistics">[docs]</a><span class="k">def</span> <span class="nf">sleep_statistics</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hyp</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compute sleep stats from an hypnogram vector.</span>
+    <span class="sd">&quot;&quot;&quot;Compute standard sleep statistics from an hypnogram.</span>
 
 <span class="sd">    .. versionadded:: 0.1.9</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    hypno : array_like</span>
-<span class="sd">        Hypnogram vector, assumed to be already cropped to time in bed (TIB).</span>
+<span class="sd">        Hypnogram vector, assumed to be already cropped to time in bed (TIB,</span>
+<span class="sd">        also referred to as Total Recording Time,</span>
+<span class="sd">        i.e. &quot;lights out&quot; to &quot;lights on&quot;).</span>
 
 <span class="sd">        .. note::</span>
 <span class="sd">            The default hypnogram format in YASA is a 1D integer</span>
@@ -195,21 +197,38 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    stats: dict</span>
+<span class="sd">    stats : dict</span>
 <span class="sd">        Sleep statistics (expressed in minutes)</span>
 
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
-<span class="sd">    All values except SE and percentages are expressed in minutes.</span>
+<span class="sd">    All values except SE, SME and percentages of each stage are expressed in</span>
+<span class="sd">    minutes. YASA follows the AASM guidelines to calculate these parameters:</span>
 
 <span class="sd">    * Time in Bed (TIB): total duration of the hypnogram.</span>
 <span class="sd">    * Sleep Period Time (SPT): duration from first to last period of sleep.</span>
 <span class="sd">    * Wake After Sleep Onset (WASO): duration of wake periods within SPT.</span>
 <span class="sd">    * Total Sleep Time (TST): SPT - WASO.</span>
-<span class="sd">    * Sleep Efficiency (SE): TST / SPT * 100 (%).</span>
+<span class="sd">    * Sleep Efficiency (SE): TST / TIB * 100 (%).</span>
+<span class="sd">    * Sleep Maintenance Efficiency (SME): TST / SPT * 100 (%).</span>
 <span class="sd">    * W, N1, N2, N3 and REM: sleep stages duration. NREM = N1 + N2 + N3.</span>
 <span class="sd">    * % (W, ... REM): sleep stages duration expressed in percentages of TST.</span>
 <span class="sd">    * Latencies: latencies of sleep stages from the beginning of the record.</span>
+<span class="sd">    * Sleep Onset Latency (SOL): Latency to first epoch of any sleep.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    * Iber, C. (2007). The AASM manual for the scoring of sleep and</span>
+<span class="sd">      associated events: rules, terminology and technical specifications.</span>
+<span class="sd">      American Academy of Sleep Medicine.</span>
+
+<span class="sd">    * Silber, M. H., Ancoli-Israel, S., Bonnet, M. H., Chokroverty, S.,</span>
+<span class="sd">      Grigg-Damberger, M. M., Hirshkowitz, M., Kapen, S., Keenan, S. A.,</span>
+<span class="sd">      Kryger, M. H., Penzel, T., Pressman, M. R., &amp; Iber, C. (2007).</span>
+<span class="sd">      `The visual scoring of sleep in adults</span>
+<span class="sd">      &lt;https://www.ncbi.nlm.nih.gov/pubmed/17557422&gt;`_. Journal of Clinical</span>
+<span class="sd">      Sleep Medicine: JCSM: Official Publication of the American Academy of</span>
+<span class="sd">      Sleep Medicine, 3(2), 121–131.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -218,24 +237,26 @@
 <span class="sd">    &gt;&gt;&gt; # Assuming that we have one-value per 30-second.</span>
 <span class="sd">    &gt;&gt;&gt; sleep_statistics(hypno, sf_hyp=1/30)</span>
 <span class="sd">    {&#39;TIB&#39;: 10.0,</span>
+<span class="sd">     &#39;SPT&#39;: 8.0,</span>
+<span class="sd">     &#39;WASO&#39;: 0.0,</span>
+<span class="sd">     &#39;TST&#39;: 8.0,</span>
 <span class="sd">     &#39;N1&#39;: 1.5,</span>
 <span class="sd">     &#39;N2&#39;: 2.0,</span>
 <span class="sd">     &#39;N3&#39;: 2.5,</span>
 <span class="sd">     &#39;REM&#39;: 2.0,</span>
 <span class="sd">     &#39;NREM&#39;: 6.0,</span>
+<span class="sd">     &#39;SOL&#39;: 1.0,</span>
 <span class="sd">     &#39;Lat_N1&#39;: 1.0,</span>
 <span class="sd">     &#39;Lat_N2&#39;: 2.5,</span>
 <span class="sd">     &#39;Lat_N3&#39;: 4.0,</span>
 <span class="sd">     &#39;Lat_REM&#39;: 7.0,</span>
-<span class="sd">     &#39;SPT&#39;: 8.0,</span>
-<span class="sd">     &#39;WASO&#39;: 0.0,</span>
-<span class="sd">     &#39;TST&#39;: 8.0,</span>
 <span class="sd">     &#39;%N1&#39;: 18.75,</span>
 <span class="sd">     &#39;%N2&#39;: 25.0,</span>
 <span class="sd">     &#39;%N3&#39;: 31.25,</span>
 <span class="sd">     &#39;%REM&#39;: 25.0,</span>
 <span class="sd">     &#39;%NREM&#39;: 75.0,</span>
-<span class="sd">     &#39;SE&#39;: 100.0}</span>
+<span class="sd">     &#39;SE&#39;: 80.0,</span>
+<span class="sd">     &#39;SME&#39;: 100.0}</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">stats</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">hypno</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span>
@@ -247,6 +268,12 @@
     <span class="n">first_sleep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">hypno</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">last_sleep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">hypno</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
+    <span class="c1"># Crop to SPT</span>
+    <span class="n">hypno_s</span> <span class="o">=</span> <span class="n">hypno</span><span class="p">[</span><span class="n">first_sleep</span><span class="p">:(</span><span class="n">last_sleep</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;SPT&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hypno_s</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;WASO&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hypno_s</span><span class="p">[</span><span class="n">hypno_s</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;TST&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;SPT&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;WASO&#39;</span><span class="p">]</span>
+
     <span class="c1"># Duration of each sleep stages</span>
     <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;N1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hypno</span><span class="p">[</span><span class="n">hypno</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
     <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;N2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hypno</span><span class="p">[</span><span class="n">hypno</span> <span class="o">==</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
@@ -255,16 +282,11 @@
     <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;NREM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;N1&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;N2&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;N3&#39;</span><span class="p">]</span>
 
     <span class="c1"># Sleep stage latencies</span>
+    <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;SOL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">first_sleep</span>
     <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;Lat_N1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">hypno</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="k">if</span> <span class="mi">1</span> <span class="ow">in</span> <span class="n">hypno</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
     <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;Lat_N2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">hypno</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="k">if</span> <span class="mi">2</span> <span class="ow">in</span> <span class="n">hypno</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
     <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;Lat_N3&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">hypno</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="k">if</span> <span class="mi">3</span> <span class="ow">in</span> <span class="n">hypno</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
     <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;Lat_REM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">hypno</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="k">if</span> <span class="mi">4</span> <span class="ow">in</span> <span class="n">hypno</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-
-    <span class="c1"># Crop to SPT</span>
-    <span class="n">hypno_s</span> <span class="o">=</span> <span class="n">hypno</span><span class="p">[</span><span class="n">first_sleep</span><span class="p">:(</span><span class="n">last_sleep</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
-    <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;SPT&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hypno_s</span><span class="o">.</span><span class="n">size</span>
-    <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;WASO&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hypno_s</span><span class="p">[</span><span class="n">hypno_s</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
-    <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;TST&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;SPT&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;WASO&#39;</span><span class="p">]</span>
 
     <span class="c1"># Convert to minutes</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">stats</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -276,7 +298,8 @@
     <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;%N3&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;N3&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;TST&#39;</span><span class="p">]</span>
     <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;%REM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;REM&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;TST&#39;</span><span class="p">]</span>
     <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;%NREM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;NREM&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;TST&#39;</span><span class="p">]</span>
-    <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;SE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;TST&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;SPT&#39;</span><span class="p">]</span>
+    <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;SE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;TST&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;TIB&#39;</span><span class="p">]</span>
+    <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;SME&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;TST&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;SPT&#39;</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">stats</span></div>
 </pre></div>
 

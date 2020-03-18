@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.main &#8212; yasa 0.1.9 documentation</title>
+    <title>yasa.main &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -100,8 +100,10 @@
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">signal</span>
 <span class="kn">from</span> <span class="nn">mne.filter</span> <span class="k">import</span> <span class="n">filter_data</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">interp1d</span>
 <span class="kn">from</span> <span class="nn">scipy.fftpack</span> <span class="k">import</span> <span class="n">next_fast_len</span>
+
 
 <span class="kn">from</span> <span class="nn">.numba</span> <span class="k">import</span> <span class="n">_detrend</span><span class="p">,</span> <span class="n">_rms</span>
 <span class="kn">from</span> <span class="nn">.others</span> <span class="k">import</span> <span class="n">moving_transform</span><span class="p">,</span> <span class="n">trimbothstd</span><span class="p">,</span> <span class="n">_zerocrossings</span>
@@ -247,7 +249,7 @@
 <span class="sd">    detected slow-waves / spindles.</span>
 
 <span class="sd">    For more details, please refer to the `Jupyter notebook</span>
-<span class="sd">    &lt;https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_sw_average.ipynb&gt;`_</span>
+<span class="sd">    &lt;https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection_multi.ipynb&gt;`_</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -273,8 +275,8 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    df_sw : :py:class:`pandas.DataFrame`</span>
-<span class="sd">        Ouput detection dataframe::</span>
+<span class="sd">    df_sync : :py:class:`pandas.DataFrame`</span>
+<span class="sd">        Ouput long-format dataframe::</span>
 
 <span class="sd">        &#39;Event&#39; : Event number</span>
 <span class="sd">        &#39;Time&#39; : Timing of the events (in seconds)</span>
@@ -320,13 +322,19 @@
         <span class="k">def</span> <span class="nf">rng</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Utility function to create a range before and after</span>
 <span class="sd">            a given value.&quot;&quot;&quot;</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">N_bef</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="n">N_aft</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">N_bef</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="n">N_aft</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
 
         <span class="c1"># Extract indices, data, and time vector</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">idx_peak</span><span class="p">)</span>
         <span class="c1"># We drop the events for which the indices exceed data</span>
         <span class="n">idx_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mask_rows</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_outside</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">compress_rows</span><span class="p">(</span><span class="n">idx_mask</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s1">&#39;Time before and/or time after exceed data bounds, please &#39;</span>
+                <span class="s1">&#39;lower the temporal window around center; returning None.&#39;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
         <span class="n">amps</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
         <span class="n">time</span> <span class="o">=</span> <span class="n">rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="n">sf</span>
 
@@ -436,22 +444,24 @@
 <span class="sd">        at the most prominent peak of the spindles.</span>
 
 <span class="sd">        Importantly, since the resulting variable is expressed in radians,</span>
-<span class="sd">        one should use a circular mean to calculate the average across all</span>
-<span class="sd">        events:</span>
+<span class="sd">        one should use circular statistics to calculate the mean direction</span>
+<span class="sd">        and vector length:</span>
 
 <span class="sd">        .. code-block:: python</span>
 
-<span class="sd">            from scipy.stats import circmean</span>
-<span class="sd">            avg_SOPhase = circmean(sp[&#39;SOPhase&#39;])</span>
+<span class="sd">            import pingouin as pg</span>
+<span class="sd">            mean_direction = pg.circ_mean(sp[&#39;SOPhase&#39;])</span>
+<span class="sd">            vector_length = pg.circ_r(sp[&#39;SOPhase&#39;])</span>
 
 <span class="sd">        For more details, please refer to the `Jupyter notebook</span>
-<span class="sd">        &lt;https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_spindles-SO_coupling.ipynb&gt;`_</span>
+<span class="sd">        &lt;https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb&gt;`_</span>
 
 <span class="sd">        .. versionadded:: 0.1.9</span>
 
 <span class="sd">    freq_so : tuple or list</span>
 <span class="sd">        Slow-oscillations frequency of interest. This is only relevant if</span>
-<span class="sd">        ``coupling=True``. Default is 0.1 to 1.25 Hz.</span>
+<span class="sd">        ``coupling=True``. Default is 0.1 to 1.25 Hz, with a narrow transition</span>
+<span class="sd">        bandwidth of 0.1 Hz.</span>
 
 <span class="sd">        .. versionadded:: 0.1.9</span>
 
@@ -747,7 +757,7 @@
                  <span class="s1">&#39;SOPhase&#39;</span><span class="p">:</span> <span class="n">sp_cou</span><span class="p">,</span>
                  <span class="s1">&#39;Stage&#39;</span><span class="p">:</span> <span class="n">sp_sta</span><span class="p">}</span>
 
-    <span class="n">df_sp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">sp_params</span><span class="p">)[</span><span class="n">good_dur</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">df_sp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">sp_params</span><span class="p">)[</span><span class="n">good_dur</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">df_sp</span> <span class="o">=</span> <span class="n">df_sp</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Stage&#39;</span><span class="p">])</span>
@@ -760,20 +770,18 @@
     <span class="c1"># We need at least 50 detected spindles to apply the Isolation Forest.</span>
     <span class="k">if</span> <span class="n">remove_outliers</span> <span class="ow">and</span> <span class="n">df_sp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">50</span><span class="p">:</span>
         <span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="k">import</span> <span class="n">IsolationForest</span>
-        <span class="n">df_sp_dummies</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">df_sp</span><span class="p">)</span>
-        <span class="n">col_keep</span> <span class="o">=</span> <span class="n">df_sp_dummies</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">difference</span><span class="p">([</span><span class="s1">&#39;Start&#39;</span><span class="p">,</span> <span class="s1">&#39;Peak&#39;</span><span class="p">,</span> <span class="s1">&#39;End&#39;</span><span class="p">,</span>
-                                                     <span class="s1">&#39;SOPhase&#39;</span><span class="p">])</span>
-        <span class="n">ilf</span> <span class="o">=</span> <span class="n">IsolationForest</span><span class="p">(</span><span class="n">behaviour</span><span class="o">=</span><span class="s1">&#39;new&#39;</span><span class="p">,</span> <span class="n">contamination</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
-                              <span class="n">max_samples</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
-
-        <span class="n">good</span> <span class="o">=</span> <span class="n">ilf</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">df_sp_dummies</span><span class="p">[</span><span class="n">col_keep</span><span class="p">])</span>
+        <span class="n">col_keep</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Duration&#39;</span><span class="p">,</span> <span class="s1">&#39;Amplitude&#39;</span><span class="p">,</span> <span class="s1">&#39;RMS&#39;</span><span class="p">,</span> <span class="s1">&#39;AbsPower&#39;</span><span class="p">,</span> <span class="s1">&#39;RelPower&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;Frequency&#39;</span><span class="p">,</span> <span class="s1">&#39;Oscillations&#39;</span><span class="p">,</span> <span class="s1">&#39;Symmetry&#39;</span><span class="p">]</span>
+        <span class="n">ilf</span> <span class="o">=</span> <span class="n">IsolationForest</span><span class="p">(</span><span class="n">contamination</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">max_samples</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
+                              <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+        <span class="n">good</span> <span class="o">=</span> <span class="n">ilf</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">df_sp</span><span class="p">[</span><span class="n">col_keep</span><span class="p">])</span>
         <span class="n">good</span><span class="p">[</span><span class="n">good</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%i</span><span class="s1"> outliers were removed.&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">good</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
         <span class="c1"># Remove outliers from DataFrame</span>
-        <span class="n">df_sp</span> <span class="o">=</span> <span class="n">df_sp</span><span class="p">[</span><span class="n">good</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">df_sp</span> <span class="o">=</span> <span class="n">df_sp</span><span class="p">[</span><span class="n">good</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)]</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%i</span><span class="s1"> spindles were found in data.&#39;</span><span class="p">,</span> <span class="n">df_sp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">df_sp</span></div>
+    <span class="k">return</span> <span class="n">df_sp</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="spindles_detect_multi"><a class="viewcode-back" href="../../generated/yasa.spindles_detect_multi.html#yasa.spindles_detect_multi">[docs]</a><span class="k">def</span> <span class="nf">spindles_detect_multi</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ch_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">multi_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -819,9 +827,10 @@
 <span class="sd">            &#39;Frequency&#39; : Median frequency (in Hz)</span>
 <span class="sd">            &#39;Oscillations&#39; : Number of oscillations (peaks)</span>
 <span class="sd">            &#39;Symmetry&#39; : Symmetry index, ranging from 0 to 1</span>
+<span class="sd">            &#39;SOPhase&#39;: SO phase (radians) at the most prominent spindle peak</span>
+<span class="sd">            &#39;Stage&#39; : Sleep stage (only if hypno was provided)</span>
 <span class="sd">            &#39;Channel&#39; : Channel name</span>
 <span class="sd">            &#39;IdxChannel&#39; : Integer index of channel in data</span>
-<span class="sd">            &#39;Stage&#39; : Sleep stage (only if hypno was provided)</span>
 
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
@@ -880,10 +889,10 @@
 <span class="c1">#############################################################################</span>
 
 
-<div class="viewcode-block" id="sw_detect"><a class="viewcode-back" href="../../generated/yasa.sw_detect.html#yasa.sw_detect">[docs]</a><span class="k">def</span> <span class="nf">sw_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">freq_sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">),</span>
+<div class="viewcode-block" id="sw_detect"><a class="viewcode-back" href="../../generated/yasa.sw_detect.html#yasa.sw_detect">[docs]</a><span class="k">def</span> <span class="nf">sw_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">freq_sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
               <span class="n">dur_neg</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">dur_pos</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">amp_neg</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">300</span><span class="p">),</span>
               <span class="n">amp_pos</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span> <span class="n">amp_ptp</span><span class="o">=</span><span class="p">(</span><span class="mi">75</span><span class="p">,</span> <span class="mi">500</span><span class="p">),</span> <span class="n">downsample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-              <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+              <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">coupling</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">freq_sp</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">)):</span>
     <span class="sd">&quot;&quot;&quot;Slow-waves detection.</span>
 
 <span class="sd">    Parameters</span>
@@ -926,10 +935,9 @@
 <span class="sd">        (2, 3), meaning that the detection is applied on N2 and N3</span>
 <span class="sd">        sleep. This has no effect when ``hypno`` is None.</span>
 <span class="sd">    freq_sw : tuple or list</span>
-<span class="sd">        Slow wave frequency range. Default is 0.3 to 3.5 Hz. Please note that</span>
-<span class="sd">        YASA uses a FIR filter (implemented in MNE) with a 0.2Hz transition</span>
-<span class="sd">        band, which means that for `freq_sw = (.3, 3.5 Hz)`, the -6 dB points</span>
-<span class="sd">        are located at 0.2 and 3.6 Hz.</span>
+<span class="sd">        Slow wave frequency range. Default is 0.3 to 2 Hz. Please note that</span>
+<span class="sd">        YASA uses a FIR filter (implemented in MNE) with a 0.2 Hz transition</span>
+<span class="sd">        band, which means that the -6 dB points are located at 0.2 and 2.1 Hz.</span>
 <span class="sd">    dur_neg : tuple or list</span>
 <span class="sd">        The minimum and maximum duration of the negative deflection of the</span>
 <span class="sd">        slow wave. Default is 0.3 to 1.5 second.</span>
@@ -938,13 +946,22 @@
 <span class="sd">        slow wave. Default is 0.1 to 1 second.</span>
 <span class="sd">    amp_neg : tuple or list</span>
 <span class="sd">        Absolute minimum and maximum negative trough amplitude of the</span>
-<span class="sd">        slow-wave. Default is 40 uV to 300 uV.</span>
+<span class="sd">        slow-wave. Default is 40 uV to 300 uV. Can also be in unit of standard</span>
+<span class="sd">        deviations if the data has been previously z-scored. If you do not want</span>
+<span class="sd">        to specify any negative amplitude thresholds,</span>
+<span class="sd">        use ``amp_neg=(None, None)``.</span>
 <span class="sd">    amp_pos : tuple or list</span>
 <span class="sd">        Absolute minimum and maximum positive peak amplitude of the</span>
-<span class="sd">        slow-wave. Default is 10 uV to 200 uV.</span>
+<span class="sd">        slow-wave. Default is 10 uV to 200 uV. Can also be in unit of standard</span>
+<span class="sd">        deviations if the data has been previously z-scored.</span>
+<span class="sd">        If you do not want to specify any positive amplitude thresholds,</span>
+<span class="sd">        use ``amp_pos=(None, None)``.</span>
 <span class="sd">    amp_ptp : tuple or list</span>
 <span class="sd">        Minimum and maximum peak-to-peak amplitude of the slow-wave.</span>
-<span class="sd">        Default is 75 uV to 500 uV.</span>
+<span class="sd">        Default is 75 uV to 500 uV. Can also be in unit of standard</span>
+<span class="sd">        deviations if the data has been previously z-scored.</span>
+<span class="sd">        Use ``np.inf`` to set no upper amplitude threshold</span>
+<span class="sd">        (e.g. ``amp_ptp=(75, np.inf)``).</span>
 <span class="sd">    downsample : boolean</span>
 <span class="sd">        If True, the data will be downsampled to 100 Hz or 128 Hz (depending</span>
 <span class="sd">        on whether the original sampling frequency is a multiple of 100 or 128,</span>
@@ -955,8 +972,44 @@
 <span class="sd">        The outliers detection is performed on the frequency, amplitude and</span>
 <span class="sd">        duration parameters of the detected slow-waves. YASA uses a random seed</span>
 <span class="sd">        (42) to ensure reproducible results. Note that this step will only be</span>
-<span class="sd">        applied if there are more than 100 detected slow-waves in the first</span>
+<span class="sd">        applied if there are more than 50 detected slow-waves in the first</span>
 <span class="sd">        place. Default to False.</span>
+<span class="sd">    coupling : boolean</span>
+<span class="sd">        If True, YASA will also calculate the phase-amplitude coupling between</span>
+<span class="sd">        the slow-waves phase and the spindles-related sigma band</span>
+<span class="sd">        amplitude. Specifically, the output will be the</span>
+<span class="sd">        phase of the bandpas-filtered slow-wave signal (in radians) at the</span>
+<span class="sd">        maximum sigma peak amplitude within an 4-seconds epoch centered around</span>
+<span class="sd">        the negative peak (through) of the current slow-wave.</span>
+<span class="sd">        The lower and upper frequencies for the slow-waves and</span>
+<span class="sd">        spindles-related sigma signals are defined in ``freq_sw`` and</span>
+<span class="sd">        ``freq_sp``, respectively.</span>
+
+<span class="sd">        Importantly, since the resulting variable is expressed in radians,</span>
+<span class="sd">        one should use circular statistics to calculate the mean direction</span>
+<span class="sd">        and vector length:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            import pingouin as pg</span>
+<span class="sd">            mean_direction = pg.circ_mean(sw[&#39;PhaseAtSigmaPeak&#39;])</span>
+<span class="sd">            vector_length = pg.circ_r(sw[&#39;PhaseAtSigmaPeak&#39;])</span>
+
+<span class="sd">        For more details, please refer to the `Jupyter notebook</span>
+<span class="sd">        &lt;https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb&gt;`_</span>
+
+<span class="sd">        Note that setting ``coupling=True`` may significantly increase</span>
+<span class="sd">        computation time.</span>
+
+<span class="sd">        .. versionadded:: 0.2.0</span>
+
+<span class="sd">    freq_sp : tuple or list</span>
+<span class="sd">        Spindles-related frequency of interest. This is only relevant if</span>
+<span class="sd">        ``coupling=True``. Default is 12 to 16 Hz, with a wide transition</span>
+<span class="sd">        bandwidth of 1.5 Hz.</span>
+
+<span class="sd">        .. versionadded:: 0.2.0</span>
+
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -974,6 +1027,7 @@
 <span class="sd">            &#39;PTP&#39; : Peak to peak amplitude (ValPosPeak - ValNegPeak)</span>
 <span class="sd">            &#39;Slope&#39; : Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec)</span>
 <span class="sd">            &#39;Frequency&#39; : Frequency of the slow-wave (1 / ``Duration``)</span>
+<span class="sd">            &#39;PhaseAtSigmaPeak&#39;: SW phase at max sigma amplitude in 4-sec epoch</span>
 <span class="sd">            &#39;Stage&#39; : Sleep stage (only if hypno was provided)</span>
 
 <span class="sd">    Notes</span>
@@ -984,7 +1038,7 @@
 <span class="sd">    all computed on the filtered signal.</span>
 
 <span class="sd">    For an example of how to run the detection, please refer to</span>
-<span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb</span>
+<span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Safety check</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
@@ -1043,10 +1097,29 @@
     <span class="c1"># Define time vector</span>
     <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">/</span> <span class="n">sf</span>
 
+    <span class="c1"># Get data size and next fast length for Hilbert transform</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">nfast</span> <span class="o">=</span> <span class="n">next_fast_len</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
     <span class="c1"># Bandpass filter</span>
     <span class="n">data_filt</span> <span class="o">=</span> <span class="n">filter_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">freq_sw</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">freq_sw</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;fir&#39;</span><span class="p">,</span>
                             <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">l_trans_bandwidth</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
                             <span class="n">h_trans_bandwidth</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+    <span class="c1"># Extract the spindles-related sigma signal for coupling</span>
+    <span class="k">if</span> <span class="n">coupling</span><span class="p">:</span>
+        <span class="c1"># The width of the transition band is set to 1.5 Hz on each side,</span>
+        <span class="c1"># meaning that for freq_sp = (12, 15 Hz), the -6 dB points are located</span>
+        <span class="c1"># at 11.25 and 15.75 Hz. The frequency band for the amplitude signal</span>
+        <span class="c1"># must be large enough to fit the sidebands caused by the assumed</span>
+        <span class="c1"># modulating lower frequency band (Aru et al. 2015).</span>
+        <span class="c1"># https://doi.org/10.1016/j.conb.2014.08.002</span>
+        <span class="n">data_sp</span> <span class="o">=</span> <span class="n">filter_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">freq_sp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">freq_sp</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;fir&#39;</span><span class="p">,</span>
+                              <span class="n">l_trans_bandwidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">h_trans_bandwidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+                              <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># Now extract the instantaneous phase/amplitude using Hilbert transform</span>
+        <span class="n">sw_pha</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">hilbert</span><span class="p">(</span><span class="n">data_filt</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="n">nfast</span><span class="p">)[:</span><span class="n">n</span><span class="p">])</span>
+        <span class="n">sp_amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">hilbert</span><span class="p">(</span><span class="n">data_sp</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="n">nfast</span><span class="p">)[:</span><span class="n">n</span><span class="p">])</span>
 
     <span class="c1"># Find peaks in data</span>
     <span class="c1"># Negative peaks with value comprised between -40 to -300 uV</span>
@@ -1153,20 +1226,54 @@
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="c1"># Create a dictionnary and then a dataframe (much faster)</span>
-    <span class="n">sw_params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Start&#39;</span><span class="p">:</span> <span class="n">sw_start</span><span class="p">,</span>
-                 <span class="s1">&#39;NegPeak&#39;</span><span class="p">:</span> <span class="n">sw_idx_neg</span><span class="p">,</span>
-                 <span class="s1">&#39;MidCrossing&#39;</span><span class="p">:</span> <span class="n">sw_midcrossing</span><span class="p">,</span>
-                 <span class="s1">&#39;PosPeak&#39;</span><span class="p">:</span> <span class="n">sw_idx_pos</span><span class="p">,</span>
-                 <span class="s1">&#39;End&#39;</span><span class="p">:</span> <span class="n">sw_end</span><span class="p">,</span>
-                 <span class="s1">&#39;Duration&#39;</span><span class="p">:</span> <span class="n">sw_dur</span><span class="p">,</span>
-                 <span class="s1">&#39;ValNegPeak&#39;</span><span class="p">:</span> <span class="n">data_filt</span><span class="p">[</span><span class="n">idx_neg_peaks</span><span class="p">],</span>
-                 <span class="s1">&#39;ValPosPeak&#39;</span><span class="p">:</span> <span class="n">data_filt</span><span class="p">[</span><span class="n">idx_pos_peaks</span><span class="p">],</span>
-                 <span class="s1">&#39;PTP&#39;</span><span class="p">:</span> <span class="n">sw_ptp</span><span class="p">,</span>
-                 <span class="s1">&#39;Slope&#39;</span><span class="p">:</span> <span class="n">sw_slope</span><span class="p">,</span>
-                 <span class="s1">&#39;Frequency&#39;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">sw_dur</span><span class="p">,</span>
-                 <span class="s1">&#39;Stage&#39;</span><span class="p">:</span> <span class="n">sw_sta</span><span class="p">,</span>
-                 <span class="p">}</span>
+    <span class="n">sw_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">({</span><span class="s1">&#39;Start&#39;</span><span class="p">:</span> <span class="n">sw_start</span><span class="p">,</span>
+                             <span class="s1">&#39;NegPeak&#39;</span><span class="p">:</span> <span class="n">sw_idx_neg</span><span class="p">,</span>
+                             <span class="s1">&#39;MidCrossing&#39;</span><span class="p">:</span> <span class="n">sw_midcrossing</span><span class="p">,</span>
+                             <span class="s1">&#39;PosPeak&#39;</span><span class="p">:</span> <span class="n">sw_idx_pos</span><span class="p">,</span>
+                             <span class="s1">&#39;End&#39;</span><span class="p">:</span> <span class="n">sw_end</span><span class="p">,</span>
+                             <span class="s1">&#39;Duration&#39;</span><span class="p">:</span> <span class="n">sw_dur</span><span class="p">,</span>
+                             <span class="s1">&#39;ValNegPeak&#39;</span><span class="p">:</span> <span class="n">data_filt</span><span class="p">[</span><span class="n">idx_neg_peaks</span><span class="p">],</span>
+                             <span class="s1">&#39;ValPosPeak&#39;</span><span class="p">:</span> <span class="n">data_filt</span><span class="p">[</span><span class="n">idx_pos_peaks</span><span class="p">],</span>
+                             <span class="s1">&#39;PTP&#39;</span><span class="p">:</span> <span class="n">sw_ptp</span><span class="p">,</span>
+                             <span class="s1">&#39;Slope&#39;</span><span class="p">:</span> <span class="n">sw_slope</span><span class="p">,</span>
+                             <span class="s1">&#39;Frequency&#39;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">sw_dur</span><span class="p">,</span>
+                             <span class="s1">&#39;Stage&#39;</span><span class="p">:</span> <span class="n">sw_sta</span><span class="p">,</span>
+                             <span class="p">})</span>
 
+    <span class="c1"># Add phase (in radians) of slow-oscillation signal at maximum</span>
+    <span class="c1"># spindles-related sigma amplitude within a 4-seconds centered epochs.</span>
+    <span class="k">if</span> <span class="n">coupling</span><span class="p">:</span>
+        <span class="c1"># The following lines are borrowed from yasa.get_sync_events</span>
+        <span class="n">time_before</span> <span class="o">=</span> <span class="n">time_after</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">N_bef</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sf</span> <span class="o">*</span> <span class="n">time_before</span><span class="p">)</span>
+        <span class="n">N_aft</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sf</span> <span class="o">*</span> <span class="n">time_after</span><span class="p">)</span>
+        <span class="c1"># Convert to integer sample indices in data</span>
+        <span class="n">n_peaks</span> <span class="o">=</span> <span class="n">idx_neg_peaks</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">idx_peak</span> <span class="o">=</span> <span class="p">(</span><span class="n">idx_neg_peaks</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+
+        <span class="k">def</span> <span class="nf">rng</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Utility function to create a range before and after</span>
+<span class="sd">            a given value.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">N_bef</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="n">N_aft</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">idx_peak</span><span class="p">)</span>
+        <span class="c1"># We drop the events for which the indices exceed data</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mask_rows</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_outside</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="n">idx_nomask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">compress_rows</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        <span class="c1"># sw_pha is a 2-D array of shape (n_events, N_bef + N_aft + 1)</span>
+        <span class="n">sw_pha_ev</span> <span class="o">=</span> <span class="n">sw_pha</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">sp_amp_ev</span> <span class="o">=</span> <span class="n">sp_amp</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="c1"># Find SW phase at max sigma amplitude in epoch</span>
+        <span class="n">pha_at_max</span> <span class="o">=</span> <span class="n">sw_pha_ev</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">sp_amp_ev</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># Now we need to append it back to the original unmasked shape</span>
+        <span class="n">pha_at_max_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_peaks</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">pha_at_max_full</span><span class="p">[</span><span class="n">idx_nomask</span><span class="p">]</span> <span class="o">=</span> <span class="n">pha_at_max</span>
+        <span class="n">sw_params</span><span class="p">[</span><span class="s1">&#39;PhaseAtSigmaPeak&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pha_at_max_full</span>
+        <span class="c1"># Make sure that Stage is the last column of the dataframe</span>
+        <span class="n">sw_params</span><span class="o">.</span><span class="n">move_to_end</span><span class="p">(</span><span class="s1">&#39;Stage&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Convert to dataframe, keeping only good events</span>
     <span class="n">df_sw</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">sw_params</span><span class="p">)[</span><span class="n">good_sw</span><span class="p">]</span>
 
     <span class="c1"># Remove all duplicates</span>
@@ -1178,14 +1285,13 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">df_sw</span><span class="p">[</span><span class="s1">&#39;Stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_sw</span><span class="p">[</span><span class="s1">&#39;Stage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;category&#39;</span><span class="p">)</span>
 
-    <span class="c1"># We need at least 100 detected slow waves to apply the Isolation Forest.</span>
-    <span class="k">if</span> <span class="n">remove_outliers</span> <span class="ow">and</span> <span class="n">df_sw</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">100</span><span class="p">:</span>
+    <span class="c1"># We need at least 50 detected slow waves to apply the Isolation Forest.</span>
+    <span class="k">if</span> <span class="n">remove_outliers</span> <span class="ow">and</span> <span class="n">df_sw</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">50</span><span class="p">:</span>
         <span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="k">import</span> <span class="n">IsolationForest</span>
         <span class="n">col_keep</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Duration&#39;</span><span class="p">,</span> <span class="s1">&#39;ValNegPeak&#39;</span><span class="p">,</span> <span class="s1">&#39;ValPosPeak&#39;</span><span class="p">,</span> <span class="s1">&#39;PTP&#39;</span><span class="p">,</span> <span class="s1">&#39;Slope&#39;</span><span class="p">,</span>
                     <span class="s1">&#39;Frequency&#39;</span><span class="p">]</span>
-        <span class="n">ilf</span> <span class="o">=</span> <span class="n">IsolationForest</span><span class="p">(</span><span class="n">behaviour</span><span class="o">=</span><span class="s1">&#39;new&#39;</span><span class="p">,</span> <span class="n">contamination</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
-                              <span class="n">max_samples</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
-
+        <span class="n">ilf</span> <span class="o">=</span> <span class="n">IsolationForest</span><span class="p">(</span><span class="n">contamination</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">max_samples</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
+                              <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
         <span class="n">good</span> <span class="o">=</span> <span class="n">ilf</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">df_sw</span><span class="p">[</span><span class="n">col_keep</span><span class="p">])</span>
         <span class="n">good</span><span class="p">[</span><span class="n">good</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%i</span><span class="s1"> outliers were removed.&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">good</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
@@ -1233,6 +1339,7 @@
 <span class="sd">            &#39;PTP&#39; : Peak to peak amplitude (ValPosPeak - ValNegPeak)</span>
 <span class="sd">            &#39;Slope&#39; : Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec)</span>
 <span class="sd">            &#39;Frequency&#39; : Frequency of the slow-wave (1 / ``Duration``)</span>
+<span class="sd">            &#39;PhaseAtSigmaPeak&#39;: SW phase at max sigma amplitude in 4-sec epoch</span>
 <span class="sd">            &#39;Stage&#39; : Sleep stage (only if hypno was provided)</span>
 <span class="sd">            &#39;Channel&#39; : Channel name</span>
 <span class="sd">            &#39;IdxChannel&#39; : Integer index of channel in data</span>
@@ -1245,7 +1352,7 @@
 <span class="sd">    computed on the filtered signal.</span>
 
 <span class="sd">    For an example of how to run the detection, please refer to</span>
-<span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_sw_detection_multi.ipynb</span>
+<span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection_multi.ipynb</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Check if input data is a MNE Raw object</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">BaseRaw</span><span class="p">):</span>
@@ -1360,7 +1467,7 @@
 <span class="sd">        using :py:class:`sklearn.ensemble.IsolationForest`.</span>
 <span class="sd">        YASA uses a random seed (42) to ensure reproducible results.</span>
 <span class="sd">        Note that this step will only be applied if there are more than</span>
-<span class="sd">        100 detected REMs in the first place. Default to False.</span>
+<span class="sd">        50 detected REMs in the first place. Default to False.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1387,7 +1494,7 @@
 <span class="sd">    ROC signals.</span>
 
 <span class="sd">    For an example of how to run the detection, please refer to</span>
-<span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_REMs_detection.ipynb</span>
+<span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Safety checks</span>
     <span class="n">loc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">))</span>
@@ -1541,13 +1648,13 @@
         <span class="n">df_rem</span><span class="p">[</span><span class="s1">&#39;Stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_rem</span><span class="p">[</span><span class="s1">&#39;Stage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;category&#39;</span><span class="p">)</span>
 
     <span class="c1"># We need at least 100 detected REMs to apply the Isolation Forest.</span>
-    <span class="k">if</span> <span class="n">remove_outliers</span> <span class="ow">and</span> <span class="n">df_rem</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">100</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">remove_outliers</span> <span class="ow">and</span> <span class="n">df_rem</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">50</span><span class="p">:</span>
         <span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="k">import</span> <span class="n">IsolationForest</span>
         <span class="n">col_keep</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Duration&#39;</span><span class="p">,</span> <span class="s1">&#39;LOCAbsValPeak&#39;</span><span class="p">,</span> <span class="s1">&#39;ROCAbsValPeak&#39;</span><span class="p">,</span>
                     <span class="s1">&#39;LOCAbsRiseSlope&#39;</span><span class="p">,</span> <span class="s1">&#39;ROCAbsRiseSlope&#39;</span><span class="p">,</span> <span class="s1">&#39;LOCAbsFallSlope&#39;</span><span class="p">,</span>
                     <span class="s1">&#39;ROCAbsFallSlope&#39;</span><span class="p">]</span>
-        <span class="n">ilf</span> <span class="o">=</span> <span class="n">IsolationForest</span><span class="p">(</span><span class="n">behaviour</span><span class="o">=</span><span class="s1">&#39;new&#39;</span><span class="p">,</span> <span class="n">contamination</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
-                              <span class="n">max_samples</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+        <span class="n">ilf</span> <span class="o">=</span> <span class="n">IsolationForest</span><span class="p">(</span><span class="n">contamination</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">max_samples</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
+                              <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
         <span class="n">good</span> <span class="o">=</span> <span class="n">ilf</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">df_rem</span><span class="p">[</span><span class="n">col_keep</span><span class="p">])</span>
         <span class="n">good</span><span class="p">[</span><span class="n">good</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%i</span><span class="s1"> outliers were removed.&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">good</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>

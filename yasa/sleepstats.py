@@ -81,7 +81,7 @@ def transition_matrix(hypno):
 
 
 def sleep_statistics(hypno, sf_hyp):
-    """Compute sleep stats from an hypnogram vector.
+    """Compute standard sleep statistics from an hypnogram.
 
     .. versionadded:: 0.1.9
 
@@ -109,13 +109,13 @@ def sleep_statistics(hypno, sf_hyp):
 
     Returns
     -------
-    stats: dict
+    stats : dict
         Sleep statistics (expressed in minutes)
 
     Notes
     -----
-    All values except SE and percentages are expressed in minutes. YASA follows
-    the AASM guidelines to calculate these parameters:
+    All values except SE, SME and percentages of each stage are expressed in
+    minutes. YASA follows the AASM guidelines to calculate these parameters:
 
     * Time in Bed (TIB): total duration of the hypnogram.
     * Sleep Period Time (SPT): duration from first to last period of sleep.
@@ -130,16 +130,17 @@ def sleep_statistics(hypno, sf_hyp):
 
     References
     ----------
-    .. [1] Iber, C. (2007). The AASM manual for the scoring of sleep and
-    associated events: rules, terminology and technical specifications.
-    American Academy of Sleep Medicine.
+    * Iber, C. (2007). The AASM manual for the scoring of sleep and
+      associated events: rules, terminology and technical specifications.
+      American Academy of Sleep Medicine.
 
-    .. [2] Silber, M. H., Ancoli-Israel, S., Bonnet, M. H., Chokroverty, S.,
-    Grigg-Damberger, M. M., Hirshkowitz, M., Kapen, S., Keenan, S. A., Kryger,
-    M. H., Penzel, T., Pressman, M. R., & Iber, C. (2007). The visual scoring
-    of sleep in adults. Journal of Clinical Sleep Medicine: JCSM: Official
-    Publication of the American Academy of Sleep Medicine, 3(2), 121–131.
-    https://www.ncbi.nlm.nih.gov/pubmed/17557422
+    * Silber, M. H., Ancoli-Israel, S., Bonnet, M. H., Chokroverty, S.,
+      Grigg-Damberger, M. M., Hirshkowitz, M., Kapen, S., Keenan, S. A.,
+      Kryger, M. H., Penzel, T., Pressman, M. R., & Iber, C. (2007).
+      `The visual scoring of sleep in adults
+      <https://www.ncbi.nlm.nih.gov/pubmed/17557422>`_. Journal of Clinical
+      Sleep Medicine: JCSM: Official Publication of the American Academy of
+      Sleep Medicine, 3(2), 121–131.
 
     Examples
     --------

@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.bandpower_from_psd &#8212; yasa 0.1.9 documentation</title>
+    <title>yasa.bandpower_from_psd &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -89,7 +89,7 @@
 <h1>yasa.bandpower_from_psd</h1>
 <dl class="function">
 <dt id="yasa.bandpower_from_psd">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">bandpower_from_psd</code><span class="sig-paren">(</span><em class="sig-param">psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'), (12, 30, 'Beta'), (30, 40, 'Gamma')], relative=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/spectral.html#bandpower_from_psd"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">bandpower_from_psd</code><span class="sig-paren">(</span><em class="sig-param">psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'), (12, 16, 'Sigma'), (16, 30, 'Beta'), (30, 40, 'Gamma')], relative=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/spectral.html#bandpower_from_psd"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Compute the average power of the EEG in specified frequency band(s)
 given a pre-computed PSD.</p>
 <div class="versionadded">
@@ -118,7 +118,7 @@ max frequencies defined in <code class="docutils literal notranslate"><span clas
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Bandpower dataframe, in which each row is a channel and each column
+<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Bandpower dataframe, in which each row is a channel and each column
 a spectral band.</p>
 </dd>
 </dl>

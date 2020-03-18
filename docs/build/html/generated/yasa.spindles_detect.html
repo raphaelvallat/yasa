@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.spindles_detect &#8212; yasa 0.1.9 documentation</title>
+    <title>yasa.spindles_detect &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -176,19 +176,21 @@ spindles and the slow-oscillation signal. The coupling is given by the
 phase (in radians) of the filtered slow-oscillation signal
 at the most prominent peak of the spindles.</p>
 <p>Importantly, since the resulting variable is expressed in radians,
-one should use a circular mean to calculate the average across all
-events:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">circmean</span>
-<span class="n">avg_SOPhase</span> <span class="o">=</span> <span class="n">circmean</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="s1">&#39;SOPhase&#39;</span><span class="p">])</span>
+one should use circular statistics to calculate the mean direction
+and vector length:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pingouin</span> <span class="kn">as</span> <span class="nn">pg</span>
+<span class="n">mean_direction</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">circ_mean</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="s1">&#39;SOPhase&#39;</span><span class="p">])</span>
+<span class="n">vector_length</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">circ_r</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="s1">&#39;SOPhase&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>For more details, please refer to the <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_spindles-SO_coupling.ipynb">Jupyter notebook</a></p>
+<p>For more details, please refer to the <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb">Jupyter notebook</a></p>
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 0.1.9.</span></p>
 </div>
 </dd>
 <dt><strong>freq_so</strong><span class="classifier">tuple or list</span></dt><dd><p>Slow-oscillations frequency of interest. This is only relevant if
-<code class="docutils literal notranslate"><span class="pre">coupling=True</span></code>. Default is 0.1 to 1.25 Hz.</p>
+<code class="docutils literal notranslate"><span class="pre">coupling=True</span></code>. Default is 0.1 to 1.25 Hz, with a narrow transition
+bandwidth of 0.1 Hz.</p>
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 0.1.9.</span></p>
 </div>
@@ -197,7 +199,7 @@ events:</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>sp_params</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
+<dt><strong>sp_params</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Start&#39;</span> <span class="p">:</span> <span class="n">Start</span> <span class="n">time</span> <span class="n">of</span> <span class="n">each</span> <span class="n">detected</span> <span class="n">spindles</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;Peak&#39;</span><span class="p">:</span> <span class="n">Timing</span> <span class="n">of</span> <span class="n">the</span> <span class="n">most</span> <span class="n">prominent</span> <span class="n">spindles</span> <span class="n">peak</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;End&#39;</span> <span class="p">:</span> <span class="n">End</span> <span class="n">time</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>

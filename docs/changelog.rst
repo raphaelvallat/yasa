@@ -12,7 +12,7 @@ a. Sleep efficiency in the :py:func:`yasa.sleep_statistics` is now calculated us
 
 **New functions**
 
-a. Added :py:func:`bandpower_from_psd_ndarray` to calculate band power from a multi-dimensional PSD. This is a Numpy-only implementation and this function will return a np.array and not a pandas DataFrame.
+a. Added :py:func:`yasa.bandpower_from_psd_ndarray` to calculate band power from a multi-dimensional PSD. This is a Numpy-only implementation and this function will return a np.array and not a pandas DataFrame.
 This function is useful if you need to calculate the bandpower from a 3-D PSD array, e.g. of shape (n_chan, n_epochs, n_freqs).
 
 **Enhancements**

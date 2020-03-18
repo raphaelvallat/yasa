@@ -58,6 +58,7 @@ Spectral analyses
 
     bandpower
     bandpower_from_psd
+    bandpower_from_psd_ndarray
     irasa
     plot_spectrogram
     stft_power

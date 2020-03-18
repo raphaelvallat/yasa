@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>API reference &#8212; yasa 0.1.9 documentation</title>
+    <title>API reference &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="index.html"><span><img src="_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.1.9</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -182,13 +182,16 @@
 <tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.bandpower_from_psd.html#yasa.bandpower_from_psd" title="yasa.bandpower_from_psd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bandpower_from_psd</span></code></a>(psd, freqs[, ch_names, …])</p></td>
 <td><p>Compute the average power of the EEG in specified frequency band(s) given a pre-computed PSD.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.irasa.html#yasa.irasa" title="yasa.irasa"><code class="xref py py-obj docutils literal notranslate"><span class="pre">irasa</span></code></a>(data[, sf, ch_names, band, hset, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.bandpower_from_psd_ndarray.html#yasa.bandpower_from_psd_ndarray" title="yasa.bandpower_from_psd_ndarray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bandpower_from_psd_ndarray</span></code></a>(psd, freqs[, …])</p></td>
+<td><p>Compute bandpowers in N-dimensional PSD.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.irasa.html#yasa.irasa" title="yasa.irasa"><code class="xref py py-obj docutils literal notranslate"><span class="pre">irasa</span></code></a>(data[, sf, ch_names, band, hset, …])</p></td>
 <td><p>Separate the aperiodic (= fractal, or 1/f) and oscillatory component of the power spectra of EEG data using the IRASA method.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_spectrogram</span></code></a>(data, sf[, hypno, win_sec, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_spectrogram</span></code></a>(data, sf[, hypno, win_sec, …])</p></td>
 <td><p>Plot a full-night multi-taper spectrogram, optionally with the hypnogram on top.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.stft_power.html#yasa.stft_power" title="yasa.stft_power"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stft_power</span></code></a>(data, sf[, window, step, band, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.stft_power.html#yasa.stft_power" title="yasa.stft_power"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stft_power</span></code></a>(data, sf[, window, step, band, …])</p></td>
 <td><p>Compute the pointwise power via STFT and interpolation.</p></td>
 </tr>
 </tbody>
