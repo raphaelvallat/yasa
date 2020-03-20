@@ -6,7 +6,7 @@ import numpy as np
 from itertools import product
 from mne.filter import filter_data
 from yasa.others import (moving_transform, trimbothstd, _zerocrossings,
-                         sliding_window)
+                         sliding_window, get_centered_indices)
 
 # Load data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -68,3 +68,14 @@ class TestStringMethods(unittest.TestCase):
         t, sl = sliding_window(x_2d, sf=100., window=4., step=None)
         assert np.array_equal(t, [0., 4.])
         assert np.array_equal(sl.shape, (2, 2, 400))
+
+    def test_get_centered_indices(self):
+        """Test function get_centered_indices
+        """
+        data = np.arange(100)
+        idx = [1, 10., 20, 30, 50, 102]
+        before, after = 3, 2
+        idx_ep, idx_nomask = get_centered_indices(data, idx, before, after)
+        assert (data[idx_ep] == idx_ep).all()
+        assert (idx_nomask == [1, 2, 3, 4]).all()
+        assert idx_ep.shape == (len(idx_nomask), before + after + 1)

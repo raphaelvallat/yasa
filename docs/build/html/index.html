@@ -6,13 +6,13 @@
     <title>Installation &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    <script type="text/javascript" src="_static/copybutton.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -198,17 +198,17 @@
 <span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">)</span>
 
 <span class="c1"># Single-channel full command (shows all the default implicit parameters)</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
                      <span class="n">freq_sp</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="n">duration</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">freq_broad</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
-                     <span class="n">min_distance</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">downsample</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                     <span class="n">min_distance</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">downsample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                      <span class="n">thresh</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="mf">0.65</span><span class="p">,</span> <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">},</span>
-                     <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">coupling</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                     <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">coupling</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 <span class="c1"># Multi-channels detection on NREM sleep only (requires an hypnogram)</span>
 <span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect_multi</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">)</span>
 
 <span class="c1"># Multi-channels detection on N2 sleep only with automatic outlier rejection</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect_multi</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect_multi</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># SLOW-WAVES</span>
 <span class="c1"># ==========</span>
@@ -218,8 +218,8 @@
 <span class="c1"># Single-channel full command (shows all the default implicit parameters)</span>
 <span class="n">yasa</span><span class="o">.</span><span class="n">sw_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">freq_sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
                <span class="n">dur_neg</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">dur_pos</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">amp_neg</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">300</span><span class="p">),</span>
-               <span class="n">amp_pos</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="n">amp_ptp</span><span class="o">=</span><span class="p">(</span><span class="mi">75</span><span class="p">,</span> <span class="mi">400</span><span class="p">),</span> <span class="n">downsample</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-               <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">coupling</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+               <span class="n">amp_pos</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="n">amp_ptp</span><span class="o">=</span><span class="p">(</span><span class="mi">75</span><span class="p">,</span> <span class="mi">400</span><span class="p">),</span> <span class="n">downsample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+               <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">coupling</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 <span class="c1"># Multi-channel slow-waves detection on N2 + N3 sleep only (requires an hypnogram)</span>
 <span class="n">yasa</span><span class="o">.</span><span class="n">sw_detect_multi</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">)</span>
@@ -231,8 +231,8 @@
 
 <span class="c1"># On REM sleep only + all implicit parameters</span>
 <span class="n">yasa</span><span class="o">.</span><span class="n">rem_detect</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">roc</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">325</span><span class="p">),</span>
-                <span class="n">duration</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">freq_rem</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">downsample</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="n">duration</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">freq_rem</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">downsample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The result of the detection is a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">pandas DataFrame</a> where each row is a unique detected event (e.g. spindle, slow-waves, REMs) and each column a parameter of this event, including, the start and end timestamps, duration, amplitude, etc.</p>
@@ -315,9 +315,9 @@ The method is based on a machine-learning algorithm (the <a class="reference ext
 which uses the events parameters (e.g. amplitude, duration, frequency, etc) as input features to identify <em>aberrant</em> spindles / slow-waves / REMs.</p>
 <p>To activate this post-processing step, simply use:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">yasa</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>  <span class="c1"># Spindles</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">sw_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>        <span class="c1"># Slow-waves</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">rem_detect</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">roc</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>   <span class="c1"># REMs</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Spindles</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">sw_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>        <span class="c1"># Slow-waves</span>
+<span class="n">yasa</span><span class="o">.</span><span class="n">rem_detect</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">roc</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>   <span class="c1"># REMs</span>
 </pre></div>
 </div>
 </div>
@@ -353,7 +353,7 @@ which uses the events parameters (e.g. amplitude, duration, frequency, etc) as i
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.<br/>
     </p>
   </div>
 </footer>

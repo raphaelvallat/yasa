@@ -6,13 +6,13 @@
     <title>yasa.spectral &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <script type="text/javascript" src="../../_static/language_data.js"></script>
-    <script type="text/javascript" src="../../_static/copybutton.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../_static/copybutton.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -93,9 +93,9 @@
 <span class="kn">import</span> <span class="nn">mne</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">signal</span>
-<span class="kn">from</span> <span class="nn">scipy.integrate</span> <span class="k">import</span> <span class="n">simps</span>
-<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">RectBivariateSpline</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">signal</span>
+<span class="kn">from</span> <span class="nn">scipy.integrate</span> <span class="kn">import</span> <span class="n">simps</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">RectBivariateSpline</span>
 
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;bandpower&#39;</span><span class="p">,</span> <span class="s1">&#39;bandpower_from_psd&#39;</span><span class="p">,</span> <span class="s1">&#39;bandpower_from_psd_ndarray&#39;</span><span class="p">,</span>
@@ -411,7 +411,7 @@
     <span class="k">return</span> <span class="n">bp</span></div>
 
 
-<div class="viewcode-block" id="irasa"><a class="viewcode-back" href="../../generated/yasa.irasa.html#yasa.irasa">[docs]</a><span class="k">def</span> <span class="nf">irasa</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ch_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
+<span class="k">def</span> <span class="nf">irasa</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ch_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
           <span class="n">hset</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.95</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">),</span> <span class="n">return_fit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">win_sec</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
           <span class="n">kwargs_welch</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">average</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="s1">&#39;hamming&#39;</span><span class="p">)):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -584,7 +584,7 @@
 
     <span class="k">if</span> <span class="n">return_fit</span><span class="p">:</span>
         <span class="c1"># Aperiodic fit in semilog space for each channel</span>
-        <span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="k">import</span> <span class="n">curve_fit</span>
+        <span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">curve_fit</span>
         <span class="n">intercepts</span><span class="p">,</span> <span class="n">slopes</span><span class="p">,</span> <span class="n">r_squared</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
 
         <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
@@ -611,7 +611,7 @@
                       <span class="s1">&#39;std(osc)&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">psd_osc</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)}</span>
         <span class="k">return</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">psd_aperiodic</span><span class="p">,</span> <span class="n">psd_osc</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">fit_params</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">psd_aperiodic</span><span class="p">,</span> <span class="n">psd_osc</span></div>
+        <span class="k">return</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">psd_aperiodic</span><span class="p">,</span> <span class="n">psd_osc</span>
 
 
 <div class="viewcode-block" id="stft_power"><a class="viewcode-back" href="../../generated/yasa.stft_power.html#yasa.stft_power">[docs]</a><span class="k">def</span> <span class="nf">stft_power</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">step</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="n">interp</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -713,7 +713,7 @@
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.<br/>
     </p>
   </div>
 </footer>

@@ -47,6 +47,7 @@ Signal processing
     moving_transform
     sliding_window
     trimbothstd
+    get_centered_indices
 
 Spectral analyses
 -----------------

@@ -6,13 +6,13 @@
     <title>yasa.spindles_detect &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
-    <script type="text/javascript" src="../_static/copybutton.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -89,7 +89,7 @@
 <h1>yasa.spindles_detect</h1>
 <dl class="function">
 <dt id="yasa.spindles_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">spindles_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(1</em>, <em class="sig-param">2</em>, <em class="sig-param">3)</em>, <em class="sig-param">freq_sp=(12</em>, <em class="sig-param">15)</em>, <em class="sig-param">duration=(0.5</em>, <em class="sig-param">2)</em>, <em class="sig-param">freq_broad=(1</em>, <em class="sig-param">30)</em>, <em class="sig-param">min_distance=500</em>, <em class="sig-param">downsample=True</em>, <em class="sig-param">thresh={'corr': 0.65</em>, <em class="sig-param">'rel_pow': 0.2</em>, <em class="sig-param">'rms': 1.5}</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">coupling=False</em>, <em class="sig-param">freq_so=(0.1</em>, <em class="sig-param">1.25)</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#spindles_detect"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">spindles_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(1</em>, <em class="sig-param">2</em>, <em class="sig-param">3)</em>, <em class="sig-param">freq_sp=(12</em>, <em class="sig-param">15)</em>, <em class="sig-param">duration=(0.5</em>, <em class="sig-param">2)</em>, <em class="sig-param">freq_broad=(1</em>, <em class="sig-param">30)</em>, <em class="sig-param">min_distance=500</em>, <em class="sig-param">downsample=True</em>, <em class="sig-param">thresh={'rel_pow': 0.2</em>, <em class="sig-param">'corr': 0.65</em>, <em class="sig-param">'rms': 1.5}</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">coupling=False</em>, <em class="sig-param">freq_so=(0.1</em>, <em class="sig-param">1.25)</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#spindles_detect"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Spindles detection.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
@@ -157,8 +157,8 @@ respectively).</p>
 </pre></div>
 </div>
 <p>You can disable one or more threshold by putting <code class="docutils literal notranslate"><span class="pre">None</span></code> instead:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">thresh</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="mf">0.65</span><span class="p">,</span> <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">}</span>
-<span class="n">thresh</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">thresh</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="mf">0.65</span><span class="p">,</span> <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">}</span>
+<span class="n">thresh</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}</span>
 </pre></div>
 </div>
 </dd>
@@ -178,7 +178,7 @@ at the most prominent peak of the spindles.</p>
 <p>Importantly, since the resulting variable is expressed in radians,
 one should use circular statistics to calculate the mean direction
 and vector length:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pingouin</span> <span class="kn">as</span> <span class="nn">pg</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pingouin</span> <span class="k">as</span> <span class="nn">pg</span>
 <span class="n">mean_direction</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">circ_mean</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="s1">&#39;SOPhase&#39;</span><span class="p">])</span>
 <span class="n">vector_length</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">circ_r</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="s1">&#39;SOPhase&#39;</span><span class="p">])</span>
 </pre></div>
@@ -199,7 +199,7 @@ bandwidth of 0.1 Hz.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>sp_params</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
+<dt><strong>sp_params</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Start&#39;</span> <span class="p">:</span> <span class="n">Start</span> <span class="n">time</span> <span class="n">of</span> <span class="n">each</span> <span class="n">detected</span> <span class="n">spindles</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;Peak&#39;</span><span class="p">:</span> <span class="n">Timing</span> <span class="n">of</span> <span class="n">the</span> <span class="n">most</span> <span class="n">prominent</span> <span class="n">spindles</span> <span class="n">peak</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;End&#39;</span> <span class="p">:</span> <span class="n">End</span> <span class="n">time</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
@@ -243,7 +243,7 @@ bandwidth of 0.1 Hz.</p>
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.<br/>
     </p>
   </div>
 </footer>

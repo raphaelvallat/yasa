@@ -18,7 +18,8 @@ from scipy.fftpack import next_fast_len
 
 
 from .numba import _detrend, _rms
-from .others import moving_transform, trimbothstd, _zerocrossings
+from .others import (moving_transform, trimbothstd, _zerocrossings,
+                     get_centered_indices)
 from .spectral import stft_power
 
 # Define YASA logger
@@ -226,29 +227,23 @@ def get_sync_events(data=None, sf=None, detection=None, center='NegPeak',
         # Define number of samples before and after the peak
         assert time_before >= 0
         assert time_after >= 0
-        N_bef = int(sf * time_before)
-        N_aft = int(sf * time_after)
+        bef = int(sf * time_before)
+        aft = int(sf * time_after)
         # Convert to integer sample indices in data
-        idx_peak = (detection[center] * sf).astype(int).values[..., np.newaxis]
-
-        def rng(x):
-            """Utility function to create a range before and after
-            a given value."""
-            return np.arange(x - N_bef, x + N_aft + 1, dtype='int')
-
-        # Extract indices, data, and time vector
-        idx = np.apply_along_axis(rng, 1, idx_peak)
-        # We drop the events for which the indices exceed data
-        idx_mask = np.ma.mask_rows(np.ma.masked_outside(idx, 0, data.shape[0]))
-        idx = np.ma.compress_rows(idx_mask)
-        if len(idx) == 0:
+        peaks = (detection[center] * sf).astype(int).to_numpy()
+        # Get centered indices
+        idx, idx_nomask = get_centered_indices(data, peaks, bef, aft)
+        # If no good epochs are returned, raise an error and return None
+        if len(idx_nomask) == 0:
             logging.warning(
                 'Time before and/or time after exceed data bounds, please '
                 'lower the temporal window around center; returning None.'
             )
             return None
+
+        # Get data at indices and time vector
         amps = data[idx]
-        time = rng(0) / sf
+        time = np.arange(-bef, aft + 1, dtype='int') / sf
 
         # Convert to dataframe
         df_sync = pd.DataFrame(amps.T)
@@ -1168,25 +1163,12 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 2),
             raise IOError("tensorpac needs to be installed. Please use `pip "
                           "install tensorpac -U`.")
 
-        # The following lines are borrowed from yasa.get_sync_events
+        # Get Phase and Amplitude for each centered epoch
         time_before = time_after = 2
-        N_bef = int(sf * time_before)
-        N_aft = int(sf * time_after)
-        # Convert to integer sample indices in data
+        bef = int(sf * time_before)
+        aft = int(sf * time_after)
         n_peaks = idx_neg_peaks.shape[0]
-        idx_peak = (idx_neg_peaks).astype(int)[..., np.newaxis]
-
-        def rng(x):
-            """Utility function to create a range before and after
-            a given value."""
-            return np.arange(x - N_bef, x + N_aft + 1, dtype='int')
-
-        idx = np.apply_along_axis(rng, 1, idx_peak)
-        # We drop the events for which the indices exceed data
-        idx = np.ma.mask_rows(np.ma.masked_outside(idx, 0, data.shape[0]))
-        idx_nomask = np.unique(idx.nonzero()[0])
-        idx = np.ma.compress_rows(idx)
-        # sw_pha is a 2-D array of shape (n_events, N_bef + N_aft + 1)
+        idx, idx_nomask = get_centered_indices(data, idx_neg_peaks, bef, aft)
         sw_pha_ev = sw_pha[idx]
         sp_amp_ev = sp_amp[idx]
         # Find SW phase at max sigma amplitude in epoch

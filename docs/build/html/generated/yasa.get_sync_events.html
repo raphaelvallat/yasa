@@ -6,13 +6,13 @@
     <title>yasa.get_sync_events &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
-    <script type="text/javascript" src="../_static/copybutton.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -104,7 +104,7 @@ in which case <code class="docutils literal notranslate"><span class="pre">data<
 <dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency of <code class="docutils literal notranslate"><span class="pre">data</span></code>.
 Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
-<dt><strong>detection</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>YASA’s detection dataframe returned by the
+<dt><strong>detection</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>YASA’s detection dataframe returned by the
 <a class="reference internal" href="yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a>,
 <a class="reference internal" href="yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>,
 <a class="reference internal" href="yasa.sw_detect_multi.html#yasa.sw_detect_multi" title="yasa.sw_detect_multi"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect_multi()</span></code></a>, and
@@ -121,7 +121,7 @@ Default is to use the negative peak.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>df_sync</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput long-format dataframe:</p>
+<dt><strong>df_sync</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput long-format dataframe:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Event&#39;</span> <span class="p">:</span> <span class="n">Event</span> <span class="n">number</span>
 <span class="s1">&#39;Time&#39;</span> <span class="p">:</span> <span class="n">Timing</span> <span class="n">of</span> <span class="n">the</span> <span class="n">events</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;Amplitude&#39;</span> <span class="p">:</span> <span class="n">Raw</span> <span class="n">data</span> <span class="k">for</span> <span class="n">event</span>
@@ -152,7 +152,7 @@ Default is to use the negative peak.</p>
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.<br/>
     </p>
   </div>
 </footer>

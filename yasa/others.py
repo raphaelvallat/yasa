@@ -5,7 +5,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 from .numba import _slope_lstsq, _covar, _corr, _rms
 
-__all__ = ['moving_transform', 'trimbothstd', 'sliding_window']
+__all__ = ['moving_transform', 'trimbothstd', 'sliding_window',
+           'get_centered_indices']
 
 
 def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
@@ -274,3 +275,76 @@ def sliding_window(data, sf, window, step=None, axis=-1):
     strided = as_strided(data, shape=shape, strides=strides)
     t = np.arange(strided.shape[-2]) * (step / sf)
     return t, strided
+
+
+def get_centered_indices(data, idx, npts_before, npts_after):
+    """Get a 2D array of indices in data centered around specific time points,
+    automatically excluding indices that are outside the bounds of data.
+
+    Parameters
+    ----------
+    data : 1-D array_like
+        Input data.
+    idx : 1-D array_like
+        Indices of events in data (e.g. peaks)
+    npts_before : int
+        Number of data points to include before ``idx``
+    npts_after : int
+        Number of data points to include after ``idx``
+
+    Returns
+    -------
+    idx_ep : 2-D array
+        Array of indices of shape (len(idx_nomask), npts_before +
+        npts_after + 1). Indices outside the bounds of data are removed.
+    idx_nomask : 1-D array
+        Indices of ``idx`` that are not masked (= valid).
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from yasa import get_centered_indices
+    >>> np.random.seed(123)
+    >>> data = np.random.normal(size=100).round(2)
+    >>> idx = [1., 10., 20., 30., 50., 102]
+    >>> before, after = 3, 2
+    >>> idx_ep, idx_nomask = get_centered_indices(data, idx, before, after)
+    >>> idx_ep
+    array([[ 7,  8,  9, 10, 11, 12],
+           [17, 18, 19, 20, 21, 22],
+           [27, 28, 29, 30, 31, 32],
+           [47, 48, 49, 50, 51, 52]])
+
+    >>> data[idx_ep]
+    array([[-0.43,  1.27, -0.87, -0.68, -0.09,  1.49],
+           [ 2.19,  1.  ,  0.39,  0.74,  1.49, -0.94],
+           [-1.43, -0.14, -0.86, -0.26, -2.8 , -1.77],
+           [ 0.41,  0.98,  2.24, -1.29, -1.04,  1.74]])
+
+    >>> idx_nomask
+    array([1, 2, 3, 4], dtype=int64)
+    """
+    # Safety check
+    assert isinstance(npts_before, (int, float))
+    assert isinstance(npts_after, (int, float))
+    assert float(npts_before).is_integer()
+    assert float(npts_after).is_integer()
+    npts_before = int(npts_before)
+    npts_after = int(npts_after)
+    data = np.asarray(data)
+    idx = np.asarray(idx, dtype='int')
+    assert idx.ndim == 1, "idx must be 1D."
+    assert data.ndim == 1, "data must be 1D."
+
+    def rng(x):
+        """Create a range before and after a given value."""
+        return np.arange(x - npts_before, x + npts_after + 1, dtype='int')
+
+    n_peaks = idx.shape[0]
+    idx_ep = np.apply_along_axis(rng, 1, idx[..., np.newaxis])
+    # We drop the events for which the indices exceed data
+    idx_ep = np.ma.mask_rows(np.ma.masked_outside(idx_ep, 0, data.shape[0]))
+    # Indices of non-masked epochs in idx
+    idx_ep_nomask = np.unique(idx_ep.nonzero()[0])
+    idx_ep = np.ma.compress_rows(idx_ep)
+    return idx_ep, idx_ep_nomask

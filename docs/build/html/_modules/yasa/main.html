@@ -6,13 +6,13 @@
     <title>yasa.main &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <script type="text/javascript" src="../../_static/language_data.js"></script>
-    <script type="text/javascript" src="../../_static/copybutton.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../_static/copybutton.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -98,16 +98,17 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">signal</span>
-<span class="kn">from</span> <span class="nn">mne.filter</span> <span class="k">import</span> <span class="n">filter_data</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
-<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">interp1d</span>
-<span class="kn">from</span> <span class="nn">scipy.fftpack</span> <span class="k">import</span> <span class="n">next_fast_len</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">signal</span>
+<span class="kn">from</span> <span class="nn">mne.filter</span> <span class="kn">import</span> <span class="n">filter_data</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
+<span class="kn">from</span> <span class="nn">scipy.fftpack</span> <span class="kn">import</span> <span class="n">next_fast_len</span>
 
 
-<span class="kn">from</span> <span class="nn">.numba</span> <span class="k">import</span> <span class="n">_detrend</span><span class="p">,</span> <span class="n">_rms</span>
-<span class="kn">from</span> <span class="nn">.others</span> <span class="k">import</span> <span class="n">moving_transform</span><span class="p">,</span> <span class="n">trimbothstd</span><span class="p">,</span> <span class="n">_zerocrossings</span>
-<span class="kn">from</span> <span class="nn">.spectral</span> <span class="k">import</span> <span class="n">stft_power</span>
+<span class="kn">from</span> <span class="nn">.numba</span> <span class="kn">import</span> <span class="n">_detrend</span><span class="p">,</span> <span class="n">_rms</span>
+<span class="kn">from</span> <span class="nn">.others</span> <span class="kn">import</span> <span class="p">(</span><span class="n">moving_transform</span><span class="p">,</span> <span class="n">trimbothstd</span><span class="p">,</span> <span class="n">_zerocrossings</span><span class="p">,</span>
+                     <span class="n">get_centered_indices</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.spectral</span> <span class="kn">import</span> <span class="n">stft_power</span>
 
 <span class="c1"># Define YASA logger</span>
 <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> | </span><span class="si">%(levelname)s</span><span class="s1"> | </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">,</span>
@@ -314,29 +315,23 @@
         <span class="c1"># Define number of samples before and after the peak</span>
         <span class="k">assert</span> <span class="n">time_before</span> <span class="o">&gt;=</span> <span class="mi">0</span>
         <span class="k">assert</span> <span class="n">time_after</span> <span class="o">&gt;=</span> <span class="mi">0</span>
-        <span class="n">N_bef</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sf</span> <span class="o">*</span> <span class="n">time_before</span><span class="p">)</span>
-        <span class="n">N_aft</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sf</span> <span class="o">*</span> <span class="n">time_after</span><span class="p">)</span>
+        <span class="n">bef</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sf</span> <span class="o">*</span> <span class="n">time_before</span><span class="p">)</span>
+        <span class="n">aft</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sf</span> <span class="o">*</span> <span class="n">time_after</span><span class="p">)</span>
         <span class="c1"># Convert to integer sample indices in data</span>
-        <span class="n">idx_peak</span> <span class="o">=</span> <span class="p">(</span><span class="n">detection</span><span class="p">[</span><span class="n">center</span><span class="p">]</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-
-        <span class="k">def</span> <span class="nf">rng</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="sd">&quot;&quot;&quot;Utility function to create a range before and after</span>
-<span class="sd">            a given value.&quot;&quot;&quot;</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">N_bef</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="n">N_aft</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
-
-        <span class="c1"># Extract indices, data, and time vector</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">idx_peak</span><span class="p">)</span>
-        <span class="c1"># We drop the events for which the indices exceed data</span>
-        <span class="n">idx_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mask_rows</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_outside</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">compress_rows</span><span class="p">(</span><span class="n">idx_mask</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">peaks</span> <span class="o">=</span> <span class="p">(</span><span class="n">detection</span><span class="p">[</span><span class="n">center</span><span class="p">]</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+        <span class="c1"># Get centered indices</span>
+        <span class="n">idx</span><span class="p">,</span> <span class="n">idx_nomask</span> <span class="o">=</span> <span class="n">get_centered_indices</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">peaks</span><span class="p">,</span> <span class="n">bef</span><span class="p">,</span> <span class="n">aft</span><span class="p">)</span>
+        <span class="c1"># If no good epochs are returned, raise an error and return None</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_nomask</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="s1">&#39;Time before and/or time after exceed data bounds, please &#39;</span>
                 <span class="s1">&#39;lower the temporal window around center; returning None.&#39;</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Get data at indices and time vector</span>
         <span class="n">amps</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">time</span> <span class="o">=</span> <span class="n">rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="n">sf</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="n">bef</span><span class="p">,</span> <span class="n">aft</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="n">sf</span>
 
         <span class="c1"># Convert to dataframe</span>
         <span class="n">df_sync</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">amps</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
@@ -769,7 +764,7 @@
 
     <span class="c1"># We need at least 50 detected spindles to apply the Isolation Forest.</span>
     <span class="k">if</span> <span class="n">remove_outliers</span> <span class="ow">and</span> <span class="n">df_sp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">50</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="k">import</span> <span class="n">IsolationForest</span>
+        <span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">IsolationForest</span>
         <span class="n">col_keep</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Duration&#39;</span><span class="p">,</span> <span class="s1">&#39;Amplitude&#39;</span><span class="p">,</span> <span class="s1">&#39;RMS&#39;</span><span class="p">,</span> <span class="s1">&#39;AbsPower&#39;</span><span class="p">,</span> <span class="s1">&#39;RelPower&#39;</span><span class="p">,</span>
                     <span class="s1">&#39;Frequency&#39;</span><span class="p">,</span> <span class="s1">&#39;Oscillations&#39;</span><span class="p">,</span> <span class="s1">&#39;Symmetry&#39;</span><span class="p">]</span>
         <span class="n">ilf</span> <span class="o">=</span> <span class="n">IsolationForest</span><span class="p">(</span><span class="n">contamination</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">max_samples</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
@@ -1256,25 +1251,12 @@
             <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;tensorpac needs to be installed. Please use `pip &quot;</span>
                           <span class="s2">&quot;install tensorpac -U`.&quot;</span><span class="p">)</span>
 
-        <span class="c1"># The following lines are borrowed from yasa.get_sync_events</span>
+        <span class="c1"># Get Phase and Amplitude for each centered epoch</span>
         <span class="n">time_before</span> <span class="o">=</span> <span class="n">time_after</span> <span class="o">=</span> <span class="mi">2</span>
-        <span class="n">N_bef</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sf</span> <span class="o">*</span> <span class="n">time_before</span><span class="p">)</span>
-        <span class="n">N_aft</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sf</span> <span class="o">*</span> <span class="n">time_after</span><span class="p">)</span>
-        <span class="c1"># Convert to integer sample indices in data</span>
+        <span class="n">bef</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sf</span> <span class="o">*</span> <span class="n">time_before</span><span class="p">)</span>
+        <span class="n">aft</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sf</span> <span class="o">*</span> <span class="n">time_after</span><span class="p">)</span>
         <span class="n">n_peaks</span> <span class="o">=</span> <span class="n">idx_neg_peaks</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">idx_peak</span> <span class="o">=</span> <span class="p">(</span><span class="n">idx_neg_peaks</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-
-        <span class="k">def</span> <span class="nf">rng</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="sd">&quot;&quot;&quot;Utility function to create a range before and after</span>
-<span class="sd">            a given value.&quot;&quot;&quot;</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">N_bef</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="n">N_aft</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
-
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">idx_peak</span><span class="p">)</span>
-        <span class="c1"># We drop the events for which the indices exceed data</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mask_rows</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_outside</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-        <span class="n">idx_nomask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">compress_rows</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
-        <span class="c1"># sw_pha is a 2-D array of shape (n_events, N_bef + N_aft + 1)</span>
+        <span class="n">idx</span><span class="p">,</span> <span class="n">idx_nomask</span> <span class="o">=</span> <span class="n">get_centered_indices</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">idx_neg_peaks</span><span class="p">,</span> <span class="n">bef</span><span class="p">,</span> <span class="n">aft</span><span class="p">)</span>
         <span class="n">sw_pha_ev</span> <span class="o">=</span> <span class="n">sw_pha</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
         <span class="n">sp_amp_ev</span> <span class="o">=</span> <span class="n">sp_amp</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
         <span class="c1"># Find SW phase at max sigma amplitude in epoch</span>
@@ -1310,7 +1292,7 @@
 
     <span class="c1"># We need at least 50 detected slow waves to apply the Isolation Forest.</span>
     <span class="k">if</span> <span class="n">remove_outliers</span> <span class="ow">and</span> <span class="n">df_sw</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">50</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="k">import</span> <span class="n">IsolationForest</span>
+        <span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">IsolationForest</span>
         <span class="n">col_keep</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Duration&#39;</span><span class="p">,</span> <span class="s1">&#39;ValNegPeak&#39;</span><span class="p">,</span> <span class="s1">&#39;ValPosPeak&#39;</span><span class="p">,</span> <span class="s1">&#39;PTP&#39;</span><span class="p">,</span> <span class="s1">&#39;Slope&#39;</span><span class="p">,</span>
                     <span class="s1">&#39;Frequency&#39;</span><span class="p">]</span>
         <span class="n">ilf</span> <span class="o">=</span> <span class="n">IsolationForest</span><span class="p">(</span><span class="n">contamination</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">max_samples</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
@@ -1673,7 +1655,7 @@
 
     <span class="c1"># We need at least 100 detected REMs to apply the Isolation Forest.</span>
     <span class="k">if</span> <span class="n">remove_outliers</span> <span class="ow">and</span> <span class="n">df_rem</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">50</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="k">import</span> <span class="n">IsolationForest</span>
+        <span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">IsolationForest</span>
         <span class="n">col_keep</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Duration&#39;</span><span class="p">,</span> <span class="s1">&#39;LOCAbsValPeak&#39;</span><span class="p">,</span> <span class="s1">&#39;ROCAbsValPeak&#39;</span><span class="p">,</span>
                     <span class="s1">&#39;LOCAbsRiseSlope&#39;</span><span class="p">,</span> <span class="s1">&#39;ROCAbsRiseSlope&#39;</span><span class="p">,</span> <span class="s1">&#39;LOCAbsFallSlope&#39;</span><span class="p">,</span>
                     <span class="s1">&#39;ROCAbsFallSlope&#39;</span><span class="p">]</span>
@@ -1704,7 +1686,7 @@
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.<br/>
     </p>
   </div>
 </footer>

@@ -6,13 +6,13 @@
     <title>yasa.hypno_str_to_int &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
-    <script type="text/javascript" src="../_static/copybutton.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -89,7 +89,7 @@
 <h1>yasa.hypno_str_to_int</h1>
 <dl class="function">
 <dt id="yasa.hypno_str_to_int">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">hypno_str_to_int</code><span class="sig-paren">(</span><em class="sig-param">hypno</em>, <em class="sig-param">mapping_dict={'art': -1</em>, <em class="sig-param">'n1': 1</em>, <em class="sig-param">'n2': 2</em>, <em class="sig-param">'n3': 3</em>, <em class="sig-param">'r': 4</em>, <em class="sig-param">'rem': 4</em>, <em class="sig-param">'s1': 1</em>, <em class="sig-param">'s2': 2</em>, <em class="sig-param">'s3': 3</em>, <em class="sig-param">'w': 0</em>, <em class="sig-param">'wake': 0}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/hypno.html#hypno_str_to_int"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">hypno_str_to_int</code><span class="sig-paren">(</span><em class="sig-param">hypno</em>, <em class="sig-param">mapping_dict={'w': 0</em>, <em class="sig-param">'wake': 0</em>, <em class="sig-param">'n1': 1</em>, <em class="sig-param">'s1': 1</em>, <em class="sig-param">'n2': 2</em>, <em class="sig-param">'s2': 2</em>, <em class="sig-param">'n3': 3</em>, <em class="sig-param">'s3': 3</em>, <em class="sig-param">'r': 4</em>, <em class="sig-param">'rem': 4</em>, <em class="sig-param">'art': -1}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/hypno.html#hypno_str_to_int"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Convert a string hypnogram array to integer.</p>
 <p>[‘W’, ‘N2’, ‘N2’, ‘N3’, ‘R’] ==&gt; [0, 2, 2, 3, 4]</p>
 <div class="versionadded">
@@ -101,7 +101,7 @@
 <dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>The sleep staging (hypnogram) 1D array.</p>
 </dd>
 <dt><strong>mapping_dict</strong><span class="classifier">dict</span></dt><dd><p>The mapping dictionnary, in lowercase. Note that this function is
-essentially a wrapper around <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.map.html#pandas.Series.map" title="(in pandas v1.0.2)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pandas.Series.map()</span></code></a>.</p>
+essentially a wrapper around <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.map.html#pandas.Series.map" title="(in pandas v1.0.3)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pandas.Series.map()</span></code></a>.</p>
 </dd>
 </dl>
 </dd>
@@ -132,7 +132,7 @@ essentially a wrapper around <a class="reference external" href="https://pandas.
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.<br/>
     </p>
   </div>
 </footer>

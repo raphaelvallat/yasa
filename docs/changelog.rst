@@ -13,8 +13,8 @@ b. Added the ``coupling`` and ``freq_sp`` keyword-arguments to the :py:func:`yas
 
 **New functions**
 
-a. Added :py:func:`yasa.bandpower_from_psd_ndarray` to calculate band power from a multi-dimensional PSD. This is a Numpy-only implementation and this function will return a np.array and not a pandas DataFrame.
-This function is useful if you need to calculate the bandpower from a 3-D PSD array, e.g. of shape (n_chan, n_epochs, n_freqs).
+a. Added :py:func:`yasa.bandpower_from_psd_ndarray` to calculate band power from a multi-dimensional PSD. This is a Numpy-only implementation and this function will return a np.array and not a pandas DataFrame. This function is useful if you need to calculate the bandpower from a 3-D PSD array, e.g. of shape (n_chan, n_epochs, n_freqs).
+b. Added :py:func:`yasa.get_centered_indices` to extract indices in data centered around specific events or peaks.
 
 **Enhancements**
 
