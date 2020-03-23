@@ -31,25 +31,15 @@
 .. figure::  /pictures/yasa_logo.png
   :align:   center
 
-**YASA** (*Yet Another Spindle Algorithm*) is a fast and robust Python 3 toolbox to detect sleep microstructure events from EEG recordings.
+**YASA** (*Yet Another Spindle Algorithm*) is a sleep analysis toolbox in Python. YASA includes several fast and convenient command-line functions to:
 
-The **sleep spindles** algorithm of YASA is largely inspired by the method described in:
+* Automatically detect sleep spindles, slow-waves, and rapid eye movements on single and multi-channel EEG data
+* Automatically reject artifact
+* Perform advanced spectral analyses
+* Easily manipulate sleep staging vector (hypnogram)
 
-- Lacourse, ..., & Warby. (2018). `A sleep spindle detection algorithm that emulates human expert spindle scoring <https://doi.org/10.1016/j.jneumeth.2018.08.014>`_. *J. Neurosci. Methods*.
-
-The **slow-waves** detection algorithm is adapted from:
-
-- Massimini, ..., & Tononi. (2004). `The sleep slow oscillation as a traveling wave <https://doi.org/10.1523/JNEUROSCI.1318-04.2004>`_. *J. Neurosci*.
-
-- Carrier, ..., & Filipini. (2011). `Sleep slow wave changes during the middle years of life <https://doi.org/10.1111/j.1460-9568.2010.07543.x>`_. *Eur. J. Neurosci*.
-
-The **rapid eye movements (REMs)** detection algorithm is a custom adaptation inspired by:
-
-- Agarwal, ..., & Gotman. (2005). `Detection of rapid-eye movements in sleep studies <https://ieeexplore.ieee.org/abstract/document/1463327/>`_. *IEEE Transactions on biomedical engineering*.
-
-- Yetton, ..., & Mednick. (2016). `Automatic detection of rapid eye movements (REMs): A machine learning approach <https://www.sciencedirect.com/science/article/pii/S0165027015004173>`_. *Journal of neuroscience methods*.
-
-In addition, YASA also provides some convenient functions to **load and manipulate hypnogram** (sleep stages vector), and to perform **spectral analysis**.
+For more details, check out the `API documentation <https://raphaelvallat.com/yasa/build/html/index.html>`_, or try the tutorial
+(`Jupyter Notebooks <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_).
 
 Installation
 ~~~~~~~~~~~~
@@ -60,27 +50,31 @@ Installation
 
 **Dependencies**
 
-- python>=3.5
-- numpy>=1.14
-- scipy>=1.1.0
-- pandas>=0.23,
-- mne>=0.19
-- numba>=0.39.0
-- scikit-learn>=0.20
+- python>=3.6
+- numpy
+- scipy
+- pandas
 - matplotlib
-- tensorpac>=0.6.2
+- mne
+- numba
+- scikit-learn
+- `tensorpac <https://etiennecmb.github.io/tensorpac/>`_
+- `pyriemann <https://pyriemann.readthedocs.io/en/latest/api.html>`_
 - `lspopt <https://github.com/hbldh/lspopt>`_
 
-Several functions of YASA are written using `Numba <http://numba.pydata.org/>`_, a just-in-time compiler for Python. This allows to greatly speed up the computation time (typically a few seconds for a full night recording).
+Several functions of YASA are written using `Numba <http://numba.pydata.org/>`_, a just-in-time compiler for Python. This allows to greatly speed up the computation time of the microstructure detection (typically a few seconds for a full night recording).
 
 **What are the prerequisites for using YASA?**
+
+YASA works best when used in combination with the `MNE library <https://mne.tools/stable/index.html>`_. For example, to read an EDF file,
+one can use the `mne.io.read_raw_edf <https://mne.tools/stable/generated/mne.io.read_raw_edf.html?highlight=read_raw_edf#mne.io.read_raw_edf>`_ function.
 
 In order to use YASA, you need:
 
 - Some basic knowledge of Python and especially the `NumPy <https://docs.scipy.org/doc/numpy/user/quickstart.html>`_, `Pandas <https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html>`_ and `MNE <https://martinos.org/mne/stable/index.html>`_ libraries.
 - A Python editor: YASA works best with `Jupyter Lab <https://jupyterlab.readthedocs.io/en/stable/index.html>`_, a web-based interactive user interface.
-- Some sleep EEG data, either as a NumPy array, or as a raw MNE object (for instance, using the `mne.io.read_raw_edf <https://mne-tools.github.io/stable/generated/mne.io.read_raw_edf.html>`_ function for EDF file). The units of the data MUST be uV.
-- Optionally, a sleep staging vector (a.k.a hypnogram) to run the detections on specific sleep stages. To facilitate masking and indexing operations, the data and hypnogram MUST have the same sampling frequency and number of samples. Fortunately, YASA provide some convenient functions to load and upsample hypnogram data to the desired shape.
+- Some sleep EEG data, either as a NumPy array, or as a `mne.Raw <https://mne.tools/stable/generated/mne.io.Raw.html>`_ object.
+- Optionally, a sleep staging vector (a.k.a hypnogram) to perform calculations on specific sleep stages. To facilitate masking and indexing operations, the data and hypnogram MUST have the same sampling frequency and number of samples. YASA provide some convenient functions to load and upsample hypnogram data to the desired shape.
 
 .. note::
       The default hypnogram format in YASA is a one dimensional integer vector where:
@@ -133,47 +127,15 @@ Typical uses
 
   import yasa
 
-  # SLEEP SPINDLES
-  # ==============
-  # Single-channel spindles detection
-  yasa.spindles_detect(data, sf)
-
-  # Single-channel full command (shows all the default implicit parameters)
+  # Single-channel spindles detection (shows all the default implicit parameters)
   yasa.spindles_detect(data, sf, hypno=None, include=(1, 2, 3),
                        freq_sp=(12, 15), duration=(0.5, 2), freq_broad=(1, 30),
                        min_distance=500, downsample=True,
                        thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
                        remove_outliers=False, coupling=False)
 
-  # Multi-channels detection on NREM sleep only (requires an hypnogram)
-  yasa.spindles_detect_multi(data, sf, ch_names, hypno=hypno)
-
   # Multi-channels detection on N2 sleep only with automatic outlier rejection
   yasa.spindles_detect_multi(data, sf, ch_names, hypno=hypno, include=(2), remove_outliers=True)
-
-  # SLOW-WAVES
-  # ==========
-  # Single-channel slow-wave detection
-  yasa.sw_detect(data, sf)
-
-  # Single-channel full command (shows all the default implicit parameters)
-  yasa.sw_detect(data, sf, hypno=hypno, include=(2, 3), freq_sw=(0.3, 2),
-                 dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 300),
-                 amp_pos=(10, 150), amp_ptp=(75, 400), downsample=True,
-                 remove_outliers=False, coupling=False)
-
-  # Multi-channel slow-waves detection on N2 + N3 sleep only (requires an hypnogram)
-  yasa.sw_detect_multi(data, sf, ch_names, hypno=hypno)
-
-  # RAPID EYE MOVEMENTS
-  # ===================
-  # Default detection (requires both LOC and ROC EOG channels)
-  yasa.rem_detect(loc, roc, sf)
-
-  # On REM sleep only + all implicit parameters
-  yasa.rem_detect(loc, roc, sf, hypno=hypno, include=4, amplitude=(50, 325),
-                  duration=(0.3, 1.5), freq_rem=(0.5, 5), downsample=True,
-                  remove_outliers=False)
 
 The result of the detection is a `pandas DataFrame <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>`_ where each row is a unique detected event (e.g. spindle, slow-waves, REMs) and each column a parameter of this event, including, the start and end timestamps, duration, amplitude, etc.
 
@@ -226,7 +188,7 @@ Then navigate to the *Detection* tab and click on *Apply* to run the YASA algori
 Outlier rejection
 -----------------
 
-YASA incorporates an optional post-processing step to identify and remove pseudo (fake) events.
+YASA incorporates an optional post-processing step to identify and remove pseudo (outlier) events.
 The method is based on a machine-learning algorithm (the `Isolation Forest <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html>`_, implemented in the `scikit-learn <https://scikit-learn.org/stable/index.html>`_ package),
 which uses the events parameters (e.g. amplitude, duration, frequency, etc) as input features to identify *aberrant* spindles / slow-waves / REMs.
 

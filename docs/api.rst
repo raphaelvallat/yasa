@@ -13,6 +13,7 @@ Detection
 .. autosummary::
    :toctree: generated/
 
+    art_detect
     rem_detect
     spindles_detect
     spindles_detect_multi

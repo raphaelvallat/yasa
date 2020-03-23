@@ -95,25 +95,28 @@
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.rem_detect.html#yasa.rem_detect" title="yasa.rem_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rem_detect</span></code></a>(loc, roc, sf[, hypno, include, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.art_detect.html#yasa.art_detect" title="yasa.art_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">art_detect</span></code></a>(data[, sf, window, hypno, …])</p></td>
+<td><p>Automatic artifact rejection for single or multi-channel EEG data.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.rem_detect.html#yasa.rem_detect" title="yasa.rem_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rem_detect</span></code></a>(loc, roc, sf[, hypno, include, …])</p></td>
 <td><p>Rapid Eye Movements (REMs) detection.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spindles_detect</span></code></a>(data, sf[, hypno, include, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spindles_detect</span></code></a>(data, sf[, hypno, include, …])</p></td>
 <td><p>Spindles detection.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.spindles_detect_multi.html#yasa.spindles_detect_multi" title="yasa.spindles_detect_multi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spindles_detect_multi</span></code></a>(data[, sf, ch_names, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.spindles_detect_multi.html#yasa.spindles_detect_multi" title="yasa.spindles_detect_multi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spindles_detect_multi</span></code></a>(data[, sf, ch_names, …])</p></td>
 <td><p>Multi-channel spindles detection.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sw_detect</span></code></a>(data, sf[, hypno, include, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sw_detect</span></code></a>(data, sf[, hypno, include, …])</p></td>
 <td><p>Slow-waves detection.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.sw_detect_multi.html#yasa.sw_detect_multi" title="yasa.sw_detect_multi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sw_detect_multi</span></code></a>(data[, sf, ch_names])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.sw_detect_multi.html#yasa.sw_detect_multi" title="yasa.sw_detect_multi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sw_detect_multi</span></code></a>(data[, sf, ch_names])</p></td>
 <td><p>Multi-channel slow-waves detection.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.get_bool_vector.html#yasa.get_bool_vector" title="yasa.get_bool_vector"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_bool_vector</span></code></a>([data, sf, detection])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.get_bool_vector.html#yasa.get_bool_vector" title="yasa.get_bool_vector"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_bool_vector</span></code></a>([data, sf, detection])</p></td>
 <td><p>Return a Boolean vector given the original data and sf and a YASA’s detection dataframe.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.get_sync_events.html#yasa.get_sync_events" title="yasa.get_sync_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sync_events</span></code></a>([data, sf, detection, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.get_sync_events.html#yasa.get_sync_events" title="yasa.get_sync_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sync_events</span></code></a>([data, sf, detection, …])</p></td>
 <td><p>Return the raw data of each detected slow-waves / spindles, after centering to a specific timepoint.</p></td>
 </tr>
 </tbody>

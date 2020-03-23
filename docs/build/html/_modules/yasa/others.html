@@ -317,12 +317,63 @@
 <span class="sd">        epoch in ``strided``.</span>
 <span class="sd">    strided : numpy array</span>
 <span class="sd">        A matrix where row in last dimension consists of one instance</span>
-<span class="sd">        of the sliding window.</span>
+<span class="sd">        of the sliding window, shape (n_epochs, ..., n_samples).</span>
 
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
 <span class="sd">    This is a wrapper around the</span>
 <span class="sd">    :py:func:`numpy.lib.stride_tricks.as_strided` function.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+
+<span class="sd">    With a 1-D array</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from yasa import sliding_window</span>
+<span class="sd">    &gt;&gt;&gt; data = np.arange(20)</span>
+<span class="sd">    &gt;&gt;&gt; times, epochs = sliding_window(data, sf=1, window=5)</span>
+<span class="sd">    &gt;&gt;&gt; times</span>
+<span class="sd">    array([ 0.,  5., 10., 15.])</span>
+
+<span class="sd">    &gt;&gt;&gt; epochs</span>
+<span class="sd">    array([[ 0,  1,  2,  3,  4],</span>
+<span class="sd">           [ 5,  6,  7,  8,  9],</span>
+<span class="sd">           [10, 11, 12, 13, 14],</span>
+<span class="sd">           [15, 16, 17, 18, 19]])</span>
+
+<span class="sd">    &gt;&gt;&gt; sliding_window(data, sf=1, window=5, step=1)[1]</span>
+<span class="sd">    array([[ 0,  1,  2,  3,  4],</span>
+<span class="sd">           [ 2,  3,  4,  5,  6],</span>
+<span class="sd">           [ 4,  5,  6,  7,  8],</span>
+<span class="sd">           [ 6,  7,  8,  9, 10],</span>
+<span class="sd">           [ 8,  9, 10, 11, 12],</span>
+<span class="sd">           [10, 11, 12, 13, 14],</span>
+<span class="sd">           [12, 13, 14, 15, 16],</span>
+<span class="sd">           [14, 15, 16, 17, 18]])</span>
+
+<span class="sd">    &gt;&gt;&gt; sliding_window(data, sf=1, window=11)[1]</span>
+<span class="sd">    array([[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10]])</span>
+
+<span class="sd">    With a N-D array</span>
+
+<span class="sd">    &gt;&gt;&gt; np.random.seed(42)</span>
+<span class="sd">    &gt;&gt;&gt; # 4 channels x 20 samples</span>
+<span class="sd">    &gt;&gt;&gt; data = np.random.randint(-100, 100, size=(4, 20))</span>
+<span class="sd">    &gt;&gt;&gt; epochs = sliding_window(data, sf=1, window=10)[1]</span>
+<span class="sd">    &gt;&gt;&gt; epochs.shape  # shape (n_epochs, n_channels, n_samples)</span>
+<span class="sd">    (2, 4, 10)</span>
+
+<span class="sd">    &gt;&gt;&gt; epochs</span>
+<span class="sd">    array([[[  2,  79,  -8, -86,   6, -29,  88, -80,   2,  21],</span>
+<span class="sd">            [-13,  57, -63,  29,  91,  87, -80,  60, -43, -79],</span>
+<span class="sd">            [-50,   7, -46, -37,  30, -50,  34, -80, -28,  66],</span>
+<span class="sd">            [ -9,  10,  87,  98,  71, -93,  74, -66, -20,  63]],</span>
+
+<span class="sd">           [[-26, -13,  16,  -1,   3,  51,  30,  49, -48, -99],</span>
+<span class="sd">            [-12, -52, -42,  69,  87, -86,  89,  89,  74,  89],</span>
+<span class="sd">            [-83,  31, -12, -41, -87, -92, -11, -48,  29, -17],</span>
+<span class="sd">            [-51,   3,  31, -99,  33, -47,   5, -97, -47,  90]]])</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">numpy.lib.stride_tricks</span> <span class="kn">import</span> <span class="n">as_strided</span>
     <span class="k">assert</span> <span class="n">axis</span> <span class="o">&lt;=</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span><span class="p">,</span> <span class="s2">&quot;Axis value out of range.&quot;</span>
@@ -351,17 +402,22 @@
     <span class="k">assert</span> <span class="n">window</span> <span class="o">&lt;</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">],</span> <span class="p">(</span><span class="s2">&quot;Sliding window size may not exceed &quot;</span>
                                        <span class="s2">&quot;size of selected axis&quot;</span><span class="p">)</span>
 
+    <span class="c1"># Define output shape</span>
     <span class="n">shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
     <span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="o">/</span> <span class="n">step</span> <span class="o">-</span> <span class="n">window</span> <span class="o">/</span> <span class="n">step</span> <span class="o">+</span> <span class="mi">1</span>
                            <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
     <span class="n">shape</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
 
+    <span class="c1"># Calculate strides and time vector</span>
     <span class="n">strides</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">strides</span><span class="p">)</span>
     <span class="n">strides</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="o">*=</span> <span class="n">step</span>
     <span class="n">strides</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">strides</span><span class="p">[</span><span class="n">axis</span><span class="p">])</span>
-
     <span class="n">strided</span> <span class="o">=</span> <span class="n">as_strided</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span> <span class="n">strides</span><span class="o">=</span><span class="n">strides</span><span class="p">)</span>
     <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">strided</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">step</span> <span class="o">/</span> <span class="n">sf</span><span class="p">)</span>
+
+    <span class="c1"># Swap axis: n_epochs, ..., n_samples</span>
+    <span class="k">if</span> <span class="n">strided</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">strided</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rollaxis</span><span class="p">(</span><span class="n">strided</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">t</span><span class="p">,</span> <span class="n">strided</span></div>
 
 

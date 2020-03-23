@@ -7,3 +7,4 @@ matplotlib
 lspopt
 tensorpac>=0.6.2
 scikit-learn>=0.20
+pyriemann

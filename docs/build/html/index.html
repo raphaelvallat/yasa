@@ -98,22 +98,15 @@
 <div class="figure align-center">
 <img alt="_images/yasa_logo.png" src="_images/yasa_logo.png" />
 </div>
-<p><strong>YASA</strong> (<em>Yet Another Spindle Algorithm</em>) is a fast and robust Python 3 toolbox to detect sleep microstructure events from EEG recordings.</p>
-<p>The <strong>sleep spindles</strong> algorithm of YASA is largely inspired by the method described in:</p>
+<p><strong>YASA</strong> (<em>Yet Another Spindle Algorithm</em>) is a sleep analysis toolbox in Python. YASA includes several fast and convenient command-line functions to:</p>
 <ul class="simple">
-<li><p>Lacourse, …, &amp; Warby. (2018). <a class="reference external" href="https://doi.org/10.1016/j.jneumeth.2018.08.014">A sleep spindle detection algorithm that emulates human expert spindle scoring</a>. <em>J. Neurosci. Methods</em>.</p></li>
+<li><p>Automatically detect sleep spindles, slow-waves, and rapid eye movements on single and multi-channel EEG data</p></li>
+<li><p>Automatically reject artifact</p></li>
+<li><p>Perform advanced spectral analyses</p></li>
+<li><p>Easily manipulate sleep staging vector (hypnogram)</p></li>
 </ul>
-<p>The <strong>slow-waves</strong> detection algorithm is adapted from:</p>
-<ul class="simple">
-<li><p>Massimini, …, &amp; Tononi. (2004). <a class="reference external" href="https://doi.org/10.1523/JNEUROSCI.1318-04.2004">The sleep slow oscillation as a traveling wave</a>. <em>J. Neurosci</em>.</p></li>
-<li><p>Carrier, …, &amp; Filipini. (2011). <a class="reference external" href="https://doi.org/10.1111/j.1460-9568.2010.07543.x">Sleep slow wave changes during the middle years of life</a>. <em>Eur. J. Neurosci</em>.</p></li>
-</ul>
-<p>The <strong>rapid eye movements (REMs)</strong> detection algorithm is a custom adaptation inspired by:</p>
-<ul class="simple">
-<li><p>Agarwal, …, &amp; Gotman. (2005). <a class="reference external" href="https://ieeexplore.ieee.org/abstract/document/1463327/">Detection of rapid-eye movements in sleep studies</a>. <em>IEEE Transactions on biomedical engineering</em>.</p></li>
-<li><p>Yetton, …, &amp; Mednick. (2016). <a class="reference external" href="https://www.sciencedirect.com/science/article/pii/S0165027015004173">Automatic detection of rapid eye movements (REMs): A machine learning approach</a>. <em>Journal of neuroscience methods</em>.</p></li>
-</ul>
-<p>In addition, YASA also provides some convenient functions to <strong>load and manipulate hypnogram</strong> (sleep stages vector), and to perform <strong>spectral analysis</strong>.</p>
+<p>For more details, check out the <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/index.html">API documentation</a>, or try the tutorial
+(<a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">Jupyter Notebooks</a>).</p>
 <div class="section" id="installation">
 <h1>Installation</h1>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip install --upgrade yasa
@@ -121,25 +114,28 @@
 </div>
 <p><strong>Dependencies</strong></p>
 <ul class="simple">
-<li><p>python&gt;=3.5</p></li>
-<li><p>numpy&gt;=1.14</p></li>
-<li><p>scipy&gt;=1.1.0</p></li>
-<li><p>pandas&gt;=0.23,</p></li>
-<li><p>mne&gt;=0.19</p></li>
-<li><p>numba&gt;=0.39.0</p></li>
-<li><p>scikit-learn&gt;=0.20</p></li>
+<li><p>python&gt;=3.6</p></li>
+<li><p>numpy</p></li>
+<li><p>scipy</p></li>
+<li><p>pandas</p></li>
 <li><p>matplotlib</p></li>
-<li><p>tensorpac&gt;=0.6.2</p></li>
+<li><p>mne</p></li>
+<li><p>numba</p></li>
+<li><p>scikit-learn</p></li>
+<li><p><a class="reference external" href="https://etiennecmb.github.io/tensorpac/">tensorpac</a></p></li>
+<li><p><a class="reference external" href="https://pyriemann.readthedocs.io/en/latest/api.html">pyriemann</a></p></li>
 <li><p><a class="reference external" href="https://github.com/hbldh/lspopt">lspopt</a></p></li>
 </ul>
-<p>Several functions of YASA are written using <a class="reference external" href="http://numba.pydata.org/">Numba</a>, a just-in-time compiler for Python. This allows to greatly speed up the computation time (typically a few seconds for a full night recording).</p>
+<p>Several functions of YASA are written using <a class="reference external" href="http://numba.pydata.org/">Numba</a>, a just-in-time compiler for Python. This allows to greatly speed up the computation time of the microstructure detection (typically a few seconds for a full night recording).</p>
 <p><strong>What are the prerequisites for using YASA?</strong></p>
+<p>YASA works best when used in combination with the <a class="reference external" href="https://mne.tools/stable/index.html">MNE library</a>. For example, to read an EDF file,
+one can use the <a class="reference external" href="https://mne.tools/stable/generated/mne.io.read_raw_edf.html?highlight=read_raw_edf#mne.io.read_raw_edf">mne.io.read_raw_edf</a> function.</p>
 <p>In order to use YASA, you need:</p>
 <ul class="simple">
 <li><p>Some basic knowledge of Python and especially the <a class="reference external" href="https://docs.scipy.org/doc/numpy/user/quickstart.html">NumPy</a>, <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html">Pandas</a> and <a class="reference external" href="https://martinos.org/mne/stable/index.html">MNE</a> libraries.</p></li>
 <li><p>A Python editor: YASA works best with <a class="reference external" href="https://jupyterlab.readthedocs.io/en/stable/index.html">Jupyter Lab</a>, a web-based interactive user interface.</p></li>
-<li><p>Some sleep EEG data, either as a NumPy array, or as a raw MNE object (for instance, using the <a class="reference external" href="https://mne-tools.github.io/stable/generated/mne.io.read_raw_edf.html">mne.io.read_raw_edf</a> function for EDF file). The units of the data MUST be uV.</p></li>
-<li><p>Optionally, a sleep staging vector (a.k.a hypnogram) to run the detections on specific sleep stages. To facilitate masking and indexing operations, the data and hypnogram MUST have the same sampling frequency and number of samples. Fortunately, YASA provide some convenient functions to load and upsample hypnogram data to the desired shape.</p></li>
+<li><p>Some sleep EEG data, either as a NumPy array, or as a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.Raw.html">mne.Raw</a> object.</p></li>
+<li><p>Optionally, a sleep staging vector (a.k.a hypnogram) to perform calculations on specific sleep stages. To facilitate masking and indexing operations, the data and hypnogram MUST have the same sampling frequency and number of samples. YASA provide some convenient functions to load and upsample hypnogram data to the desired shape.</p></li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -192,47 +188,15 @@
 <h2>Typical uses</h2>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">yasa</span>
 
-<span class="c1"># SLEEP SPINDLES</span>
-<span class="c1"># ==============</span>
-<span class="c1"># Single-channel spindles detection</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">)</span>
-
-<span class="c1"># Single-channel full command (shows all the default implicit parameters)</span>
+<span class="c1"># Single-channel spindles detection (shows all the default implicit parameters)</span>
 <span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
                      <span class="n">freq_sp</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="n">duration</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">freq_broad</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
                      <span class="n">min_distance</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">downsample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                      <span class="n">thresh</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="mf">0.65</span><span class="p">,</span> <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">},</span>
                      <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">coupling</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-<span class="c1"># Multi-channels detection on NREM sleep only (requires an hypnogram)</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect_multi</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">)</span>
-
 <span class="c1"># Multi-channels detection on N2 sleep only with automatic outlier rejection</span>
 <span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect_multi</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-<span class="c1"># SLOW-WAVES</span>
-<span class="c1"># ==========</span>
-<span class="c1"># Single-channel slow-wave detection</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">sw_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">)</span>
-
-<span class="c1"># Single-channel full command (shows all the default implicit parameters)</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">sw_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">freq_sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
-               <span class="n">dur_neg</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">dur_pos</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">amp_neg</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">300</span><span class="p">),</span>
-               <span class="n">amp_pos</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="n">amp_ptp</span><span class="o">=</span><span class="p">(</span><span class="mi">75</span><span class="p">,</span> <span class="mi">400</span><span class="p">),</span> <span class="n">downsample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-               <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">coupling</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-<span class="c1"># Multi-channel slow-waves detection on N2 + N3 sleep only (requires an hypnogram)</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">sw_detect_multi</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">)</span>
-
-<span class="c1"># RAPID EYE MOVEMENTS</span>
-<span class="c1"># ===================</span>
-<span class="c1"># Default detection (requires both LOC and ROC EOG channels)</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">rem_detect</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">roc</span><span class="p">,</span> <span class="n">sf</span><span class="p">)</span>
-
-<span class="c1"># On REM sleep only + all implicit parameters</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">rem_detect</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">roc</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">325</span><span class="p">),</span>
-                <span class="n">duration</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">freq_rem</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">downsample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The result of the detection is a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">pandas DataFrame</a> where each row is a unique detected event (e.g. spindle, slow-waves, REMs) and each column a parameter of this event, including, the start and end timestamps, duration, amplitude, etc.</p>
@@ -310,7 +274,7 @@
 </div>
 <div class="section" id="outlier-rejection">
 <h2>Outlier rejection</h2>
-<p>YASA incorporates an optional post-processing step to identify and remove pseudo (fake) events.
+<p>YASA incorporates an optional post-processing step to identify and remove pseudo (outlier) events.
 The method is based on a machine-learning algorithm (the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html">Isolation Forest</a>, implemented in the <a class="reference external" href="https://scikit-learn.org/stable/index.html">scikit-learn</a> package),
 which uses the events parameters (e.g. amplitude, duration, frequency, etc) as input features to identify <em>aberrant</em> spindles / slow-waves / REMs.</p>
 <p>To activate this post-processing step, simply use:</p>

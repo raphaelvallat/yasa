@@ -19,7 +19,7 @@ from scipy.fftpack import next_fast_len
 
 from .numba import _detrend, _rms
 from .others import (moving_transform, trimbothstd, _zerocrossings,
-                     get_centered_indices)
+                     get_centered_indices, sliding_window)
 from .spectral import stft_power
 
 # Define YASA logger
@@ -30,7 +30,7 @@ logger = logging.getLogger('yasa')
 
 __all__ = ['spindles_detect', 'spindles_detect_multi', 'sw_detect',
            'sw_detect_multi', 'rem_detect', 'get_bool_vector',
-           'get_sync_events']
+           'get_sync_events', 'art_detect']
 
 #############################################################################
 # HELPER FUNCTIONS
@@ -1581,3 +1581,315 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
 
     logger.info('%i REMs were found in data.', df_rem.shape[0])
     return df_rem.reset_index(drop=True)
+
+
+def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
+               method='covar', threshold=2.5):
+    """
+    Automatic artifact rejection for single or multi-channel EEG data.
+
+    This is still an experimental feature. Expect API-breaking changes in
+    future releases.
+
+    .. warning::
+        This function will only detect major body artefacts present on the EEG
+        channel. It will not detect EKG contamination or eye blinks. For more
+        artifact rejection tools, please refer to the `MNE Python package
+        <https://mne.tools/stable/auto_tutorials/preprocessing/plot_10_preprocessing_overview.html>`_.
+
+    .. versionadded:: 0.2.0
+
+    Parameters
+    ----------
+    data : array_like
+        Single or multi-channel EEG data.
+        Unit must be uV and shape *(n_chan, n_samples)*.
+        Can also be a :py:class:`mne.io.BaseRaw`, in which case ``data``
+        and ``sf`` will be automatically extracted,
+        and ``data`` will also be automatically converted from Volts (MNE)
+        to micro-Volts (YASA).
+
+        .. warning::
+            ``data`` must only contains EEG channels. Please make sure to
+            exclude any EOG, EKG or EMG channels.
+    sf : float
+        Sampling frequency of the data in Hz.
+        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw` object.
+    window : float
+        The window length (= resolution) for artifact rejection, in seconds.
+        Default to 5 seconds. Shorter windows (e.g. 1 or 2-seconds) will
+        drastically increase computation time when ``method='covar'``.
+    hypno : array_like
+        Sleep stage vector (hypnogram). If the hypnogram is passed, the
+        detection will be applied separately for each of the stages defined in
+        ``include``.
+
+        The hypnogram must have the same number of samples as ``data``.
+        To upsample your hypnogram, please refer to
+        :py:func:`yasa.hypno_upsample_to_data`.
+
+        .. note::
+            The default hypnogram format in YASA is a 1D integer
+            vector where:
+
+            - -1 = Artefact / Movement
+            - 0 = Wake
+            - 1 = N1 sleep
+            - 2 = N2 sleep
+            - 3 = N3 sleep
+            - 4 = REM sleep
+    include : tuple, list or int
+        Sleep stages in ``hypno`` on which to perform the artifact rejection.
+        The default is ``hypno=(1, 2, 3, 4)``, meaning that the artifact
+        rejection is applied separately for all sleep stages, excluding wake.
+        This parameter has no effect when ``hypno`` is None.
+    method : str
+        Artifact detection method (see Notes):
+
+        * ``'covar'`` : Covariance-based, default for 4+ channels data
+        * ``'std'`` : Standard-deviation-based, default for single-channel data
+    threshold : float
+        The number of standard deviation above or below which an
+        epoch is considered an artifact. Higher values will result in a more
+        conservative detection, i.e. less rejected epochs.
+
+    Returns
+    -------
+    epoch_is_art : array_like
+        1-D array of shape *(n_epochs)* where 1 = Artefact and 0 = Good.
+    zscores : array_like
+        Z-scores.
+
+    Notes
+    -----
+    .. note::
+        For best performance, apply this function on pre-staged data and make
+        sure to pass the hypnogram.
+        Sleep stages have very different EEG signatures
+        and the artifect rejection will be much more accurate when applied
+        separately on each sleep stage.
+
+    We provide below a short description of the different methods. For
+    multi-channel data, and if computation time is not an issue, we recommend
+    using ``method='covar'`` which uses a clustering approach on
+    variance-covariance matrices, and therefore takes into account
+    not only the variance in each channel and each epoch, but also the
+    inter-relationship (covariance) between channel.
+
+    ``method='covar'`` is however not supported for single-channel EEG or when
+    less than 4 channels are present in ``data``. In these cases, one can
+    use the much faster ``method='std'`` which is simply based on a z-scoring
+    of the log-transformed standard deviation of each channel and each epoch.
+
+    **1/ Covariance-based multi-channel artefact rejection**
+
+    ``method='covar'`` is essentially a wrapper around the
+    :py:class:`pyriemann.clustering.Potato` class implemented in the
+    `pyRiemann package
+    <https://pyriemann.readthedocs.io/en/latest/index.html>`_.
+
+    The main idea of this approach is to estimate a reference covariance
+    matrix :math:`\\bar{C}` (for each sleep stage separately if ``hypno`` is
+    present) and reject every epoch which is too far from this reference
+    matrix.
+    The distance of the covariance matrix of the current epoch :math:`C`
+    from the reference matrix is calculated using Riemannian
+    geometry, which is more adapted than Euclidean geometry for
+    symmetric positive definite covariance matrices:
+
+    .. math::  d = {\\left( \\sum_i \\log(\\lambda_i)^2 \\right)}^{-1/2}
+
+    where :math:`\\lambda_i` are the joint eigenvalues of :math:`C` and
+    :math:`\\bar{C}`. The epoch with covariance matric :math:`C`
+    will be marked as an artifact if the distance :math:`d`
+    is greater than a threshold :math:`T`
+    (typically 2 or 3 standard deviations).
+    :math:`\\bar{C}` is iteratively estimated using a clustering approach.
+
+    **2/ Standard-deviation-based single and multi-channel artefact rejection**
+
+    ``method='std'`` is a much faster and straightforward approach which
+    is simply based on the distribution of the standard deviations of each
+    epoch. Specifically, one first calculate the standard
+    deviations of each epoch and each channel. Then, the resulting array of
+    standard deviations is log-transformed and z-scored (for each sleep
+    stage separately if ``hypno`` is present). Any epoch with one or more
+    channel exceeding the threshold will be marked as artifact.
+
+    Note that this approach is more sensitive to noise and/or the influence of
+    one bad channel (e.g. electrode fell off at some point during the night).
+    We therefore recommend that you visually inspect and remove any bad
+    channels prior to using this function.
+
+    References
+    ----------
+    [1] Barachant, A., Andreev, A., & Congedo, M. (2013). The Riemannian
+    Potato: an automatic and adaptive artifact detection method for online
+    experiments using Riemannian geometry. TOBI Workshop lV, 19–20.
+    https://hal.archives-ouvertes.fr/hal-00781701/
+
+    [2] Barthélemy, Q., Mayaud, L., Ojeda, D., & Congedo, M. (2019).
+    The Riemannian Potato Field: A Tool for Online Signal Quality Index of
+    EEG. IEEE Transactions on Neural Systems and Rehabilitation Engineering:
+    A Publication of the IEEE Engineering in Medicine and Biology Society,
+    27(2), 244–255. https://doi.org/10.1109/TNSRE.2019.2893113
+
+    [3] https://pyriemann.readthedocs.io/en/latest/index.html
+    """
+    ###########################################################################
+    # PREPROCESSING
+    ###########################################################################
+    # Check if input data is a MNE Raw object
+    if isinstance(data, mne.io.BaseRaw):
+        sf = data.info['sfreq']  # Extract sampling frequency
+        data = data.get_data() * 1e6  # Convert from V to uV
+    else:
+        assert sf is not None, 'sf must be specified if not using MNE Raw.'
+
+    # Safety check: data
+    data = np.asarray(data, dtype=np.float64)
+    if data.ndim == 1:
+        # Force data to be (n_chan, n_samples)
+        data = data[None, ...]
+    assert data.ndim == 2
+    n_chan = data.shape[0]
+    n_samples = data.shape[1]
+
+    # Safety check: sampling frequency and window
+    assert isinstance(sf, (int, float)), 'sf must be int or float'
+    assert isinstance(window, (int, float)), 'window must be int or float'
+    if isinstance(sf, float):
+        assert sf.is_integer(), 'sf must be a whole number.'
+        sf = int(sf)
+    win_sec = window
+    window = win_sec * sf  # Convert window to samples
+    if isinstance(window, float):
+        assert window.is_integer(), 'window * sf must be a whole number.'
+        window = int(window)
+
+    # Safety check: hypnogram
+    if hypno is not None:
+        hypno = np.asarray(hypno, dtype=int)
+        assert hypno.ndim == 1, 'Hypno must be one dimensional.'
+        assert hypno.size == n_samples, 'Hypno must have same shape as data.'
+        unique_hypno = np.unique(hypno)
+        logger.info('Number of unique values in hypno = %i', unique_hypno.size)
+        # Check include
+        assert include is not None, 'include cannot be None if hypno is given'
+        include = np.atleast_1d(np.asarray(include))
+        assert include.size >= 1, '`include` must have at least one element.'
+        assert hypno.dtype.kind == include.dtype.kind, ('hypno and include '
+                                                        'must have same dtype')
+        if not np.in1d(hypno, include).any():
+            raise ValueError('None of the stages specified in `include` '
+                             'are present in hypno.')
+        # Extract downsampled hypnogram
+        hypno_win = hypno[::window]
+
+    # Safety checks: methods
+    assert isinstance(method, str), "method must be a string."
+    method = method.lower()
+    if method in ['cov', 'covar', 'covariance', 'riemann', 'potato']:
+        method = 'covar'
+        try:
+            import pyriemann as pr
+        except IOError:  # pragma: no cover
+            raise IOError("pyRiemann needs to be installed to use "
+                          "`method='covar'`. Please use `pip "
+                          "install pyriemann -U`.")
+        # Must have at least 4 channels to use method='covar'
+        assert n_chan >= 4, ("Must have at least 4 channels for "
+                             "method='covar'. Please use method='std' instead")
+
+    ###########################################################################
+    # START THE REJECTION
+    ###########################################################################
+
+    # Remove flat channels
+    isflat = (np.nanstd(data, axis=-1) == 0)
+    if isflat.any():
+        logger.warning('Flat channels were found and removed in data')
+        data = data[~isflat]
+
+    # Epoch the data (n_epochs, n_chan, n_samples)
+    _, epochs = sliding_window(data, sf, window=win_sec)
+    n_epochs = epochs.shape[0]
+
+    # Add logger info
+    logger.info('Number of channels in data = %i', n_chan)
+    logger.info('Number of samples in data = %i', n_samples)
+    logger.info('Sampling frequency = %.2f Hz', sf)
+    logger.info('Data duration = %.2f seconds', n_samples / sf)
+    logger.info('Number of epochs = %i' % n_epochs)
+    logger.info('Artifact window = %.2f seconds' % win_sec)
+    logger.info('Method = %s' % method)
+    logger.info('Threshold = %.2f standard deviations' % threshold)
+
+    # Create empty `hypno_art` vector (1 sample = 1 epoch)
+    epoch_is_art = np.zeros(n_epochs, dtype='int')
+    zscores = np.zeros(n_epochs, dtype='float')
+
+    if method == 'covar':
+        # Calculate the covariance matrices, shape (n_epochs, n_chan, n_chan)
+        covmats = pr.estimation.Covariances().fit_transform(epochs)
+        # Shrink the covariance matrix (ensure positive semi-definite)
+        covmats = pr.estimation.Shrinkage().fit_transform(covmats)
+        # Define Potato instance: 0 = clean, 1 = art
+        potato = pr.clustering.Potato(metric='riemann', threshold=threshold,
+                                      pos_label=0, neg_label=1)
+        if hypno is not None:
+            # Hypno is present
+            for stage in include:
+                where_stage = np.where(hypno_win == stage)[0]
+                # Apply Potato algorithm, extract z-scores and labels
+                zs = potato.fit_transform(covmats[where_stage])
+                art = potato.predict(covmats[where_stage]).astype(int)
+                perc_reject = 100 * (art.sum() / art.size)
+                text = (f"Stage {stage}: {art.sum()} / {art.size} "
+                        f"epochs rejected ({perc_reject:.2f}%)")
+                logger.info(text)
+                # Append to global vector
+                epoch_is_art[where_stage] = art
+                zscores[where_stage] = zs
+        else:
+            # Hypno is not present
+            zscores = potato.fit_transform(covmats)
+            epoch_is_art = potato.predict(covmats).astype(int)
+
+    elif method in ['std', 'sd']:
+        # Calculate log-transformed standard dev in each epoch
+        std_epochs = np.log(np.nanstd(epochs, axis=-1))  # (n_epochs, n_chan)
+
+        if hypno is not None:
+            for stage in include:
+                where_stage = np.where(hypno_win == stage)[0]
+                # Calculate z-scores of SD for each channel x stage
+                c_mean = np.nanmean(std_epochs[where_stage], axis=0,
+                                    keepdims=True)
+                c_std = np.nanstd(std_epochs[where_stage], axis=0,
+                                  keepdims=True)
+                zs = (std_epochs[where_stage] - c_mean) / c_std
+                # Any epoch with at least 1 channel above threshold is removed.
+                art = (np.abs(zs) > threshold).any(1).astype(int)
+                perc_reject = 100 * (art.sum() / art.size)
+                text = (f"Stage {stage}: {art.sum()} / {art.size} "
+                        f"epochs rejected ({perc_reject:.2f}%)")
+                logger.info(text)
+                # Append to global vector
+                epoch_is_art[where_stage] = art
+                zscores[where_stage] = np.nanmean(zs, axis=-1)
+        else:
+            # Calculate z-scores of standard deviations for each channel
+            c_mean = np.nanmean(std_epochs, axis=0, keepdims=True)
+            c_std = np.nanstd(std_epochs, axis=0, keepdims=True)
+            zscores = (std_epochs - c_mean) / c_std
+            # Any epoch with at least 1 channel above threshold is removed.
+            epoch_is_art = (np.abs(zscores) > threshold).any(1).astype(int)
+
+    # Total percentage of epochs rejected
+    perc_reject = 100 * (epoch_is_art.sum() / n_epochs)
+    text = (f"Total: {epoch_is_art.sum()} / {n_epochs} "
+            f"epochs rejected ({perc_reject:.2f}%)")
+    logger.info(text)
+
+    return epoch_is_art, zscores
