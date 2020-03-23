@@ -64,7 +64,7 @@ class TestStringMethods(unittest.TestCase):
         x_2d = np.random.rand(2, 1100)
         t, sl = sliding_window(x_2d, sf=100, window=2, step=1.)
         assert np.array_equal(t, [0., 1., 2., 3., 4., 5., 6., 7., 8., 9.])
-        assert np.array_equal(sl.shape, (2, 10, 200))
+        assert np.array_equal(sl.shape, (10, 2, 200))
         t, sl = sliding_window(x_2d, sf=100., window=4., step=None)
         assert np.array_equal(t, [0., 4.])
         assert np.array_equal(sl.shape, (2, 2, 400))

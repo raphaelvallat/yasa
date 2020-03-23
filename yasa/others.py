@@ -229,12 +229,63 @@ def sliding_window(data, sf, window, step=None, axis=-1):
         epoch in ``strided``.
     strided : numpy array
         A matrix where row in last dimension consists of one instance
-        of the sliding window.
+        of the sliding window, shape (n_epochs, ..., n_samples).
 
     Notes
     -----
     This is a wrapper around the
     :py:func:`numpy.lib.stride_tricks.as_strided` function.
+
+    Examples
+    --------
+
+    With a 1-D array
+
+    >>> import numpy as np
+    >>> from yasa import sliding_window
+    >>> data = np.arange(20)
+    >>> times, epochs = sliding_window(data, sf=1, window=5)
+    >>> times
+    array([ 0.,  5., 10., 15.])
+
+    >>> epochs
+    array([[ 0,  1,  2,  3,  4],
+           [ 5,  6,  7,  8,  9],
+           [10, 11, 12, 13, 14],
+           [15, 16, 17, 18, 19]])
+
+    >>> sliding_window(data, sf=1, window=5, step=1)[1]
+    array([[ 0,  1,  2,  3,  4],
+           [ 2,  3,  4,  5,  6],
+           [ 4,  5,  6,  7,  8],
+           [ 6,  7,  8,  9, 10],
+           [ 8,  9, 10, 11, 12],
+           [10, 11, 12, 13, 14],
+           [12, 13, 14, 15, 16],
+           [14, 15, 16, 17, 18]])
+
+    >>> sliding_window(data, sf=1, window=11)[1]
+    array([[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10]])
+
+    With a N-D array
+
+    >>> np.random.seed(42)
+    >>> # 4 channels x 20 samples
+    >>> data = np.random.randint(-100, 100, size=(4, 20))
+    >>> epochs = sliding_window(data, sf=1, window=10)[1]
+    >>> epochs.shape  # shape (n_epochs, n_channels, n_samples)
+    (2, 4, 10)
+
+    >>> epochs
+    array([[[  2,  79,  -8, -86,   6, -29,  88, -80,   2,  21],
+            [-13,  57, -63,  29,  91,  87, -80,  60, -43, -79],
+            [-50,   7, -46, -37,  30, -50,  34, -80, -28,  66],
+            [ -9,  10,  87,  98,  71, -93,  74, -66, -20,  63]],
+
+           [[-26, -13,  16,  -1,   3,  51,  30,  49, -48, -99],
+            [-12, -52, -42,  69,  87, -86,  89,  89,  74,  89],
+            [-83,  31, -12, -41, -87, -92, -11, -48,  29, -17],
+            [-51,   3,  31, -99,  33, -47,   5, -97, -47,  90]]])
     """
     from numpy.lib.stride_tricks import as_strided
     assert axis <= data.ndim, "Axis value out of range."
@@ -263,17 +314,22 @@ def sliding_window(data, sf, window, step=None, axis=-1):
     assert window < data.shape[axis], ("Sliding window size may not exceed "
                                        "size of selected axis")
 
+    # Define output shape
     shape = list(data.shape)
     shape[axis] = np.floor(data.shape[axis] / step - window / step + 1
                            ).astype(int)
     shape.append(window)
 
+    # Calculate strides and time vector
     strides = list(data.strides)
     strides[axis] *= step
     strides.append(data.strides[axis])
-
     strided = as_strided(data, shape=shape, strides=strides)
     t = np.arange(strided.shape[-2]) * (step / sf)
+
+    # Swap axis: n_epochs, ..., n_samples
+    if strided.ndim > 2:
+        strided = np.rollaxis(strided, -2, 0)
     return t, strided
 
 

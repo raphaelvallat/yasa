@@ -27,6 +27,7 @@ f. The upper frequency band for :py:func:`yasa.sw_detect` has been changed from 
 g. ``Stage`` is no longer taken into account when calculating outliers with :py:class:`sklearn.ensemble.IsolationForest` in :py:func:`yasa.spindles_detect`.
 h. To be consistent with :py:func:`yasa.spindles_detect`, :py:class:`sklearn.ensemble.IsolationForest` requires at least 50 (instead of 100) detected events in :py:func:`yasa.sw_detect` and :py:func:`yasa.rem_detect`.
 i. Reorganized Jupyter notebooks.
+j. The :py:func:`yasa.sliding_window` now always return an array of shape (n_epochs, ..., n_samples). The epochs are now always the first dimension of the epoched array. This is consistent with MNE default shape of mne.Epochs objects.
 
 **Dependencies**
 
