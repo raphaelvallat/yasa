@@ -22,10 +22,6 @@ from .others import (moving_transform, trimbothstd, _zerocrossings,
                      get_centered_indices, sliding_window)
 from .spectral import stft_power
 
-# Define YASA logger
-logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s',
-                    datefmt='%d-%b-%y %H:%M:%S')
-
 logger = logging.getLogger('yasa')
 
 __all__ = ['spindles_detect', 'spindles_detect_multi', 'sw_detect',
@@ -1584,8 +1580,8 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
 
 
 def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
-               method='covar', threshold=2.5):
-    """
+               method='covar', threshold=3):
+    r"""
     Automatic artifact rejection for single or multi-channel EEG data.
 
     This is still an experimental feature. Expect API-breaking changes in
@@ -1689,7 +1685,7 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     <https://pyriemann.readthedocs.io/en/latest/index.html>`_.
 
     The main idea of this approach is to estimate a reference covariance
-    matrix :math:`\\bar{C}` (for each sleep stage separately if ``hypno`` is
+    matrix :math:`\bar{C}` (for each sleep stage separately if ``hypno`` is
     present) and reject every epoch which is too far from this reference
     matrix.
     The distance of the covariance matrix of the current epoch :math:`C`
@@ -1697,14 +1693,14 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     geometry, which is more adapted than Euclidean geometry for
     symmetric positive definite covariance matrices:
 
-    .. math::  d = {\\left( \\sum_i \\log(\\lambda_i)^2 \\right)}^{-1/2}
+    .. math::  d = {\left( \sum_i \log(\lambda_i)^2 \right)}^{-1/2}
 
-    where :math:`\\lambda_i` are the joint eigenvalues of :math:`C` and
-    :math:`\\bar{C}`. The epoch with covariance matric :math:`C`
+    where :math:`\lambda_i` are the joint eigenvalues of :math:`C` and
+    :math:`\bar{C}`. The epoch with covariance matric :math:`C`
     will be marked as an artifact if the distance :math:`d`
     is greater than a threshold :math:`T`
     (typically 2 or 3 standard deviations).
-    :math:`\\bar{C}` is iteratively estimated using a clustering approach.
+    :math:`\bar{C}` is iteratively estimated using a clustering approach.
 
     **2/ Standard-deviation-based single and multi-channel artefact rejection**
 
@@ -1810,6 +1806,7 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     if isflat.any():
         logger.warning('Flat channels were found and removed in data')
         data = data[~isflat]
+        n_chan = data.shape[0]
 
     # Epoch the data (n_epochs, n_chan, n_samples)
     _, epochs = sliding_window(data, sf, window=win_sec)
@@ -1861,35 +1858,45 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
         std_epochs = np.log(np.nanstd(epochs, axis=-1))  # (n_epochs, n_chan)
 
         if hypno is not None:
+
+            # zscores must be of shape (n_epochs, n_chan)
+            zscores = np.zeros((n_epochs, n_chan), dtype='float')
+
             for stage in include:
                 where_stage = np.where(hypno_win == stage)[0]
-                # Calculate z-scores of SD for each channel x stage
+                # Calculate z-scores of STD for each channel x stage
                 c_mean = np.nanmean(std_epochs[where_stage], axis=0,
                                     keepdims=True)
                 c_std = np.nanstd(std_epochs[where_stage], axis=0,
                                   keepdims=True)
                 zs = (std_epochs[where_stage] - c_mean) / c_std
-                # Any epoch with at least 1 channel above threshold is removed.
+                # Method 1. Any epoch with at least 1 channel <> threshold
                 art = (np.abs(zs) > threshold).any(1).astype(int)
+                # Method 2. Average z-score across channels
+                # avgzs = np.nanmean(zs, axis=-1)
+                # art = (np.abs(avgzs) > threshold).astype(int)
                 perc_reject = 100 * (art.sum() / art.size)
                 text = (f"Stage {stage}: {art.sum()} / {art.size} "
                         f"epochs rejected ({perc_reject:.2f}%)")
                 logger.info(text)
                 # Append to global vector
                 epoch_is_art[where_stage] = art
-                zscores[where_stage] = np.nanmean(zs, axis=-1)
+                zscores[where_stage, :] = zs
         else:
             # Calculate z-scores of standard deviations for each channel
             c_mean = np.nanmean(std_epochs, axis=0, keepdims=True)
             c_std = np.nanstd(std_epochs, axis=0, keepdims=True)
             zscores = (std_epochs - c_mean) / c_std
-            # Any epoch with at least 1 channel above threshold is removed.
+            # Method 1. Any epoch with at least 1 channel <> threshold
             epoch_is_art = (np.abs(zscores) > threshold).any(1).astype(int)
+            # Method 2. Average z-score across channels
+            # zscores = np.nanmean(zscores, axis=-1)
+            # epoch_is_art = (np.abs(zscores) > threshold).astype(int)
 
     # Total percentage of epochs rejected
     perc_reject = 100 * (epoch_is_art.sum() / n_epochs)
-    text = (f"Total: {epoch_is_art.sum()} / {n_epochs} "
+    text = (f"TOTAL: {epoch_is_art.sum()} / {n_epochs} "
             f"epochs rejected ({perc_reject:.2f}%)")
     logger.info(text)
 
-    return epoch_is_art, zscores
+    return epoch_is_art.astype(bool), zscores

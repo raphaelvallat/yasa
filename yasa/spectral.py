@@ -281,7 +281,7 @@ def bandpower_from_psd_ndarray(psd, freqs, bands=[(0.5, 4, 'Delta'),
     Returns
     -------
     bandpowers : :py:class:`numpy.ndarray`
-        Bandpower array of shape (n_bands, ...).
+        Bandpower array of shape *(n_bands, ...)*.
     """
     # Type checks
     assert isinstance(bands, list), 'bands must be a list of tuple(s)'
@@ -324,11 +324,12 @@ def bandpower_from_psd_ndarray(psd, freqs, bands=[(0.5, 4, 'Delta'),
 
 
 def irasa(data, sf=None, ch_names=None, band=(1, 30),
-          hset=np.arange(1.1, 1.95, 0.05), return_fit=True, win_sec=4,
+          hset=[1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4, 1.45, 1.5, 1.55, 1.6,
+          1.65, 1.7, 1.75, 1.8, 1.85, 1.9], return_fit=True, win_sec=4,
           kwargs_welch=dict(average='median', window='hamming')):
-    """
-    Separate the aperiodic (= fractal, or 1/f) and oscillatory component of the
-    power spectra of EEG data using the IRASA method.
+    r"""
+    Separate the aperiodic (= fractal, or 1/f) and oscillatory component
+    of the power spectra of EEG data using the IRASA method.
 
     .. versionadded:: 0.1.7
 
@@ -349,7 +350,7 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
     band : tuple or None
         Broad band frequency range.
         Default is 1 to 30 Hz.
-    hset : :py:class:`numpy.ndarray`
+    hset : list or :py:class:`numpy.ndarray`
         Resampling factors used in IRASA calculation. Default is to use a range
         of values from 1.1 to 1.9 with an increment of 0.05.
     return_fit : boolean
@@ -360,7 +361,7 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
         The aperiodic signal, :math:`L`, is modeled using an exponential
         function in semilog-power space (linear frequencies and log PSD) as:
 
-        .. math:: L = a + \\text{log}(F^b)
+        .. math:: L = a + \text{log}(F^b)
 
         where :math:`a` is the intercept, :math:`b` is the slope, and
         :math:`F` the vector of input frequencies.
@@ -417,16 +418,16 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
 
     References
     ----------
-    .. [1] Wen, H., & Liu, Z. (2016). Separating Fractal and Oscillatory
-           Components in the Power Spectrum of Neurophysiological Signal.
-           Brain Topography, 29(1), 13–26.
-           https://doi.org/10.1007/s10548-015-0448-0
+    [1] Wen, H., & Liu, Z. (2016). Separating Fractal and Oscillatory
+    Components in the Power Spectrum of Neurophysiological Signal.
+    Brain Topography, 29(1), 13–26.
+    https://doi.org/10.1007/s10548-015-0448-0
 
-    .. [2] https://github.com/fieldtrip/fieldtrip/blob/master/specest/
+    [2] https://github.com/fieldtrip/fieldtrip/blob/master/specest/
 
-    .. [3] https://github.com/fooof-tools/fooof
+    [3] https://github.com/fooof-tools/fooof
 
-    .. [4] https://www.biorxiv.org/content/10.1101/299859v1
+    [4] https://www.biorxiv.org/content/10.1101/299859v1
     """
     import fractions
     # Check if input data is a MNE Raw object

@@ -115,12 +115,15 @@
 <span class="sd">Neuroinformatics, 11, 60. https://doi.org/10.3389/fninf.2017.00060</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">mne</span>
-<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;hypno_str_to_int&#39;</span><span class="p">,</span> <span class="s1">&#39;hypno_int_to_str&#39;</span><span class="p">,</span> <span class="s1">&#39;hypno_upsample_to_sf&#39;</span><span class="p">,</span>
            <span class="s1">&#39;hypno_upsample_to_data&#39;</span><span class="p">]</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;yasa&#39;</span><span class="p">)</span>
 
 
 <span class="c1">#############################################################################</span>
@@ -251,24 +254,26 @@
         <span class="n">npts_diff</span> <span class="o">=</span> <span class="n">npts_data</span> <span class="o">-</span> <span class="n">npts_hyp</span>
         <span class="k">if</span> <span class="n">sf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">dur_diff</span> <span class="o">=</span> <span class="n">npts_diff</span> <span class="o">/</span> <span class="n">sf</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Hypnogram is SHORTER than data by </span><span class="si">%.2f</span><span class="s1"> seconds. &#39;</span>
-                          <span class="s1">&#39;Padding hypnogram (with last value) to match &#39;</span>
-                          <span class="s1">&#39;data.size.&#39;</span> <span class="o">%</span> <span class="n">dur_diff</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Hypnogram is SHORTER than data by </span><span class="si">%.2f</span><span class="s1"> seconds. &#39;</span>
+                           <span class="s1">&#39;Padding hypnogram with last value to match &#39;</span>
+                           <span class="s1">&#39;data.size.&#39;</span> <span class="o">%</span> <span class="n">dur_diff</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Hypnogram is SHORTER than data by </span><span class="si">%i</span><span class="s1"> samples. &#39;</span>
-                          <span class="s1">&#39;Padding hypnogram (with last value) to match &#39;</span>
-                          <span class="s1">&#39;data.size.&#39;</span> <span class="o">%</span> <span class="n">npts_diff</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Hypnogram is SHORTER than data by </span><span class="si">%i</span><span class="s1"> samples. &#39;</span>
+                           <span class="s1">&#39;Padding hypnogram with last value to match &#39;</span>
+                           <span class="s1">&#39;data.size.&#39;</span> <span class="o">%</span> <span class="n">npts_diff</span><span class="p">)</span>
         <span class="n">hypno</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">npts_diff</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;edge&#39;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">npts_hyp</span> <span class="o">&gt;</span> <span class="n">npts_data</span><span class="p">:</span>
         <span class="c1"># Hypnogram is longer than data</span>
         <span class="n">npts_diff</span> <span class="o">=</span> <span class="n">npts_hyp</span> <span class="o">-</span> <span class="n">npts_data</span>
         <span class="k">if</span> <span class="n">sf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">dur_diff</span> <span class="o">=</span> <span class="n">npts_diff</span> <span class="o">/</span> <span class="n">sf</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Hypnogram is LONGER than data by </span><span class="si">%.2f</span><span class="s1"> seconds. &#39;</span>
-                          <span class="s1">&#39;Cropping hypnogram to match data.size.&#39;</span> <span class="o">%</span> <span class="n">dur_diff</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Hypnogram is LONGER than data by </span><span class="si">%.2f</span><span class="s1"> seconds. &#39;</span>
+                           <span class="s1">&#39;Cropping hypnogram to match data.size.&#39;</span> <span class="o">%</span>
+                           <span class="n">dur_diff</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Hypnogram is LONGER than data by </span><span class="si">%i</span><span class="s1"> samples. &#39;</span>
-                          <span class="s1">&#39;Cropping hypnogram to match data.size.&#39;</span> <span class="o">%</span> <span class="n">npts_diff</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Hypnogram is LONGER than data by </span><span class="si">%i</span><span class="s1"> samples. &#39;</span>
+                           <span class="s1">&#39;Cropping hypnogram to match data.size.&#39;</span> <span class="o">%</span>
+                           <span class="n">npts_diff</span><span class="p">)</span>
         <span class="n">hypno</span> <span class="o">=</span> <span class="n">hypno</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npts_data</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">hypno</span>
 

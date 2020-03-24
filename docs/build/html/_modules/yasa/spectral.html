@@ -369,7 +369,7 @@
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    bandpowers : :py:class:`numpy.ndarray`</span>
-<span class="sd">        Bandpower array of shape (n_bands, ...).</span>
+<span class="sd">        Bandpower array of shape *(n_bands, ...)*.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Type checks</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bands</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span> <span class="s1">&#39;bands must be a list of tuple(s)&#39;</span>
@@ -411,12 +411,13 @@
     <span class="k">return</span> <span class="n">bp</span></div>
 
 
-<span class="k">def</span> <span class="nf">irasa</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ch_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
-          <span class="n">hset</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.95</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">),</span> <span class="n">return_fit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">win_sec</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+<div class="viewcode-block" id="irasa"><a class="viewcode-back" href="../../generated/yasa.irasa.html#yasa.irasa">[docs]</a><span class="k">def</span> <span class="nf">irasa</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ch_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
+          <span class="n">hset</span><span class="o">=</span><span class="p">[</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.15</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.25</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">,</span> <span class="mf">1.35</span><span class="p">,</span> <span class="mf">1.4</span><span class="p">,</span> <span class="mf">1.45</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.55</span><span class="p">,</span> <span class="mf">1.6</span><span class="p">,</span>
+          <span class="mf">1.65</span><span class="p">,</span> <span class="mf">1.7</span><span class="p">,</span> <span class="mf">1.75</span><span class="p">,</span> <span class="mf">1.8</span><span class="p">,</span> <span class="mf">1.85</span><span class="p">,</span> <span class="mf">1.9</span><span class="p">],</span> <span class="n">return_fit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">win_sec</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
           <span class="n">kwargs_welch</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">average</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="s1">&#39;hamming&#39;</span><span class="p">)):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Separate the aperiodic (= fractal, or 1/f) and oscillatory component of the</span>
-<span class="sd">    power spectra of EEG data using the IRASA method.</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Separate the aperiodic (= fractal, or 1/f) and oscillatory component</span>
+<span class="sd">    of the power spectra of EEG data using the IRASA method.</span>
 
 <span class="sd">    .. versionadded:: 0.1.7</span>
 
@@ -437,7 +438,7 @@
 <span class="sd">    band : tuple or None</span>
 <span class="sd">        Broad band frequency range.</span>
 <span class="sd">        Default is 1 to 30 Hz.</span>
-<span class="sd">    hset : :py:class:`numpy.ndarray`</span>
+<span class="sd">    hset : list or :py:class:`numpy.ndarray`</span>
 <span class="sd">        Resampling factors used in IRASA calculation. Default is to use a range</span>
 <span class="sd">        of values from 1.1 to 1.9 with an increment of 0.05.</span>
 <span class="sd">    return_fit : boolean</span>
@@ -448,7 +449,7 @@
 <span class="sd">        The aperiodic signal, :math:`L`, is modeled using an exponential</span>
 <span class="sd">        function in semilog-power space (linear frequencies and log PSD) as:</span>
 
-<span class="sd">        .. math:: L = a + \\text{log}(F^b)</span>
+<span class="sd">        .. math:: L = a + \text{log}(F^b)</span>
 
 <span class="sd">        where :math:`a` is the intercept, :math:`b` is the slope, and</span>
 <span class="sd">        :math:`F` the vector of input frequencies.</span>
@@ -505,16 +506,16 @@
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
-<span class="sd">    .. [1] Wen, H., &amp; Liu, Z. (2016). Separating Fractal and Oscillatory</span>
-<span class="sd">           Components in the Power Spectrum of Neurophysiological Signal.</span>
-<span class="sd">           Brain Topography, 29(1), 13–26.</span>
-<span class="sd">           https://doi.org/10.1007/s10548-015-0448-0</span>
+<span class="sd">    [1] Wen, H., &amp; Liu, Z. (2016). Separating Fractal and Oscillatory</span>
+<span class="sd">    Components in the Power Spectrum of Neurophysiological Signal.</span>
+<span class="sd">    Brain Topography, 29(1), 13–26.</span>
+<span class="sd">    https://doi.org/10.1007/s10548-015-0448-0</span>
 
-<span class="sd">    .. [2] https://github.com/fieldtrip/fieldtrip/blob/master/specest/</span>
+<span class="sd">    [2] https://github.com/fieldtrip/fieldtrip/blob/master/specest/</span>
 
-<span class="sd">    .. [3] https://github.com/fooof-tools/fooof</span>
+<span class="sd">    [3] https://github.com/fooof-tools/fooof</span>
 
-<span class="sd">    .. [4] https://www.biorxiv.org/content/10.1101/299859v1</span>
+<span class="sd">    [4] https://www.biorxiv.org/content/10.1101/299859v1</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">fractions</span>
     <span class="c1"># Check if input data is a MNE Raw object</span>
@@ -611,7 +612,7 @@
                       <span class="s1">&#39;std(osc)&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">psd_osc</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)}</span>
         <span class="k">return</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">psd_aperiodic</span><span class="p">,</span> <span class="n">psd_osc</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">fit_params</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">psd_aperiodic</span><span class="p">,</span> <span class="n">psd_osc</span>
+        <span class="k">return</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">psd_aperiodic</span><span class="p">,</span> <span class="n">psd_osc</span></div>
 
 
 <div class="viewcode-block" id="stft_power"><a class="viewcode-back" href="../../generated/yasa.stft_power.html#yasa.stft_power">[docs]</a><span class="k">def</span> <span class="nf">stft_power</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">step</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="n">interp</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>

@@ -110,10 +110,6 @@
                      <span class="n">get_centered_indices</span><span class="p">,</span> <span class="n">sliding_window</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.spectral</span> <span class="kn">import</span> <span class="n">stft_power</span>
 
-<span class="c1"># Define YASA logger</span>
-<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> | </span><span class="si">%(levelname)s</span><span class="s1"> | </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">,</span>
-                    <span class="n">datefmt</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">-%b-%y %H:%M:%S&#39;</span><span class="p">)</span>
-
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;yasa&#39;</span><span class="p">)</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;spindles_detect&#39;</span><span class="p">,</span> <span class="s1">&#39;spindles_detect_multi&#39;</span><span class="p">,</span> <span class="s1">&#39;sw_detect&#39;</span><span class="p">,</span>
@@ -1672,8 +1668,8 @@
 
 
 <div class="viewcode-block" id="art_detect"><a class="viewcode-back" href="../../generated/yasa.art_detect.html#yasa.art_detect">[docs]</a><span class="k">def</span> <span class="nf">art_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>
-               <span class="n">method</span><span class="o">=</span><span class="s1">&#39;covar&#39;</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">2.5</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+               <span class="n">method</span><span class="o">=</span><span class="s1">&#39;covar&#39;</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Automatic artifact rejection for single or multi-channel EEG data.</span>
 
 <span class="sd">    This is still an experimental feature. Expect API-breaking changes in</span>
@@ -1777,7 +1773,7 @@
 <span class="sd">    &lt;https://pyriemann.readthedocs.io/en/latest/index.html&gt;`_.</span>
 
 <span class="sd">    The main idea of this approach is to estimate a reference covariance</span>
-<span class="sd">    matrix :math:`\\bar{C}` (for each sleep stage separately if ``hypno`` is</span>
+<span class="sd">    matrix :math:`\bar{C}` (for each sleep stage separately if ``hypno`` is</span>
 <span class="sd">    present) and reject every epoch which is too far from this reference</span>
 <span class="sd">    matrix.</span>
 <span class="sd">    The distance of the covariance matrix of the current epoch :math:`C`</span>
@@ -1785,14 +1781,14 @@
 <span class="sd">    geometry, which is more adapted than Euclidean geometry for</span>
 <span class="sd">    symmetric positive definite covariance matrices:</span>
 
-<span class="sd">    .. math::  d = {\\left( \\sum_i \\log(\\lambda_i)^2 \\right)}^{-1/2}</span>
+<span class="sd">    .. math::  d = {\left( \sum_i \log(\lambda_i)^2 \right)}^{-1/2}</span>
 
-<span class="sd">    where :math:`\\lambda_i` are the joint eigenvalues of :math:`C` and</span>
-<span class="sd">    :math:`\\bar{C}`. The epoch with covariance matric :math:`C`</span>
+<span class="sd">    where :math:`\lambda_i` are the joint eigenvalues of :math:`C` and</span>
+<span class="sd">    :math:`\bar{C}`. The epoch with covariance matric :math:`C`</span>
 <span class="sd">    will be marked as an artifact if the distance :math:`d`</span>
 <span class="sd">    is greater than a threshold :math:`T`</span>
 <span class="sd">    (typically 2 or 3 standard deviations).</span>
-<span class="sd">    :math:`\\bar{C}` is iteratively estimated using a clustering approach.</span>
+<span class="sd">    :math:`\bar{C}` is iteratively estimated using a clustering approach.</span>
 
 <span class="sd">    **2/ Standard-deviation-based single and multi-channel artefact rejection**</span>
 
@@ -1898,6 +1894,7 @@
     <span class="k">if</span> <span class="n">isflat</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Flat channels were found and removed in data&#39;</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="o">~</span><span class="n">isflat</span><span class="p">]</span>
+        <span class="n">n_chan</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="c1"># Epoch the data (n_epochs, n_chan, n_samples)</span>
     <span class="n">_</span><span class="p">,</span> <span class="n">epochs</span> <span class="o">=</span> <span class="n">sliding_window</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">win_sec</span><span class="p">)</span>
@@ -1949,30 +1946,40 @@
         <span class="n">std_epochs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>  <span class="c1"># (n_epochs, n_chan)</span>
 
         <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="c1"># zscores must be of shape (n_epochs, n_chan)</span>
+            <span class="n">zscores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_epochs</span><span class="p">,</span> <span class="n">n_chan</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
+
             <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">include</span><span class="p">:</span>
                 <span class="n">where_stage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">hypno_win</span> <span class="o">==</span> <span class="n">stage</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="c1"># Calculate z-scores of SD for each channel x stage</span>
+                <span class="c1"># Calculate z-scores of STD for each channel x stage</span>
                 <span class="n">c_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">std_epochs</span><span class="p">[</span><span class="n">where_stage</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                                     <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="n">c_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">std_epochs</span><span class="p">[</span><span class="n">where_stage</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                                   <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="n">zs</span> <span class="o">=</span> <span class="p">(</span><span class="n">std_epochs</span><span class="p">[</span><span class="n">where_stage</span><span class="p">]</span> <span class="o">-</span> <span class="n">c_mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">c_std</span>
-                <span class="c1"># Any epoch with at least 1 channel above threshold is removed.</span>
+                <span class="c1"># Method 1. Any epoch with at least 1 channel &lt;&gt; threshold</span>
                 <span class="n">art</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">zs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+                <span class="c1"># Method 2. Average z-score across channels</span>
+                <span class="c1"># avgzs = np.nanmean(zs, axis=-1)</span>
+                <span class="c1"># art = (np.abs(avgzs) &gt; threshold).astype(int)</span>
                 <span class="n">perc_reject</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="n">art</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">art</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
                 <span class="n">text</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Stage </span><span class="si">{stage}</span><span class="s2">: {art.sum()} / </span><span class="si">{art.size}</span><span class="s2"> &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;epochs rejected (</span><span class="si">{perc_reject:.2f}</span><span class="s2">%)&quot;</span><span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
                 <span class="c1"># Append to global vector</span>
                 <span class="n">epoch_is_art</span><span class="p">[</span><span class="n">where_stage</span><span class="p">]</span> <span class="o">=</span> <span class="n">art</span>
-                <span class="n">zscores</span><span class="p">[</span><span class="n">where_stage</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">zs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">zscores</span><span class="p">[</span><span class="n">where_stage</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">zs</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># Calculate z-scores of standard deviations for each channel</span>
             <span class="n">c_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">std_epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">c_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">std_epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">zscores</span> <span class="o">=</span> <span class="p">(</span><span class="n">std_epochs</span> <span class="o">-</span> <span class="n">c_mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">c_std</span>
-            <span class="c1"># Any epoch with at least 1 channel above threshold is removed.</span>
+            <span class="c1"># Method 1. Any epoch with at least 1 channel &lt;&gt; threshold</span>
             <span class="n">epoch_is_art</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">zscores</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="c1"># Method 2. Average z-score across channels</span>
+            <span class="c1"># zscores = np.nanmean(zscores, axis=-1)</span>
+            <span class="c1"># epoch_is_art = (np.abs(zscores) &gt; threshold).astype(int)</span>
 
     <span class="c1"># Total percentage of epochs rejected</span>
     <span class="n">perc_reject</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="n">epoch_is_art</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">n_epochs</span><span class="p">)</span>

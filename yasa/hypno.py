@@ -27,12 +27,15 @@ Visualization, Analysis, and Staging of Sleep Data. Frontiers in
 Neuroinformatics, 11, 60. https://doi.org/10.3389/fninf.2017.00060
 """
 import mne
-import warnings
+import logging
 import numpy as np
 import pandas as pd
 
 __all__ = ['hypno_str_to_int', 'hypno_int_to_str', 'hypno_upsample_to_sf',
            'hypno_upsample_to_data']
+
+
+logger = logging.getLogger('yasa')
 
 
 #############################################################################
@@ -163,24 +166,26 @@ def hypno_fit_to_data(hypno, data, sf=None):
         npts_diff = npts_data - npts_hyp
         if sf is not None:
             dur_diff = npts_diff / sf
-            warnings.warn('Hypnogram is SHORTER than data by %.2f seconds. '
-                          'Padding hypnogram (with last value) to match '
-                          'data.size.' % dur_diff)
+            logger.warning('Hypnogram is SHORTER than data by %.2f seconds. '
+                           'Padding hypnogram with last value to match '
+                           'data.size.' % dur_diff)
         else:
-            warnings.warn('Hypnogram is SHORTER than data by %i samples. '
-                          'Padding hypnogram (with last value) to match '
-                          'data.size.' % npts_diff)
+            logger.warning('Hypnogram is SHORTER than data by %i samples. '
+                           'Padding hypnogram with last value to match '
+                           'data.size.' % npts_diff)
         hypno = np.pad(hypno, (0, npts_diff), mode='edge')
     elif npts_hyp > npts_data:
         # Hypnogram is longer than data
         npts_diff = npts_hyp - npts_data
         if sf is not None:
             dur_diff = npts_diff / sf
-            warnings.warn('Hypnogram is LONGER than data by %.2f seconds. '
-                          'Cropping hypnogram to match data.size.' % dur_diff)
+            logger.warning('Hypnogram is LONGER than data by %.2f seconds. '
+                           'Cropping hypnogram to match data.size.' %
+                           dur_diff)
         else:
-            warnings.warn('Hypnogram is LONGER than data by %i samples. '
-                          'Cropping hypnogram to match data.size.' % npts_diff)
+            logger.warning('Hypnogram is LONGER than data by %i samples. '
+                           'Cropping hypnogram to match data.size.' %
+                           npts_diff)
         hypno = hypno[0:npts_data]
     return hypno
 

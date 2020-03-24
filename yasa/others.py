@@ -202,8 +202,7 @@ def trimbothstd(x, cut=0.10):
 
 
 def sliding_window(data, sf, window, step=None, axis=-1):
-    """
-    Calculate a sliding window of a 1D or 2D EEG signal.
+    """Calculate a sliding window of a 1D or 2D EEG signal.
 
     .. versionadded:: 0.1.7
 
@@ -396,7 +395,6 @@ def get_centered_indices(data, idx, npts_before, npts_after):
         """Create a range before and after a given value."""
         return np.arange(x - npts_before, x + npts_after + 1, dtype='int')
 
-    n_peaks = idx.shape[0]
     idx_ep = np.apply_along_axis(rng, 1, idx[..., np.newaxis])
     # We drop the events for which the indices exceed data
     idx_ep = np.ma.mask_rows(np.ma.masked_outside(idx_ep, 0, data.shape[0]))

@@ -10,7 +10,7 @@ from mne.filter import filter_data, resample
 from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
 from yasa.main import (get_sync_events, _index_to_events, get_bool_vector,
                        _merge_close, spindles_detect, spindles_detect_multi,
-                       sw_detect, sw_detect_multi, rem_detect)
+                       sw_detect, sw_detect_multi, rem_detect, art_detect)
 
 # Load data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -368,3 +368,13 @@ class TestStringMethods(unittest.TestCase):
         with self.assertLogs('yasa', level='ERROR'):
             sp = rem_detect(loc, roc, sf_full, hypno=hypno_rem, include=5)
             assert sp is None
+
+    def test_art_detect(self):
+        """Test function art_detect
+        """
+        # file = np.load('notebooks/data_full_6hrs_100Hz_9channels.npz')
+        # data = file.get('data')
+        # chan = file.get('chan')
+        # sf = 100
+        # hypno = np.load('notebooks/data_full_6hrs_100Hz_hypno.npz').get('hypno')
+        pass
