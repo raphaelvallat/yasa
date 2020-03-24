@@ -372,9 +372,37 @@ class TestStringMethods(unittest.TestCase):
     def test_art_detect(self):
         """Test function art_detect
         """
-        # file = np.load('notebooks/data_full_6hrs_100Hz_9channels.npz')
-        # data = file.get('data')
-        # chan = file.get('chan')
-        # sf = 100
-        # hypno = np.load('notebooks/data_full_6hrs_100Hz_hypno.npz').get('hypno')
-        pass
+        file_9 = np.load('notebooks/data_full_6hrs_100Hz_9channels.npz')
+        data_9 = file_9.get('data')
+        hypno_9 = np.load('notebooks/data_full_6hrs_100Hz_hypno.npz').get('hypno')
+        # For the sake of the example, let's add some flat data at the end
+        data_9 = np.concatenate((data_9, np.zeros((data_9.shape[0], 20000))),
+                                axis=1)
+        hypno_9 = np.concatenate((hypno_9, np.zeros(20000)))
+
+        # Start different combinations
+        art_detect(data_9, 100, window=5, method='covar', threshold=3)
+        art_detect(data_9, 100, window=5, hypno=hypno_9, include=(2, 3),
+                        method='covar', threshold=3)
+        art_detect(data_9, 100, window=5, method='std', threshold=2)
+        art_detect(data_9, 100, window=5, hypno=hypno_9,
+                        include=(0, 1, 2, 3, 4, 5, 6), method='std',
+                        threshold=2)
+        art_detect(data_9, 100, window=5, hypno=hypno_9,
+                        include=(0, 1, 2, 3, 4, 5, 6), method='std',
+                        threshold=10)
+        # Single channel
+        art_detect(data_9[0], 100, window=10, method='covar')
+        art_detect(data_9[0], 100, window=5, method='std')
+
+        # Not enough epochs for stage
+        hypno_9[:100] = 6
+        art_detect(data_9, sf, window=5, hypno=hypno_9, include=6,
+                        method='std', threshold=3, n_chan_reject=5)
+
+        # With a flat channel
+        data_with_flat = np.vstack((data_9, np.zeros(data_9.shape[-1])))
+        art_detect(data_with_flat, sf, method='std', n_chan_reject=5)
+
+        # Using a MNE raw object
+        art_detect(data_mne, window=10, hypno=hypno_mne, method='covar')

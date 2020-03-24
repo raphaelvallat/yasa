@@ -1767,7 +1767,7 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     n_samples = data.shape[1]
     assert isinstance(n_chan_reject, int), 'n_chan_reject must be int.'
     assert n_chan_reject >= 1, 'n_chan_reject must be >= 1.'
-    assert n_chan_reject < n_chan, 'n_chan_reject must be < n_chan.'
+    assert n_chan_reject <= n_chan, 'n_chan_reject must be <= n_chan.'
 
     # Safety check: sampling frequency and window
     assert isinstance(sf, (int, float)), 'sf must be int or float'
@@ -1889,8 +1889,9 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
             if where_stage.size < 30:
                 if hypno is not None:
                     # Only show warnig if user actually pass an hypnogram
-                    logger.warn(f"At least 30 epochs are required to calculate"
-                                f"z-score. Skipping stage {stage}")
+                    logger.warning(f"At least 30 epochs are required to "
+                                   f"calculate z-score. Skipping "
+                                   f"stage {stage}")
                 continue
             # Apply Potato algorithm, extract z-scores and labels
             zs = potato.fit_transform(covmats[where_stage])
@@ -1919,8 +1920,9 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
             if where_stage.size < 30:
                 if hypno is not None:
                     # Only show warnig if user actually pass an hypnogram
-                    logger.warn(f"At least 30 epochs are required to calculate"
-                                f"z-score. Skipping stage {stage}")
+                    logger.warning(f"At least 30 epochs are required to "
+                                   f"calculate z-score. Skipping "
+                                   f"stage {stage}")
                 continue
             # Calculate z-scores of STD for each channel x stage
             c_mean = np.nanmean(std_epochs[where_stage], axis=0,
