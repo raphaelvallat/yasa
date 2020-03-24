@@ -9,7 +9,7 @@ v0.2.0 (dev)
 **Bugfixes**
 
 a. Sleep efficiency in the :py:func:`yasa.sleep_statistics` is now calculated using time in bed (TIB) as the denominator instead of sleep period time (SPT), in agreement with the AASM guidelines. The old way of computing the efficiency (TST / SPT) has now been renamed Sleep Maintenance Efficiency (SME).
-b. Added the ``coupling`` and ``freq_sp`` keyword-arguments to the :py:func:`yasa.sw_detect` function. If ``coupling=True``, the function will return the phase of the slow-waves (in radians) at the most prominent peak of sigma-filtered band (``PhaseAtSigmaPeak``), as well as the normalized mean vector length (``ndPAC``).
+b. The :py:func:`yasa.sliding_window` now always return an array of shape (n_epochs, ..., n_samples), i.e. the epochs are now always the first dimension of the epoched array. This is consistent with MNE default shape of mne.Epochs objects.
 
 **New functions**
 
@@ -23,17 +23,16 @@ a. :py:func:`yasa.sleep_statistics` now also returns the sleep onset latency, i.
 b. Added the `bandpass` argument to :py:func:`yasa.bandpower` to apply a FIR bandpass filter using the lowest and highest frequencies defined in `bands`. This is useful if you work with absolute power and want to remove contributions from frequency bands of non-interests.
 c. The :py:func:`yasa.bandpower_from_psd` now always return the total absolute physical power (`TotalAbsPow`) of the signal, in units of uV^2 / Hz. This allows to quickly calculate the absolute bandpower from the relative bandpower.
 d. Added sigma (12-16Hz) to the default frequency bands (`bands`) in :py:func:`yasa.bandpower` and :py:func:`yasa.bandpower_from_psd`.
-e. Added an section in the `06_sw_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb>`_ notebooks on how to use relative amplitude thresholds (e.g. z-scores or percentiles) instead of absolute thresholds in physical units.
-f. The upper frequency band for :py:func:`yasa.sw_detect` has been changed from ``freq_sw=(0.3, 3.5)`` to ``freq_sw=(0.3, 2)`` Hz to comply with AASM guidelines.
-g. ``Stage`` is no longer taken into account when calculating outliers with :py:class:`sklearn.ensemble.IsolationForest` in :py:func:`yasa.spindles_detect`.
-h. To be consistent with :py:func:`yasa.spindles_detect`, :py:class:`sklearn.ensemble.IsolationForest` requires at least 50 (instead of 100) detected events in :py:func:`yasa.sw_detect` and :py:func:`yasa.rem_detect`.
-i. Reorganized Jupyter notebooks.
-j. The :py:func:`yasa.sliding_window` now always return an array of shape (n_epochs, ..., n_samples). The epochs are now always the first dimension of the epoched array. This is consistent with MNE default shape of mne.Epochs objects.
+e. Added the ``coupling`` and ``freq_sp`` keyword-arguments to the :py:func:`yasa.sw_detect` function. If ``coupling=True``, the function will return the phase of the slow-waves (in radians) at the most prominent peak of sigma-filtered band (``PhaseAtSigmaPeak``), as well as the normalized mean vector length (``ndPAC``).
+f. Added an section in the `06_sw_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb>`_ notebooks on how to use relative amplitude thresholds (e.g. z-scores or percentiles) instead of absolute thresholds in physical units.
+g. The upper frequency band for :py:func:`yasa.sw_detect` has been changed from ``freq_sw=(0.3, 3.5)`` to ``freq_sw=(0.3, 2)`` Hz to comply with AASM guidelines.
+h. ``Stage`` is no longer taken into account when calculating outliers with :py:class:`sklearn.ensemble.IsolationForest` in :py:func:`yasa.spindles_detect`.
+i. To be consistent with :py:func:`yasa.spindles_detect`, :py:class:`sklearn.ensemble.IsolationForest` requires at least 50 (instead of 100) detected events in :py:func:`yasa.sw_detect` and :py:func:`yasa.rem_detect`.
 
 **Dependencies**
 
 a. Removed deprecated ``behavior`` argument to avoid warning when calling :py:class:`sklearn.ensemble.IsolationForest`.
-b. Added `tensorpac <https://etiennecmb.github.io/tensorpac/index.html>`_ to dependencies.
+b. Added `tensorpac <https://etiennecmb.github.io/tensorpac/index.html>`_ and `pyriemann <https://pyriemann.readthedocs.io/en/latest/api.html>`_ to dependencies.
 
 v0.1.9 (February 2020)
 ----------------------

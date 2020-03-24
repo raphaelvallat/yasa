@@ -388,7 +388,7 @@ class TestStringMethods(unittest.TestCase):
         art_detect(data_9, 100, window=5, hypno=hypno_9,
                         include=(0, 1, 2, 3, 4, 5, 6), method='std',
                         threshold=2)
-        art_detect(data_9, 100, window=5, hypno=hypno_9,
+        art_detect(data_9, 100, window=5., hypno=hypno_9,
                         include=(0, 1, 2, 3, 4, 5, 6), method='std',
                         threshold=10)
         # Single channel
@@ -397,7 +397,7 @@ class TestStringMethods(unittest.TestCase):
 
         # Not enough epochs for stage
         hypno_9[:100] = 6
-        art_detect(data_9, sf, window=5, hypno=hypno_9, include=6,
+        art_detect(data_9, sf, window=5., hypno=hypno_9, include=6,
                         method='std', threshold=3, n_chan_reject=5)
 
         # With a flat channel
@@ -405,4 +405,8 @@ class TestStringMethods(unittest.TestCase):
         art_detect(data_with_flat, sf, method='std', n_chan_reject=5)
 
         # Using a MNE raw object
-        art_detect(data_mne, window=10, hypno=hypno_mne, method='covar')
+        art_detect(data_mne, window=10., hypno=hypno_mne, method='covar')
+
+        with pytest.raises(ValueError):
+            # None of include in hypno
+            art_detect(data_mne, window=10., hypno=hypno_mne, include=[7, 8])
