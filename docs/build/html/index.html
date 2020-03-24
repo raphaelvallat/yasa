@@ -101,12 +101,12 @@
 <p><strong>YASA</strong> (<em>Yet Another Spindle Algorithm</em>) is a sleep analysis toolbox in Python. YASA includes several fast and convenient command-line functions to:</p>
 <ul class="simple">
 <li><p>Automatically detect sleep spindles, slow-waves, and rapid eye movements on single and multi-channel EEG data</p></li>
-<li><p>Automatically reject artifact</p></li>
-<li><p>Perform advanced spectral analyses</p></li>
+<li><p>Automatically reject major artifacts on single or multi-channel EEG data</p></li>
+<li><p>Perform advanced spectral analyses: spectral bandpower, phase-amplitude coupling, event-locked analyses, <em>etc.</em></p></li>
 <li><p>Easily manipulate sleep staging vector (hypnogram)</p></li>
 </ul>
-<p>For more details, check out the <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/index.html">API documentation</a>, or try the tutorial
-(<a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">Jupyter Notebooks</a>).</p>
+<p>For more details, check out the <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/index.html">API documentation</a> or try the
+<a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">tutorial</a>.</p>
 <div class="section" id="installation">
 <h1>Installation</h1>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip install --upgrade yasa
@@ -122,9 +122,9 @@
 <li><p>mne</p></li>
 <li><p>numba</p></li>
 <li><p>scikit-learn</p></li>
-<li><p><a class="reference external" href="https://etiennecmb.github.io/tensorpac/">tensorpac</a></p></li>
-<li><p><a class="reference external" href="https://pyriemann.readthedocs.io/en/latest/api.html">pyriemann</a></p></li>
-<li><p><a class="reference external" href="https://github.com/hbldh/lspopt">lspopt</a></p></li>
+<li><p><a class="reference external" href="https://etiennecmb.github.io/tensorpac/">tensorpac</a> (for phase-amplitude coupling)</p></li>
+<li><p><a class="reference external" href="https://pyriemann.readthedocs.io/en/latest/api.html">pyriemann</a> (for atifact rejection based on covariance matrices)</p></li>
+<li><p><a class="reference external" href="https://github.com/hbldh/lspopt">lspopt</a> (for multitaper spectrogram estimation)</p></li>
 </ul>
 <p>Several functions of YASA are written using <a class="reference external" href="http://numba.pydata.org/">Numba</a>, a just-in-time compiler for Python. This allows to greatly speed up the computation time of the microstructure detection (typically a few seconds for a full night recording).</p>
 <p><strong>What are the prerequisites for using YASA?</strong></p>
@@ -155,8 +155,8 @@ one can use the <a class="reference external" href="https://mne.tools/stable/gen
 <div class="section" id="examples">
 <h1>Examples</h1>
 <p>Check out the <a class="reference internal" href="api.html#api-ref"><span class="std std-ref">API reference</span></a> for more details on YASA’s functions.</p>
-<div class="section" id="notebooks">
-<h2>Notebooks</h2>
+<div class="section" id="id1">
+<h2>Tutorial</h2>
 <p>The examples Jupyter notebooks are really what make YASA great! In addition to showing how to use the main functions of YASA, they also provide an extensive step-by-step description of the detection algorithms, as well as several useful code snippets to analyze and plot your data.</p>
 <p><strong>Spindles</strong></p>
 <ul class="simple">
@@ -183,6 +183,10 @@ one can use the <a class="reference external" href="https://mne.tools/stable/gen
 <li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_nonlinear_features.ipynb">11_nonlinear_features.ipynb</a>: extract epoch-based non-linear features of sleep EEG.</p></li>
 <li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb">12_spindles-SO_coupling.ipynb</a>: performs event-locked spindles-SO coupling, as well as data-driven Phase-Amplitude Coupling.</p></li>
 </ul>
+<p><strong>Artifact rejection</strong></p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb">13_artifact_rejection.ipynb</a>: automatic artifact rejection on single and multi-channel EEG data.</p></li>
+</ul>
 </div>
 <div class="section" id="typical-uses">
 <h2>Typical uses</h2>
@@ -200,7 +204,7 @@ one can use the <a class="reference external" href="https://mne.tools/stable/gen
 </pre></div>
 </div>
 <p>The result of the detection is a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">pandas DataFrame</a> where each row is a unique detected event (e.g. spindle, slow-waves, REMs) and each column a parameter of this event, including, the start and end timestamps, duration, amplitude, etc.</p>
-<table class="colwidths-auto docutils align-default" id="id1">
+<table class="colwidths-auto docutils align-default" id="id2">
 <caption><span class="caption-text">Output dataframe</span></caption>
 <thead>
 <tr class="row-odd"><th class="head"><p>Start</p></th>

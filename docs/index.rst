@@ -34,12 +34,12 @@
 **YASA** (*Yet Another Spindle Algorithm*) is a sleep analysis toolbox in Python. YASA includes several fast and convenient command-line functions to:
 
 * Automatically detect sleep spindles, slow-waves, and rapid eye movements on single and multi-channel EEG data
-* Automatically reject artifact
-* Perform advanced spectral analyses
+* Automatically reject major artifacts on single or multi-channel EEG data
+* Perform advanced spectral analyses: spectral bandpower, phase-amplitude coupling, event-locked analyses, *etc.*
 * Easily manipulate sleep staging vector (hypnogram)
 
-For more details, check out the `API documentation <https://raphaelvallat.com/yasa/build/html/index.html>`_, or try the tutorial
-(`Jupyter Notebooks <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_).
+For more details, check out the `API documentation <https://raphaelvallat.com/yasa/build/html/index.html>`_ or try the
+`tutorial <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_.
 
 Installation
 ~~~~~~~~~~~~
@@ -58,9 +58,9 @@ Installation
 - mne
 - numba
 - scikit-learn
-- `tensorpac <https://etiennecmb.github.io/tensorpac/>`_
-- `pyriemann <https://pyriemann.readthedocs.io/en/latest/api.html>`_
-- `lspopt <https://github.com/hbldh/lspopt>`_
+- `tensorpac <https://etiennecmb.github.io/tensorpac/>`_ (for phase-amplitude coupling)
+- `pyriemann <https://pyriemann.readthedocs.io/en/latest/api.html>`_ (for atifact rejection based on covariance matrices)
+- `lspopt <https://github.com/hbldh/lspopt>`_ (for multitaper spectrogram estimation)
 
 Several functions of YASA are written using `Numba <http://numba.pydata.org/>`_, a just-in-time compiler for Python. This allows to greatly speed up the computation time of the microstructure detection (typically a few seconds for a full night recording).
 
@@ -90,8 +90,8 @@ Examples
 
 Check out the :ref:`api_ref` for more details on YASA's functions.
 
-Notebooks
----------
+Tutorial
+--------
 
 The examples Jupyter notebooks are really what make YASA great! In addition to showing how to use the main functions of YASA, they also provide an extensive step-by-step description of the detection algorithms, as well as several useful code snippets to analyze and plot your data.
 
@@ -119,6 +119,10 @@ The examples Jupyter notebooks are really what make YASA great! In addition to s
 * `10_spectrogram.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_spectrogram.ipynb>`_: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.
 * `11_nonlinear_features.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_nonlinear_features.ipynb>`_: extract epoch-based non-linear features of sleep EEG.
 * `12_spindles-SO_coupling.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb>`_: performs event-locked spindles-SO coupling, as well as data-driven Phase-Amplitude Coupling.
+
+**Artifact rejection**
+
+* `13_artifact_rejection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb>`_: automatic artifact rejection on single and multi-channel EEG data.
 
 Typical uses
 ------------

@@ -89,16 +89,10 @@
 <h1>yasa.art_detect</h1>
 <dl class="function">
 <dt id="yasa.art_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">art_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf=None</em>, <em class="sig-param">window=5</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(1</em>, <em class="sig-param">2</em>, <em class="sig-param">3</em>, <em class="sig-param">4)</em>, <em class="sig-param">method='covar'</em>, <em class="sig-param">threshold=3</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#art_detect"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">art_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf=None</em>, <em class="sig-param">window=5</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(1</em>, <em class="sig-param">2</em>, <em class="sig-param">3</em>, <em class="sig-param">4)</em>, <em class="sig-param">method='covar'</em>, <em class="sig-param">threshold=3</em>, <em class="sig-param">n_chan_reject=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#art_detect"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Automatic artifact rejection for single or multi-channel EEG data.</p>
 <p>This is still an experimental feature. Expect API-breaking changes in
 future releases.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>This function will only detect major body artefacts present on the EEG
-channel. It will not detect EKG contamination or eye blinks. For more
-artifact rejection tools, please refer to the <a class="reference external" href="https://mne.tools/stable/auto_tutorials/preprocessing/plot_10_preprocessing_overview.html">MNE Python package</a>.</p>
-</div>
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 0.2.0.</span></p>
 </div>
@@ -155,24 +149,40 @@ This parameter has no effect when <code class="docutils literal notranslate"><sp
 <li><p><code class="docutils literal notranslate"><span class="pre">'std'</span></code> : Standard-deviation-based, default for single-channel data</p></li>
 </ul>
 </dd>
-<dt><strong>threshold</strong><span class="classifier">float</span></dt><dd><p>The number of standard deviation above or below which an
+<dt><strong>threshold</strong><span class="classifier">float</span></dt><dd><p>The number of standard deviations above or below which an
 epoch is considered an artifact. Higher values will result in a more
 conservative detection, i.e. less rejected epochs.</p>
+</dd>
+<dt><strong>n_chan_reject</strong><span class="classifier">int</span></dt><dd><p>The number of channels that must be below or above <code class="docutils literal notranslate"><span class="pre">threshold</span></code> on any
+given epochs to consider this epoch as an artefact when
+<code class="docutils literal notranslate"><span class="pre">method='covar'</span></code>. The default is 1, which means that the epoch will
+be marked as artifact as soon as one channel is above or below the
+threshold. This may be too conservative when working with a large
+number of channels (e.g.hdEEG) in which case users can increase
+<code class="docutils literal notranslate"><span class="pre">n_chan_reject</span></code>. Note that this parameter only has an effect
+when <code class="docutils literal notranslate"><span class="pre">method='covar'</span></code>.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>epoch_is_art</strong><span class="classifier">array_like</span></dt><dd><p>1-D array of shape <em>(n_epochs)</em> where 1 = Artefact and 0 = Good.</p>
+<dt><strong>art_epochs</strong><span class="classifier">array_like</span></dt><dd><p>1-D array of shape <em>(n_epochs)</em> where 1 = Artefact and 0 = Good.</p>
 </dd>
-<dt><strong>zscores</strong><span class="classifier">array_like</span></dt><dd><p>Z-scores.</p>
+<dt><strong>zscores</strong><span class="classifier">array_like</span></dt><dd><p>Array of z-scores, shape is <em>(n_epochs)</em> if <code class="docutils literal notranslate"><span class="pre">method='covar'</span></code> and
+<em>(n_epochs, n_chan)</em> if <code class="docutils literal notranslate"><span class="pre">method='std'</span></code>.</p>
 </dd>
 </dl>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>This function will only detect major body artefacts present on the EEG
+channel. It will not detect EKG contamination or eye blinks. For more
+artifact rejection tools, please refer to the <a class="reference external" href="https://mne.tools/stable/auto_tutorials/preprocessing/plot_10_preprocessing_overview.html">MNE Python package</a>.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
 <p>For best performance, apply this function on pre-staged data and make
 sure to pass the hypnogram.
 Sleep stages have very different EEG signatures
@@ -232,6 +242,9 @@ EEG. IEEE Transactions on Neural Systems and Rehabilitation Engineering:
 A Publication of the IEEE Engineering in Medicine and Biology Society,
 27(2), 244–255. <a class="reference external" href="https://doi.org/10.1109/TNSRE.2019.2893113">https://doi.org/10.1109/TNSRE.2019.2893113</a></p>
 <p>[3] <a class="reference external" href="https://pyriemann.readthedocs.io/en/latest/index.html">https://pyriemann.readthedocs.io/en/latest/index.html</a></p>
+<p class="rubric">Examples</p>
+<p>For an example of how to run the detection, please refer to
+<a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb">https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb</a></p>
 </dd></dl>
 
 </div>

@@ -1668,18 +1668,12 @@
 
 
 <div class="viewcode-block" id="art_detect"><a class="viewcode-back" href="../../generated/yasa.art_detect.html#yasa.art_detect">[docs]</a><span class="k">def</span> <span class="nf">art_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>
-               <span class="n">method</span><span class="o">=</span><span class="s1">&#39;covar&#39;</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+               <span class="n">method</span><span class="o">=</span><span class="s1">&#39;covar&#39;</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">n_chan_reject</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Automatic artifact rejection for single or multi-channel EEG data.</span>
 
 <span class="sd">    This is still an experimental feature. Expect API-breaking changes in</span>
 <span class="sd">    future releases.</span>
-
-<span class="sd">    .. warning::</span>
-<span class="sd">        This function will only detect major body artefacts present on the EEG</span>
-<span class="sd">        channel. It will not detect EKG contamination or eye blinks. For more</span>
-<span class="sd">        artifact rejection tools, please refer to the `MNE Python package</span>
-<span class="sd">        &lt;https://mne.tools/stable/auto_tutorials/preprocessing/plot_10_preprocessing_overview.html&gt;`_.</span>
 
 <span class="sd">    .. versionadded:: 0.2.0</span>
 
@@ -1733,20 +1727,36 @@
 <span class="sd">        * ``&#39;covar&#39;`` : Covariance-based, default for 4+ channels data</span>
 <span class="sd">        * ``&#39;std&#39;`` : Standard-deviation-based, default for single-channel data</span>
 <span class="sd">    threshold : float</span>
-<span class="sd">        The number of standard deviation above or below which an</span>
+<span class="sd">        The number of standard deviations above or below which an</span>
 <span class="sd">        epoch is considered an artifact. Higher values will result in a more</span>
 <span class="sd">        conservative detection, i.e. less rejected epochs.</span>
+<span class="sd">    n_chan_reject : int</span>
+<span class="sd">        The number of channels that must be below or above ``threshold`` on any</span>
+<span class="sd">        given epochs to consider this epoch as an artefact when</span>
+<span class="sd">        ``method=&#39;covar&#39;``. The default is 1, which means that the epoch will</span>
+<span class="sd">        be marked as artifact as soon as one channel is above or below the</span>
+<span class="sd">        threshold. This may be too conservative when working with a large</span>
+<span class="sd">        number of channels (e.g.hdEEG) in which case users can increase</span>
+<span class="sd">        ``n_chan_reject``. Note that this parameter only has an effect</span>
+<span class="sd">        when ``method=&#39;covar&#39;``.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    epoch_is_art : array_like</span>
+<span class="sd">    art_epochs : array_like</span>
 <span class="sd">        1-D array of shape *(n_epochs)* where 1 = Artefact and 0 = Good.</span>
 <span class="sd">    zscores : array_like</span>
-<span class="sd">        Z-scores.</span>
+<span class="sd">        Array of z-scores, shape is *(n_epochs)* if ``method=&#39;covar&#39;`` and</span>
+<span class="sd">        *(n_epochs, n_chan)* if ``method=&#39;std&#39;``.</span>
 
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
-<span class="sd">    .. note::</span>
+<span class="sd">    .. caution::</span>
+<span class="sd">        This function will only detect major body artefacts present on the EEG</span>
+<span class="sd">        channel. It will not detect EKG contamination or eye blinks. For more</span>
+<span class="sd">        artifact rejection tools, please refer to the `MNE Python package</span>
+<span class="sd">        &lt;https://mne.tools/stable/auto_tutorials/preprocessing/plot_10_preprocessing_overview.html&gt;`_.</span>
+
+<span class="sd">    .. tip::</span>
 <span class="sd">        For best performance, apply this function on pre-staged data and make</span>
 <span class="sd">        sure to pass the hypnogram.</span>
 <span class="sd">        Sleep stages have very different EEG signatures</span>
@@ -1819,6 +1829,11 @@
 <span class="sd">    27(2), 244–255. https://doi.org/10.1109/TNSRE.2019.2893113</span>
 
 <span class="sd">    [3] https://pyriemann.readthedocs.io/en/latest/index.html</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    For an example of how to run the detection, please refer to</span>
+<span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1">###########################################################################</span>
     <span class="c1"># PREPROCESSING</span>
@@ -1838,6 +1853,9 @@
     <span class="k">assert</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span>
     <span class="n">n_chan</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">n_samples</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n_chan_reject</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="s1">&#39;n_chan_reject must be int.&#39;</span>
+    <span class="k">assert</span> <span class="n">n_chan_reject</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;n_chan_reject must be &gt;= 1.&#39;</span>
+    <span class="k">assert</span> <span class="n">n_chan_reject</span> <span class="o">&lt;</span> <span class="n">n_chan</span><span class="p">,</span> <span class="s1">&#39;n_chan_reject must be &lt; n_chan.&#39;</span>
 
     <span class="c1"># Safety check: sampling frequency and window</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s1">&#39;sf must be int or float&#39;</span>
@@ -1867,8 +1885,9 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;None of the stages specified in `include` &#39;</span>
                              <span class="s1">&#39;are present in hypno.&#39;</span><span class="p">)</span>
-        <span class="c1"># Extract downsampled hypnogram</span>
-        <span class="n">hypno_win</span> <span class="o">=</span> <span class="n">hypno</span><span class="p">[::</span><span class="n">window</span><span class="p">]</span>
+        <span class="c1"># Extract downsampled hypnogram, using only complete epochs</span>
+        <span class="n">idx_max_full_epoch</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">n_samples</span> <span class="o">/</span> <span class="n">window</span><span class="p">))</span>
+        <span class="n">hypno_win</span> <span class="o">=</span> <span class="n">hypno</span><span class="p">[::</span><span class="n">window</span><span class="p">][:</span><span class="n">idx_max_full_epoch</span><span class="p">]</span>
 
     <span class="c1"># Safety checks: methods</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="s2">&quot;method must be a string.&quot;</span>
@@ -1876,14 +1895,17 @@
     <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;cov&#39;</span><span class="p">,</span> <span class="s1">&#39;covar&#39;</span><span class="p">,</span> <span class="s1">&#39;covariance&#39;</span><span class="p">,</span> <span class="s1">&#39;riemann&#39;</span><span class="p">,</span> <span class="s1">&#39;potato&#39;</span><span class="p">]:</span>
         <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;covar&#39;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">import</span> <span class="nn">pyriemann</span> <span class="k">as</span> <span class="nn">pr</span>
+            <span class="kn">from</span> <span class="nn">pyriemann.estimation</span> <span class="kn">import</span> <span class="n">Covariances</span><span class="p">,</span> <span class="n">Shrinkage</span>
+            <span class="kn">from</span> <span class="nn">pyriemann.clustering</span> <span class="kn">import</span> <span class="n">Potato</span>
         <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
             <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;pyRiemann needs to be installed to use &quot;</span>
                           <span class="s2">&quot;`method=&#39;covar&#39;`. Please use `pip &quot;</span>
                           <span class="s2">&quot;install pyriemann -U`.&quot;</span><span class="p">)</span>
         <span class="c1"># Must have at least 4 channels to use method=&#39;covar&#39;</span>
-        <span class="k">assert</span> <span class="n">n_chan</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;Must have at least 4 channels for &quot;</span>
-                             <span class="s2">&quot;method=&#39;covar&#39;. Please use method=&#39;std&#39; instead&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n_chan</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Must have at least 4 channels for method=&#39;covar&#39;. &quot;</span>
+                           <span class="s2">&quot;Automatically switching to method=&#39;std&#39;.&quot;</span><span class="p">)</span>
+            <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;std&#39;</span>
 
     <span class="c1">###########################################################################</span>
     <span class="c1"># START THE REJECTION</span>
@@ -1892,13 +1914,36 @@
     <span class="c1"># Remove flat channels</span>
     <span class="n">isflat</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">isflat</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Flat channels were found and removed in data&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Flat channel(s) were found and removed in data.&#39;</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="o">~</span><span class="n">isflat</span><span class="p">]</span>
         <span class="n">n_chan</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="c1"># Epoch the data (n_epochs, n_chan, n_samples)</span>
     <span class="n">_</span><span class="p">,</span> <span class="n">epochs</span> <span class="o">=</span> <span class="n">sliding_window</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">win_sec</span><span class="p">)</span>
     <span class="n">n_epochs</span> <span class="o">=</span> <span class="n">epochs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># We first need to identify epochs with flat data (n_epochs, n_chan)</span>
+    <span class="n">isflat</span> <span class="o">=</span> <span class="p">(</span><span class="n">epochs</span> <span class="o">==</span> <span class="n">epochs</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># 1 when all channels are flat, 0 when none ar flat (n_epochs)</span>
+    <span class="n">prop_chan_flat</span> <span class="o">=</span> <span class="n">isflat</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_chan</span>
+    <span class="c1"># If &gt;= 50% of channels are flat, automatically mark as artefact</span>
+    <span class="n">epoch_is_flat</span> <span class="o">=</span> <span class="n">prop_chan_flat</span> <span class="o">&gt;=</span> <span class="mf">0.5</span>
+    <span class="n">where_flat_epochs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">epoch_is_flat</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">n_flat_epochs</span> <span class="o">=</span> <span class="n">where_flat_epochs</span><span class="o">.</span><span class="n">size</span>
+
+    <span class="c1"># Now let&#39;s make sure that we have an hypnogram and an include variable</span>
+    <span class="k">if</span> <span class="s1">&#39;hypno_win&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+        <span class="c1"># [-2, -2, -2, -2, ...], where -2 stands for unscored</span>
+        <span class="n">hypno_win</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_epochs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
+        <span class="n">include</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
+
+    <span class="c1"># We want to make sure that hypno-win and n_epochs have EXACTLY same shape</span>
+    <span class="k">assert</span> <span class="n">n_epochs</span> <span class="o">==</span> <span class="n">hypno_win</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;Hypno and epochs do not match.&#39;</span>
+
+    <span class="c1"># Finally, we make sure not to include any flat epochs in calculation</span>
+    <span class="c1"># just using a random number that is unlikely to be picked by users</span>
+    <span class="k">if</span> <span class="n">n_flat_epochs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">hypno_win</span><span class="p">[</span><span class="n">where_flat_epochs</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">111991</span>
 
     <span class="c1"># Add logger info</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Number of channels in data = </span><span class="si">%i</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">n_chan</span><span class="p">)</span>
@@ -1912,80 +1957,92 @@
 
     <span class="c1"># Create empty `hypno_art` vector (1 sample = 1 epoch)</span>
     <span class="n">epoch_is_art</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_epochs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
-    <span class="n">zscores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_epochs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;covar&#39;</span><span class="p">:</span>
-        <span class="c1"># Calculate the covariance matrices, shape (n_epochs, n_chan, n_chan)</span>
-        <span class="n">covmats</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">estimation</span><span class="o">.</span><span class="n">Covariances</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">epochs</span><span class="p">)</span>
+        <span class="c1"># Calculate the covariance matrices,</span>
+        <span class="c1"># shape (n_epochs, n_chan, n_chan)</span>
+        <span class="n">covmats</span> <span class="o">=</span> <span class="n">Covariances</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">epochs</span><span class="p">)</span>
         <span class="c1"># Shrink the covariance matrix (ensure positive semi-definite)</span>
-        <span class="n">covmats</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">estimation</span><span class="o">.</span><span class="n">Shrinkage</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">covmats</span><span class="p">)</span>
+        <span class="n">covmats</span> <span class="o">=</span> <span class="n">Shrinkage</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">covmats</span><span class="p">)</span>
         <span class="c1"># Define Potato instance: 0 = clean, 1 = art</span>
-        <span class="n">potato</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">clustering</span><span class="o">.</span><span class="n">Potato</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="s1">&#39;riemann&#39;</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">,</span>
-                                      <span class="n">pos_label</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">neg_label</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># Hypno is present</span>
-            <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">include</span><span class="p">:</span>
-                <span class="n">where_stage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">hypno_win</span> <span class="o">==</span> <span class="n">stage</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="c1"># Apply Potato algorithm, extract z-scores and labels</span>
-                <span class="n">zs</span> <span class="o">=</span> <span class="n">potato</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">covmats</span><span class="p">[</span><span class="n">where_stage</span><span class="p">])</span>
-                <span class="n">art</span> <span class="o">=</span> <span class="n">potato</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">covmats</span><span class="p">[</span><span class="n">where_stage</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">potato</span> <span class="o">=</span> <span class="n">Potato</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="s1">&#39;riemann&#39;</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">,</span> <span class="n">pos_label</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                        <span class="n">neg_label</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Create empty z-scores output (n_epochs)</span>
+        <span class="n">zscores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_epochs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+        <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">include</span><span class="p">:</span>
+            <span class="n">where_stage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">hypno_win</span> <span class="o">==</span> <span class="n">stage</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c1"># At least 30 epochs are required to calculate z-scores</span>
+            <span class="c1"># which amounts to 2.5 minutes when using 5-seconds window</span>
+            <span class="k">if</span> <span class="n">where_stage</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">30</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># Only show warnig if user actually pass an hypnogram</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;At least 30 epochs are required to calculate&quot;</span>
+                                <span class="sa">f</span><span class="s2">&quot;z-score. Skipping stage </span><span class="si">{stage}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="c1"># Apply Potato algorithm, extract z-scores and labels</span>
+            <span class="n">zs</span> <span class="o">=</span> <span class="n">potato</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">covmats</span><span class="p">[</span><span class="n">where_stage</span><span class="p">])</span>
+            <span class="n">art</span> <span class="o">=</span> <span class="n">potato</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">covmats</span><span class="p">[</span><span class="n">where_stage</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Only shows if user actually pass an hypnogram</span>
                 <span class="n">perc_reject</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="n">art</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">art</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
                 <span class="n">text</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Stage </span><span class="si">{stage}</span><span class="s2">: {art.sum()} / </span><span class="si">{art.size}</span><span class="s2"> &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;epochs rejected (</span><span class="si">{perc_reject:.2f}</span><span class="s2">%)&quot;</span><span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-                <span class="c1"># Append to global vector</span>
-                <span class="n">epoch_is_art</span><span class="p">[</span><span class="n">where_stage</span><span class="p">]</span> <span class="o">=</span> <span class="n">art</span>
-                <span class="n">zscores</span><span class="p">[</span><span class="n">where_stage</span><span class="p">]</span> <span class="o">=</span> <span class="n">zs</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Hypno is not present</span>
-            <span class="n">zscores</span> <span class="o">=</span> <span class="n">potato</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">covmats</span><span class="p">)</span>
-            <span class="n">epoch_is_art</span> <span class="o">=</span> <span class="n">potato</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">covmats</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="c1"># Append to global vector</span>
+            <span class="n">epoch_is_art</span><span class="p">[</span><span class="n">where_stage</span><span class="p">]</span> <span class="o">=</span> <span class="n">art</span>
+            <span class="n">zscores</span><span class="p">[</span><span class="n">where_stage</span><span class="p">]</span> <span class="o">=</span> <span class="n">zs</span>
 
     <span class="k">elif</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;std&#39;</span><span class="p">,</span> <span class="s1">&#39;sd&#39;</span><span class="p">]:</span>
         <span class="c1"># Calculate log-transformed standard dev in each epoch</span>
-        <span class="n">std_epochs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>  <span class="c1"># (n_epochs, n_chan)</span>
-
-        <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-
-            <span class="c1"># zscores must be of shape (n_epochs, n_chan)</span>
-            <span class="n">zscores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_epochs</span><span class="p">,</span> <span class="n">n_chan</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
-
-            <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">include</span><span class="p">:</span>
-                <span class="n">where_stage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">hypno_win</span> <span class="o">==</span> <span class="n">stage</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="c1"># Calculate z-scores of STD for each channel x stage</span>
-                <span class="n">c_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">std_epochs</span><span class="p">[</span><span class="n">where_stage</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                                    <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                <span class="n">c_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">std_epochs</span><span class="p">[</span><span class="n">where_stage</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                                  <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                <span class="n">zs</span> <span class="o">=</span> <span class="p">(</span><span class="n">std_epochs</span><span class="p">[</span><span class="n">where_stage</span><span class="p">]</span> <span class="o">-</span> <span class="n">c_mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">c_std</span>
-                <span class="c1"># Method 1. Any epoch with at least 1 channel &lt;&gt; threshold</span>
-                <span class="n">art</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">zs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-                <span class="c1"># Method 2. Average z-score across channels</span>
-                <span class="c1"># avgzs = np.nanmean(zs, axis=-1)</span>
-                <span class="c1"># art = (np.abs(avgzs) &gt; threshold).astype(int)</span>
+        <span class="c1"># We add 1 to avoid log warning id std is zero (e.g. flat line)</span>
+        <span class="c1"># (n_epochs, n_chan)</span>
+        <span class="n">std_epochs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Create empty zscores output (n_epochs, n_chan)</span>
+        <span class="n">zscores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_epochs</span><span class="p">,</span> <span class="n">n_chan</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">include</span><span class="p">:</span>
+            <span class="n">where_stage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">hypno_win</span> <span class="o">==</span> <span class="n">stage</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c1"># At least 30 epochs are required to calculate z-scores</span>
+            <span class="c1"># which amounts to 2.5 minutes when using 5-seconds window</span>
+            <span class="k">if</span> <span class="n">where_stage</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">30</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="c1"># Only show warnig if user actually pass an hypnogram</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;At least 30 epochs are required to calculate&quot;</span>
+                                <span class="sa">f</span><span class="s2">&quot;z-score. Skipping stage </span><span class="si">{stage}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="c1"># Calculate z-scores of STD for each channel x stage</span>
+            <span class="n">c_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">std_epochs</span><span class="p">[</span><span class="n">where_stage</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">c_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">std_epochs</span><span class="p">[</span><span class="n">where_stage</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                              <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">zs</span> <span class="o">=</span> <span class="p">(</span><span class="n">std_epochs</span><span class="p">[</span><span class="n">where_stage</span><span class="p">]</span> <span class="o">-</span> <span class="n">c_mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">c_std</span>
+            <span class="c1"># Any epoch with at least X channel above or below threshold</span>
+            <span class="n">n_chan_supra</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">zs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># &gt;</span>
+            <span class="n">art</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_chan_supra</span> <span class="o">&gt;=</span> <span class="n">n_chan_reject</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>  <span class="c1"># &gt;= !</span>
+            <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Only shows if user actually pass an hypnogram</span>
                 <span class="n">perc_reject</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="n">art</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">art</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
                 <span class="n">text</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Stage </span><span class="si">{stage}</span><span class="s2">: {art.sum()} / </span><span class="si">{art.size}</span><span class="s2"> &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;epochs rejected (</span><span class="si">{perc_reject:.2f}</span><span class="s2">%)&quot;</span><span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-                <span class="c1"># Append to global vector</span>
-                <span class="n">epoch_is_art</span><span class="p">[</span><span class="n">where_stage</span><span class="p">]</span> <span class="o">=</span> <span class="n">art</span>
-                <span class="n">zscores</span><span class="p">[</span><span class="n">where_stage</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">zs</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Calculate z-scores of standard deviations for each channel</span>
-            <span class="n">c_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">std_epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="n">c_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">std_epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="n">zscores</span> <span class="o">=</span> <span class="p">(</span><span class="n">std_epochs</span> <span class="o">-</span> <span class="n">c_mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">c_std</span>
-            <span class="c1"># Method 1. Any epoch with at least 1 channel &lt;&gt; threshold</span>
-            <span class="n">epoch_is_art</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">zscores</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-            <span class="c1"># Method 2. Average z-score across channels</span>
-            <span class="c1"># zscores = np.nanmean(zscores, axis=-1)</span>
-            <span class="c1"># epoch_is_art = (np.abs(zscores) &gt; threshold).astype(int)</span>
+            <span class="c1"># Append to global vector</span>
+            <span class="n">epoch_is_art</span><span class="p">[</span><span class="n">where_stage</span><span class="p">]</span> <span class="o">=</span> <span class="n">art</span>
+            <span class="n">zscores</span><span class="p">[</span><span class="n">where_stage</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">zs</span>
 
-    <span class="c1"># Total percentage of epochs rejected</span>
+    <span class="c1"># Mark flat epochs as artefacts</span>
+    <span class="k">if</span> <span class="n">n_flat_epochs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rejecting </span><span class="si">{n_flat_epochs}</span><span class="s2"> epochs with &gt;=50</span><span class="si">% o</span><span class="s2">f channels &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;that are flat.Z-scores set to np.nan for these epochs.&quot;</span><span class="p">)</span>
+        <span class="n">epoch_is_art</span><span class="p">[</span><span class="n">where_flat_epochs</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="c1"># Log total percentage of epochs rejected</span>
     <span class="n">perc_reject</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="n">epoch_is_art</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">n_epochs</span><span class="p">)</span>
-    <span class="n">text</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total: {epoch_is_art.sum()} / </span><span class="si">{n_epochs}</span><span class="s2"> &quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;TOTAL: {epoch_is_art.sum()} / </span><span class="si">{n_epochs}</span><span class="s2"> &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;epochs rejected (</span><span class="si">{perc_reject:.2f}</span><span class="s2">%)&quot;</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="c1"># Convert epoch_is_art to boolean [0, 0, 1] -- &gt; [False, False, True]</span>
+    <span class="n">epoch_is_art</span> <span class="o">=</span> <span class="n">epoch_is_art</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">epoch_is_art</span><span class="p">,</span> <span class="n">zscores</span></div>
 </pre></div>

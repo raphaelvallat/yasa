@@ -34,12 +34,12 @@
 **YASA** (*Yet Another Spindle Algorithm*) is a sleep analysis toolbox in Python. YASA includes several fast and convenient command-line functions to:
 
 * Automatically detect sleep spindles, slow-waves, and rapid eye movements on single and multi-channel EEG data
-* Automatically reject artifact
-* Perform advanced spectral analyses
+* Automatically reject major artifacts on single or multi-channel EEG data
+* Perform advanced spectral analyses: spectral bandpower, phase-amplitude coupling, event-locked analyses, *etc.*
 * Easily manipulate sleep staging vector (hypnogram)
 
-For more details, check out the `API documentation <https://raphaelvallat.com/yasa/build/html/index.html>`_, or try the tutorial
-(`Jupyter Notebooks <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_).
+For more details, check out the `API documentation <https://raphaelvallat.com/yasa/build/html/index.html>`_ or try the
+`tutorial <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_.
 
 Installation
 ~~~~~~~~~~~~
@@ -58,9 +58,9 @@ Installation
 - mne
 - numba
 - scikit-learn
-- `tensorpac <https://etiennecmb.github.io/tensorpac/>`_
-- `pyriemann <https://pyriemann.readthedocs.io/en/latest/api.html>`_
-- `lspopt <https://github.com/hbldh/lspopt>`_
+- `tensorpac <https://etiennecmb.github.io/tensorpac/>`_ (for phase-amplitude coupling)
+- `pyriemann <https://pyriemann.readthedocs.io/en/latest/api.html>`_ (for atifact rejection based on covariance matrices)
+- `lspopt <https://github.com/hbldh/lspopt>`_ (for multitaper spectrogram estimation)
 
 Several functions of YASA are written using `Numba <http://numba.pydata.org/>`_, a just-in-time compiler for Python. This allows to greatly speed up the computation time (typically a few seconds for a full night recording).
 
@@ -84,35 +84,39 @@ API
 
 Check out the `API documentation <https://raphaelvallat.com/yasa/build/html/api.html>`_ for more details on YASA's functions.
 
-Notebooks
----------
+Tutorial
+--------
 
 The examples Jupyter notebooks are really what make YASA great! In addition to showing how to use the main functions of YASA, they also provide an extensive step-by-step description of the detection algorithms, as well as several useful code snippets to analyze and plot your data.
 
 **Spindles**
 
-1. `notebooks/01_spindles_detection.ipynb <notebooks/01_spindles_detection.ipynb>`_: single-channel spindles detection and step-by-step description of the algorithm.
-2. `notebooks/02_spindles_detection_multi.ipynb <notebooks/02_spindles_detection_multi.ipynb>`_: multi-channel spindles detection using MNE data.
-3. `notebooks/03_spindles_detection_NREM_only.ipynb <notebooks/03_spindles_detection_NREM_only.ipynb>`_: spindles detection on NREM sleep only.
-4. `notebooks/04_spindles_slow_fast.ipynb <notebooks/04_spindles_slow_fast.ipynb>`_: slow and fast spindles analysis.
-5. `notebooks/run_visbrain.py <notebooks/run_visbrain.py>`_: interactive display with the Visbrain graphical user interface.
+* `notebooks/01_spindles_detection.ipynb <notebooks/01_spindles_detection.ipynb>`_: single-channel spindles detection and step-by-step description of the algorithm.
+* `notebooks/02_spindles_detection_multi.ipynb <notebooks/02_spindles_detection_multi.ipynb>`_: multi-channel spindles detection using MNE data.
+* `notebooks/03_spindles_detection_NREM_only.ipynb <notebooks/03_spindles_detection_NREM_only.ipynb>`_: spindles detection on NREM sleep only.
+* `notebooks/04_spindles_slow_fast.ipynb <notebooks/04_spindles_slow_fast.ipynb>`_: slow and fast spindles analysis.
+* `notebooks/run_visbrain.py <notebooks/run_visbrain.py>`_: interactive display with the Visbrain graphical user interface.
 
 **Slow-waves**
 
-6. `notebooks/05_sw_detection.ipynb <notebooks/05_sw_detection.ipynb>`_: single-channel slow-waves detection and step-by-step description of the algorithm.
-7. `notebooks/06_sw_detection_multi.ipynb <notebooks/06_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection using MNE data.
+* `notebooks/05_sw_detection.ipynb <notebooks/05_sw_detection.ipynb>`_: single-channel slow-waves detection and step-by-step description of the algorithm.
+* `notebooks/06_sw_detection_multi.ipynb <notebooks/06_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection using MNE data.
 
 **Rapid Eye Movements (REMs)**
 
-9. `notebooks/07_REMs_detection.ipynb <notebooks/07_REMs_detection.ipynb>`_: REMs detection.
+8. `notebooks/07_REMs_detection.ipynb <notebooks/07_REMs_detection.ipynb>`_: REMs detection.
 
 **Spectral analysis**
 
-10. `notebooks/08_bandpower.ipynb <notebooks/08_bandpower.ipynb>`_: spectral bandpower per channel and per sleep stage.
-11. `notebooks/09_IRASA.ipynb <notebooks/09_IRASA.ipynb>`_: separate the aperiodic (= fractal = 1/f) components of the EEG power spectra using the IRASA technique.
-12. `notebooks/10_spectrogram.ipynb <notebooks/10_spectrogram.ipynb>`_: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.
-13. `notebooks/11_nonlinear_features.ipynb <notebooks/11_nonlinear_features.ipynb>`_: extract epoch-based non-linear features of sleep EEG.
-14. `notebooks/12_spindles-SO_coupling.ipynb <notebooks/12_spindles-SO_coupling.ipynb>`_: perform event-locked spindles-SO coupling, as well as data-driven Phase-Amplitude Coupling.
+* `notebooks/08_bandpower.ipynb <notebooks/08_bandpower.ipynb>`_: spectral bandpower per channel and per sleep stage.
+* `notebooks/09_IRASA.ipynb <notebooks/09_IRASA.ipynb>`_: separate the aperiodic (= fractal = 1/f) components of the EEG power spectra using the IRASA technique.
+* `notebooks/10_spectrogram.ipynb <notebooks/10_spectrogram.ipynb>`_: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.
+* `notebooks/11_nonlinear_features.ipynb <notebooks/11_nonlinear_features.ipynb>`_: extract epoch-based non-linear features of sleep EEG.
+* `notebooks/12_spindles-SO_coupling.ipynb <notebooks/12_spindles-SO_coupling.ipynb>`_: perform event-locked spindles-SO coupling, as well as data-driven Phase-Amplitude Coupling.
+
+**Artifact rejection**
+
+* `notebooks/13_artifact_rejection.ipynb <notebooks/13_artifact_rejection.ipynb>`_: automatic artifact rejection on single and multi-channel EEG data.
 
 Typical uses
 ------------

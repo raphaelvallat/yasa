@@ -1580,18 +1580,12 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
 
 
 def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
-               method='covar', threshold=3):
+               method='covar', threshold=3, n_chan_reject=1):
     r"""
     Automatic artifact rejection for single or multi-channel EEG data.
 
     This is still an experimental feature. Expect API-breaking changes in
     future releases.
-
-    .. warning::
-        This function will only detect major body artefacts present on the EEG
-        channel. It will not detect EKG contamination or eye blinks. For more
-        artifact rejection tools, please refer to the `MNE Python package
-        <https://mne.tools/stable/auto_tutorials/preprocessing/plot_10_preprocessing_overview.html>`_.
 
     .. versionadded:: 0.2.0
 
@@ -1645,20 +1639,36 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
         * ``'covar'`` : Covariance-based, default for 4+ channels data
         * ``'std'`` : Standard-deviation-based, default for single-channel data
     threshold : float
-        The number of standard deviation above or below which an
+        The number of standard deviations above or below which an
         epoch is considered an artifact. Higher values will result in a more
         conservative detection, i.e. less rejected epochs.
+    n_chan_reject : int
+        The number of channels that must be below or above ``threshold`` on any
+        given epochs to consider this epoch as an artefact when
+        ``method='covar'``. The default is 1, which means that the epoch will
+        be marked as artifact as soon as one channel is above or below the
+        threshold. This may be too conservative when working with a large
+        number of channels (e.g.hdEEG) in which case users can increase
+        ``n_chan_reject``. Note that this parameter only has an effect
+        when ``method='covar'``.
 
     Returns
     -------
-    epoch_is_art : array_like
+    art_epochs : array_like
         1-D array of shape *(n_epochs)* where 1 = Artefact and 0 = Good.
     zscores : array_like
-        Z-scores.
+        Array of z-scores, shape is *(n_epochs)* if ``method='covar'`` and
+        *(n_epochs, n_chan)* if ``method='std'``.
 
     Notes
     -----
-    .. note::
+    .. caution::
+        This function will only detect major body artefacts present on the EEG
+        channel. It will not detect EKG contamination or eye blinks. For more
+        artifact rejection tools, please refer to the `MNE Python package
+        <https://mne.tools/stable/auto_tutorials/preprocessing/plot_10_preprocessing_overview.html>`_.
+
+    .. tip::
         For best performance, apply this function on pre-staged data and make
         sure to pass the hypnogram.
         Sleep stages have very different EEG signatures
@@ -1731,6 +1741,11 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     27(2), 244–255. https://doi.org/10.1109/TNSRE.2019.2893113
 
     [3] https://pyriemann.readthedocs.io/en/latest/index.html
+
+    Examples
+    --------
+    For an example of how to run the detection, please refer to
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb
     """
     ###########################################################################
     # PREPROCESSING
@@ -1750,6 +1765,9 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     assert data.ndim == 2
     n_chan = data.shape[0]
     n_samples = data.shape[1]
+    assert isinstance(n_chan_reject, int), 'n_chan_reject must be int.'
+    assert n_chan_reject >= 1, 'n_chan_reject must be >= 1.'
+    assert n_chan_reject < n_chan, 'n_chan_reject must be < n_chan.'
 
     # Safety check: sampling frequency and window
     assert isinstance(sf, (int, float)), 'sf must be int or float'
@@ -1779,8 +1797,9 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
         if not np.in1d(hypno, include).any():
             raise ValueError('None of the stages specified in `include` '
                              'are present in hypno.')
-        # Extract downsampled hypnogram
-        hypno_win = hypno[::window]
+        # Extract downsampled hypnogram, using only complete epochs
+        idx_max_full_epoch = int(np.floor(n_samples / window))
+        hypno_win = hypno[::window][:idx_max_full_epoch]
 
     # Safety checks: methods
     assert isinstance(method, str), "method must be a string."
@@ -1788,14 +1807,17 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     if method in ['cov', 'covar', 'covariance', 'riemann', 'potato']:
         method = 'covar'
         try:
-            import pyriemann as pr
+            from pyriemann.estimation import Covariances, Shrinkage
+            from pyriemann.clustering import Potato
         except IOError:  # pragma: no cover
             raise IOError("pyRiemann needs to be installed to use "
                           "`method='covar'`. Please use `pip "
                           "install pyriemann -U`.")
         # Must have at least 4 channels to use method='covar'
-        assert n_chan >= 4, ("Must have at least 4 channels for "
-                             "method='covar'. Please use method='std' instead")
+        if n_chan >= 4:
+            logger.warning("Must have at least 4 channels for method='covar'. "
+                           "Automatically switching to method='std'.")
+            method = 'std'
 
     ###########################################################################
     # START THE REJECTION
@@ -1804,13 +1826,36 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     # Remove flat channels
     isflat = (np.nanstd(data, axis=-1) == 0)
     if isflat.any():
-        logger.warning('Flat channels were found and removed in data')
+        logger.warning('Flat channel(s) were found and removed in data.')
         data = data[~isflat]
         n_chan = data.shape[0]
 
     # Epoch the data (n_epochs, n_chan, n_samples)
     _, epochs = sliding_window(data, sf, window=win_sec)
     n_epochs = epochs.shape[0]
+
+    # We first need to identify epochs with flat data (n_epochs, n_chan)
+    isflat = (epochs == epochs[:, :, 1][..., None]).all(axis=-1)
+    # 1 when all channels are flat, 0 when none ar flat (n_epochs)
+    prop_chan_flat = isflat.sum(axis=-1) / n_chan
+    # If >= 50% of channels are flat, automatically mark as artefact
+    epoch_is_flat = prop_chan_flat >= 0.5
+    where_flat_epochs = np.nonzero(epoch_is_flat)[0]
+    n_flat_epochs = where_flat_epochs.size
+
+    # Now let's make sure that we have an hypnogram and an include variable
+    if 'hypno_win' not in locals():
+        # [-2, -2, -2, -2, ...], where -2 stands for unscored
+        hypno_win = -2 * np.ones(n_epochs, dtype='float')
+        include = np.array([-2], dtype='float')
+
+    # We want to make sure that hypno-win and n_epochs have EXACTLY same shape
+    assert n_epochs == hypno_win.shape[-1], 'Hypno and epochs do not match.'
+
+    # Finally, we make sure not to include any flat epochs in calculation
+    # just using a random number that is unlikely to be picked by users
+    if n_flat_epochs > 0:
+        hypno_win[where_flat_epochs] = -111991
 
     # Add logger info
     logger.info('Number of channels in data = %i', n_chan)
@@ -1824,79 +1869,91 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
 
     # Create empty `hypno_art` vector (1 sample = 1 epoch)
     epoch_is_art = np.zeros(n_epochs, dtype='int')
-    zscores = np.zeros(n_epochs, dtype='float')
 
     if method == 'covar':
-        # Calculate the covariance matrices, shape (n_epochs, n_chan, n_chan)
-        covmats = pr.estimation.Covariances().fit_transform(epochs)
+        # Calculate the covariance matrices,
+        # shape (n_epochs, n_chan, n_chan)
+        covmats = Covariances().fit_transform(epochs)
         # Shrink the covariance matrix (ensure positive semi-definite)
-        covmats = pr.estimation.Shrinkage().fit_transform(covmats)
+        covmats = Shrinkage().fit_transform(covmats)
         # Define Potato instance: 0 = clean, 1 = art
-        potato = pr.clustering.Potato(metric='riemann', threshold=threshold,
-                                      pos_label=0, neg_label=1)
-        if hypno is not None:
-            # Hypno is present
-            for stage in include:
-                where_stage = np.where(hypno_win == stage)[0]
-                # Apply Potato algorithm, extract z-scores and labels
-                zs = potato.fit_transform(covmats[where_stage])
-                art = potato.predict(covmats[where_stage]).astype(int)
+        potato = Potato(metric='riemann', threshold=threshold, pos_label=0,
+                        neg_label=1)
+        # Create empty z-scores output (n_epochs)
+        zscores = np.zeros(n_epochs, dtype='float') * np.nan
+
+        for stage in include:
+            where_stage = np.where(hypno_win == stage)[0]
+            # At least 30 epochs are required to calculate z-scores
+            # which amounts to 2.5 minutes when using 5-seconds window
+            if where_stage.size < 30:
+                if hypno is not None:
+                    # Only show warnig if user actually pass an hypnogram
+                    logger.warn(f"At least 30 epochs are required to calculate"
+                                f"z-score. Skipping stage {stage}")
+                continue
+            # Apply Potato algorithm, extract z-scores and labels
+            zs = potato.fit_transform(covmats[where_stage])
+            art = potato.predict(covmats[where_stage]).astype(int)
+            if hypno is not None:
+                # Only shows if user actually pass an hypnogram
                 perc_reject = 100 * (art.sum() / art.size)
                 text = (f"Stage {stage}: {art.sum()} / {art.size} "
                         f"epochs rejected ({perc_reject:.2f}%)")
                 logger.info(text)
-                # Append to global vector
-                epoch_is_art[where_stage] = art
-                zscores[where_stage] = zs
-        else:
-            # Hypno is not present
-            zscores = potato.fit_transform(covmats)
-            epoch_is_art = potato.predict(covmats).astype(int)
+            # Append to global vector
+            epoch_is_art[where_stage] = art
+            zscores[where_stage] = zs
 
     elif method in ['std', 'sd']:
         # Calculate log-transformed standard dev in each epoch
-        std_epochs = np.log(np.nanstd(epochs, axis=-1))  # (n_epochs, n_chan)
-
-        if hypno is not None:
-
-            # zscores must be of shape (n_epochs, n_chan)
-            zscores = np.zeros((n_epochs, n_chan), dtype='float')
-
-            for stage in include:
-                where_stage = np.where(hypno_win == stage)[0]
-                # Calculate z-scores of STD for each channel x stage
-                c_mean = np.nanmean(std_epochs[where_stage], axis=0,
-                                    keepdims=True)
-                c_std = np.nanstd(std_epochs[where_stage], axis=0,
-                                  keepdims=True)
-                zs = (std_epochs[where_stage] - c_mean) / c_std
-                # Method 1. Any epoch with at least 1 channel <> threshold
-                art = (np.abs(zs) > threshold).any(1).astype(int)
-                # Method 2. Average z-score across channels
-                # avgzs = np.nanmean(zs, axis=-1)
-                # art = (np.abs(avgzs) > threshold).astype(int)
+        # We add 1 to avoid log warning id std is zero (e.g. flat line)
+        # (n_epochs, n_chan)
+        std_epochs = np.log(np.nanstd(epochs, axis=-1) + 1)
+        # Create empty zscores output (n_epochs, n_chan)
+        zscores = np.zeros((n_epochs, n_chan), dtype='float') * np.nan
+        for stage in include:
+            where_stage = np.where(hypno_win == stage)[0]
+            # At least 30 epochs are required to calculate z-scores
+            # which amounts to 2.5 minutes when using 5-seconds window
+            if where_stage.size < 30:
+                if hypno is not None:
+                    # Only show warnig if user actually pass an hypnogram
+                    logger.warn(f"At least 30 epochs are required to calculate"
+                                f"z-score. Skipping stage {stage}")
+                continue
+            # Calculate z-scores of STD for each channel x stage
+            c_mean = np.nanmean(std_epochs[where_stage], axis=0,
+                                keepdims=True)
+            c_std = np.nanstd(std_epochs[where_stage], axis=0,
+                              keepdims=True)
+            zs = (std_epochs[where_stage] - c_mean) / c_std
+            # Any epoch with at least X channel above or below threshold
+            n_chan_supra = (np.abs(zs) > threshold).sum(axis=1)  # >
+            art = (n_chan_supra >= n_chan_reject).astype(int)  # >= !
+            if hypno is not None:
+                # Only shows if user actually pass an hypnogram
                 perc_reject = 100 * (art.sum() / art.size)
                 text = (f"Stage {stage}: {art.sum()} / {art.size} "
                         f"epochs rejected ({perc_reject:.2f}%)")
                 logger.info(text)
-                # Append to global vector
-                epoch_is_art[where_stage] = art
-                zscores[where_stage, :] = zs
-        else:
-            # Calculate z-scores of standard deviations for each channel
-            c_mean = np.nanmean(std_epochs, axis=0, keepdims=True)
-            c_std = np.nanstd(std_epochs, axis=0, keepdims=True)
-            zscores = (std_epochs - c_mean) / c_std
-            # Method 1. Any epoch with at least 1 channel <> threshold
-            epoch_is_art = (np.abs(zscores) > threshold).any(1).astype(int)
-            # Method 2. Average z-score across channels
-            # zscores = np.nanmean(zscores, axis=-1)
-            # epoch_is_art = (np.abs(zscores) > threshold).astype(int)
+            # Append to global vector
+            epoch_is_art[where_stage] = art
+            zscores[where_stage, :] = zs
 
-    # Total percentage of epochs rejected
+    # Mark flat epochs as artefacts
+    if n_flat_epochs > 0:
+        logger.info(f"Rejecting {n_flat_epochs} epochs with >=50% of channels "
+                    f"that are flat.Z-scores set to np.nan for these epochs.")
+        epoch_is_art[where_flat_epochs] = 1
+
+    # Log total percentage of epochs rejected
     perc_reject = 100 * (epoch_is_art.sum() / n_epochs)
     text = (f"TOTAL: {epoch_is_art.sum()} / {n_epochs} "
             f"epochs rejected ({perc_reject:.2f}%)")
     logger.info(text)
 
-    return epoch_is_art.astype(bool), zscores
+    # Convert epoch_is_art to boolean [0, 0, 1] -- > [False, False, True]
+    epoch_is_art = epoch_is_art.astype(bool)
+
+    return epoch_is_art, zscores
