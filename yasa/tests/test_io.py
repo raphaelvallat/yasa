@@ -1,4 +1,5 @@
 """Test I/O."""
+import pytest
 import logging
 import unittest
 from yasa.io import (set_log_level, is_tensorpac_installed,
@@ -18,6 +19,8 @@ class TestIO(unittest.TestCase):
         set_log_level(False)
         set_log_level(True)
         set_log_level(None)
+        with pytest.raises(ValueError):
+            set_log_level('WRONG')
 
     def test_logger(self):
         """Test logger levels."""
