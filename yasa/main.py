@@ -1884,7 +1884,7 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
         from pyriemann.estimation import Covariances, Shrinkage
         from pyriemann.clustering import Potato
         # Must have at least 4 channels to use method='covar'
-        if n_chan >= 4:
+        if n_chan <= 4:
             logger.warning("Must have at least 4 channels for method='covar'. "
                            "Automatically switching to method='std'.")
             method = 'std'
@@ -1892,7 +1892,6 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     ###########################################################################
     # START THE REJECTION
     ###########################################################################
-
     # Remove flat channels
     isflat = (np.nanstd(data, axis=-1) == 0)
     if isflat.any():
@@ -1947,8 +1946,9 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
         # Shrink the covariance matrix (ensure positive semi-definite)
         covmats = Shrinkage().fit_transform(covmats)
         # Define Potato instance: 0 = clean, 1 = art
+        # To increase speed we set the max number of iterations from 10 to 100
         potato = Potato(metric='riemann', threshold=threshold, pos_label=0,
-                        neg_label=1)
+                        neg_label=1, n_iter_max=10)
         # Create empty z-scores output (n_epochs)
         zscores = np.zeros(n_epochs, dtype='float') * np.nan
 

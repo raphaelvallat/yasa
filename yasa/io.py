@@ -20,7 +20,7 @@ def set_log_level(verbose=None):
         The verbosity of messages to print. If a str, it can be either
         PROFILER, DEBUG, INFO, WARNING, ERROR, or CRITICAL.
     """
-    logger = logging.getLogger('tensorpac')
+    logger = logging.getLogger('yasa')
     if isinstance(verbose, bool):
         verbose = 'INFO' if verbose else 'WARNING'
     if isinstance(verbose, str):
