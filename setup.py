@@ -16,15 +16,14 @@ VERSION = '0.2.0'
 PACKAGE_DATA = {'yasa.data.icons': ['*.svg']}
 
 INSTALL_REQUIRES = [
-    'numpy>=1.15',
-    'scipy>=1.1',
-    'pandas>=0.23',
-    'matplotlib>=3.0.2',
-    'seaborn>=0.9.0',
+    'numpy',
+    'scipy',
+    'pandas',
+    'matplotlib',
     'mne>=0.19.0',
     'numba>=0.39.0',
     'scikit-learn>=0.20',
-    'tensorpac>=0.6.2',
+    'tensorpac>=0.6.3',
     'pyriemann',
     'lspopt'
 ]
