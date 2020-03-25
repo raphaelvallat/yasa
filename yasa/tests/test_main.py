@@ -184,9 +184,7 @@ class TestStringMethods(unittest.TestCase):
         assert sp is None
 
         # Now we try with the isolation forest on the full recording
-        with self.assertLogs('yasa', level='INFO'):
-            sp = spindles_detect(data_full[1, :], sf_full,
-                                 remove_outliers=True)
+        sp = spindles_detect(data_full[1, :], sf_full, remove_outliers=True)
         assert sp.shape[0] > 100
 
         with pytest.raises(AssertionError):
