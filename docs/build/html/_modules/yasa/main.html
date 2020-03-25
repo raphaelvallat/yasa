@@ -104,11 +104,12 @@
 <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
 <span class="kn">from</span> <span class="nn">scipy.fftpack</span> <span class="kn">import</span> <span class="n">next_fast_len</span>
 
-
+<span class="kn">from</span> <span class="nn">.spectral</span> <span class="kn">import</span> <span class="n">stft_power</span>
 <span class="kn">from</span> <span class="nn">.numba</span> <span class="kn">import</span> <span class="n">_detrend</span><span class="p">,</span> <span class="n">_rms</span>
+<span class="kn">from</span> <span class="nn">.io</span> <span class="kn">import</span> <span class="n">set_log_level</span><span class="p">,</span> <span class="n">is_tensorpac_installed</span><span class="p">,</span> <span class="n">is_pyriemann_installed</span>
 <span class="kn">from</span> <span class="nn">.others</span> <span class="kn">import</span> <span class="p">(</span><span class="n">moving_transform</span><span class="p">,</span> <span class="n">trimbothstd</span><span class="p">,</span> <span class="n">_zerocrossings</span><span class="p">,</span>
                      <span class="n">get_centered_indices</span><span class="p">,</span> <span class="n">sliding_window</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">.spectral</span> <span class="kn">import</span> <span class="n">stft_power</span>
+
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;yasa&#39;</span><span class="p">)</span>
 
@@ -346,7 +347,7 @@
                     <span class="n">duration</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">freq_broad</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="n">min_distance</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
                     <span class="n">downsample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="mf">0.65</span><span class="p">,</span>
                     <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">},</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">coupling</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                    <span class="n">freq_so</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.25</span><span class="p">)):</span>
+                    <span class="n">freq_so</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.25</span><span class="p">),</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Spindles detection.</span>
 
 <span class="sd">    Parameters</span>
@@ -456,6 +457,14 @@
 
 <span class="sd">        .. versionadded:: 0.1.9</span>
 
+<span class="sd">    verbose : bool or str</span>
+<span class="sd">        Verbose level. Default (False) will only print warning and error</span>
+<span class="sd">        messages. The logging levels are &#39;debug&#39;, &#39;info&#39;, &#39;warning&#39;, &#39;error&#39;,</span>
+<span class="sd">        and &#39;critical&#39;. For most users the choice is between &#39;info&#39;</span>
+<span class="sd">        (or ``verbose=True``) and warning (``verbose=False``).</span>
+
+<span class="sd">        .. versionadded:: 0.2.0</span>
+
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    sp_params : :py:class:`pandas.DataFrame`</span>
@@ -481,7 +490,17 @@
 
 <span class="sd">    For an example on how to run the detection, please refer to</span>
 <span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    The sleep spindles detection algorithm is based on:</span>
+
+<span class="sd">    * Lacourse, K., Delfrate, J., Beaudry, J., Peppard, P., &amp; Warby, S. C.</span>
+<span class="sd">      (2018). `A sleep spindle detection algorithm that emulates human expert</span>
+<span class="sd">      spindle scoring. &lt;https://doi.org/10.1016/j.jneumeth.2018.08.014&gt;`_</span>
+<span class="sd">      Journal of Neuroscience Methods.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">set_log_level</span><span class="p">(</span><span class="n">verbose</span><span class="p">)</span>
     <span class="c1"># Safety check</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
@@ -823,9 +842,9 @@
 <span class="sd">            &#39;Channel&#39; : Channel name</span>
 <span class="sd">            &#39;IdxChannel&#39; : Integer index of channel in data</span>
 
-<span class="sd">    Notes</span>
-<span class="sd">    -----</span>
-<span class="sd">    For an example of how to run the detection, please refer to</span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    For an example of how to run the detection, please refer to the tutorial:</span>
 <span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/02_spindles_detection_multi.ipynb</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Check if input data is a MNE Raw object</span>
@@ -883,7 +902,8 @@
 <div class="viewcode-block" id="sw_detect"><a class="viewcode-back" href="../../generated/yasa.sw_detect.html#yasa.sw_detect">[docs]</a><span class="k">def</span> <span class="nf">sw_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">freq_sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
               <span class="n">dur_neg</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">dur_pos</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">amp_neg</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">300</span><span class="p">),</span>
               <span class="n">amp_pos</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span> <span class="n">amp_ptp</span><span class="o">=</span><span class="p">(</span><span class="mi">75</span><span class="p">,</span> <span class="mi">500</span><span class="p">),</span> <span class="n">downsample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-              <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">coupling</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">freq_sp</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">)):</span>
+              <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">coupling</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">freq_sp</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span>
+              <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Slow-waves detection.</span>
 
 <span class="sd">    Parameters</span>
@@ -1007,6 +1027,13 @@
 
 <span class="sd">        .. versionadded:: 0.2.0</span>
 
+<span class="sd">    verbose : bool or str</span>
+<span class="sd">        Verbose level. Default (False) will only print warning and error</span>
+<span class="sd">        messages. The logging levels are &#39;debug&#39;, &#39;info&#39;, &#39;warning&#39;, &#39;error&#39;,</span>
+<span class="sd">        and &#39;critical&#39;. For most users the choice is between &#39;info&#39;</span>
+<span class="sd">        (or ``verbose=True``) and warning (``verbose=False``).</span>
+
+<span class="sd">        .. versionadded:: 0.2.0</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1035,9 +1062,27 @@
 <span class="sd">    Note that the ``PTP``, ``Slope``, ``ValNegPeak`` and ``ValPosPeak`` are</span>
 <span class="sd">    all computed on the filtered signal.</span>
 
-<span class="sd">    For an example of how to run the detection, please refer to</span>
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    The slow-waves detection algorithm is based on:</span>
+
+<span class="sd">    * Massimini, M., Huber, R., Ferrarelli, F., Hill, S., &amp; Tononi, G.</span>
+<span class="sd">      (2004). `The sleep slow oscillation as a traveling wave.</span>
+<span class="sd">      &lt;https://doi.org/10.1523/JNEUROSCI.1318-04.2004&gt;`_. The Journal of</span>
+<span class="sd">      Neuroscience, 24(31), 6862–6870.</span>
+
+<span class="sd">    * Carrier, J., Viens, I., Poirier, G., Robillard, R., Lafortune, M.,</span>
+<span class="sd">      Vandewalle, G., Martin, N., Barakat, M., Paquet, J., &amp; Filipini, D.</span>
+<span class="sd">      (2011). `Sleep slow wave changes during the middle years of life.</span>
+<span class="sd">      &lt;https://doi.org/10.1111/j.1460-9568.2010.07543.x&gt;`_</span>
+<span class="sd">      The European Journal of Neuroscience, 33(4), 758–766.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    For an example of how to run the detection, please refer to the tutorial:</span>
 <span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">set_log_level</span><span class="p">(</span><span class="n">verbose</span><span class="p">)</span>
     <span class="c1"># Safety check</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
@@ -1241,12 +1286,8 @@
     <span class="c1"># Add phase (in radians) of slow-oscillation signal at maximum</span>
     <span class="c1"># spindles-related sigma amplitude within a 4-seconds centered epochs.</span>
     <span class="k">if</span> <span class="n">coupling</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="kn">import</span> <span class="nn">tensorpac.methods</span> <span class="k">as</span> <span class="nn">tpm</span>
-        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
-            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;tensorpac needs to be installed. Please use `pip &quot;</span>
-                          <span class="s2">&quot;install tensorpac -U`.&quot;</span><span class="p">)</span>
-
+        <span class="n">is_tensorpac_installed</span><span class="p">()</span>
+        <span class="kn">import</span> <span class="nn">tensorpac.methods</span> <span class="k">as</span> <span class="nn">tpm</span>
         <span class="c1"># Get Phase and Amplitude for each centered epoch</span>
         <span class="n">time_before</span> <span class="o">=</span> <span class="n">time_after</span> <span class="o">=</span> <span class="mi">2</span>
         <span class="n">bef</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sf</span> <span class="o">*</span> <span class="n">time_before</span><span class="p">)</span>
@@ -1402,7 +1443,7 @@
 
 <div class="viewcode-block" id="rem_detect"><a class="viewcode-back" href="../../generated/yasa.rem_detect.html#yasa.rem_detect">[docs]</a><span class="k">def</span> <span class="nf">rem_detect</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">roc</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">325</span><span class="p">),</span>
                <span class="n">duration</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">),</span> <span class="n">freq_rem</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">downsample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-               <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+               <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Rapid Eye Movements (REMs) detection.</span>
 
 <span class="sd">    This detection requires both the left EOG (LOC) and right EOG (LOC).</span>
@@ -1470,6 +1511,13 @@
 <span class="sd">        YASA uses a random seed (42) to ensure reproducible results.</span>
 <span class="sd">        Note that this step will only be applied if there are more than</span>
 <span class="sd">        50 detected REMs in the first place. Default to False.</span>
+<span class="sd">    verbose : bool or str</span>
+<span class="sd">        Verbose level. Default (False) will only print warning and error</span>
+<span class="sd">        messages. The logging levels are &#39;debug&#39;, &#39;info&#39;, &#39;warning&#39;, &#39;error&#39;,</span>
+<span class="sd">        and &#39;critical&#39;. For most users the choice is between &#39;info&#39;</span>
+<span class="sd">        (or ``verbose=True``) and warning (``verbose=False``).</span>
+
+<span class="sd">        .. versionadded:: 0.2.0</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1497,7 +1545,23 @@
 
 <span class="sd">    For an example of how to run the detection, please refer to</span>
 <span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    The rapid eye movements detection algorithm is based on:</span>
+
+<span class="sd">    * Agarwal, R., Takeuchi, T., Laroche, S., &amp; Gotman, J. (2005).</span>
+<span class="sd">      `Detection of rapid-eye movements in sleep studies.</span>
+<span class="sd">      &lt;https://doi.org/10.1109/TBME.2005.851512&gt;`_</span>
+<span class="sd">      IEEE Transactions on Bio-Medical Engineering, 52(8), 1390–1396.</span>
+
+<span class="sd">    * Yetton, B. D., Niknazar, M., Duggan, K. A., McDevitt, E. A., Whitehurst,</span>
+<span class="sd">      L. N., Sattari, N., &amp; Mednick, S. C. (2016). `Automatic detection of</span>
+<span class="sd">      rapid eye movements (REMs): A machine learning approach.</span>
+<span class="sd">      &lt;https://doi.org/10.1016/j.jneumeth.2015.11.015&gt;`_</span>
+<span class="sd">      Journal of Neuroscience Methods, 259, 72–82.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">set_log_level</span><span class="p">(</span><span class="n">verbose</span><span class="p">)</span>
     <span class="c1"># Safety checks</span>
     <span class="n">loc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">))</span>
     <span class="n">roc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">roc</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">))</span>
@@ -1668,7 +1732,7 @@
 
 
 <div class="viewcode-block" id="art_detect"><a class="viewcode-back" href="../../generated/yasa.art_detect.html#yasa.art_detect">[docs]</a><span class="k">def</span> <span class="nf">art_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>
-               <span class="n">method</span><span class="o">=</span><span class="s1">&#39;covar&#39;</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">n_chan_reject</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+               <span class="n">method</span><span class="o">=</span><span class="s1">&#39;covar&#39;</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">n_chan_reject</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Automatic artifact rejection for single or multi-channel EEG data.</span>
 
@@ -1739,6 +1803,13 @@
 <span class="sd">        number of channels (e.g.hdEEG) in which case users can increase</span>
 <span class="sd">        ``n_chan_reject``. Note that this parameter only has an effect</span>
 <span class="sd">        when ``method=&#39;covar&#39;``.</span>
+<span class="sd">    verbose : bool or str</span>
+<span class="sd">        Verbose level. Default (False) will only print warning and error</span>
+<span class="sd">        messages. The logging levels are &#39;debug&#39;, &#39;info&#39;, &#39;warning&#39;, &#39;error&#39;,</span>
+<span class="sd">        and &#39;critical&#39;. For most users the choice is between &#39;info&#39;</span>
+<span class="sd">        (or ``verbose=True``) and warning (``verbose=False``).</span>
+
+<span class="sd">        .. versionadded:: 0.2.0</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1817,18 +1888,20 @@
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
-<span class="sd">    [1] Barachant, A., Andreev, A., &amp; Congedo, M. (2013). The Riemannian</span>
-<span class="sd">    Potato: an automatic and adaptive artifact detection method for online</span>
-<span class="sd">    experiments using Riemannian geometry. TOBI Workshop lV, 19–20.</span>
-<span class="sd">    https://hal.archives-ouvertes.fr/hal-00781701/</span>
+<span class="sd">    * Barachant, A., Andreev, A., &amp; Congedo, M. (2013). `The Riemannian</span>
+<span class="sd">      Potato: an automatic and adaptive artifact detection method for online</span>
+<span class="sd">      experiments using Riemannian geometry.</span>
+<span class="sd">      &lt;https://hal.archives-ouvertes.fr/hal-00781701/&gt;`_ TOBI</span>
+<span class="sd">      Workshop lV, 19–20.</span>
 
-<span class="sd">    [2] Barthélemy, Q., Mayaud, L., Ojeda, D., &amp; Congedo, M. (2019).</span>
-<span class="sd">    The Riemannian Potato Field: A Tool for Online Signal Quality Index of</span>
-<span class="sd">    EEG. IEEE Transactions on Neural Systems and Rehabilitation Engineering:</span>
-<span class="sd">    A Publication of the IEEE Engineering in Medicine and Biology Society,</span>
-<span class="sd">    27(2), 244–255. https://doi.org/10.1109/TNSRE.2019.2893113</span>
+<span class="sd">    * Barthélemy, Q., Mayaud, L., Ojeda, D., &amp; Congedo, M. (2019).</span>
+<span class="sd">      `The Riemannian Potato Field: A Tool for Online Signal Quality Index of</span>
+<span class="sd">      EEG. &lt;https://doi.org/10.1109/TNSRE.2019.2893113&gt;`_</span>
+<span class="sd">      IEEE Transactions on Neural Systems and Rehabilitation Engineering:</span>
+<span class="sd">      A Publication of the IEEE Engineering in Medicine and Biology Society,</span>
+<span class="sd">      27(2), 244–255.</span>
 
-<span class="sd">    [3] https://pyriemann.readthedocs.io/en/latest/index.html</span>
+<span class="sd">    * https://pyriemann.readthedocs.io/en/latest/index.html</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -1838,6 +1911,7 @@
     <span class="c1">###########################################################################</span>
     <span class="c1"># PREPROCESSING</span>
     <span class="c1">###########################################################################</span>
+    <span class="n">set_log_level</span><span class="p">(</span><span class="n">verbose</span><span class="p">)</span>
     <span class="c1"># Check if input data is a MNE Raw object</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">BaseRaw</span><span class="p">):</span>
         <span class="n">sf</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;sfreq&#39;</span><span class="p">]</span>  <span class="c1"># Extract sampling frequency</span>
@@ -1855,7 +1929,7 @@
     <span class="n">n_samples</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n_chan_reject</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="s1">&#39;n_chan_reject must be int.&#39;</span>
     <span class="k">assert</span> <span class="n">n_chan_reject</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;n_chan_reject must be &gt;= 1.&#39;</span>
-    <span class="k">assert</span> <span class="n">n_chan_reject</span> <span class="o">&lt;</span> <span class="n">n_chan</span><span class="p">,</span> <span class="s1">&#39;n_chan_reject must be &lt; n_chan.&#39;</span>
+    <span class="k">assert</span> <span class="n">n_chan_reject</span> <span class="o">&lt;=</span> <span class="n">n_chan</span><span class="p">,</span> <span class="s1">&#39;n_chan_reject must be &lt;= n_chan.&#39;</span>
 
     <span class="c1"># Safety check: sampling frequency and window</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s1">&#39;sf must be int or float&#39;</span>
@@ -1894,13 +1968,9 @@
     <span class="n">method</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;cov&#39;</span><span class="p">,</span> <span class="s1">&#39;covar&#39;</span><span class="p">,</span> <span class="s1">&#39;covariance&#39;</span><span class="p">,</span> <span class="s1">&#39;riemann&#39;</span><span class="p">,</span> <span class="s1">&#39;potato&#39;</span><span class="p">]:</span>
         <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;covar&#39;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">pyriemann.estimation</span> <span class="kn">import</span> <span class="n">Covariances</span><span class="p">,</span> <span class="n">Shrinkage</span>
-            <span class="kn">from</span> <span class="nn">pyriemann.clustering</span> <span class="kn">import</span> <span class="n">Potato</span>
-        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
-            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;pyRiemann needs to be installed to use &quot;</span>
-                          <span class="s2">&quot;`method=&#39;covar&#39;`. Please use `pip &quot;</span>
-                          <span class="s2">&quot;install pyriemann -U`.&quot;</span><span class="p">)</span>
+        <span class="n">is_pyriemann_installed</span><span class="p">()</span>
+        <span class="kn">from</span> <span class="nn">pyriemann.estimation</span> <span class="kn">import</span> <span class="n">Covariances</span><span class="p">,</span> <span class="n">Shrinkage</span>
+        <span class="kn">from</span> <span class="nn">pyriemann.clustering</span> <span class="kn">import</span> <span class="n">Potato</span>
         <span class="c1"># Must have at least 4 channels to use method=&#39;covar&#39;</span>
         <span class="k">if</span> <span class="n">n_chan</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Must have at least 4 channels for method=&#39;covar&#39;. &quot;</span>
@@ -1977,8 +2047,9 @@
             <span class="k">if</span> <span class="n">where_stage</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">30</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="c1"># Only show warnig if user actually pass an hypnogram</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;At least 30 epochs are required to calculate&quot;</span>
-                                <span class="sa">f</span><span class="s2">&quot;z-score. Skipping stage </span><span class="si">{stage}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;At least 30 epochs are required to &quot;</span>
+                                   <span class="sa">f</span><span class="s2">&quot;calculate z-score. Skipping &quot;</span>
+                                   <span class="sa">f</span><span class="s2">&quot;stage </span><span class="si">{stage}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="k">continue</span>
             <span class="c1"># Apply Potato algorithm, extract z-scores and labels</span>
             <span class="n">zs</span> <span class="o">=</span> <span class="n">potato</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">covmats</span><span class="p">[</span><span class="n">where_stage</span><span class="p">])</span>
@@ -2007,8 +2078,9 @@
             <span class="k">if</span> <span class="n">where_stage</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">30</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="c1"># Only show warnig if user actually pass an hypnogram</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;At least 30 epochs are required to calculate&quot;</span>
-                                <span class="sa">f</span><span class="s2">&quot;z-score. Skipping stage </span><span class="si">{stage}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;At least 30 epochs are required to &quot;</span>
+                                   <span class="sa">f</span><span class="s2">&quot;calculate z-score. Skipping &quot;</span>
+                                   <span class="sa">f</span><span class="s2">&quot;stage </span><span class="si">{stage}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="k">continue</span>
             <span class="c1"># Calculate z-scores of STD for each channel x stage</span>
             <span class="n">c_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">std_epochs</span><span class="p">[</span><span class="n">where_stage</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>

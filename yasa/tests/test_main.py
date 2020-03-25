@@ -126,7 +126,7 @@ class TestStringMethods(unittest.TestCase):
             spindles_detect(data, sf, freq_sp=s, duration=d,
                             freq_broad=b, min_distance=m)
 
-        sp_params = spindles_detect(data, sf)
+        sp_params = spindles_detect(data, sf, verbose=True)
         print(sp_params.round(2))
         assert spindles_detect(data, sf).shape[0] == 2
 
@@ -137,7 +137,7 @@ class TestStringMethods(unittest.TestCase):
 
         # Test with disabled thresholds
         spindles_detect(data, sf, thresh={'rel_pow': None}, coupling=True)
-        spindles_detect(data, sf, thresh={'corr': None})
+        spindles_detect(data, sf, thresh={'corr': None}, verbose='debug')
         spindles_detect(data, sf, thresh={'rms': None})
         spindles_detect(data, sf, thresh={'rms': None, 'corr': None})
         spindles_detect(data, sf, thresh={'rms': None, 'rel_pow': None})
@@ -216,7 +216,8 @@ class TestStringMethods(unittest.TestCase):
 
         # Using a MNE raw object (and disabling one threshold)
         spindles_detect_multi(data_mne, thresh={'corr': None, 'rms': 3})
-        spindles_detect_multi(data_mne, hypno=hypno_mne, include=2)
+        spindles_detect_multi(data_mne, hypno=hypno_mne, include=2,
+                              verbose=True)
 
         # Now we replace one channel with no spindle / bad data
         data_full[1, :] = np.random.random(data_full.shape[1])
@@ -260,7 +261,7 @@ class TestStringMethods(unittest.TestCase):
         sw_detect(data_sw, sf_full, hypno=hypno_sw, coupling=True)
 
         # With 2D data
-        sw_detect(data_sw[np.newaxis, ...], sf_full)
+        sw_detect(data_sw[np.newaxis, ...], sf_full, verbose='INFO')
 
         # Downsampling with hypnogram
         data_sw_200 = resample(data_sw, up=2)
@@ -337,7 +338,7 @@ class TestStringMethods(unittest.TestCase):
                        amplitude=am, downsample=ds)
 
         # With isolation forest
-        df_rem = rem_detect(loc, roc, sf)
+        df_rem = rem_detect(loc, roc, sf, verbose='info')
         df_rem2 = rem_detect(loc, roc, sf, remove_outliers=True)
         assert df_rem.shape[0] > df_rem2.shape[0]
         assert get_bool_vector(loc, sf, df_rem).size == loc.size
@@ -393,7 +394,7 @@ class TestStringMethods(unittest.TestCase):
                         threshold=10)
         # Single channel
         art_detect(data_9[0], 100, window=10, method='covar')
-        art_detect(data_9[0], 100, window=5, method='std')
+        art_detect(data_9[0], 100, window=5, method='std', verbose=True)
 
         # Not enough epochs for stage
         hypno_9[:100] = 6
@@ -405,7 +406,8 @@ class TestStringMethods(unittest.TestCase):
         art_detect(data_with_flat, sf, method='std', n_chan_reject=5)
 
         # Using a MNE raw object
-        art_detect(data_mne, window=10., hypno=hypno_mne, method='covar')
+        art_detect(data_mne, window=10., hypno=hypno_mne, method='covar',
+                   verbose='INFO')
 
         with pytest.raises(ValueError):
             # None of include in hypno

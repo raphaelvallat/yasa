@@ -89,7 +89,7 @@
 <h1>yasa.sw_detect</h1>
 <dl class="function">
 <dt id="yasa.sw_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sw_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(2</em>, <em class="sig-param">3)</em>, <em class="sig-param">freq_sw=(0.3</em>, <em class="sig-param">2)</em>, <em class="sig-param">dur_neg=(0.3</em>, <em class="sig-param">1.5)</em>, <em class="sig-param">dur_pos=(0.1</em>, <em class="sig-param">1)</em>, <em class="sig-param">amp_neg=(40</em>, <em class="sig-param">300)</em>, <em class="sig-param">amp_pos=(10</em>, <em class="sig-param">200)</em>, <em class="sig-param">amp_ptp=(75</em>, <em class="sig-param">500)</em>, <em class="sig-param">downsample=True</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">coupling=False</em>, <em class="sig-param">freq_sp=(12</em>, <em class="sig-param">16)</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#sw_detect"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sw_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(2</em>, <em class="sig-param">3)</em>, <em class="sig-param">freq_sw=(0.3</em>, <em class="sig-param">2)</em>, <em class="sig-param">dur_neg=(0.3</em>, <em class="sig-param">1.5)</em>, <em class="sig-param">dur_pos=(0.1</em>, <em class="sig-param">1)</em>, <em class="sig-param">amp_neg=(40</em>, <em class="sig-param">300)</em>, <em class="sig-param">amp_pos=(10</em>, <em class="sig-param">200)</em>, <em class="sig-param">amp_ptp=(75</em>, <em class="sig-param">500)</em>, <em class="sig-param">downsample=True</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">coupling=False</em>, <em class="sig-param">freq_sp=(12</em>, <em class="sig-param">16)</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#sw_detect"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Slow-waves detection.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
@@ -210,6 +210,14 @@ bandwidth of 1.5 Hz.</p>
 <p><span class="versionmodified added">New in version 0.2.0.</span></p>
 </div>
 </dd>
+<dt><strong>verbose</strong><span class="classifier">bool or str</span></dt><dd><p>Verbose level. Default (False) will only print warning and error
+messages. The logging levels are ‘debug’, ‘info’, ‘warning’, ‘error’,
+and ‘critical’. For most users the choice is between ‘info’
+(or <code class="docutils literal notranslate"><span class="pre">verbose=True</span></code>) and warning (<code class="docutils literal notranslate"><span class="pre">verbose=False</span></code>).</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.2.0.</span></p>
+</div>
+</dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -239,7 +247,19 @@ bandwidth of 1.5 Hz.</p>
 <p>For better results, apply this detection only on artefact-free NREM sleep.</p>
 <p>Note that the <code class="docutils literal notranslate"><span class="pre">PTP</span></code>, <code class="docutils literal notranslate"><span class="pre">Slope</span></code>, <code class="docutils literal notranslate"><span class="pre">ValNegPeak</span></code> and <code class="docutils literal notranslate"><span class="pre">ValPosPeak</span></code> are
 all computed on the filtered signal.</p>
-<p>For an example of how to run the detection, please refer to
+<p class="rubric">References</p>
+<p>The slow-waves detection algorithm is based on:</p>
+<ul class="simple">
+<li><p>Massimini, M., Huber, R., Ferrarelli, F., Hill, S., &amp; Tononi, G.
+(2004). <a class="reference external" href="https://doi.org/10.1523/JNEUROSCI.1318-04.2004">The sleep slow oscillation as a traveling wave.</a>. The Journal of
+Neuroscience, 24(31), 6862–6870.</p></li>
+<li><p>Carrier, J., Viens, I., Poirier, G., Robillard, R., Lafortune, M.,
+Vandewalle, G., Martin, N., Barakat, M., Paquet, J., &amp; Filipini, D.
+(2011). <a class="reference external" href="https://doi.org/10.1111/j.1460-9568.2010.07543.x">Sleep slow wave changes during the middle years of life.</a>
+The European Journal of Neuroscience, 33(4), 758–766.</p></li>
+</ul>
+<p class="rubric">Examples</p>
+<p>For an example of how to run the detection, please refer to the tutorial:
 <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb">https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb</a></p>
 </dd></dl>
 

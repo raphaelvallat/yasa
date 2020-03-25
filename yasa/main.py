@@ -16,11 +16,12 @@ from collections import OrderedDict
 from scipy.interpolate import interp1d
 from scipy.fftpack import next_fast_len
 
-
+from .spectral import stft_power
 from .numba import _detrend, _rms
+from .io import set_log_level, is_tensorpac_installed, is_pyriemann_installed
 from .others import (moving_transform, trimbothstd, _zerocrossings,
                      get_centered_indices, sliding_window)
-from .spectral import stft_power
+
 
 logger = logging.getLogger('yasa')
 
@@ -258,7 +259,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
                     duration=(0.5, 2), freq_broad=(1, 30), min_distance=500,
                     downsample=True, thresh={'rel_pow': 0.2, 'corr': 0.65,
                     'rms': 1.5}, remove_outliers=False, coupling=False,
-                    freq_so=(0.1, 1.25)):
+                    freq_so=(0.1, 1.25), verbose=False):
     """Spindles detection.
 
     Parameters
@@ -368,6 +369,14 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
 
         .. versionadded:: 0.1.9
 
+    verbose : bool or str
+        Verbose level. Default (False) will only print warning and error
+        messages. The logging levels are 'debug', 'info', 'warning', 'error',
+        and 'critical'. For most users the choice is between 'info'
+        (or ``verbose=True``) and warning (``verbose=False``).
+
+        .. versionadded:: 0.2.0
+
     Returns
     -------
     sp_params : :py:class:`pandas.DataFrame`
@@ -393,7 +402,17 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
 
     For an example on how to run the detection, please refer to
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb
+
+    References
+    ----------
+    The sleep spindles detection algorithm is based on:
+
+    * Lacourse, K., Delfrate, J., Beaudry, J., Peppard, P., & Warby, S. C.
+      (2018). `A sleep spindle detection algorithm that emulates human expert
+      spindle scoring. <https://doi.org/10.1016/j.jneumeth.2018.08.014>`_
+      Journal of Neuroscience Methods.
     """
+    set_log_level(verbose)
     # Safety check
     data = np.asarray(data, dtype=np.float64)
     if data.ndim == 2:
@@ -735,9 +754,9 @@ def spindles_detect_multi(data, sf=None, ch_names=None, multi_only=False,
             'Channel' : Channel name
             'IdxChannel' : Integer index of channel in data
 
-    Notes
-    -----
-    For an example of how to run the detection, please refer to
+    Examples
+    --------
+    For an example of how to run the detection, please refer to the tutorial:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/02_spindles_detection_multi.ipynb
     """
     # Check if input data is a MNE Raw object
@@ -795,7 +814,8 @@ def spindles_detect_multi(data, sf=None, ch_names=None, multi_only=False,
 def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 2),
               dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 300),
               amp_pos=(10, 200), amp_ptp=(75, 500), downsample=True,
-              remove_outliers=False, coupling=False, freq_sp=(12, 16)):
+              remove_outliers=False, coupling=False, freq_sp=(12, 16),
+              verbose=False):
     """Slow-waves detection.
 
     Parameters
@@ -919,6 +939,13 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 2),
 
         .. versionadded:: 0.2.0
 
+    verbose : bool or str
+        Verbose level. Default (False) will only print warning and error
+        messages. The logging levels are 'debug', 'info', 'warning', 'error',
+        and 'critical'. For most users the choice is between 'info'
+        (or ``verbose=True``) and warning (``verbose=False``).
+
+        .. versionadded:: 0.2.0
 
     Returns
     -------
@@ -947,9 +974,27 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 2),
     Note that the ``PTP``, ``Slope``, ``ValNegPeak`` and ``ValPosPeak`` are
     all computed on the filtered signal.
 
-    For an example of how to run the detection, please refer to
+    References
+    ----------
+    The slow-waves detection algorithm is based on:
+
+    * Massimini, M., Huber, R., Ferrarelli, F., Hill, S., & Tononi, G.
+      (2004). `The sleep slow oscillation as a traveling wave.
+      <https://doi.org/10.1523/JNEUROSCI.1318-04.2004>`_. The Journal of
+      Neuroscience, 24(31), 6862–6870.
+
+    * Carrier, J., Viens, I., Poirier, G., Robillard, R., Lafortune, M.,
+      Vandewalle, G., Martin, N., Barakat, M., Paquet, J., & Filipini, D.
+      (2011). `Sleep slow wave changes during the middle years of life.
+      <https://doi.org/10.1111/j.1460-9568.2010.07543.x>`_
+      The European Journal of Neuroscience, 33(4), 758–766.
+
+    Examples
+    --------
+    For an example of how to run the detection, please refer to the tutorial:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb
     """
+    set_log_level(verbose)
     # Safety check
     data = np.asarray(data, dtype=np.float64)
     if data.ndim == 2:
@@ -1153,12 +1198,8 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 2),
     # Add phase (in radians) of slow-oscillation signal at maximum
     # spindles-related sigma amplitude within a 4-seconds centered epochs.
     if coupling:
-        try:
-            import tensorpac.methods as tpm
-        except IOError:  # pragma: no cover
-            raise IOError("tensorpac needs to be installed. Please use `pip "
-                          "install tensorpac -U`.")
-
+        is_tensorpac_installed()
+        import tensorpac.methods as tpm
         # Get Phase and Amplitude for each centered epoch
         time_before = time_after = 2
         bef = int(sf * time_before)
@@ -1314,7 +1355,7 @@ def sw_detect_multi(data, sf=None, ch_names=None, **kwargs):
 
 def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
                duration=(0.3, 1.2), freq_rem=(0.5, 5), downsample=True,
-               remove_outliers=False):
+               remove_outliers=False, verbose=False):
     """Rapid Eye Movements (REMs) detection.
 
     This detection requires both the left EOG (LOC) and right EOG (LOC).
@@ -1382,6 +1423,13 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
         YASA uses a random seed (42) to ensure reproducible results.
         Note that this step will only be applied if there are more than
         50 detected REMs in the first place. Default to False.
+    verbose : bool or str
+        Verbose level. Default (False) will only print warning and error
+        messages. The logging levels are 'debug', 'info', 'warning', 'error',
+        and 'critical'. For most users the choice is between 'info'
+        (or ``verbose=True``) and warning (``verbose=False``).
+
+        .. versionadded:: 0.2.0
 
     Returns
     -------
@@ -1409,7 +1457,23 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
 
     For an example of how to run the detection, please refer to
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb
+
+    References
+    ----------
+    The rapid eye movements detection algorithm is based on:
+
+    * Agarwal, R., Takeuchi, T., Laroche, S., & Gotman, J. (2005).
+      `Detection of rapid-eye movements in sleep studies.
+      <https://doi.org/10.1109/TBME.2005.851512>`_
+      IEEE Transactions on Bio-Medical Engineering, 52(8), 1390–1396.
+
+    * Yetton, B. D., Niknazar, M., Duggan, K. A., McDevitt, E. A., Whitehurst,
+      L. N., Sattari, N., & Mednick, S. C. (2016). `Automatic detection of
+      rapid eye movements (REMs): A machine learning approach.
+      <https://doi.org/10.1016/j.jneumeth.2015.11.015>`_
+      Journal of Neuroscience Methods, 259, 72–82.
     """
+    set_log_level(verbose)
     # Safety checks
     loc = np.squeeze(np.asarray(loc, dtype=np.float64))
     roc = np.squeeze(np.asarray(roc, dtype=np.float64))
@@ -1580,7 +1644,7 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
 
 
 def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
-               method='covar', threshold=3, n_chan_reject=1):
+               method='covar', threshold=3, n_chan_reject=1, verbose=False):
     r"""
     Automatic artifact rejection for single or multi-channel EEG data.
 
@@ -1651,6 +1715,13 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
         number of channels (e.g.hdEEG) in which case users can increase
         ``n_chan_reject``. Note that this parameter only has an effect
         when ``method='covar'``.
+    verbose : bool or str
+        Verbose level. Default (False) will only print warning and error
+        messages. The logging levels are 'debug', 'info', 'warning', 'error',
+        and 'critical'. For most users the choice is between 'info'
+        (or ``verbose=True``) and warning (``verbose=False``).
+
+        .. versionadded:: 0.2.0
 
     Returns
     -------
@@ -1729,18 +1800,20 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
 
     References
     ----------
-    [1] Barachant, A., Andreev, A., & Congedo, M. (2013). The Riemannian
-    Potato: an automatic and adaptive artifact detection method for online
-    experiments using Riemannian geometry. TOBI Workshop lV, 19–20.
-    https://hal.archives-ouvertes.fr/hal-00781701/
+    * Barachant, A., Andreev, A., & Congedo, M. (2013). `The Riemannian
+      Potato: an automatic and adaptive artifact detection method for online
+      experiments using Riemannian geometry.
+      <https://hal.archives-ouvertes.fr/hal-00781701/>`_ TOBI
+      Workshop lV, 19–20.
 
-    [2] Barthélemy, Q., Mayaud, L., Ojeda, D., & Congedo, M. (2019).
-    The Riemannian Potato Field: A Tool for Online Signal Quality Index of
-    EEG. IEEE Transactions on Neural Systems and Rehabilitation Engineering:
-    A Publication of the IEEE Engineering in Medicine and Biology Society,
-    27(2), 244–255. https://doi.org/10.1109/TNSRE.2019.2893113
+    * Barthélemy, Q., Mayaud, L., Ojeda, D., & Congedo, M. (2019).
+      `The Riemannian Potato Field: A Tool for Online Signal Quality Index of
+      EEG. <https://doi.org/10.1109/TNSRE.2019.2893113>`_
+      IEEE Transactions on Neural Systems and Rehabilitation Engineering:
+      A Publication of the IEEE Engineering in Medicine and Biology Society,
+      27(2), 244–255.
 
-    [3] https://pyriemann.readthedocs.io/en/latest/index.html
+    * https://pyriemann.readthedocs.io/en/latest/index.html
 
     Examples
     --------
@@ -1750,6 +1823,7 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     ###########################################################################
     # PREPROCESSING
     ###########################################################################
+    set_log_level(verbose)
     # Check if input data is a MNE Raw object
     if isinstance(data, mne.io.BaseRaw):
         sf = data.info['sfreq']  # Extract sampling frequency
@@ -1806,13 +1880,9 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     method = method.lower()
     if method in ['cov', 'covar', 'covariance', 'riemann', 'potato']:
         method = 'covar'
-        try:
-            from pyriemann.estimation import Covariances, Shrinkage
-            from pyriemann.clustering import Potato
-        except IOError:  # pragma: no cover
-            raise IOError("pyRiemann needs to be installed to use "
-                          "`method='covar'`. Please use `pip "
-                          "install pyriemann -U`.")
+        is_pyriemann_installed()
+        from pyriemann.estimation import Covariances, Shrinkage
+        from pyriemann.clustering import Potato
         # Must have at least 4 channels to use method='covar'
         if n_chan >= 4:
             logger.warning("Must have at least 4 channels for method='covar'. "

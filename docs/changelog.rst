@@ -28,6 +28,7 @@ f. Added an section in the `06_sw_detection.ipynb <https://github.com/raphaelval
 g. The upper frequency band for :py:func:`yasa.sw_detect` has been changed from ``freq_sw=(0.3, 3.5)`` to ``freq_sw=(0.3, 2)`` Hz to comply with AASM guidelines.
 h. ``Stage`` is no longer taken into account when calculating outliers with :py:class:`sklearn.ensemble.IsolationForest` in :py:func:`yasa.spindles_detect`.
 i. To be consistent with :py:func:`yasa.spindles_detect`, :py:class:`sklearn.ensemble.IsolationForest` requires at least 50 (instead of 100) detected events in :py:func:`yasa.sw_detect` and :py:func:`yasa.rem_detect`.
+j. Added ``verbose`` parameter to all detection functions.
 
 **Dependencies**
 

@@ -89,7 +89,7 @@
 <h1>yasa.art_detect</h1>
 <dl class="function">
 <dt id="yasa.art_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">art_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf=None</em>, <em class="sig-param">window=5</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(1</em>, <em class="sig-param">2</em>, <em class="sig-param">3</em>, <em class="sig-param">4)</em>, <em class="sig-param">method='covar'</em>, <em class="sig-param">threshold=3</em>, <em class="sig-param">n_chan_reject=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#art_detect"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">art_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf=None</em>, <em class="sig-param">window=5</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(1</em>, <em class="sig-param">2</em>, <em class="sig-param">3</em>, <em class="sig-param">4)</em>, <em class="sig-param">method='covar'</em>, <em class="sig-param">threshold=3</em>, <em class="sig-param">n_chan_reject=1</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#art_detect"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Automatic artifact rejection for single or multi-channel EEG data.</p>
 <p>This is still an experimental feature. Expect API-breaking changes in
 future releases.</p>
@@ -162,6 +162,14 @@ number of channels (e.g.hdEEG) in which case users can increase
 <code class="docutils literal notranslate"><span class="pre">n_chan_reject</span></code>. Note that this parameter only has an effect
 when <code class="docutils literal notranslate"><span class="pre">method='covar'</span></code>.</p>
 </dd>
+<dt><strong>verbose</strong><span class="classifier">bool or str</span></dt><dd><p>Verbose level. Default (False) will only print warning and error
+messages. The logging levels are ‘debug’, ‘info’, ‘warning’, ‘error’,
+and ‘critical’. For most users the choice is between ‘info’
+(or <code class="docutils literal notranslate"><span class="pre">verbose=True</span></code>) and warning (<code class="docutils literal notranslate"><span class="pre">verbose=False</span></code>).</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.2.0.</span></p>
+</div>
+</dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -232,16 +240,19 @@ one bad channel (e.g. electrode fell off at some point during the night).
 We therefore recommend that you visually inspect and remove any bad
 channels prior to using this function.</p>
 <p class="rubric">References</p>
-<p>[1] Barachant, A., Andreev, A., &amp; Congedo, M. (2013). The Riemannian
+<ul class="simple">
+<li><p>Barachant, A., Andreev, A., &amp; Congedo, M. (2013). <a class="reference external" href="https://hal.archives-ouvertes.fr/hal-00781701/">The Riemannian
 Potato: an automatic and adaptive artifact detection method for online
-experiments using Riemannian geometry. TOBI Workshop lV, 19–20.
-<a class="reference external" href="https://hal.archives-ouvertes.fr/hal-00781701/">https://hal.archives-ouvertes.fr/hal-00781701/</a></p>
-<p>[2] Barthélemy, Q., Mayaud, L., Ojeda, D., &amp; Congedo, M. (2019).
-The Riemannian Potato Field: A Tool for Online Signal Quality Index of
-EEG. IEEE Transactions on Neural Systems and Rehabilitation Engineering:
+experiments using Riemannian geometry.</a> TOBI
+Workshop lV, 19–20.</p></li>
+<li><p>Barthélemy, Q., Mayaud, L., Ojeda, D., &amp; Congedo, M. (2019).
+<a class="reference external" href="https://doi.org/10.1109/TNSRE.2019.2893113">The Riemannian Potato Field: A Tool for Online Signal Quality Index of
+EEG.</a>
+IEEE Transactions on Neural Systems and Rehabilitation Engineering:
 A Publication of the IEEE Engineering in Medicine and Biology Society,
-27(2), 244–255. <a class="reference external" href="https://doi.org/10.1109/TNSRE.2019.2893113">https://doi.org/10.1109/TNSRE.2019.2893113</a></p>
-<p>[3] <a class="reference external" href="https://pyriemann.readthedocs.io/en/latest/index.html">https://pyriemann.readthedocs.io/en/latest/index.html</a></p>
+27(2), 244–255.</p></li>
+<li><p><a class="reference external" href="https://pyriemann.readthedocs.io/en/latest/index.html">https://pyriemann.readthedocs.io/en/latest/index.html</a></p></li>
+</ul>
 <p class="rubric">Examples</p>
 <p>For an example of how to run the detection, please refer to
 <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb">https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb</a></p>

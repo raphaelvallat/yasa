@@ -89,7 +89,7 @@
 <h1>yasa.rem_detect</h1>
 <dl class="function">
 <dt id="yasa.rem_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">rem_detect</code><span class="sig-paren">(</span><em class="sig-param">loc</em>, <em class="sig-param">roc</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=4</em>, <em class="sig-param">amplitude=(50</em>, <em class="sig-param">325)</em>, <em class="sig-param">duration=(0.3</em>, <em class="sig-param">1.2)</em>, <em class="sig-param">freq_rem=(0.5</em>, <em class="sig-param">5)</em>, <em class="sig-param">downsample=True</em>, <em class="sig-param">remove_outliers=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#rem_detect"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">rem_detect</code><span class="sig-paren">(</span><em class="sig-param">loc</em>, <em class="sig-param">roc</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=4</em>, <em class="sig-param">amplitude=(50</em>, <em class="sig-param">325)</em>, <em class="sig-param">duration=(0.3</em>, <em class="sig-param">1.2)</em>, <em class="sig-param">freq_rem=(0.5</em>, <em class="sig-param">5)</em>, <em class="sig-param">downsample=True</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#rem_detect"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Rapid Eye Movements (REMs) detection.</p>
 <p>This detection requires both the left EOG (LOC) and right EOG (LOC).
 The units of the data must be uV. The algorithm is based on an amplitude
@@ -158,6 +158,14 @@ YASA uses a random seed (42) to ensure reproducible results.
 Note that this step will only be applied if there are more than
 50 detected REMs in the first place. Default to False.</p>
 </dd>
+<dt><strong>verbose</strong><span class="classifier">bool or str</span></dt><dd><p>Verbose level. Default (False) will only print warning and error
+messages. The logging levels are ‘debug’, ‘info’, ‘warning’, ‘error’,
+and ‘critical’. For most users the choice is between ‘info’
+(or <code class="docutils literal notranslate"><span class="pre">verbose=True</span></code>) and warning (<code class="docutils literal notranslate"><span class="pre">verbose=False</span></code>).</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.2.0.</span></p>
+</div>
+</dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -186,6 +194,17 @@ Note that this step will only be applied if there are more than
 ROC signals.</p>
 <p>For an example of how to run the detection, please refer to
 <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb">https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb</a></p>
+<p class="rubric">References</p>
+<p>The rapid eye movements detection algorithm is based on:</p>
+<ul class="simple">
+<li><p>Agarwal, R., Takeuchi, T., Laroche, S., &amp; Gotman, J. (2005).
+<a class="reference external" href="https://doi.org/10.1109/TBME.2005.851512">Detection of rapid-eye movements in sleep studies.</a>
+IEEE Transactions on Bio-Medical Engineering, 52(8), 1390–1396.</p></li>
+<li><p>Yetton, B. D., Niknazar, M., Duggan, K. A., McDevitt, E. A., Whitehurst,
+L. N., Sattari, N., &amp; Mednick, S. C. (2016). <a class="reference external" href="https://doi.org/10.1016/j.jneumeth.2015.11.015">Automatic detection of
+rapid eye movements (REMs): A machine learning approach.</a>
+Journal of Neuroscience Methods, 259, 72–82.</p></li>
+</ul>
 </dd></dl>
 
 </div>
