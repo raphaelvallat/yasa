@@ -98,17 +98,17 @@ for each sleep stage.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>data</strong><span class="classifier">np.array_like or <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>1D or 2D EEG data. Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which
+<dt><strong>data</strong><span class="classifier">np.array_like or <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>1D or 2D EEG data. Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which
 case <code class="docutils literal notranslate"><span class="pre">data</span></code>, <code class="docutils literal notranslate"><span class="pre">sf</span></code>, and <code class="docutils literal notranslate"><span class="pre">ch_names</span></code> will be automatically
 extracted, and <code class="docutils literal notranslate"><span class="pre">data</span></code> will also be converted from Volts (MNE default)
 to micro-Volts (YASA).</p>
 </dd>
 <dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency of data AND the hypnogram.
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
 <dt><strong>ch_names</strong><span class="classifier">list</span></dt><dd><p>List of channel names, e.g. [‘Cz’, ‘F3’, ‘F4’, …]. If None,
 channels will be labelled [‘CHAN001’, ‘CHAN002’, …].
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
 <dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Sleep stage vector (hypnogram). If the hypnogram is loaded, the
 bandpower will be extracted for each sleep stage defined in
@@ -145,7 +145,7 @@ max frequencies defined in <code class="docutils literal notranslate"><span clas
 </dd>
 <dt><strong>bandpass</strong><span class="classifier">boolean</span></dt><dd><p>If True, apply a standard FIR bandpass filter using the minimum and
 maximum frequencies in <code class="docutils literal notranslate"><span class="pre">bands</span></code>. Fore more details, refer to
-<a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v0.19.2)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a>.</p>
+<a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v0.20.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a>.</p>
 </dd>
 <dt><strong>bands</strong><span class="classifier">list of tuples</span></dt><dd><p>List of frequency bands of interests. Each tuple must contain the
 lower and upper frequencies, as well as the band name

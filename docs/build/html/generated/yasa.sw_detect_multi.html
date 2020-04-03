@@ -95,16 +95,16 @@
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>data</strong><span class="classifier">array_like</span></dt><dd><p>Multi-channel data. Unit must be uV and shape (n_chan, n_samples).
-Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>,
+Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>,
 <code class="docutils literal notranslate"><span class="pre">sf</span></code>, and <code class="docutils literal notranslate"><span class="pre">ch_names</span></code> will be automatically extracted,
 and <code class="docutils literal notranslate"><span class="pre">data</span></code> will also be automatically converted from Volts (MNE)
 to micro-Volts (YASA).</p>
 </dd>
 <dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>Sampling frequency of the data in Hz.
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
 <dt><strong>ch_names</strong><span class="classifier">list of str</span></dt><dd><p>Channel names. Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a
-<a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.19.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+<a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
 <dt><strong>**kwargs</strong></dt><dd><p>Keywords arguments that are passed to the <a class="reference internal" href="yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a>
 function.</p>

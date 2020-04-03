@@ -185,7 +185,7 @@
 
 
 <div class="viewcode-block" id="get_bool_vector"><a class="viewcode-back" href="../../generated/yasa.get_bool_vector.html#yasa.get_bool_vector">[docs]</a><span class="k">def</span> <span class="nf">get_bool_vector</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">detection</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return a Boolean vector given the original data and sf and</span>
+    <span class="sd">&quot;&quot;&quot;Return a boolean vector given the original data and sf and</span>
 <span class="sd">    a YASA&#39;s detection dataframe.</span>
 
 <span class="sd">    Parameters</span>
@@ -1972,7 +1972,7 @@
         <span class="kn">from</span> <span class="nn">pyriemann.estimation</span> <span class="kn">import</span> <span class="n">Covariances</span><span class="p">,</span> <span class="n">Shrinkage</span>
         <span class="kn">from</span> <span class="nn">pyriemann.clustering</span> <span class="kn">import</span> <span class="n">Potato</span>
         <span class="c1"># Must have at least 4 channels to use method=&#39;covar&#39;</span>
-        <span class="k">if</span> <span class="n">n_chan</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">n_chan</span> <span class="o">&lt;=</span> <span class="mi">4</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Must have at least 4 channels for method=&#39;covar&#39;. &quot;</span>
                            <span class="s2">&quot;Automatically switching to method=&#39;std&#39;.&quot;</span><span class="p">)</span>
             <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;std&#39;</span>
@@ -1980,7 +1980,6 @@
     <span class="c1">###########################################################################</span>
     <span class="c1"># START THE REJECTION</span>
     <span class="c1">###########################################################################</span>
-
     <span class="c1"># Remove flat channels</span>
     <span class="n">isflat</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">isflat</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
@@ -2035,8 +2034,9 @@
         <span class="c1"># Shrink the covariance matrix (ensure positive semi-definite)</span>
         <span class="n">covmats</span> <span class="o">=</span> <span class="n">Shrinkage</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">covmats</span><span class="p">)</span>
         <span class="c1"># Define Potato instance: 0 = clean, 1 = art</span>
+        <span class="c1"># To increase speed we set the max number of iterations from 10 to 100</span>
         <span class="n">potato</span> <span class="o">=</span> <span class="n">Potato</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="s1">&#39;riemann&#39;</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">,</span> <span class="n">pos_label</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                        <span class="n">neg_label</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                        <span class="n">neg_label</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_iter_max</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
         <span class="c1"># Create empty z-scores output (n_epochs)</span>
         <span class="n">zscores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_epochs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
 

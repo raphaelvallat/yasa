@@ -16,6 +16,7 @@ b. The :py:func:`yasa.sliding_window` now always return an array of shape (n_epo
 a. Added :py:func:`yasa.bandpower_from_psd_ndarray` to calculate band power from a multi-dimensional PSD. This is a Numpy-only implementation and this function will return a np.array and not a pandas DataFrame. This function is useful if you need to calculate the bandpower from a 3-D PSD array, e.g. of shape (n_chan, n_epochs, n_freqs).
 b. Added :py:func:`yasa.get_centered_indices` to extract indices in data centered around specific events or peaks.
 c. Added :py:func:`art_detect` to automatically detect artefacts on single or multi-channel EEG data.
+d. Added :py:func:`load_profusion_hypno` to load a Compumedics Profusion hypnogram (.xml), as found on the `National Sleep Research Resource (NSRR) <https://sleepdata.org/>`_ website.
 
 **Enhancements**
 
@@ -34,6 +35,7 @@ j. Added ``verbose`` parameter to all detection functions.
 
 a. Removed deprecated ``behavior`` argument to avoid warning when calling :py:class:`sklearn.ensemble.IsolationForest`.
 b. Added `tensorpac <https://etiennecmb.github.io/tensorpac/index.html>`_ and `pyriemann <https://pyriemann.readthedocs.io/en/latest/api.html>`_ to dependencies.
+c. YASA now requires the latest version of MNE >= 0.20, Scikit-learn >= 0.21 and Tensorpac >= 0.6.3.
 
 v0.1.9 (February 2020)
 ----------------------

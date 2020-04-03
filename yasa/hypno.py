@@ -32,7 +32,7 @@ import numpy as np
 import pandas as pd
 
 __all__ = ['hypno_str_to_int', 'hypno_int_to_str', 'hypno_upsample_to_sf',
-           'hypno_upsample_to_data']
+           'hypno_upsample_to_data', 'load_profusion_hypno']
 
 
 logger = logging.getLogger('yasa')
@@ -231,3 +231,57 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None):
     hypno_up = hypno_upsample_to_sf(hypno=hypno, sf_hypno=sf_hypno,
                                     sf_data=sf_data)
     return hypno_fit_to_data(hypno=hypno_up, data=data, sf=sf_data)
+
+
+#############################################################################
+# HYPNO LOADING
+#############################################################################
+
+def load_profusion_hypno(fname, replace=True):  # pragma: no cover
+    """
+    Load a Compumedics Profusion hypnogram (.xml).
+
+    The Compumedics Profusion hypnogram format is one of the two hypnogram
+    formats found in the `National Sleep Research Resource (NSRR)
+    <https://sleepdata.org/>`_ website. For more details on the format,
+    please refer to
+    https://github.com/nsrr/edf-editor-translator/wiki/Compumedics-Annotation-Format
+
+    Parameters
+    ----------
+    fname : str
+        Filename with full path.
+    replace : bool
+        If True, the integer values will be mapped to YASA default, i.e.
+        0 for Wake, 1 for N1, 2 for N2, 3 for N3 / S4 and 4 for REM.
+        Note that the native profusion format is identical except for REM
+        sleep which is marked as 5.
+
+    Returns
+    -------
+    hypno : 1D array (n_epochs, )
+        Hypnogram, with one value per 30 second epochs.
+    sf_hyp : float
+        Sampling frequency of the hypnogram. Default is 1 / 30 Hz.
+    """
+    # Note that an alternative is to use the `xmltodict` library:
+    # >>> with open(fname) as in_file:
+    # >>>   xml = in_file.read()
+    # >>> epoch_length = xml['EpochLength']
+    # >>> hypno = np.array(xml['SleepStages']['SleepStage'], dtype='int')
+    # >>> xml = xmltodict.parse(xml, process_namespaces=True)['CMPStudyConfig']
+    # >>> annotations = pd.DataFrame(xml['ScoredEvents']['ScoredEvent'])
+    # >>> annotations["Start"] = annotations["Start"].astype(float)
+    # >>> annotations["Duration"] = annotations["Duration"].astype(float)
+    import xml.etree.ElementTree as ET
+    tree = ET.parse(fname)
+    root = tree.getroot()
+    epoch_length = float(root[0].text)
+    sf_hyp = 1 / epoch_length
+    hypno = []
+    for s in root[4]:
+        hypno.append(s.text)
+    hypno = np.array(hypno).astype(int)
+    if replace:
+        hypno = pd.Series(hypno).replace({4: 3, 5: 4}).to_numpy()
+    return hypno, sf_hyp

@@ -16,11 +16,9 @@ def create_raw(npts, ch_names=['F4-M1', 'F3-M2'], sf=100):
     """Utility function for test fit to data."""
     nchan = len(ch_names)
     info = mne.create_info(ch_names=ch_names, sfreq=sf,
-                           ch_types=['eeg'] * nchan,
-                           verbose=0)
+                           ch_types=['eeg'] * nchan, verbose=0)
     data = np.random.rand(nchan, npts)
     raw = mne.io.RawArray(data, info, verbose=0)
-    raw.set_montage('standard_1020', raise_if_subset=False)
     return raw
 
 

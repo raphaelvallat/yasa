@@ -97,7 +97,7 @@ def _index_to_events(x):
 
 
 def get_bool_vector(data=None, sf=None, detection=None):
-    """Return a Boolean vector given the original data and sf and
+    """Return a boolean vector given the original data and sf and
     a YASA's detection dataframe.
 
     Parameters

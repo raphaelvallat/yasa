@@ -120,7 +120,7 @@
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;hypno_str_to_int&#39;</span><span class="p">,</span> <span class="s1">&#39;hypno_int_to_str&#39;</span><span class="p">,</span> <span class="s1">&#39;hypno_upsample_to_sf&#39;</span><span class="p">,</span>
-           <span class="s1">&#39;hypno_upsample_to_data&#39;</span><span class="p">]</span>
+           <span class="s1">&#39;hypno_upsample_to_data&#39;</span><span class="p">,</span> <span class="s1">&#39;load_profusion_hypno&#39;</span><span class="p">]</span>
 
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;yasa&#39;</span><span class="p">)</span>
@@ -319,6 +319,60 @@
     <span class="n">hypno_up</span> <span class="o">=</span> <span class="n">hypno_upsample_to_sf</span><span class="p">(</span><span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hypno</span><span class="o">=</span><span class="n">sf_hypno</span><span class="p">,</span>
                                     <span class="n">sf_data</span><span class="o">=</span><span class="n">sf_data</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">hypno_fit_to_data</span><span class="p">(</span><span class="n">hypno</span><span class="o">=</span><span class="n">hypno_up</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="n">sf_data</span><span class="p">)</span></div>
+
+
+<span class="c1">#############################################################################</span>
+<span class="c1"># HYPNO LOADING</span>
+<span class="c1">#############################################################################</span>
+
+<div class="viewcode-block" id="load_profusion_hypno"><a class="viewcode-back" href="../../generated/yasa.load_profusion_hypno.html#yasa.load_profusion_hypno">[docs]</a><span class="k">def</span> <span class="nf">load_profusion_hypno</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>  <span class="c1"># pragma: no cover</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load a Compumedics Profusion hypnogram (.xml).</span>
+
+<span class="sd">    The Compumedics Profusion hypnogram format is one of the two hypnogram</span>
+<span class="sd">    formats found in the `National Sleep Research Resource (NSRR)</span>
+<span class="sd">    &lt;https://sleepdata.org/&gt;`_ website. For more details on the format,</span>
+<span class="sd">    please refer to</span>
+<span class="sd">    https://github.com/nsrr/edf-editor-translator/wiki/Compumedics-Annotation-Format</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    fname : str</span>
+<span class="sd">        Filename with full path.</span>
+<span class="sd">    replace : bool</span>
+<span class="sd">        If True, the integer values will be mapped to YASA default, i.e.</span>
+<span class="sd">        0 for Wake, 1 for N1, 2 for N2, 3 for N3 / S4 and 4 for REM.</span>
+<span class="sd">        Note that the native profusion format is identical except for REM</span>
+<span class="sd">        sleep which is marked as 5.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    hypno : 1D array (n_epochs, )</span>
+<span class="sd">        Hypnogram, with one value per 30 second epochs.</span>
+<span class="sd">    sf_hyp : float</span>
+<span class="sd">        Sampling frequency of the hypnogram. Default is 1 / 30 Hz.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Note that an alternative is to use the `xmltodict` library:</span>
+    <span class="c1"># &gt;&gt;&gt; with open(fname) as in_file:</span>
+    <span class="c1"># &gt;&gt;&gt;   xml = in_file.read()</span>
+    <span class="c1"># &gt;&gt;&gt; epoch_length = xml[&#39;EpochLength&#39;]</span>
+    <span class="c1"># &gt;&gt;&gt; hypno = np.array(xml[&#39;SleepStages&#39;][&#39;SleepStage&#39;], dtype=&#39;int&#39;)</span>
+    <span class="c1"># &gt;&gt;&gt; xml = xmltodict.parse(xml, process_namespaces=True)[&#39;CMPStudyConfig&#39;]</span>
+    <span class="c1"># &gt;&gt;&gt; annotations = pd.DataFrame(xml[&#39;ScoredEvents&#39;][&#39;ScoredEvent&#39;])</span>
+    <span class="c1"># &gt;&gt;&gt; annotations[&quot;Start&quot;] = annotations[&quot;Start&quot;].astype(float)</span>
+    <span class="c1"># &gt;&gt;&gt; annotations[&quot;Duration&quot;] = annotations[&quot;Duration&quot;].astype(float)</span>
+    <span class="kn">import</span> <span class="nn">xml.etree.ElementTree</span> <span class="k">as</span> <span class="nn">ET</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
+    <span class="n">epoch_length</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">sf_hyp</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">epoch_length</span>
+    <span class="n">hypno</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">root</span><span class="p">[</span><span class="mi">4</span><span class="p">]:</span>
+        <span class="n">hypno</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">hypno</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">replace</span><span class="p">:</span>
+        <span class="n">hypno</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">({</span><span class="mi">4</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span> <span class="mi">4</span><span class="p">})</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hyp</span></div>
 </pre></div>
 
     </div>

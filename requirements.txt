@@ -1,10 +1,10 @@
 numpy
 scipy
 pandas
-mne>=0.19
-numba>=0.39.0
+mne>=0.20
+numba
 matplotlib
 lspopt
-tensorpac>=0.6.2
-scikit-learn>=0.20
+tensorpac>=0.6.3
+scikit-learn>=0.21
 pyriemann

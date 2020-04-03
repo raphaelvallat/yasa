@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.get_bool_vector &#8212; yasa 0.2.0 documentation</title>
+    <title>yasa.load_profusion_hypno &#8212; yasa 0.2.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -85,32 +85,33 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="yasa-get-bool-vector">
-<h1>yasa.get_bool_vector</h1>
+  <div class="section" id="yasa-load-profusion-hypno">
+<h1>yasa.load_profusion_hypno</h1>
 <dl class="function">
-<dt id="yasa.get_bool_vector">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">get_bool_vector</code><span class="sig-paren">(</span><em class="sig-param">data=None</em>, <em class="sig-param">sf=None</em>, <em class="sig-param">detection=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#get_bool_vector"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Return a boolean vector given the original data and sf and
-a YASA’s detection dataframe.</p>
-<dl class="field-list">
+<dt id="yasa.load_profusion_hypno">
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">load_profusion_hypno</code><span class="sig-paren">(</span><em class="sig-param">fname</em>, <em class="sig-param">replace=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/hypno.html#load_profusion_hypno"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Load a Compumedics Profusion hypnogram (.xml).</p>
+<p>The Compumedics Profusion hypnogram format is one of the two hypnogram
+formats found in the <a class="reference external" href="https://sleepdata.org/">National Sleep Research Resource (NSRR)</a> website. For more details on the format,
+please refer to
+<a class="reference external" href="https://github.com/nsrr/edf-editor-translator/wiki/Compumedics-Annotation-Format">https://github.com/nsrr/edf-editor-translator/wiki/Compumedics-Annotation-Format</a></p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl>
-<dt><strong>data</strong><span class="classifier">array_like or <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>1D or 2D EEG data. Can also be <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
-in which case <code class="docutils literal notranslate"><span class="pre">data</span></code> and <code class="docutils literal notranslate"><span class="pre">sf</span></code> will be automatically extracted.</p>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>fname</strong><span class="classifier">str</span></dt><dd><p>Filename with full path.</p>
 </dd>
-<dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency of <code class="docutils literal notranslate"><span class="pre">data</span></code>.
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
-</dd>
-<dt><strong>detection</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>YASA’s detection dataframe returned by the
-<a class="reference internal" href="yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>, <a class="reference internal" href="yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a>,
-or <a class="reference internal" href="yasa.rem_detect.html#yasa.rem_detect" title="yasa.rem_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.rem_detect()</span></code></a> functions.</p>
+<dt><strong>replace</strong><span class="classifier">bool</span></dt><dd><p>If True, the integer values will be mapped to YASA default, i.e.
+0 for Wake, 1 for N1, 2 for N2, 3 for N3 / S4 and 4 for REM.
+Note that the native profusion format is identical except for REM
+sleep which is marked as 5.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><dl>
-<dt><strong>bool_vector</strong><span class="classifier"><a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Array of bool indicating for each sample in data if this sample is
-part of a detected event (True) or not (False).</p>
+<dd class="field-even"><dl class="simple">
+<dt><strong>hypno</strong><span class="classifier">1D array (n_epochs, )</span></dt><dd><p>Hypnogram, with one value per 30 second epochs.</p>
+</dd>
+<dt><strong>sf_hyp</strong><span class="classifier">float</span></dt><dd><p>Sampling frequency of the hypnogram. Default is 1 / 30 Hz.</p>
 </dd>
 </dl>
 </dd>

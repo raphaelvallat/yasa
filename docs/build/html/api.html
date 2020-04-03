@@ -114,7 +114,7 @@
 <td><p>Multi-channel slow-waves detection.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.get_bool_vector.html#yasa.get_bool_vector" title="yasa.get_bool_vector"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_bool_vector</span></code></a>([data, sf, detection])</p></td>
-<td><p>Return a Boolean vector given the original data and sf and a YASA’s detection dataframe.</p></td>
+<td><p>Return a boolean vector given the original data and sf and a YASA’s detection dataframe.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.get_sync_events.html#yasa.get_sync_events" title="yasa.get_sync_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sync_events</span></code></a>([data, sf, detection, …])</p></td>
 <td><p>Return the raw data of each detected slow-waves / spindles, after centering to a specific timepoint.</p></td>
@@ -142,10 +142,13 @@
 <tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.hypno_int_to_str.html#yasa.hypno_int_to_str" title="yasa.hypno_int_to_str"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hypno_int_to_str</span></code></a>(hypno[, mapping_dict])</p></td>
 <td><p>Convert an integer hypnogram array to a string array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.transition_matrix.html#yasa.transition_matrix" title="yasa.transition_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transition_matrix</span></code></a>(hypno)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.load_profusion_hypno.html#yasa.load_profusion_hypno" title="yasa.load_profusion_hypno"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_profusion_hypno</span></code></a>(fname[, replace])</p></td>
+<td><p>Load a Compumedics Profusion hypnogram (.xml).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.transition_matrix.html#yasa.transition_matrix" title="yasa.transition_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transition_matrix</span></code></a>(hypno)</p></td>
 <td><p>Create a state-transition matrix from an hypnogram.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sleep_statistics</span></code></a>(hypno, sf_hyp)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sleep_statistics</span></code></a>(hypno, sf_hyp)</p></td>
 <td><p>Compute standard sleep statistics from an hypnogram.</p></td>
 </tr>
 </tbody>

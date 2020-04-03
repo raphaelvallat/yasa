@@ -20,9 +20,9 @@ INSTALL_REQUIRES = [
     'scipy',
     'pandas',
     'matplotlib',
-    'mne>=0.19.0',
-    'numba>=0.39.0',
-    'scikit-learn>=0.20',
+    'mne>=0.20.0',
+    'numba',
+    'scikit-learn>=0.21',
     'tensorpac>=0.6.3',
     'pyriemann',
     'lspopt'
