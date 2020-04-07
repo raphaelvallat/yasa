@@ -37,9 +37,9 @@ def transition_matrix(hypno):
         Conditional probability transition matrix, i.e.
         given that current state is X, what is the probability that
         the next state is Y.
-        ``probs`` is a right stochastic matrix, i.e. each row sums to 1.
-        See more details at:
-        https://en.wikipedia.org/wiki/Stochastic_matrix
+        ``probs`` is a `right stochastic matrix
+        <https://en.wikipedia.org/wiki/Stochastic_matrix>`_,
+        i.e. each row sums to 1.
 
     Examples
     --------
@@ -59,6 +59,28 @@ def transition_matrix(hypno):
     0      0.400000  0.2  0.400000
     1      0.400000  0.6  0.000000
     2      0.666667  0.0  0.333333
+
+    We can plot the transition matrix using :py:func:`seaborn.heatmap`:
+
+    .. plot::
+
+        >>> import numpy as np
+        >>> import seaborn as sns
+        >>> import matplotlib.pyplot as plt
+        >>> from yasa import transition_matrix
+        >>> # Calculate probability matrix
+        >>> a = [1, 1, 1, 0, 0, 2, 2, 0, 2, 0, 1, 1, 0, 0]
+        >>> _, probs = transition_matrix(a)
+        >>> # Start the plot
+        >>> grid_kws = {"height_ratios": (.9, .05), "hspace": .1}
+        >>> f, (ax, cbar_ax) = plt.subplots(2, gridspec_kw=grid_kws, figsize=(5, 5))
+        >>> sns.heatmap(probs, ax=ax, square=False, vmin=0, vmax=1, cbar=True, cbar_ax=cbar_ax,
+        ...             cmap='YlOrRd', annot=True, fmt='.2f',
+        ...             cbar_kws={"orientation": "horizontal", 'fraction': 0.1, 'label': 'Transition probability'})
+        >>> ax.set_xlabel("To sleep stage")
+        >>> ax.xaxis.tick_top()
+        >>> ax.set_ylabel("From sleep stage")
+        >>> ax.xaxis.set_label_position('top')
     """
     x = np.asarray(hypno, dtype=int)
     unique, inverse = np.unique(x, return_inverse=True)

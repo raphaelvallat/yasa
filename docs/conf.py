@@ -203,5 +203,6 @@ intersphinx_mapping = {'numpy': ('http://docs.scipy.org/doc/numpy/', None),
                        'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
                        'sklearn': ('https://scikit-learn.org/stable/', None),
                        'mne': ('https://martinos.org/mne/stable/', None),
+                       'seaborn': ('https://seaborn.pydata.org/', None),
                        'pyriemann': ('https://pyriemann.readthedocs.io/en/latest/', None),
                        }
