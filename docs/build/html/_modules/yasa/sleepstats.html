@@ -161,10 +161,12 @@
 <span class="sd">        &gt;&gt;&gt; _, probs = transition_matrix(a)</span>
 <span class="sd">        &gt;&gt;&gt; # Start the plot</span>
 <span class="sd">        &gt;&gt;&gt; grid_kws = {&quot;height_ratios&quot;: (.9, .05), &quot;hspace&quot;: .1}</span>
-<span class="sd">        &gt;&gt;&gt; f, (ax, cbar_ax) = plt.subplots(2, gridspec_kw=grid_kws, figsize=(5, 5))</span>
-<span class="sd">        &gt;&gt;&gt; sns.heatmap(probs, ax=ax, square=False, vmin=0, vmax=1, cbar=True, cbar_ax=cbar_ax,</span>
-<span class="sd">        ...             cmap=&#39;YlOrRd&#39;, annot=True, fmt=&#39;.2f&#39;,</span>
-<span class="sd">        ...             cbar_kws={&quot;orientation&quot;: &quot;horizontal&quot;, &#39;fraction&#39;: 0.1, &#39;label&#39;: &#39;Transition probability&#39;})</span>
+<span class="sd">        &gt;&gt;&gt; f, (ax, cbar_ax) = plt.subplots(2, gridspec_kw=grid_kws,</span>
+<span class="sd">        ...                                 figsize=(5, 5))</span>
+<span class="sd">        &gt;&gt;&gt; sns.heatmap(probs, ax=ax, square=False, vmin=0, vmax=1, cbar=True,</span>
+<span class="sd">        ...             cbar_ax=cbar_ax, cmap=&#39;YlOrRd&#39;, annot=True, fmt=&#39;.2f&#39;,</span>
+<span class="sd">        ...             cbar_kws={&quot;orientation&quot;: &quot;horizontal&quot;, &quot;fraction&quot;: 0.1,</span>
+<span class="sd">        ...                       &quot;label&quot;: &quot;Transition probability&quot;})</span>
 <span class="sd">        &gt;&gt;&gt; ax.set_xlabel(&quot;To sleep stage&quot;)</span>
 <span class="sd">        &gt;&gt;&gt; ax.xaxis.tick_top()</span>
 <span class="sd">        &gt;&gt;&gt; ax.set_ylabel(&quot;From sleep stage&quot;)</span>
