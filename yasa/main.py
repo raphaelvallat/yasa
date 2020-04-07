@@ -291,6 +291,7 @@ def spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
             The default hypnogram format in YASA is a 1D integer
             vector where:
 
+            - -2 = Unscored
             - -1 = Artefact / Movement
             - 0 = Wake
             - 1 = N1 sleep
@@ -847,6 +848,7 @@ def sw_detect(data, sf, hypno=None, include=(2, 3), freq_sw=(0.3, 2),
             The default hypnogram format in YASA is a 1D integer
             vector where:
 
+            - -2 = Unscored
             - -1 = Artefact / Movement
             - 0 = Wake
             - 1 = N1 sleep
@@ -1395,12 +1397,13 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
             The default hypnogram format in YASA is a 1D integer
             vector where:
 
+            - -2 = Unscored
             - -1 = Artefact / Movement
             - 0 = Wake
             - 1 = N1 sleep
             - 2 = N2 sleep
             - 3 = N3 sleep
-            - 4 = REM
+            - 4 = REM sleep
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
         (4), meaning that the detection is applied on REM sleep.
@@ -1686,6 +1689,7 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
             The default hypnogram format in YASA is a 1D integer
             vector where:
 
+            - -2 = Unscored
             - -1 = Artefact / Movement
             - 0 = Wake
             - 1 = N1 sleep

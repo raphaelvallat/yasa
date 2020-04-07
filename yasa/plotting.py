@@ -42,12 +42,13 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
             The default hypnogram format in YASA is a 1D integer
             vector where:
 
+            - -2 = Unscored
             - -1 = Artefact / Movement
             - 0 = Wake
             - 1 = N1 sleep
             - 2 = N2 sleep
             - 3 = N3 sleep
-            - 4 = REM
+            - 4 = REM sleep
     win_sec : int or float
         The length of the sliding window, in seconds, used for multitaper PSD
         calculation. Default is 30 seconds. Note that ``data`` must be at least
@@ -147,7 +148,8 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
         assert hypno.ndim == 1, 'Hypno must be 1D.'
         assert hypno.size == data.size, 'Hypno must have the same sf as data.'
         t_hyp = np.arange(hypno.size) / (sf * 3600)
-        hypno = pd.Series(hypno).map({-1: -1, 0: 0, 1: 2,
+        # Make sure that REM is displayed after Wake
+        hypno = pd.Series(hypno).map({-2: -2, -1: -1, 0: 0, 1: 2,
                                       2: 3, 3: 4, 4: 1}).values
         hypno_rem = np.ma.masked_not_equal(hypno, 1)
 
@@ -158,11 +160,18 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
         # Hypnogram (top axis)
         ax0.step(t_hyp, -1 * hypno, color='k')
         ax0.step(t_hyp, -1 * hypno_rem, color='r')
-        if -1 in hypno:
+        if -2 in hypno and -1 in hypno:
+            # Both Unscored and Artefacts are present
+            ax0.set_yticks([2, 1, 0, -1, -2, -3, -4])
+            ax0.set_yticklabels(['Uns', 'Art', 'W', 'R', 'N1', 'N2', 'N3'])
+            ax0.set_ylim(-4.5, 2.5)
+        elif -2 not in hypno and -1 in hypno:
+            # Only Artefacts are present
             ax0.set_yticks([1, 0, -1, -2, -3, -4])
             ax0.set_yticklabels(['Art', 'W', 'R', 'N1', 'N2', 'N3'])
             ax0.set_ylim(-4.5, 1.5)
         else:
+            # No artefacts or Unscored
             ax0.set_yticks([0, -1, -2, -3, -4])
             ax0.set_yticklabels(['W', 'R', 'N1', 'N2', 'N3'])
             ax0.set_ylim(-4.5, 0.5)

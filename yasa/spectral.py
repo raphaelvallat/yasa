@@ -52,12 +52,13 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
             The default hypnogram format in YASA is a 1D integer
             vector where:
 
+            - -2 = Unscored
             - -1 = Artefact / Movement
             - 0 = Wake
             - 1 = N1 sleep
             - 2 = N2 sleep
             - 3 = N3 sleep
-            - 4 = REM
+            - 4 = REM sleep
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is
         (2, 3), meaning that the bandpower are sequentially calculated

@@ -76,6 +76,16 @@ In order to use YASA, you need:
 - Some sleep EEG data, either as a NumPy array, or as a `mne.Raw <https://mne.tools/stable/generated/mne.io.Raw.html>`_ object.
 - Optionally, a sleep staging vector (a.k.a hypnogram) to perform calculations on specific sleep stages. To facilitate masking and indexing operations, the data and hypnogram MUST have the same sampling frequency and number of samples. YASA provide some convenient functions to load and upsample hypnogram data to the desired shape.
 
+.. note::
+      The default hypnogram format in YASA is a one dimensional integer vector where:
+        - -2 = Unscored
+        - -1 = Artefact / Movement
+        - 0 = Wake
+        - 1 = N1 sleep
+        - 2 = N2 sleep
+        - 3 = N3 sleep
+        - 4 = REM
+
 Examples
 ~~~~~~~~
 

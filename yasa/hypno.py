@@ -3,7 +3,8 @@ This file contains several helper functions to manipulate sleep staging
 (hypnogram) data. The default hypnogram format in YASA is a one dimensional
 integer array where:
 
-* -1  = Artefact / Undefined / Movement
+* -2  = Unscored
+* -1  = Artefact / Movement
 * 0   = Wake
 * 1   = N1 sleep
 * 2   = N2 sleep
@@ -44,7 +45,8 @@ logger = logging.getLogger('yasa')
 
 def hypno_str_to_int(hypno, mapping_dict={'w': 0, 'wake': 0, 'n1': 1, 's1': 1,
                                           'n2': 2, 's2': 2, 'n3': 3, 's3': 3,
-                                          'r': 4, 'rem': 4, 'art': -1}):
+                                          's4': 3, 'r': 4, 'rem': 4, 'art': -1,
+                                          'mt': -1, 'uns': -2, 'nd': -2}):
     """Convert a string hypnogram array to integer.
 
     ['W', 'N2', 'N2', 'N3', 'R'] ==> [0, 2, 2, 3, 4]
@@ -71,7 +73,7 @@ def hypno_str_to_int(hypno, mapping_dict={'w': 0, 'wake': 0, 'n1': 1, 's1': 1,
 
 
 def hypno_int_to_str(hypno, mapping_dict={0: 'W', 1: 'N1', 2: 'N2', 3: 'N3',
-                                          4: 'R', -1: 'Art'}):
+                                          4: 'R', -1: 'Art', -2: 'Uns'}):
     """Convert an integer hypnogram array to a string array.
 
     [0, 2, 2, 3, 4] ==> ['W', 'N2', 'N2', 'N3', 'R']
@@ -283,5 +285,6 @@ def load_profusion_hypno(fname, replace=True):  # pragma: no cover
         hypno.append(s.text)
     hypno = np.array(hypno).astype(int)
     if replace:
+        # Stage 4 --> 3 and REM --> 4
         hypno = pd.Series(hypno).replace({4: 3, 5: 4}).to_numpy()
     return hypno, sf_hyp

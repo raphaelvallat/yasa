@@ -6,17 +6,19 @@ What's new
 v0.2.0 (dev)
 ------------
 
+This is a major release with several new functions, bugfixes and miscellaneous enhancements in existing functions.
+
 **Bugfixes**
 
 a. Sleep efficiency in the :py:func:`yasa.sleep_statistics` is now calculated using time in bed (TIB) as the denominator instead of sleep period time (SPT), in agreement with the AASM guidelines. The old way of computing the efficiency (TST / SPT) has now been renamed Sleep Maintenance Efficiency (SME).
-b. The :py:func:`yasa.sliding_window` now always return an array of shape (n_epochs, ..., n_samples), i.e. the epochs are now always the first dimension of the epoched array. This is consistent with MNE default shape of mne.Epochs objects.
+b. The :py:func:`yasa.sliding_window` now always return an array of shape (n_epochs, ..., n_samples), i.e. the epochs are now always the first dimension of the epoched array. This is consistent with MNE default shape of :py:class:`mne.Epochs` objects.
 
 **New functions**
 
-a. Added :py:func:`yasa.bandpower_from_psd_ndarray` to calculate band power from a multi-dimensional PSD. This is a Numpy-only implementation and this function will return a np.array and not a pandas DataFrame. This function is useful if you need to calculate the bandpower from a 3-D PSD array, e.g. of shape (n_chan, n_epochs, n_freqs).
-b. Added :py:func:`yasa.get_centered_indices` to extract indices in data centered around specific events or peaks.
-c. Added :py:func:`art_detect` to automatically detect artefacts on single or multi-channel EEG data.
-d. Added :py:func:`load_profusion_hypno` to load a Compumedics Profusion hypnogram (.xml), as found on the `National Sleep Research Resource (NSRR) <https://sleepdata.org/>`_ website.
+a. Added :py:func:`yasa.art_detect` to automatically detect artefacts on single or multi-channel EEG data.
+b. Added :py:func:`yasa.bandpower_from_psd_ndarray` to calculate band power from a multi-dimensional PSD. This is a NumPy-only implementation and this function will return a np.array and not a pandas DataFrame. This function is useful if you need to calculate the bandpower from a 3-D PSD array, e.g. of shape *(n_epochs, n_chan, n_freqs)*.
+c. Added :py:func:`yasa.get_centered_indices` to extract indices in data centered around specific events or peaks.
+d. Added :py:func:`yasa.load_profusion_hypno` to load a Compumedics Profusion hypnogram (.xml), as found on the `National Sleep Research Resource (NSRR) <https://sleepdata.org/>`_ website.
 
 **Enhancements**
 
@@ -25,17 +27,18 @@ b. Added the `bandpass` argument to :py:func:`yasa.bandpower` to apply a FIR ban
 c. The :py:func:`yasa.bandpower_from_psd` now always return the total absolute physical power (`TotalAbsPow`) of the signal, in units of uV^2 / Hz. This allows to quickly calculate the absolute bandpower from the relative bandpower.
 d. Added sigma (12-16Hz) to the default frequency bands (`bands`) in :py:func:`yasa.bandpower` and :py:func:`yasa.bandpower_from_psd`.
 e. Added the ``coupling`` and ``freq_sp`` keyword-arguments to the :py:func:`yasa.sw_detect` function. If ``coupling=True``, the function will return the phase of the slow-waves (in radians) at the most prominent peak of sigma-filtered band (``PhaseAtSigmaPeak``), as well as the normalized mean vector length (``ndPAC``).
-f. Added an section in the `06_sw_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb>`_ notebooks on how to use relative amplitude thresholds (e.g. z-scores or percentiles) instead of absolute thresholds in physical units.
+f. Added an section in the `06_sw_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb>`_ notebooks on how to use relative amplitude thresholds (e.g. z-scores or percentiles) instead of absolute thresholds in slow-waves detection.
 g. The upper frequency band for :py:func:`yasa.sw_detect` has been changed from ``freq_sw=(0.3, 3.5)`` to ``freq_sw=(0.3, 2)`` Hz to comply with AASM guidelines.
-h. ``Stage`` is no longer taken into account when calculating outliers with :py:class:`sklearn.ensemble.IsolationForest` in :py:func:`yasa.spindles_detect`.
-i. To be consistent with :py:func:`yasa.spindles_detect`, :py:class:`sklearn.ensemble.IsolationForest` requires at least 50 (instead of 100) detected events in :py:func:`yasa.sw_detect` and :py:func:`yasa.rem_detect`.
-j. Added ``verbose`` parameter to all detection functions.
+h. ``Stage`` is no longer taken into account when finding outliers with :py:class:`sklearn.ensemble.IsolationForest` in :py:func:`yasa.spindles_detect`.
+i. To be consistent with :py:func:`yasa.spindles_detect`, automatic outlier removal now requires at least 50 (instead of 100) detected events in :py:func:`yasa.sw_detect` and :py:func:`yasa.rem_detect`.
+j. Added the ``verbose`` parameter to all detection functions.
+k. Added -2 to the default hypnogram format to denote unscored data.
 
 **Dependencies**
 
 a. Removed deprecated ``behavior`` argument to avoid warning when calling :py:class:`sklearn.ensemble.IsolationForest`.
-b. Added `tensorpac <https://etiennecmb.github.io/tensorpac/index.html>`_ and `pyriemann <https://pyriemann.readthedocs.io/en/latest/api.html>`_ to dependencies.
-c. YASA now requires the latest version of MNE >= 0.20, Scikit-learn >= 0.21 and Tensorpac >= 0.6.3.
+b. Added `TensorPAC <https://etiennecmb.github.io/tensorpac/index.html>`_ and `pyRiemann <https://pyriemann.readthedocs.io/en/latest/api.html>`_ to dependencies.
+c. Updated dependencies version for MNE and scikit-learn.
 
 v0.1.9 (February 2020)
 ----------------------

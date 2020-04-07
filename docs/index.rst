@@ -78,6 +78,7 @@ In order to use YASA, you need:
 
 .. note::
       The default hypnogram format in YASA is a one dimensional integer vector where:
+        - -2 = Unscored
         - -1 = Artefact / Movement
         - 0 = Wake
         - 1 = N1 sleep
