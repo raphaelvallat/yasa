@@ -201,15 +201,22 @@ class _DetectionResults(object):
 
         return df_grp.set_index(grouper)
 
-    def get_sync_events(self, center, time_before, time_after, filtered):
+    def get_sync_events(self, center, time_before, time_after,
+                        filt=(None, None)):
         """get_sync_events (not for REM, spindles & SW only)"""
         from yasa.others import get_centered_indices
         assert time_before >= 0
         assert time_after >= 0
         bef = int(self._sf * time_before)
         aft = int(self._sf * time_after)
-        data = self._data_filt if filtered else self._data
         time = np.arange(-bef, aft + 1, dtype='int') / self._sf
+
+        if any(filt):
+            data = mne.filter.filter_data(self._data, self._sf, l_freq=filt[0],
+                                          h_freq=filt[1], method='fir',
+                                          verbose=False)
+        else:
+            data = self._data
 
         df_sync = pd.DataFrame()
 
@@ -240,14 +247,15 @@ class _DetectionResults(object):
         return df_sync
 
     def plot_average(self, event_type, center='Peak', time_before=1,
-                     time_after=1, filtered=False, figsize=(6, 4.5), **kwargs):
+                     time_after=1, filt=(None, None), figsize=(6, 4.5),
+                     **kwargs):
         """plot_average (not for REM, spindles & SW only)"""
         import seaborn as sns
         import matplotlib.pyplot as plt
 
         df_sync = self.get_sync_events(center=center, time_before=time_before,
                                        time_after=time_after,
-                                       filtered=filtered)
+                                       filt=filt)
 
         assert not df_sync.empty, "Could not calculate event-locked data."
 
@@ -765,7 +773,7 @@ class SpindlesResults(_DetectionResults):
         return super().get_mask()
 
     def get_sync_events(self, center='Peak', time_before=1, time_after=1,
-                        filtered=False):
+                        filt=(None, None)):
         """
         Return the raw or filtered data of each detected event after
         centering to a specific timepoint.
@@ -779,8 +787,11 @@ class SpindlesResults(_DetectionResults):
             Time (in seconds) before ``center``.
         time_after : float
             Time (in seconds) after ``center``.
-        filtered : bool
-            If True, use the filtered signal.
+        filt : tuple
+            Optional filtering to apply to data. For instance, ``filt=(1, 30)``
+            will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
+            will apply a 40 Hz lowpass filter. Filtering is done using default
+            parameters in the :py:func:`mne.filter.filter_data` function.
 
         Returns
         -------
@@ -795,10 +806,11 @@ class SpindlesResults(_DetectionResults):
         """
         return super().get_sync_events(center=center, time_before=time_before,
                                        time_after=time_after,
-                                       filtered=filtered)
+                                       filt=filt)
 
     def plot_average(self, center='Peak', time_before=1,
-                     time_after=1, filtered=False, figsize=(6, 4.5), **kwargs):
+                     time_after=1, filt=(None, None), figsize=(6, 4.5),
+                     **kwargs):
         """
         Plot the average spindle.
 
@@ -811,8 +823,11 @@ class SpindlesResults(_DetectionResults):
             Time (in seconds) before ``center``.
         time_after : float
             Time (in seconds) after ``center``.
-        filtered : bool
-            If True, use the filtered signal.
+        filt : tuple
+            Optional filtering to apply to data. For instance, ``filt=(1, 30)``
+            will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
+            will apply a 40 Hz lowpass filter. Filtering is done using default
+            parameters in the :py:func:`mne.filter.filter_data` function.
         figsize : tuple
             Figure size in inches.
         **kwargs : dict
@@ -820,7 +835,7 @@ class SpindlesResults(_DetectionResults):
         """
         return super().plot_average(event_type='spindles',
                                     center=center, time_before=time_before,
-                                    time_after=time_after, filtered=filtered,
+                                    time_after=time_after, filt=filt,
                                     figsize=figsize, **kwargs)
 
 #############################################################################
@@ -1316,7 +1331,7 @@ class SWResults(_DetectionResults):
         return super().get_mask()
 
     def get_sync_events(self, center='NegPeak', time_before=0.4,
-                        time_after=0.8, filtered=False):
+                        time_after=0.8, filt=(None, None)):
         """
         Return the raw data of each detected event after
         centering to a specific timepoint.
@@ -1330,8 +1345,11 @@ class SWResults(_DetectionResults):
             Time (in seconds) before ``center``.
         time_after : float
             Time (in seconds) after ``center``.
-        filtered : bool
-            If True, use the filtered signal.
+        filt : tuple
+            Optional filtering to apply to data. For instance, ``filt=(1, 30)``
+            will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
+            will apply a 40 Hz lowpass filter. Filtering is done using default
+            parameters in the :py:func:`mne.filter.filter_data` function.
 
         Returns
         -------
@@ -1345,10 +1363,10 @@ class SWResults(_DetectionResults):
         """
         return super().get_sync_events(center=center, time_before=time_before,
                                        time_after=time_after,
-                                       filtered=filtered)
+                                       filt=filt)
 
     def plot_average(self, center='NegPeak', time_before=0.4,
-                     time_after=0.8, filtered=False, figsize=(6, 4.5),
+                     time_after=0.8, filt=(None, None), figsize=(6, 4.5),
                      **kwargs):
         """
         Plot the average slow-wave.
@@ -1362,8 +1380,11 @@ class SWResults(_DetectionResults):
             Time (in seconds) before ``center``.
         time_after : float
             Time (in seconds) after ``center``.
-        filtered : bool
-            If True, use the filtered signal.
+        filt : tuple
+            Optional filtering to apply to data. For instance, ``filt=(1, 30)``
+            will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
+            will apply a 40 Hz lowpass filter. Filtering is done using default
+            parameters in the :py:func:`mne.filter.filter_data` function.
         figsize : tuple
             Figure size in inches.
         **kwargs : dict
@@ -1371,7 +1392,7 @@ class SWResults(_DetectionResults):
         """
         return super().plot_average(event_type='sw',
                                     center=center, time_before=time_before,
-                                    time_after=time_after, filtered=filtered,
+                                    time_after=time_after, filt=filt,
                                     figsize=figsize, **kwargs)
 
 
@@ -1690,7 +1711,7 @@ class REMResults(_DetectionResults):
         return mask
 
     def get_sync_events(self, center='Peak', time_before=0.4, time_after=0.4,
-                        filtered=False):
+                        filt=(None, None)):
         """
         Return the raw or filtered data of each detected event after
         centering to a specific timepoint.
@@ -1704,8 +1725,11 @@ class REMResults(_DetectionResults):
             Time (in seconds) before ``center``.
         time_after : float
             Time (in seconds) after ``center``.
-        filtered : bool
-            If True, use the filtered signal.
+        filt : tuple
+            Optional filtering to apply to data. For instance, ``filt=(1, 30)``
+            will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
+            will apply a 40 Hz lowpass filter. Filtering is done using default
+            parameters in the :py:func:`mne.filter.filter_data` function.
 
         Returns
         -------
@@ -1722,7 +1746,14 @@ class REMResults(_DetectionResults):
         assert time_after >= 0
         bef = int(self._sf * time_before)
         aft = int(self._sf * time_after)
-        data = self._data_filt if filtered else self._data
+
+        if any(filt):
+            data = mne.filter.filter_data(self._data, self._sf, l_freq=filt[0],
+                                          h_freq=filt[1], method='fir',
+                                          verbose=False)
+        else:
+            data = self._data
+
         time = np.arange(-bef, aft + 1, dtype='int') / self._sf
         # Get location of peaks in data
         peaks = (self._events[center] * self._sf).astype(int).to_numpy()
@@ -1749,7 +1780,7 @@ class REMResults(_DetectionResults):
         return df_sync
 
     def plot_average(self, center='Peak', time_before=0.4,
-                     time_after=0.4, filtered=False, figsize=(6, 4.5),
+                     time_after=0.4, filt=(None, None), figsize=(6, 4.5),
                      **kwargs):
         """
         Plot the average REM.
@@ -1763,8 +1794,11 @@ class REMResults(_DetectionResults):
             Time (in seconds) before ``center``.
         time_after : float
             Time (in seconds) after ``center``.
-        filtered : bool
-            If True, use the filtered signal.
+        filt : tuple
+            Optional filtering to apply to data. For instance, ``filt=(1, 30)``
+            will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
+            will apply a 40 Hz lowpass filter. Filtering is done using default
+            parameters in the :py:func:`mne.filter.filter_data` function.
         figsize : tuple
             Figure size in inches.
         **kwargs : dict
@@ -1774,8 +1808,7 @@ class REMResults(_DetectionResults):
         import matplotlib.pyplot as plt
 
         df_sync = self.get_sync_events(center=center, time_before=time_before,
-                                       time_after=time_after,
-                                       filtered=filtered)
+                                       time_after=time_after, filt=filt)
 
         # Start figure
         fig, ax = plt.subplots(1, 1, figsize=figsize)

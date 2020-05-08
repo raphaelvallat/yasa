@@ -75,10 +75,8 @@ class TestMain(unittest.TestCase):
         assert sp.summary().shape[0] == 2
         sp.get_mask()
         sp.get_sync_events()
-
         sp.get_sync_events(time_before=10)  # Invalid time window
-
-        sp.plot_average(ci=None)  # Skip bootstrapping for faster test
+        sp.plot_average(ci=None, filt=(None, 30))  # Skip bootstrapping
         np.testing.assert_array_equal(np.squeeze(sp._data), data)
         assert sp._sf == sf
         sp.summary(grp_chan=True, grp_stage=True, average='median', sort=False)
@@ -138,7 +136,7 @@ class TestMain(unittest.TestCase):
 
         sp = spindles_detect(data_full, sf, chan_full)
         sp.get_mask()
-        sp.get_sync_events()
+        sp.get_sync_events(filt=(12, 15))
         sp.summary()
         sp.summary(grp_chan=True)
         sp.plot_average(ci=None)
@@ -262,6 +260,7 @@ class TestMain(unittest.TestCase):
         rem.get_mask()
         rem.get_sync_events()
         rem.plot_average(ci=None)
+        rem.plot_average(filt=(0.5, 5), ci=None)
 
         # With REM hypnogram
         hypno_rem = 4 * np.ones_like(loc)
