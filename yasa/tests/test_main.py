@@ -1,48 +1,45 @@
 """
-Test the functions in the yasa/main.py file.
+Test the functions in yasa/main.py.
 """
 import mne
 import pytest
 import unittest
 import numpy as np
 from itertools import product
-from mne.filter import filter_data, resample
+import matplotlib.pyplot as plt
+from mne.filter import filter_data
 from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
-from yasa.main import (get_sync_events, _index_to_events, get_bool_vector,
-                       _merge_close, spindles_detect, spindles_detect_multi,
-                       sw_detect, sw_detect_multi, rem_detect, art_detect)
+from yasa.main import spindles_detect, sw_detect, rem_detect, art_detect
 
-# Load data
-data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
-sf = 200
+##############################################################################
+# DATA LOADING
+##############################################################################
+
+# For all data, the sampling frequency is always 100 Hz
+sf = 100
+
+# 1) Single channel, we take one every other point to keep a sf of 100 Hz
+data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')[::2]
 data_sigma = filter_data(data, sf, 12, 15, method='fir', verbose=0)
-
-# Resample the data to 128 Hz
-fac = 128 / sf
-data_128 = resample(data, up=fac, down=1.0, npad='auto', axis=-1,
-                    window='boxcar', n_jobs=1, pad='reflect_limited',
-                    verbose=False)
-sf_128 = 128
-
-# Resample the data to 150 Hz
-fac = 150 / sf
-data_150 = resample(data, up=fac, down=1.0, npad='auto', axis=-1,
-                    window='boxcar', n_jobs=1, pad='reflect_limited',
-                    verbose=False)
-sf_150 = 150
 
 # Load an extract of N3 sleep without any spindle
 data_n3 = np.loadtxt('notebooks/data_N3_no-spindles_30sec_100Hz.txt')
-sf_n3 = 100
 
+# 2) Multi-channel
 # Load a full recording and its hypnogram
-file_full = np.load('notebooks/data_full_6hrs_100Hz_Cz+Fz+Pz.npz')
-data_full = file_full.get('data')
-chan_full = file_full.get('chan')
-sf_full = 100
+data_full = np.load('notebooks/data_full_6hrs_100Hz_Cz+Fz+Pz.npz').get('data')
+chan_full = np.load('notebooks/data_full_6hrs_100Hz_Cz+Fz+Pz.npz').get('chan')
 hypno_full = np.load('notebooks/data_full_6hrs_100Hz_hypno.npz').get('hypno')
 
-# Using MNE
+# Let's add a channel with bad data amplitude
+chan_full = np.append(chan_full, 'Bad')  # ['Cz', 'Fz', 'Pz', 'Bad']
+data_full = np.vstack((data_full, data_full[-1, :] * 1e8))
+
+# Keep only Fz and during a N3 sleep period with (huge) slow-waves
+data_sw = data_full[1, 666000:672000].astype(np.float64)
+hypno_sw = hypno_full[666000:672000]
+
+# MNE Raw
 data_mne = mne.io.read_raw_fif('notebooks/sub-02_mne_raw.fif', preload=True,
                                verbose=0)
 data_mne.pick_types(eeg=True)
@@ -53,82 +50,38 @@ hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30),
                                    data=data_mne)
 
 
-class TestStringMethods(unittest.TestCase):
+class TestMain(unittest.TestCase):
 
-    def test_index_to_events(self):
-        """Test functions _index_to_events"""
-        a = np.array([[3, 6], [8, 12], [14, 20]])
-        good = [3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20]
-        out = _index_to_events(a)
-        np.testing.assert_equal(good, out)
-
-    def test_get_bool_vector(self):
-        """Test functions get_bool_vector"""
-        # Numpy
-        sp_params = spindles_detect(data, sf)
-        out = get_bool_vector(data, sf, sp_params)
-        assert out.size == data.size
-        assert np.unique(out).size == 2
-        # MNE
-        # Single channel
-        sp_params = spindles_detect_multi(data_mne_single)
-        out = get_bool_vector(data_mne_single, detection=sp_params)
-        assert out.size == max(data_mne_single.get_data().shape)
-        assert np.unique(out).size == 2
-        # Multi-channels
-        sp_params = spindles_detect_multi(data_mne)
-        out = get_bool_vector(data_mne, detection=sp_params)
-        assert out.size == data_mne.get_data().size
-        assert np.unique(out).size == 2
-
-    def test_get_sync_events(self):
-        """Test functions get_sync_events"""
-        sw = sw_detect_multi(data_full, sf_full, chan_full)
-        # Multi-channel with negative slow-wave peak
-        df_sync = get_sync_events(data_full, sf, sw)
-        assert df_sync['Channel'].nunique() == 3
-        # Single-channel with positive slow-wave peak
-        sw_c = sw[sw['Channel'] == sw.at[0, 'Channel']].iloc[:, :-2]
-        df_sync = get_sync_events(data_full[0, :], sf_full, sw_c,
-                                  center='PosPeak', time_before=0,
-                                  time_after=2)
-        assert df_sync.shape[1] == 3
-        # MNE
-        # Single channel
-        sw = sw_detect_multi(data_mne_single, amp_neg=(20, 300),
-                             amp_ptp=(60, 500))
-        df_sync = get_sync_events(data_mne_single, detection=sw)
-        assert df_sync['Channel'].nunique() == 1
-        # Multi channel
-        sw = sw_detect_multi(data_mne, amp_neg=(20, 300), amp_ptp=(60, 500))
-        df_sync = get_sync_events(data_mne, detection=sw)
-        assert df_sync['Channel'].nunique() == 6
-
-    def test_merge_close(self):
-        """Test functions _merge_close"""
-        a = np.array([4, 5, 6, 7, 10, 11, 12, 13, 20, 21, 22, 100, 102])
-        good = np.array([4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
-                         17, 18, 19, 20, 21, 22, 100, 101, 102])
-        # Events that are less than 100 ms apart (i.e. 10 points at 100 Hz sf)
-        out = _merge_close(a, 100, 100)
-        np.testing.assert_equal(good, out)
+    def test_check_data_hypno(self):
+        """Test preprocessing of data and hypno."""
+        pass
 
     def test_spindles_detect(self):
         """Test spindles_detect"""
+        #######################################################################
+        # SINGLE CHANNEL
+        #######################################################################
         freq_sp = [(11, 16), [12, 14]]
         freq_broad = [(0.5, 30), [1, 25]]
         duration = [(0.3, 2.5), [0.5, 3]]
         min_distance = [None, 0, 500]
-
         prod_args = product(freq_sp, freq_broad, duration, min_distance)
 
         for i, (s, b, d, m) in enumerate(prod_args):
             spindles_detect(data, sf, freq_sp=s, duration=d,
                             freq_broad=b, min_distance=m)
 
-        sp_params = spindles_detect(data, sf, verbose=True)
-        print(sp_params.round(2))
-        assert spindles_detect(data, sf).shape[0] == 2
+        sp = spindles_detect(data, sf, verbose=True)
+        assert sp.summary().shape[0] == 2
+        sp.get_bool_vector()
+        sp.get_sync_events()
+
+        sp.get_sync_events(time_before=10)  # Invalid time window
+
+        sp.plot_average(ci=None)  # Skip bootstrapping for faster test
+        np.testing.assert_array_equal(np.squeeze(sp._data), data)
+        assert sp._sf == sf
+        sp.summary(grp_chan=True, grp_stage=True, average='median', sort=False)
 
         # Test with custom thresholds
         spindles_detect(data, sf, thresh={'rel_pow': 0.25})
@@ -143,101 +96,80 @@ class TestStringMethods(unittest.TestCase):
         spindles_detect(data, sf, thresh={'rms': None, 'rel_pow': None})
         spindles_detect(data, sf, thresh={'corr': None, 'rel_pow': None})
 
-        # Test with downsampling is False
-        spindles_detect(data, sf, downsample=False)
-
-        # Power of 2 resampling
-        spindles_detect(data_128, sf_128, coupling=True, freq_so=(0.5, 2))
-
         # Test with hypnogram
-        spindles_detect(data_full[0, :], sf_full, hypno=hypno_full)
-
-        # Hypnogram with sf = 200 Hz (require downsampling)
         spindles_detect(data, sf, hypno=np.ones(data.size))
 
-        # Hypnogram with sf = 150
-        with self.assertLogs('yasa', level='WARNING'):
-            spindles_detect(data_150, sf_150, hypno=np.ones(data_150.size))
+        # Single channel with Isolation Forest + hypnogram
+        sp = spindles_detect(data_full[1, :], sf, hypno=hypno_full,
+                             remove_outliers=True)
 
-        # Now load other data
         with self.assertLogs('yasa', level='WARNING'):
-            spindles_detect(data_n3, sf_n3)
+            spindles_detect(data_n3, sf)
+        # assert sp is None --> Fails
 
         # Ensure that the two warnings are tested
         with self.assertLogs('yasa', level='WARNING'):
-            sp = spindles_detect(data_n3, sf_n3, thresh={'corr': .95})
+            sp = spindles_detect(data_n3, sf, thresh={'corr': .95})
         assert sp is None
 
         # Test with wrong data amplitude (1)
         with self.assertLogs('yasa', level='ERROR'):
-            sp = spindles_detect(data_n3 / 1e6, sf_n3)
+            sp = spindles_detect(data_n3 / 1e6, sf)
         assert sp is None
 
         # Test with wrong data amplitude (2)
         with self.assertLogs('yasa', level='ERROR'):
-            sp = spindles_detect(data_n3 * 1e6, sf_n3)
+            sp = spindles_detect(data_n3 * 1e6, sf)
         assert sp is None
 
         # Test with a random array
         with self.assertLogs('yasa', level='ERROR'):
-            sp = spindles_detect(np.random.random(size=1000), sf_n3)
+            sp = spindles_detect(np.random.random(size=1000), sf)
         assert sp is None
 
-        # Now we try with the isolation forest on the full recording
-        sp = spindles_detect(data_full[1, :], sf_full, remove_outliers=True)
-        assert sp.shape[0] > 100
-
-        with pytest.raises(AssertionError):
-            sp = spindles_detect(data_full, sf_full)
-
         # No values in hypno intersect with include
-        with self.assertLogs('yasa', level='ERROR'):
+        with pytest.raises(AssertionError):
             sp = spindles_detect(data, sf, include=2,
                                  hypno=np.zeros(data.size, dtype=int))
-            assert sp is None
 
-    def test_spindles_detect_multi(self):
-        """Test spindles_detect_multi"""
-        sp = spindles_detect_multi(data_full, sf_full, chan_full)
-        sp_no_out = spindles_detect_multi(data_full, sf_full, chan_full,
-                                          remove_outliers=True)
-        sp_multi = spindles_detect_multi(data_full, sf_full, chan_full,
-                                         multi_only=True)
-        assert sp_multi.shape[0] < sp.shape[0]
-        assert sp_no_out.shape[0] < sp.shape[0]
-        bv = get_bool_vector(data_full, sf_full, sp)
-        assert bv.shape[0] == len(chan_full)
+        #######################################################################
+        # MULTI CHANNEL
+        #######################################################################
 
-        # Test with hypnogram
-        spindles_detect_multi(data_full, sf_full, chan_full, hypno=hypno_full,
-                              include=2, coupling=True)
+        sp = spindles_detect(data_full, sf, chan_full)
+        sp.get_bool_vector()
+        sp.get_sync_events()
+        sp.summary()
+        sp.summary(grp_chan=True)
+        sp.plot_average(ci=None)
+        assert sp._data.shape == sp._data_filt.shape
+        np.testing.assert_array_equal(sp._data, data_full)
+        assert sp._sf == sf
+        sp_no_out = spindles_detect(data_full, sf, chan_full,
+                                    remove_outliers=True)
+        sp_multi = spindles_detect(data_full, sf, chan_full,
+                                   multi_only=True)
+        assert sp_multi.summary().shape[0] < sp.summary().shape[0]
+        assert sp_no_out.summary().shape[0] < sp.summary().shape[0]
+
+        # Test with hypnogram + coupling
+        sp = spindles_detect(data_full, sf, hypno=hypno_full,
+                             include=2, coupling=True)
+        sp.summary(grp_chan=False, grp_stage=False)
+        sp.summary(grp_chan=False, grp_stage=True, average='median')
+        sp.summary(grp_chan=True, grp_stage=False)
+        sp.summary(grp_chan=True, grp_stage=True, sort=False)
 
         # Using a MNE raw object (and disabling one threshold)
-        spindles_detect_multi(data_mne, thresh={'corr': None, 'rms': 3})
-        spindles_detect_multi(data_mne, hypno=hypno_mne, include=2,
-                              verbose=True)
+        spindles_detect(data_mne, thresh={'corr': None, 'rms': 3})
+        spindles_detect(data_mne, hypno=hypno_mne, include=2,
+                        verbose=True)
 
-        # Now we replace one channel with no spindle / bad data
-        data_full[1, :] = np.random.random(data_full.shape[1])
-
-        # Test where data.shape[0] != len(chan)
-        with pytest.raises(AssertionError):
-            spindles_detect_multi(data_full, sf_full, chan_full[:-1])
-
-        # Test with only bad channels
-        data_full[0, :] = np.random.random(data_full.shape[1])
-        data_full[2, :] = np.random.random(data_full.shape[1])
-        with self.assertLogs('yasa', level='WARNING'):
-            sp = spindles_detect_multi(data_full, sf_full, chan_full)
-            assert sp is None
+        plt.close('all')
 
     def test_sw_detect(self):
         """Test function slow-wave detect
         """
-        # Keep only Fz and during a N3 sleep period with (huge) slow-waves
-        data_sw = data_full[1, 666000:672000].astype(np.float64)
-        hypno_sw = hypno_full[666000:672000]
-
         # Parameters product testing
         freq_sw = [(0.3, 3.5), (0.5, 4)]
         dur_neg = [(0.3, 1.5), [0.1, 2]]
@@ -245,73 +177,63 @@ class TestStringMethods(unittest.TestCase):
         amp_neg = [(40, 300), [40, None]]
         amp_pos = [(10, 150), (0, None)]
         amp_ptp = [(75, 400), [80, 300]]
-
         prod_args = product(freq_sw, dur_neg, dur_pos, amp_neg, amp_pos,
                             amp_ptp)
 
         for i, (f, dn, dp, an, ap, aptp) in enumerate(prod_args):
-            print((f, dn, dp, an, ap, aptp))
-            sw_detect(data_sw, sf_full, freq_sw=f, dur_neg=dn,
+            # print((f, dn, dp, an, ap, aptp))
+            sw_detect(data_sw, sf, freq_sw=f, dur_neg=dn,
                       dur_pos=dp, amp_neg=an, amp_pos=ap,
                       amp_ptp=aptp)
 
         # With N3 hypnogram
-        sw_detect(data_sw, sf_full, hypno=hypno_sw, coupling=True)
+        sw = sw_detect(data_sw, sf, hypno=hypno_sw, coupling=True)
+        sw.summary()
+        sw.get_bool_vector()
+        sw.get_sync_events()
+        sw.plot_average(ci=None)
+        np.testing.assert_array_equal(np.squeeze(sw._data), data_sw)
+        np.testing.assert_array_equal(sw._hypno, hypno_sw)
+        assert sw._sf == sf
+
+        # Test with wrong data amplitude
+        with self.assertLogs('yasa', level='ERROR'):
+            sw = sw_detect(data_sw * 0, sf)  # All channels are flat
+        assert sw is None
 
         # With 2D data
-        sw_detect(data_sw[np.newaxis, ...], sf_full, verbose='INFO')
-
-        # Downsampling with hypnogram
-        data_sw_200 = resample(data_sw, up=2)
-        sw_detect(data_sw_200, 200,
-                  hypno=2 * np.ones(data_sw_200.shape, dtype=int),
-                  include=2)
-
-        # Downsampling without hypnogram
-        data_sw_200 = resample(data_sw, up=2)
-        sw_detect(data_sw_200, 200, coupling=True, freq_sp=(11, 15))
-
-        # Non-integer sampling frequency
-        data_sw_250 = resample(data_sw, up=2.5)
-        sw_detect(data_sw_250, 250)
+        sw_detect(data_sw[np.newaxis, ...], sf, verbose='INFO')
 
         # No values in hypno intersect with include
-        with self.assertLogs('yasa', level='ERROR'):
-            sw = sw_detect(data_sw, sf_full, include=3,
+        with pytest.raises(AssertionError):
+            sw = sw_detect(data_sw, sf, include=3,
                            hypno=np.ones(data_sw.shape, dtype=int))
-            assert sw is None
 
-    def test_sw_detect_multi(self):
-        """Test sw_detect_multi"""
-        data_full = file_full.get('data')
-        sw = sw_detect_multi(data_full, sf_full, chan_full)
-        sw_no_out = sw_detect_multi(data_full, sf_full, chan_full,
-                                    remove_outliers=True)
-        assert sw_no_out.shape[0] < sw.shape[0]
-        bv = get_bool_vector(data_full, sf_full, sw)
-        assert bv.shape[0] == len(chan_full)
+        #######################################################################
+        # MULTI CHANNEL
+        #######################################################################
+
+        sw = sw_detect(data_full, sf, chan_full)
+        sw.get_bool_vector()
+        sw.get_sync_events()
+        sw.plot_average(ci=None)
+
+        sw_no_out = sw_detect(data_full, sf, chan_full,
+                              remove_outliers=True)
+        assert sw_no_out._events.shape[0] < sw._events.shape[0]
 
         # Test with hypnogram
-        sw_detect_multi(data_full, sf_full, chan_full,
-                        hypno=hypno_full, include=3)
+        sw = sw_detect(data_full, sf, chan_full, hypno=hypno_full)
+        sw.summary(grp_chan=False, grp_stage=False)
+        sw.summary(grp_chan=False, grp_stage=True, average='median')
+        sw.summary(grp_chan=True, grp_stage=False)
+        sw.summary(grp_chan=True, grp_stage=True, sort=False)
+        sw.plot_average(ci=None)
 
         # Using a MNE raw object
-        sw_detect_multi(data_mne)
-        sw_detect_multi(data_mne, hypno=hypno_mne, include=(2, 3))
-
-        # Now we replace one channel with no slow-wave / bad data
-        data_full[1, :] = np.random.random(data_full.shape[1])
-
-        # Test where data.shape[0] != len(chan)
-        with pytest.raises(AssertionError):
-            sw_detect_multi(data_full, sf_full, chan_full[:-1])
-
-        # Test with only bad channels
-        data_full[0, :] = np.random.random(data_full.shape[1])
-        data_full[2, :] = np.random.random(data_full.shape[1])
-        with self.assertLogs('yasa', level='WARNING'):
-            sp = sw_detect_multi(data_full, sf_full, chan_full)
-            assert sp is None
+        sw_detect(data_mne)
+        sw_detect(data_mne, hypno=hypno_mne, include=3)
+        plt.close('all')
 
     def test_rem_detect(self):
         """Test function REM detect
@@ -320,76 +242,71 @@ class TestStringMethods(unittest.TestCase):
         data_rem = file_rem['data']
         loc, roc = data_rem[0, :], data_rem[1, :]
         sf_rem = file_rem['sf']
-        # chan_rem = file_rem['chan']
         hypno_rem = 4 * np.ones_like(loc)
 
         # Parameters product testing
         freq_rem = [(0.5, 5), (0.3, 8)]
         duration = [(0.3, 1.5), [0.5, 1]]
         amplitude = [(50, 200), [60, 300]]
-        downsample = [True, False]
         hypno = [hypno_rem, None]
-        prod_args = product(freq_rem, duration, amplitude, downsample, hypno)
+        prod_args = product(freq_rem, duration, amplitude, hypno)
 
-        for i, (f, dr, am, ds, h) in enumerate(prod_args):
+        for i, (f, dr, am, h) in enumerate(prod_args):
             rem_detect(loc, roc, sf_rem, hypno=h, freq_rem=f, duration=dr,
-                       amplitude=am, downsample=ds)
+                       amplitude=am)
 
         # With isolation forest
-        df_rem = rem_detect(loc, roc, sf, verbose='info')
-        df_rem2 = rem_detect(loc, roc, sf, remove_outliers=True)
-        assert df_rem.shape[0] > df_rem2.shape[0]
-        assert get_bool_vector(loc, sf, df_rem).size == loc.size
+        rem = rem_detect(loc, roc, sf, verbose='info')
+        rem2 = rem_detect(loc, roc, sf, remove_outliers=True)
+        assert rem.summary().shape[0] > rem2.summary().shape[0]
+        rem.summary()
+        rem.get_bool_vector()
+        rem.get_sync_events()
+        rem.plot_average(ci=None)
 
         # With REM hypnogram
         hypno_rem = 4 * np.ones_like(loc)
-        df_rem = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
+        rem = rem_detect(loc, roc, sf, hypno=hypno_rem)
         hypno_rem = np.r_[np.ones(int(loc.size / 2)),
                           4 * np.ones(int(loc.size / 2))]
-        df_rem2 = rem_detect(loc, roc, sf_full, hypno=hypno_rem)
-        assert df_rem.shape[0] > df_rem2.shape[0]
+        rem2 = rem_detect(loc, roc, sf, hypno=hypno_rem)
+        assert rem.summary().shape[0] > rem2.summary().shape[0]
+        rem2.summary(grp_stage=True, average='median')
 
         # Test with wrong data amplitude on ROC
         with self.assertLogs('yasa', level='ERROR'):
-            rd = rem_detect(loc * 1e-8, roc, sf)
-        assert rd is None
+            rem = rem_detect(loc * 1e-8, roc, sf)
+        assert rem is None
 
         # Test with wrong data amplitude on LOC
         with self.assertLogs('yasa', level='ERROR'):
-            rd = rem_detect(loc, roc * 1e8, sf)
-        assert rd is None
-
-        # Hypnogram with sf = 150
-        with self.assertLogs('yasa', level='WARNING'):
-            rem_detect(loc, roc * 1e8, sf=150)  # Fake sampling frequency
+            rem = rem_detect(loc, roc * 1e8, sf)
+        assert rem is None
 
         # No values in hypno intersect with include
-        with self.assertLogs('yasa', level='ERROR'):
-            sp = rem_detect(loc, roc, sf_full, hypno=hypno_rem, include=5)
-            assert sp is None
+        with pytest.raises(AssertionError):
+            rem_detect(loc, roc, sf, hypno=hypno_rem, include=5)
 
     def test_art_detect(self):
         """Test function art_detect
         """
         file_9 = np.load('notebooks/data_full_6hrs_100Hz_9channels.npz')
         data_9 = file_9.get('data')
-        hypno_9 = np.load('notebooks/data_full_6hrs_100Hz_hypno.npz').get('hypno')
+        hypno_9 = np.load('notebooks/data_full_6hrs_100Hz_hypno.npz').get('hypno')  # noqa
         # For the sake of the example, let's add some flat data at the end
         data_9 = np.concatenate((data_9, np.zeros((data_9.shape[0], 20000))),
                                 axis=1)
         hypno_9 = np.concatenate((hypno_9, np.zeros(20000)))
 
         # Start different combinations
-        art_detect(data_9, 100, window=5, method='covar', threshold=3)
-        art_detect(data_9, 100, window=5, hypno=hypno_9, include=(2, 3),
-                        method='covar', threshold=3)
-        art_detect(data_9, 100, window=5, method='std', threshold=2)
-        art_detect(data_9, 100, window=5, hypno=hypno_9,
-                        include=(0, 1, 2, 3, 4, 5, 6), method='std',
-                        threshold=2)
-        art_detect(data_9, 100, window=5., hypno=hypno_9,
-                        include=(0, 1, 2, 3, 4, 5, 6), method='std',
-                        threshold=10)
+        art_detect(data_9, sf=100, window=10, method='covar', threshold=3)
+        art_detect(data_9, sf=100, window=6, hypno=hypno_9, include=(2, 3),
+                   method='covar', threshold=3)
+        art_detect(data_9, sf=100, window=5, method='std', threshold=2)
+        art_detect(data_9, sf=100, window=5, hypno=hypno_9, method='std',
+                   include=(0, 1, 2, 3, 4, 5, 6), threshold=2)
+        art_detect(data_9, sf=100, window=5., hypno=hypno_9, method='std',
+                   include=(0, 1, 2, 3, 4, 5, 6), threshold=10)
         # Single channel
         art_detect(data_9[0], 100, window=10, method='covar')
         art_detect(data_9[0], 100, window=5, method='std', verbose=True)
@@ -397,7 +314,7 @@ class TestStringMethods(unittest.TestCase):
         # Not enough epochs for stage
         hypno_9[:100] = 6
         art_detect(data_9, sf, window=5., hypno=hypno_9, include=6,
-                        method='std', threshold=3, n_chan_reject=5)
+                   method='std', threshold=3, n_chan_reject=5)
 
         # With a flat channel
         data_with_flat = np.vstack((data_9, np.zeros(data_9.shape[-1])))
@@ -407,6 +324,6 @@ class TestStringMethods(unittest.TestCase):
         art_detect(data_mne, window=10., hypno=hypno_mne, method='covar',
                    verbose='INFO')
 
-        with pytest.raises(ValueError):
+        with pytest.raises(AssertionError):
             # None of include in hypno
             art_detect(data_mne, window=10., hypno=hypno_mne, include=[7, 8])

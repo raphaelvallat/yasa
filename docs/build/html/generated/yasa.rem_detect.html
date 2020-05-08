@@ -3,16 +3,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.rem_detect &#8212; yasa 0.2.0 documentation</title>
+    <title>yasa.rem_detect &#8212; yasa 0.3.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
-    <script src="../_static/copybutton.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/copybutton.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.3.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -89,8 +89,8 @@
 <h1>yasa.rem_detect</h1>
 <dl class="function">
 <dt id="yasa.rem_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">rem_detect</code><span class="sig-paren">(</span><em class="sig-param">loc</em>, <em class="sig-param">roc</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=4</em>, <em class="sig-param">amplitude=(50</em>, <em class="sig-param">325)</em>, <em class="sig-param">duration=(0.3</em>, <em class="sig-param">1.2)</em>, <em class="sig-param">freq_rem=(0.5</em>, <em class="sig-param">5)</em>, <em class="sig-param">downsample=True</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#rem_detect"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Rapid Eye Movements (REMs) detection.</p>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">rem_detect</code><span class="sig-paren">(</span><em class="sig-param">loc</em>, <em class="sig-param">roc</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=4</em>, <em class="sig-param">amplitude=(50</em>, <em class="sig-param">325)</em>, <em class="sig-param">duration=(0.3</em>, <em class="sig-param">1.2)</em>, <em class="sig-param">freq_rem=(0.5</em>, <em class="sig-param">5)</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#rem_detect"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Rapid eye movements (REMs) detection.</p>
 <p>This detection requires both the left EOG (LOC) and right EOG (LOC).
 The units of the data must be uV. The algorithm is based on an amplitude
 thresholding of the negative product of the LOC and ROC
@@ -105,11 +105,11 @@ filtered signal.</p>
 Unit must be uV.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The default unit of <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> is Volts.
-Therefore, if passing data from a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
+<p>The default unit of <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> is Volts.
+Therefore, if passing data from a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
 you need to multiply the data by 1e6 to convert to micro-Volts
 (1 V = 1,000,000 uV), e.g.:</p>
-<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span> <span class="o">*</span> <span class="mi">1</span><span class="n">e6</span>  <span class="c1"># Make sure that data is in uV</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span> <span class="o">*</span> <span class="mf">1e6</span>  <span class="c1"># Make sure that data is in uV</span>
 </pre></div>
 </div>
 </div>
@@ -149,10 +149,6 @@ Default is 0.3 to 1.2 seconds.</p>
 </dd>
 <dt><strong>freq_rem</strong><span class="classifier">tuple or list</span></dt><dd><p>Frequency range of REMs. Default is 0.5 to 5 Hz.</p>
 </dd>
-<dt><strong>downsample</strong><span class="classifier">boolean</span></dt><dd><p>If True, the data will be downsampled to 100 Hz or 128 Hz (depending
-on whether the original sampling frequency is a multiple of 100 or 128,
-respectively).</p>
-</dd>
 <dt><strong>remove_outliers</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will automatically detect and remove outliers REMs
 using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
 YASA uses a random seed (42) to ensure reproducible results.
@@ -171,18 +167,15 @@ and ‘critical’. For most users the choice is between ‘info’
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>df_rem</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Start&#39;</span> <span class="p">:</span> <span class="n">Start</span> <span class="n">of</span> <span class="n">each</span> <span class="n">detected</span> <span class="n">REM</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span> <span class="n">of</span> <span class="n">data</span><span class="p">)</span>
-<span class="s1">&#39;Peak&#39;</span> <span class="p">:</span> <span class="n">Location</span> <span class="n">of</span> <span class="n">the</span> <span class="n">peak</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span> <span class="n">of</span> <span class="n">data</span><span class="p">)</span>
-<span class="s1">&#39;End&#39;</span> <span class="p">:</span> <span class="n">End</span> <span class="n">time</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
-<span class="s1">&#39;Duration&#39;</span> <span class="p">:</span> <span class="n">Duration</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
-<span class="s1">&#39;LOCAbsValPeak&#39;</span> <span class="p">:</span> <span class="n">LOC</span> <span class="n">absolute</span> <span class="n">amplitude</span> <span class="n">at</span> <span class="n">REM</span> <span class="n">peak</span> <span class="p">(</span><span class="ow">in</span> <span class="n">uV</span><span class="p">)</span>
-<span class="s1">&#39;ROCAbsValPeak&#39;</span> <span class="p">:</span> <span class="n">ROC</span> <span class="n">absolute</span> <span class="n">amplitude</span> <span class="n">at</span> <span class="n">REM</span> <span class="n">peak</span> <span class="p">(</span><span class="ow">in</span> <span class="n">uV</span><span class="p">)</span>
-<span class="s1">&#39;LOCAbsRiseSlope&#39;</span> <span class="p">:</span> <span class="n">LOC</span> <span class="n">absolute</span> <span class="n">rise</span> <span class="n">slope</span> <span class="p">(</span><span class="ow">in</span> <span class="n">uV</span><span class="o">/</span><span class="n">s</span><span class="p">)</span>
-<span class="s1">&#39;ROCAbsRiseSlope&#39;</span> <span class="p">:</span> <span class="n">ROC</span> <span class="n">absolute</span> <span class="n">rise</span> <span class="n">slope</span> <span class="p">(</span><span class="ow">in</span> <span class="n">uV</span><span class="o">/</span><span class="n">s</span><span class="p">)</span>
-<span class="s1">&#39;LOCAbsFallSlope&#39;</span> <span class="p">:</span> <span class="n">LOC</span> <span class="n">absolute</span> <span class="n">fall</span> <span class="n">slope</span> <span class="p">(</span><span class="ow">in</span> <span class="n">uV</span><span class="o">/</span><span class="n">s</span><span class="p">)</span>
-<span class="s1">&#39;ROCAbsFallSlope&#39;</span> <span class="p">:</span> <span class="n">ROC</span> <span class="n">absolute</span> <span class="n">fall</span> <span class="n">slope</span> <span class="p">(</span><span class="ow">in</span> <span class="n">uV</span><span class="o">/</span><span class="n">s</span><span class="p">)</span>
-<span class="s1">&#39;Stage&#39;</span> <span class="p">:</span> <span class="n">Sleep</span> <span class="n">stage</span> <span class="p">(</span><span class="n">only</span> <span class="k">if</span> <span class="n">hypno</span> <span class="n">was</span> <span class="n">provided</span><span class="p">)</span>
+<dt><strong>rem</strong><span class="classifier"><a class="reference internal" href="yasa.REMResults.html#yasa.REMResults" title="yasa.REMResults"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.REMResults</span></code></a></span></dt><dd><p>To get the full detection dataframe, use:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rem</span> <span class="o">=</span> <span class="n">rem_detect</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rem</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This will give a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> where each row is a
+detected REM and each column is a parameter (= property).
+To get the average parameters sleep stage:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rem</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="n">grp_stage</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd>
@@ -190,11 +183,24 @@ and ‘critical’. For most users the choice is between ‘info’
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>For better results, apply this detection only on artefact-free REM sleep.</p>
+<p>The parameters that are calculated for each REM are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'Start'</span></code>: Start of each detected REM, in seconds from the
+beginning of data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'Peak'</span></code>: Location of the peak (in seconds of data)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'End'</span></code>: End time (in seconds)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'Duration'</span></code>: Duration (in seconds)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'LOCAbsValPeak'</span></code>: LOC absolute amplitude at REM peak (in uV)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'ROCAbsValPeak'</span></code>: ROC absolute amplitude at REM peak (in uV)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'LOCAbsRiseSlope'</span></code>: LOC absolute rise slope (in uV/s)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'ROCAbsRiseSlope'</span></code>: ROC absolute rise slope (in uV/s)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'LOCAbsFallSlope'</span></code>: LOC absolute fall slope (in uV/s)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'ROCAbsFallSlope'</span></code>: ROC absolute fall slope (in uV/s)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'Stage'</span></code>: Sleep stage (only if hypno was provided)</p></li>
+</ul>
 <p>Note that all the output parameters are computed on the filtered LOC and
 ROC signals.</p>
-<p>For an example of how to run the detection, please refer to
-<a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb">https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb</a></p>
+<p>For better results, apply this detection only on artefact-free REM sleep.</p>
 <p class="rubric">References</p>
 <p>The rapid eye movements detection algorithm is based on:</p>
 <ul class="simple">
@@ -206,6 +212,9 @@ L. N., Sattari, N., &amp; Mednick, S. C. (2016). <a class="reference external" h
 rapid eye movements (REMs): A machine learning approach.</a>
 Journal of Neuroscience Methods, 259, 72–82.</p></li>
 </ul>
+<p class="rubric">Examples</p>
+<p>For an example of how to run the detection, please refer to
+<a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb">https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb</a></p>
 </dd></dl>
 
 </div>
@@ -226,7 +235,7 @@ Journal of Neuroscience Methods, 259, 72–82.</p></li>
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
     </p>
   </div>
 </footer>

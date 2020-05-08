@@ -22,7 +22,7 @@ def create_raw(npts, ch_names=['F4-M1', 'F3-M2'], sf=100):
     return raw
 
 
-class TestStringMethods(unittest.TestCase):
+class TestHypno(unittest.TestCase):
 
     def test_conversion(self):
         """Test str <--> int conversion.

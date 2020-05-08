@@ -51,6 +51,17 @@ extensions = ['sphinx.ext.mathjax',
 
 # Generate the API documentation when building
 autosummary_generate = True
+# autodoc_default_options = {
+#     'members': True,
+#     'member-order': 'groupwise',
+#     'undoc-members': False,
+#     # 'special-members': '__init__',
+#     # 'exclude-members': '__weakref__'
+# }
+
+autodoc_member_order = 'groupwise'
+autodoc_default_flags = ['members', 'inherited-members', 'no-undoc-members']
+autoclass_content = "class"
 numpydoc_show_class_members = False
 
 # Include the example source for plots in API docs

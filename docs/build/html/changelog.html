@@ -3,16 +3,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>What’s new &#8212; yasa 0.2.0 documentation</title>
+    <title>What’s new &#8212; yasa 0.3.0 documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script src="_static/copybutton.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script type="text/javascript" src="_static/copybutton.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="index.html"><span><img src="_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.3.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -87,13 +87,42 @@
       
   <div class="section" id="what-s-new">
 <span id="changelog"></span><h1>What’s new</h1>
-<div class="section" id="v0-2-0-dev">
-<h2>v0.2.0 (dev)</h2>
+<div class="section" id="v0-3-0-may-2020">
+<h2>v0.3.0 (May 2020)</h2>
+<p>This is a major release with several API-breaking changes in the spindles, slow-waves and REMs detection.</p>
+<p>First, the <code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect_multi()</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect_multi()</span></code> have been removed. Instead, the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> and <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> functions can now handle both single and multi-channel data.</p>
+<p>Second, I was getting some feedback that it was difficult to get summary statistics from the detection dataframe. For instance, how can you get the average duration of the detected spindles, per channel and/or per stage? Similarly, how can you get the slow-waves count and density per stage and channel? To address these issues, I’ve now modified the output of the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>, <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> and <a class="reference internal" href="generated/yasa.rem_detect.html#yasa.rem_detect" title="yasa.rem_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.rem_detect()</span></code></a> functions, which is now a class (= object) and not a simple Pandas DataFrame. The advantage is that the new output allows you to quickly get the raw data or summary statistics grouped by channel and/or sleep stage using the <code class="docutils literal notranslate"><span class="pre">.summary()</span></code> method.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sp</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sp</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>  <span class="c1"># Returns the full detection dataframe</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sp</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="n">grp_chan</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">grp_stage</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Similarly, the <code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.get_bool_vector()</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.get_sync_events()</span></code> functions are now directly implemented into the output, i.e.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sw</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">sw_detect</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sw</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sw</span><span class="o">.</span><span class="n">get_bool_vector</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sw</span><span class="o">.</span><span class="n">get_sync_events</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="s1">&#39;NegPeak&#39;</span><span class="p">,</span> <span class="n">time_before</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">time_after</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>One can also quickly plot an average “template” of all the detected events:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sw</span><span class="o">.</span><span class="n">plot_average</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="s2">&quot;NegPeak&quot;</span><span class="p">,</span> <span class="n">time_before</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">time_after</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For more details, please refer to the documentation of <a class="reference internal" href="generated/yasa.SpindlesResults.html#yasa.SpindlesResults" title="yasa.SpindlesResults"><code class="xref py py-meth docutils literal notranslate"><span class="pre">yasa.SpindlesResults()</span></code></a>, <a class="reference internal" href="generated/yasa.SWResults.html#yasa.SWResults" title="yasa.SWResults"><code class="xref py py-meth docutils literal notranslate"><span class="pre">yasa.SWResults()</span></code></a> and <a class="reference internal" href="generated/yasa.REMResults.html#yasa.REMResults" title="yasa.REMResults"><code class="xref py py-meth docutils literal notranslate"><span class="pre">yasa.REMResults()</span></code></a>.</p>
+<p><strong>Other enhancements</strong></p>
+<ol class="loweralpha simple">
+<li><p>Downsampling of data in detection functions has been removed! In other words, YASA will no longer downsample the data to 100 / 128 Hz before applying the detection. If the detection is too slow, we recommend that you manually downsample your data before applying the detection. See for example <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.resample.html#mne.filter.resample" title="(in MNE v0.20.3)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.resample()</span></code></a>.</p></li>
+<li><p>Filtering and Hilbert transform are now applied at once on all channels (instead of looping across individual channels) in the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> and <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> functions. This should lead to sensitive speed up in computation time.</p></li>
+<li><p><a class="reference internal" href="generated/yasa.trimbothstd.html#yasa.trimbothstd" title="yasa.trimbothstd"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.trimbothstd()</span></code></a> can now work with ND arrays. The trimmed standard deviation will always be calculated on the last axis of the array.</p></li>
+</ol>
+</div>
+<div class="section" id="v0-2-0-april-2020">
+<h2>v0.2.0 (April 2020)</h2>
 <p>This is a major release with several new functions, bugfixes and miscellaneous enhancements in existing functions.</p>
 <p><strong>Bugfixes</strong></p>
 <ol class="loweralpha simple">
 <li><p>Sleep efficiency in the <a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sleep_statistics()</span></code></a> is now calculated using time in bed (TIB) as the denominator instead of sleep period time (SPT), in agreement with the AASM guidelines. The old way of computing the efficiency (TST / SPT) has now been renamed Sleep Maintenance Efficiency (SME).</p></li>
-<li><p>The <a class="reference internal" href="generated/yasa.sliding_window.html#yasa.sliding_window" title="yasa.sliding_window"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sliding_window()</span></code></a> now always return an array of shape (n_epochs, …, n_samples), i.e. the epochs are now always the first dimension of the epoched array. This is consistent with MNE default shape of <a class="reference external" href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Epochs</span></code></a> objects.</p></li>
+<li><p>The <a class="reference internal" href="generated/yasa.sliding_window.html#yasa.sliding_window" title="yasa.sliding_window"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sliding_window()</span></code></a> now always return an array of shape (n_epochs, …, n_samples), i.e. the epochs are now always the first dimension of the epoched array. This is consistent with MNE default shape of <a class="reference external" href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="(in MNE v0.20.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Epochs</span></code></a> objects.</p></li>
 </ol>
 <p><strong>New functions</strong></p>
 <ol class="loweralpha simple">
@@ -135,7 +164,7 @@
 <ol class="loweralpha simple">
 <li><p>It is now possible to disable one or two out of the three thresholds in the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>. This allows the users to run a simpler detection (for example focusing exclusively on the moving root mean square signal).</p></li>
 <li><p>The <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> now returns the timing (in seconds) of the most prominent peak of each spindles (<code class="docutils literal notranslate"><span class="pre">Peak</span></code>).</p></li>
-<li><p>The yasa.get_sync_sw has been renamed to <a class="reference internal" href="generated/yasa.get_sync_events.html#yasa.get_sync_events" title="yasa.get_sync_events"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.get_sync_events()</span></code></a> and is now compatible with spindles detection. This can be used for instance to plot the peak-locked grand averaged spindle.</p></li>
+<li><p>The yasa.get_sync_sw has been renamed to <code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.get_sync_events()</span></code> and is now compatible with spindles detection. This can be used for instance to plot the peak-locked grand averaged spindle.</p></li>
 </ol>
 <p><strong>Code testing</strong></p>
 <ol class="loweralpha simple">
@@ -230,7 +259,7 @@
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
     </p>
   </div>
 </footer>

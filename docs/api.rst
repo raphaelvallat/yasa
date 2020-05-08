@@ -15,12 +15,11 @@ Detection
 
     art_detect
     rem_detect
+    REMResults
     spindles_detect
-    spindles_detect_multi
+    SpindlesResults
     sw_detect
-    sw_detect_multi
-    get_bool_vector
-    get_sync_events
+    SWResults
 
 Hypnogram
 ---------

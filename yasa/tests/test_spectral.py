@@ -6,10 +6,12 @@ import unittest
 import numpy as np
 from itertools import product
 from scipy.signal import welch
-from yasa import hypno_str_to_int, hypno_upsample_to_data
+import matplotlib.pyplot as plt
+
+from yasa.plotting import plot_spectrogram
+from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
 from yasa.spectral import (bandpower, bandpower_from_psd,
                            bandpower_from_psd_ndarray, irasa, stft_power)
-from yasa.plotting import plot_spectrogram
 
 # Load 1D data
 data = np.loadtxt('notebooks/data_N2_spindles_15sec_200Hz.txt')
@@ -39,7 +41,7 @@ sf_eo = raw_eo.info['sfreq']
 chan_eo = raw_eo.ch_names
 
 
-class TestStringMethods(unittest.TestCase):
+class TestSpectral(unittest.TestCase):
 
     def test_bandpower(self):
         """Test function bandpower
@@ -85,7 +87,7 @@ class TestStringMethods(unittest.TestCase):
         # Unlabelled
         bp = bandpower_from_psd(psd, freqs, ch_names=None, relative=False)
         assert np.array_equal(bp.loc[:, 'Chan'],
-                              ['CHAN001', 'CHAN002', 'CHAN003'])
+                              ['CHAN000', 'CHAN001', 'CHAN002'])
 
         # Bandpower from PSD with NDarray
         n_chan = 4
@@ -145,9 +147,13 @@ class TestStringMethods(unittest.TestCase):
     def test_plot_spectrogram(self):
         """Test function plot_spectrogram
         """
-
         plot_spectrogram(data_full[0, :], sf_full, fmin=0.5, fmax=30)
         plot_spectrogram(data_full[0, :], sf_full, hypno_full, trimperc=5)
         hypno_full_art = np.copy(hypno_full)
         hypno_full_art[hypno_full_art == 3.] = -1
+        # Replace N3 by Artefact
         plot_spectrogram(data_full[0, :], sf_full, hypno_full_art, trimperc=5)
+        # Now replace REM by Unscored
+        hypno_full_art[hypno_full_art == 4.] = -2
+        plot_spectrogram(data_full[0, :], sf_full, hypno_full_art)
+        plt.close('all')

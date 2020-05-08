@@ -3,16 +3,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.sw_detect &#8212; yasa 0.2.0 documentation</title>
+    <title>yasa.sw_detect &#8212; yasa 0.3.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
-    <script src="../_static/copybutton.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script type="text/javascript" src="../_static/copybutton.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.3.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -89,24 +89,22 @@
 <h1>yasa.sw_detect</h1>
 <dl class="function">
 <dt id="yasa.sw_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sw_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(2</em>, <em class="sig-param">3)</em>, <em class="sig-param">freq_sw=(0.3</em>, <em class="sig-param">2)</em>, <em class="sig-param">dur_neg=(0.3</em>, <em class="sig-param">1.5)</em>, <em class="sig-param">dur_pos=(0.1</em>, <em class="sig-param">1)</em>, <em class="sig-param">amp_neg=(40</em>, <em class="sig-param">300)</em>, <em class="sig-param">amp_pos=(10</em>, <em class="sig-param">200)</em>, <em class="sig-param">amp_ptp=(75</em>, <em class="sig-param">500)</em>, <em class="sig-param">downsample=True</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">coupling=False</em>, <em class="sig-param">freq_sp=(12</em>, <em class="sig-param">16)</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#sw_detect"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sw_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf=None</em>, <em class="sig-param">ch_names=None</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(2</em>, <em class="sig-param">3)</em>, <em class="sig-param">freq_sw=(0.3</em>, <em class="sig-param">2)</em>, <em class="sig-param">dur_neg=(0.3</em>, <em class="sig-param">1.5)</em>, <em class="sig-param">dur_pos=(0.1</em>, <em class="sig-param">1)</em>, <em class="sig-param">amp_neg=(40</em>, <em class="sig-param">300)</em>, <em class="sig-param">amp_pos=(10</em>, <em class="sig-param">200)</em>, <em class="sig-param">amp_ptp=(75</em>, <em class="sig-param">500)</em>, <em class="sig-param">coupling=False</em>, <em class="sig-param">freq_sp=(12</em>, <em class="sig-param">16)</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#sw_detect"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Slow-waves detection.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>data</strong><span class="classifier">array_like</span></dt><dd><p>Single-channel continuous EEG data. Unit must be uV.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>The default unit of <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> is Volts.
-Therefore, if passing data from a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
-you need to multiply the data by 1e6 to convert to micro-Volts
-(1 V = 1,000,000 uV), e.g.:</p>
-<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span> <span class="o">*</span> <span class="mi">1</span><span class="n">e6</span>  <span class="c1"># Make sure that data is in uV</span>
-</pre></div>
-</div>
-</div>
+<dt><strong>data</strong><span class="classifier">array_like</span></dt><dd><p>Single or multi-channel data. Unit must be uV and shape (n_samples) or
+(n_chan, n_samples). Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
+in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>, <code class="docutils literal notranslate"><span class="pre">sf</span></code>, and <code class="docutils literal notranslate"><span class="pre">ch_names</span></code> will be automatically
+extracted, and <code class="docutils literal notranslate"><span class="pre">data</span></code> will also be automatically converted from
+Volts (MNE) to micro-Volts (YASA).</p>
 </dd>
-<dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>Sampling frequency of the data, in Hz.</p>
+<dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>Sampling frequency of the data in Hz.
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+</dd>
+<dt><strong>ch_names</strong><span class="classifier">list of str</span></dt><dd><p>Channel names. Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a
+<a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
 <dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Sleep stage vector (hypnogram). If the hypnogram is loaded, the
 detection will only be applied to the value defined in
@@ -161,18 +159,6 @@ deviations if the data has been previously z-scored.
 Use <code class="docutils literal notranslate"><span class="pre">np.inf</span></code> to set no upper amplitude threshold
 (e.g. <code class="docutils literal notranslate"><span class="pre">amp_ptp=(75,</span> <span class="pre">np.inf)</span></code>).</p>
 </dd>
-<dt><strong>downsample</strong><span class="classifier">boolean</span></dt><dd><p>If True, the data will be downsampled to 100 Hz or 128 Hz (depending
-on whether the original sampling frequency is a multiple of 100 or 128,
-respectively).</p>
-</dd>
-<dt><strong>remove_outliers</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will automatically detect and remove outliers slow-waves
-using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
-The outliers detection is performed on the frequency, amplitude and
-duration parameters of the detected slow-waves. YASA uses a random seed
-(42) to ensure reproducible results. Note that this step will only be
-applied if there are more than 50 detected slow-waves in the first
-place. Default to False.</p>
-</dd>
 <dt><strong>coupling</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will also calculate the phase-amplitude coupling between
 the slow-waves phase and the spindles-related sigma band
 amplitude. Specifically, two PAC metrics will be calculated:</p>
@@ -184,7 +170,7 @@ current slow-wave.</p>
 <p>Importantly, since <code class="docutils literal notranslate"><span class="pre">PhaseAtSigmaPeak</span></code> is expressed in radians,
 one should use circular statistics to calculate the mean direction
 and vector length:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pingouin</span> <span class="k">as</span> <span class="nn">pg</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pingouin</span> <span class="kn">as</span> <span class="nn">pg</span>
 <span class="n">mean_direction</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">circ_mean</span><span class="p">(</span><span class="n">sw</span><span class="p">[</span><span class="s1">&#39;PhaseAtSigmaPeak&#39;</span><span class="p">])</span>
 <span class="n">vector_length</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">circ_r</span><span class="p">(</span><span class="n">sw</span><span class="p">[</span><span class="s1">&#39;PhaseAtSigmaPeak&#39;</span><span class="p">])</span>
 </pre></div>
@@ -211,6 +197,14 @@ bandwidth of 1.5 Hz.</p>
 <p><span class="versionmodified added">New in version 0.2.0.</span></p>
 </div>
 </dd>
+<dt><strong>remove_outliers</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will automatically detect and remove outliers slow-waves
+using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
+The outliers detection is performed on the frequency, amplitude and
+duration parameters of the detected slow-waves. YASA uses a random seed
+(42) to ensure reproducible results. Note that this step will only be
+applied if there are more than 50 detected slow-waves in the first
+place. Default to False.</p>
+</dd>
 <dt><strong>verbose</strong><span class="classifier">bool or str</span></dt><dd><p>Verbose level. Default (False) will only print warning and error
 messages. The logging levels are ‘debug’, ‘info’, ‘warning’, ‘error’,
 and ‘critical’. For most users the choice is between ‘info’
@@ -223,21 +217,15 @@ and ‘critical’. For most users the choice is between ‘info’
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>sw_params</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput detection dataframe:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>&#39;Start&#39; : Start of each detected slow-wave (in seconds of data)
-&#39;NegPeak&#39; : Location of the negative peak (in seconds of data)
-&#39;MidCrossing&#39; : Location of the negative-to-positive zero-crossing
-&#39;Pospeak&#39; : Location of the positive peak
-&#39;End&#39; : End time (in seconds)
-&#39;Duration&#39; : Duration (in seconds)
-&#39;ValNegPeak&#39; : Amplitude of the negative peak (in uV - filtered)
-&#39;ValPosPeak&#39; : Amplitude of the positive peak (in uV - filtered)
-&#39;PTP&#39; : Peak to peak amplitude (ValPosPeak - ValNegPeak)
-&#39;Slope&#39; : Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec)
-&#39;Frequency&#39; : Frequency of the slow-wave (1 / ``Duration``)
-&#39;PhaseAtSigmaPeak&#39;: SW phase at max sigma amplitude in 4-sec epoch
-&#39;ndPAC&#39;: Normalized direct PAC within centered 4-sec epoch
-&#39;Stage&#39; : Sleep stage (only if hypno was provided)
+<dt><strong>sw</strong><span class="classifier"><a class="reference internal" href="yasa.SWResults.html#yasa.SWResults" title="yasa.SWResults"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.SWResults</span></code></a></span></dt><dd><p>To get the full detection dataframe, use:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sw</span> <span class="o">=</span> <span class="n">sw_detect</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sw</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This will give a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> where each row is a
+detected slow-wave and each column is a parameter (= property).
+To get the average SW parameters per channel and sleep stage:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sw</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="n">grp_chan</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">grp_stage</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd>
@@ -245,9 +233,35 @@ and ‘critical’. For most users the choice is between ‘info’
 </dd>
 </dl>
 <p class="rubric">Notes</p>
+<p>The parameters that are calculated for each slow-wave are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'Start'</span></code>: Start time of each detected slow-wave, in seconds from the
+beginning of data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'NegPeak'</span></code>: Location of the negative peak (in seconds)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'MidCrossing'</span></code>: Location of the negative-to-positive zero-crossing
+(in seconds)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'Pospeak'</span></code>: Location of the positive peak (in seconds)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'End'</span></code>: End time(in seconds)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'Duration'</span></code>: Duration (in seconds)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'ValNegPeak'</span></code>: Amplitude of the negative peak (in uV, calculated
+on the <code class="docutils literal notranslate"><span class="pre">freq_sw</span></code> bandpass-filtered signal)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'ValPosPeak'</span></code>: Amplitude of the positive peak (in uV, calculated
+on the <code class="docutils literal notranslate"><span class="pre">freq_sw</span></code> bandpass-filtered signal)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'PTP'</span></code>: Peak-to-peak amplitude (= <code class="docutils literal notranslate"><span class="pre">ValPosPeak</span></code> - <code class="docutils literal notranslate"><span class="pre">ValNegPeak</span></code>,
+calculated on the <code class="docutils literal notranslate"><span class="pre">freq_sw</span></code> bandpass-filtered signal)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'Slope'</span></code>: Slope between <code class="docutils literal notranslate"><span class="pre">NegPeak</span></code> and <code class="docutils literal notranslate"><span class="pre">MidCrossing</span></code> (in uV/sec,
+calculated on the <code class="docutils literal notranslate"><span class="pre">freq_sw</span></code> bandpass-filtered signal)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'Frequency'</span></code>: Frequency of the slow-wave (= 1 / <code class="docutils literal notranslate"><span class="pre">Duration</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'PhaseAtSigmaPeak'</span></code>: SW phase at max sigma amplitude within a
+4-sec epoch centered the negative peak of the slow-wave. This is only
+calculated when <code class="docutils literal notranslate"><span class="pre">coupling=True</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'ndPAC'</span></code>: Normalized direct PAC within a 4-sec epoch centered
+the negative peak of the slow-wave. This is only calculated when
+<code class="docutils literal notranslate"><span class="pre">coupling=True</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'Stage'</span></code>: Sleep stage (only if hypno was provided)</p></li>
+</ul>
+<a class="reference internal image-reference" href="https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/slow_waves.png#noqa"><img alt="slow-wave" class="align-center" src="https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/slow_waves.png#noqa" style="width: 500px;" /></a>
 <p>For better results, apply this detection only on artefact-free NREM sleep.</p>
-<p>Note that the <code class="docutils literal notranslate"><span class="pre">PTP</span></code>, <code class="docutils literal notranslate"><span class="pre">Slope</span></code>, <code class="docutils literal notranslate"><span class="pre">ValNegPeak</span></code> and <code class="docutils literal notranslate"><span class="pre">ValPosPeak</span></code> are
-all computed on the filtered signal.</p>
 <p class="rubric">References</p>
 <p>The slow-waves detection algorithm is based on:</p>
 <ul class="simple">
@@ -282,7 +296,7 @@ The European Journal of Neuroscience, 33(4), 758–766.</p></li>
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
     </p>
   </div>
 </footer>

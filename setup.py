@@ -12,7 +12,7 @@ MAINTAINER_EMAIL = 'raphaelvallat9@gmail.com'
 URL = 'https://github.com/raphaelvallat/yasa/'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/raphaelvallat/yasa/'
-VERSION = '0.2.0'
+VERSION = '0.3.0'
 PACKAGE_DATA = {'yasa.data.icons': ['*.svg']}
 
 INSTALL_REQUIRES = [
@@ -20,6 +20,7 @@ INSTALL_REQUIRES = [
     'scipy',
     'pandas',
     'matplotlib',
+    'seaborn',
     'mne>=0.20.0',
     'numba',
     'scikit-learn>=0.21',

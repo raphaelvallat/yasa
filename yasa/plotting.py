@@ -72,7 +72,6 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
 
     Examples
     --------
-
     1. Full-night multitaper spectrogram on Cz, no hypnogram
 
     .. plot::

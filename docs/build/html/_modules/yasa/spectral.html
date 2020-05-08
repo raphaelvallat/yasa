@@ -3,16 +3,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.spectral &#8212; yasa 0.2.0 documentation</title>
+    <title>yasa.spectral &#8212; yasa 0.3.0 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
-    <script src="../../_static/copybutton.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/copybutton.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.3.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -93,9 +93,9 @@
 <span class="kn">import</span> <span class="nn">mne</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">signal</span>
-<span class="kn">from</span> <span class="nn">scipy.integrate</span> <span class="kn">import</span> <span class="n">simps</span>
-<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">RectBivariateSpline</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">signal</span>
+<span class="kn">from</span> <span class="nn">scipy.integrate</span> <span class="k">import</span> <span class="n">simps</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">RectBivariateSpline</span>
 
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;bandpower&#39;</span><span class="p">,</span> <span class="s1">&#39;bandpower_from_psd&#39;</span><span class="p">,</span> <span class="s1">&#39;bandpower_from_psd_ndarray&#39;</span><span class="p">,</span>
@@ -125,7 +125,7 @@
 <span class="sd">        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.</span>
 <span class="sd">    ch_names : list</span>
 <span class="sd">        List of channel names, e.g. [&#39;Cz&#39;, &#39;F3&#39;, &#39;F4&#39;, ...]. If None,</span>
-<span class="sd">        channels will be labelled [&#39;CHAN001&#39;, &#39;CHAN002&#39;, ...].</span>
+<span class="sd">        channels will be labelled [&#39;CHAN000&#39;, &#39;CHAN001&#39;, ...].</span>
 <span class="sd">        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.</span>
 <span class="sd">    hypno : array_like</span>
 <span class="sd">        Sleep stage vector (hypnogram). If the hypnogram is loaded, the</span>
@@ -200,11 +200,11 @@
         <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Data must be of shape (nchan, n_samples).&#39;</span>
         <span class="n">nchan</span><span class="p">,</span> <span class="n">npts</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
-        <span class="k">assert</span> <span class="n">nchan</span> <span class="o">&lt;</span> <span class="n">npts</span><span class="p">,</span> <span class="s1">&#39;Data must be of shape (nchan, n_samples).&#39;</span>
+        <span class="c1"># assert nchan &lt; npts, &#39;Data must be of shape (nchan, n_samples).&#39;</span>
         <span class="k">assert</span> <span class="n">sf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;sf must be specified if passing a numpy array.&#39;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">ch_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">ch_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;CHAN&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nchan</span><span class="p">)]</span>
+            <span class="n">ch_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;CHAN&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nchan</span><span class="p">)]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ch_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ch_names</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">))</span>
             <span class="k">assert</span> <span class="n">ch_names</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;ch_names must be 1D.&#39;</span>
@@ -222,8 +222,7 @@
     <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># Calculate the PSD over the whole data</span>
         <span class="n">freqs</span><span class="p">,</span> <span class="n">psd</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">welch</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">nperseg</span><span class="o">=</span><span class="n">win</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs_welch</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">bandpower_from_psd</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span>
-                                  <span class="n">bands</span><span class="o">=</span><span class="n">bands</span><span class="p">,</span>
+        <span class="k">return</span> <span class="n">bandpower_from_psd</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="n">bands</span><span class="p">,</span>
                                   <span class="n">relative</span><span class="o">=</span><span class="n">relative</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;Chan&#39;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># Per each sleep stage defined in ``include``.</span>
@@ -271,7 +270,7 @@
 <span class="sd">        Array of frequencies.</span>
 <span class="sd">    ch_names : list</span>
 <span class="sd">        List of channel names, e.g. [&#39;Cz&#39;, &#39;F3&#39;, &#39;F4&#39;, ...]. If None,</span>
-<span class="sd">        channels will be labelled [&#39;CHAN001&#39;, &#39;CHAN002&#39;, ...].</span>
+<span class="sd">        channels will be labelled [&#39;CHAN000&#39;, &#39;CHAN001&#39;, ...].</span>
 <span class="sd">    bands : list of tuples</span>
 <span class="sd">        List of frequency bands of interests. Each tuple must contain the</span>
 <span class="sd">        lower and upper frequencies, as well as the band name</span>
@@ -307,7 +306,7 @@
         <span class="k">assert</span> <span class="n">ch_names</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;ch_names must be 1D.&#39;</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">ch_names</span><span class="p">)</span> <span class="o">==</span> <span class="n">nchan</span><span class="p">,</span> <span class="s1">&#39;ch_names must match psd.shape[0].&#39;</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">ch_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;CHAN&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nchan</span><span class="p">)]</span>
+        <span class="n">ch_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;CHAN&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nchan</span><span class="p">)]</span>
     <span class="n">bp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nchan</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">bands</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
     <span class="n">psd</span> <span class="o">=</span> <span class="n">psd</span><span class="p">[:,</span> <span class="n">idx_good_freq</span><span class="p">]</span>
     <span class="n">total_power</span> <span class="o">=</span> <span class="n">simps</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">dx</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
@@ -434,7 +433,7 @@
 <span class="sd">        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.</span>
 <span class="sd">    ch_names : list</span>
 <span class="sd">        List of channel names, e.g. [&#39;Cz&#39;, &#39;F3&#39;, &#39;F4&#39;, ...]. If None,</span>
-<span class="sd">        channels will be labelled [&#39;CHAN001&#39;, &#39;CHAN002&#39;, ...].</span>
+<span class="sd">        channels will be labelled [&#39;CHAN000&#39;, &#39;CHAN001&#39;, ...].</span>
 <span class="sd">        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.</span>
 <span class="sd">    band : tuple or None</span>
 <span class="sd">        Broad band frequency range.</span>
@@ -534,7 +533,7 @@
         <span class="k">assert</span> <span class="n">sf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;sf must be specified if passing a numpy array.&#39;</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">ch_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">ch_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;CHAN&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nchan</span><span class="p">)]</span>
+            <span class="n">ch_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;CHAN&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nchan</span><span class="p">)]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ch_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ch_names</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">))</span>
             <span class="k">assert</span> <span class="n">ch_names</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;ch_names must be 1D.&#39;</span>
@@ -586,7 +585,7 @@
 
     <span class="k">if</span> <span class="n">return_fit</span><span class="p">:</span>
         <span class="c1"># Aperiodic fit in semilog space for each channel</span>
-        <span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">curve_fit</span>
+        <span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="k">import</span> <span class="n">curve_fit</span>
         <span class="n">intercepts</span><span class="p">,</span> <span class="n">slopes</span><span class="p">,</span> <span class="n">r_squared</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
 
         <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
@@ -715,7 +714,7 @@
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
     </p>
   </div>
 </footer>

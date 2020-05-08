@@ -9,7 +9,7 @@ from yasa.sleepstats import transition_matrix, sleep_statistics
 hypno = np.array([0, 0, 0, 1, 2, 2, 3, 3, 2, 2, 2, 0, 0, 0, 2, 2, 4, 4, 0, 0])
 
 
-class TestStringMethods(unittest.TestCase):
+class TestSleepStats(unittest.TestCase):
 
     def test_transition(self):
         """Test transition_matrix

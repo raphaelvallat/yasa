@@ -7,7 +7,7 @@ from scipy.signal import detrend
 from yasa.numba import _corr, _covar, _rms, _slope_lstsq, _detrend
 
 
-class TestStringMethods(unittest.TestCase):
+class TestNumba(unittest.TestCase):
 
     def test_numba(self):
         """Test numba functions

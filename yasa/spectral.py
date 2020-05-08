@@ -37,7 +37,7 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
     ch_names : list
         List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None,
-        channels will be labelled ['CHAN001', 'CHAN002', ...].
+        channels will be labelled ['CHAN000', 'CHAN001', ...].
         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
     hypno : array_like
         Sleep stage vector (hypnogram). If the hypnogram is loaded, the
@@ -112,11 +112,11 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         data = np.atleast_2d(data)
         assert data.ndim == 2, 'Data must be of shape (nchan, n_samples).'
         nchan, npts = data.shape
-        assert nchan < npts, 'Data must be of shape (nchan, n_samples).'
+        # assert nchan < npts, 'Data must be of shape (nchan, n_samples).'
         assert sf is not None, 'sf must be specified if passing a numpy array.'
         assert isinstance(sf, (int, float))
         if ch_names is None:
-            ch_names = ['CHAN' + str(i + 1).zfill(3) for i in range(nchan)]
+            ch_names = ['CHAN' + str(i).zfill(3) for i in range(nchan)]
         else:
             ch_names = np.atleast_1d(np.asarray(ch_names, dtype=str))
             assert ch_names.ndim == 1, 'ch_names must be 1D.'
@@ -134,8 +134,7 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     if hypno is None:
         # Calculate the PSD over the whole data
         freqs, psd = signal.welch(data, sf, nperseg=win, **kwargs_welch)
-        return bandpower_from_psd(psd, freqs, ch_names,
-                                  bands=bands,
+        return bandpower_from_psd(psd, freqs, ch_names, bands=bands,
                                   relative=relative).set_index('Chan')
     else:
         # Per each sleep stage defined in ``include``.
@@ -183,7 +182,7 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
         Array of frequencies.
     ch_names : list
         List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None,
-        channels will be labelled ['CHAN001', 'CHAN002', ...].
+        channels will be labelled ['CHAN000', 'CHAN001', ...].
     bands : list of tuples
         List of frequency bands of interests. Each tuple must contain the
         lower and upper frequencies, as well as the band name
@@ -219,7 +218,7 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
         assert ch_names.ndim == 1, 'ch_names must be 1D.'
         assert len(ch_names) == nchan, 'ch_names must match psd.shape[0].'
     else:
-        ch_names = ['CHAN' + str(i + 1).zfill(3) for i in range(nchan)]
+        ch_names = ['CHAN' + str(i).zfill(3) for i in range(nchan)]
     bp = np.zeros((nchan, len(bands)), dtype=np.float)
     psd = psd[:, idx_good_freq]
     total_power = simps(psd, dx=res)
@@ -346,7 +345,7 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
     ch_names : list
         List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None,
-        channels will be labelled ['CHAN001', 'CHAN002', ...].
+        channels will be labelled ['CHAN000', 'CHAN001', ...].
         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
     band : tuple or None
         Broad band frequency range.
@@ -446,7 +445,7 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
         assert sf is not None, 'sf must be specified if passing a numpy array.'
         assert isinstance(sf, (int, float))
         if ch_names is None:
-            ch_names = ['CHAN' + str(i + 1).zfill(3) for i in range(nchan)]
+            ch_names = ['CHAN' + str(i).zfill(3) for i in range(nchan)]
         else:
             ch_names = np.atleast_1d(np.asarray(ch_names, dtype=str))
             assert ch_names.ndim == 1, 'ch_names must be 1D.'

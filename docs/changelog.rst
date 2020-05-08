@@ -3,8 +3,40 @@
 What's new
 ##########
 
-v0.2.0 (dev)
-------------
+v0.3.0 (May 2020)
+-----------------
+
+This is a major release with several API-breaking changes in the spindles, slow-waves and REMs detection.
+
+First, the :py:func:`yasa.spindles_detect_multi` and :py:func:`yasa.sw_detect_multi` have been removed. Instead, the :py:func:`yasa.spindles_detect` and :py:func:`yasa.sw_detect` functions can now handle both single and multi-channel data.
+
+Second, I was getting some feedback that it was difficult to get summary statistics from the detection dataframe. For instance, how can you get the average duration of the detected spindles, per channel and/or per stage? Similarly, how can you get the slow-waves count and density per stage and channel? To address these issues, I've now modified the output of the :py:func:`yasa.spindles_detect`, :py:func:`yasa.sw_detect` and :py:func:`yasa.rem_detect` functions, which is now a class (= object) and not a simple Pandas DataFrame. The advantage is that the new output allows you to quickly get the raw data or summary statistics grouped by channel and/or sleep stage using the ``.summary()`` method.
+
+>>> sp = yasa.spindles_detect(...)
+>>> sp.summary()  # Returns the full detection dataframe
+>>> sp.summary(grp_chan=True, grp_stage=True, average='mean')
+
+Similarly, the :py:func:`yasa.get_bool_vector` and :py:func:`yasa.get_sync_events` functions are now directly implemented into the output, i.e.
+
+>>> sw = yasa.sw_detect(...)
+>>> sw.summary()
+>>> sw.get_bool_vector()
+>>> sw.get_sync_events(center='NegPeak', time_before=0.4, time_after=0.8)
+
+One can also quickly plot an average "template" of all the detected events:
+
+>>> sw.plot_average(center="NegPeak", time_before=0.4, time_after=0.8)
+
+For more details, please refer to the documentation of :py:meth:`yasa.SpindlesResults`, :py:meth:`yasa.SWResults` and :py:meth:`yasa.REMResults`.
+
+**Other enhancements**
+
+a. Downsampling of data in detection functions has been removed! In other words, YASA will no longer downsample the data to 100 / 128 Hz before applying the detection. If the detection is too slow, we recommend that you manually downsample your data before applying the detection. See for example :py:func:`mne.filter.resample`.
+b. Filtering and Hilbert transform are now applied at once on all channels (instead of looping across individual channels) in the :py:func:`yasa.spindles_detect` and :py:func:`yasa.sw_detect` functions. This should lead to sensitive speed up in computation time.
+c. :py:func:`yasa.trimbothstd` can now work with ND arrays. The trimmed standard deviation will always be calculated on the last axis of the array.
+
+v0.2.0 (April 2020)
+-------------------
 
 This is a major release with several new functions, bugfixes and miscellaneous enhancements in existing functions.
 

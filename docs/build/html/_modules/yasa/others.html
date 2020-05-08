@@ -3,16 +3,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.others &#8212; yasa 0.2.0 documentation</title>
+    <title>yasa.others &#8212; yasa 0.3.0 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
-    <script src="../../_static/copybutton.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script type="text/javascript" src="../../_static/copybutton.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.2.0</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.3.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -89,12 +89,185 @@
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">This file contains several helper functions to manipulate 1D and 2D EEG data.</span>
 <span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
-<span class="kn">from</span> <span class="nn">.numba</span> <span class="kn">import</span> <span class="n">_slope_lstsq</span><span class="p">,</span> <span class="n">_covar</span><span class="p">,</span> <span class="n">_corr</span><span class="p">,</span> <span class="n">_rms</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">interp1d</span>
+<span class="kn">from</span> <span class="nn">.numba</span> <span class="k">import</span> <span class="n">_slope_lstsq</span><span class="p">,</span> <span class="n">_covar</span><span class="p">,</span> <span class="n">_corr</span><span class="p">,</span> <span class="n">_rms</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;yasa&#39;</span><span class="p">)</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;moving_transform&#39;</span><span class="p">,</span> <span class="s1">&#39;trimbothstd&#39;</span><span class="p">,</span> <span class="s1">&#39;sliding_window&#39;</span><span class="p">,</span>
            <span class="s1">&#39;get_centered_indices&#39;</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">_merge_close</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">min_distance_ms</span><span class="p">,</span> <span class="n">sf</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Merge events that are too close in time.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    index : array_like</span>
+<span class="sd">        Indices of supra-threshold events.</span>
+<span class="sd">    min_distance_ms : int</span>
+<span class="sd">        Minimum distance (ms) between two events to consider them as two</span>
+<span class="sd">        distinct events</span>
+<span class="sd">    sf : float</span>
+<span class="sd">        Sampling frequency of the data (Hz)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f_index : array_like</span>
+<span class="sd">        Filled (corrected) Indices of supra-threshold events</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Original code imported from the Visbrain package.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Convert min_distance_ms</span>
+    <span class="n">min_distance</span> <span class="o">=</span> <span class="n">min_distance_ms</span> <span class="o">/</span> <span class="mf">1000.</span> <span class="o">*</span> <span class="n">sf</span>
+    <span class="n">idx_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+    <span class="n">condition</span> <span class="o">=</span> <span class="n">idx_diff</span> <span class="o">&gt;</span> <span class="mi">1</span>
+    <span class="n">idx_distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">condition</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">idx_diff</span><span class="p">[</span><span class="n">condition</span><span class="p">]</span>
+    <span class="n">bad</span> <span class="o">=</span> <span class="n">idx_distance</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">distance</span> <span class="o">&lt;</span> <span class="n">min_distance</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="c1"># Fill gap between events separated with less than min_distance_ms</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">bad</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">fill</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">index</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="p">[</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+                          <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bad</span><span class="p">)])</span>
+        <span class="n">f_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">fill</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">f_index</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">index</span>
+
+
+<span class="k">def</span> <span class="nf">_index_to_events</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a 2D (start, end) array into a continuous one.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : array_like</span>
+<span class="sd">        2D array of indices.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    index : array_like</span>
+<span class="sd">        Continuous array of indices.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Original code imported from the Visbrain package.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">index</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+
+<span class="c1"># def get_sync_events(data=None, sf=None, detection=None, center=&#39;NegPeak&#39;,</span>
+<span class="c1">#                     time_before=0.4, time_after=0.8):</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     Return the raw data of each detected slow-waves / spindles, after</span>
+<span class="c1">#     centering to a specific timepoint.</span>
+<span class="c1">#</span>
+<span class="c1">#     This function can be used to plot an average template of the</span>
+<span class="c1">#     detected slow-waves / spindles.</span>
+<span class="c1">#</span>
+<span class="c1">#     For more details, please refer to the `Jupyter notebook</span>
+<span class="c1">#     &lt;https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection_multi.ipynb&gt;`_</span>
+<span class="c1">#</span>
+<span class="c1">#     Parameters</span>
+<span class="c1">#     ----------</span>
+<span class="c1">#     data : array_like or :py:class:`mne.io.BaseRaw`</span>
+<span class="c1">#         1D or 2D EEG data. Can also be :py:class:`mne.io.BaseRaw`,</span>
+<span class="c1">#         in which case ``data`` and ``sf`` will be automatically extracted.</span>
+<span class="c1">#     sf : float</span>
+<span class="c1">#         The sampling frequency of ``data``.</span>
+<span class="c1">#         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.</span>
+<span class="c1">#     detection : :py:class:`pandas.DataFrame`</span>
+<span class="c1">#         YASA&#39;s detection dataframe returned by the</span>
+<span class="c1">#         :py:func:`yasa.sw_detect` and</span>
+<span class="c1">#         :py:func:`yasa.spindles_detect` functions.</span>
+<span class="c1">#     center : str</span>
+<span class="c1">#         Landmark of the slow-waves / spindles to synchronize the timing on.</span>
+<span class="c1">#         Default is to use the negative peak.</span>
+<span class="c1">#     time_before : float</span>
+<span class="c1">#         Time (in seconds) before ``center``.</span>
+<span class="c1">#     time_after : float</span>
+<span class="c1">#         Time (in seconds) after ``center``.</span>
+<span class="c1">#</span>
+<span class="c1">#     Returns</span>
+<span class="c1">#     -------</span>
+<span class="c1">#     df_sync : :py:class:`pandas.DataFrame`</span>
+<span class="c1">#         Ouput long-format dataframe::</span>
+<span class="c1">#</span>
+<span class="c1">#         &#39;Event&#39; : Event number</span>
+<span class="c1">#         &#39;Time&#39; : Timing of the events (in seconds)</span>
+<span class="c1">#         &#39;Amplitude&#39; : Raw data for event</span>
+<span class="c1">#         &#39;Chan&#39; : Channel (only in multi-channel detection)</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     # Check if input data is a MNE Raw object</span>
+<span class="c1">#     if isinstance(data, mne.io.BaseRaw):</span>
+<span class="c1">#         sf = data.info[&#39;sfreq&#39;]  # Extract sampling frequency</span>
+<span class="c1">#         data = data.get_data() * 1e6  # Convert from V to uV</span>
+<span class="c1">#</span>
+<span class="c1">#     # Safety checks</span>
+<span class="c1">#     assert isinstance(data, np.ndarray), &#39;data must be a numpy array&#39;</span>
+<span class="c1">#     assert isinstance(detection, pd.DataFrame), &#39;detection must be a dataframe&#39;  # noqa</span>
+<span class="c1">#     assert isinstance(sf, (int, float)), &#39;sf must be a float or an int&#39;</span>
+<span class="c1">#     assert center in [&#39;PosPeak&#39;, &#39;NegPeak&#39;, &#39;Peak&#39;, &#39;MidCrossing&#39;, &#39;Start&#39;,</span>
+<span class="c1">#                       &#39;End&#39;], &#39;center timepoint not recognized&#39;</span>
+<span class="c1">#</span>
+<span class="c1">#     multi = False</span>
+<span class="c1">#     if &#39;Channel&#39; in detection.keys():</span>
+<span class="c1">#         chan = detection[&#39;Channel&#39;].unique()</span>
+<span class="c1">#         n_chan = chan.size</span>
+<span class="c1">#         multi = True if n_chan &gt; 1 else False</span>
+<span class="c1">#</span>
+<span class="c1">#     if multi:</span>
+<span class="c1">#         # Multi-channel (recursive call)</span>
+<span class="c1">#         assert data.ndim &gt; 1, &#39;Data must be 2D for multi-channel detection.&#39;</span>
+<span class="c1">#         df_sync = pd.DataFrame()</span>
+<span class="c1">#         for c, k in detection.groupby(&#39;Channel&#39;):</span>
+<span class="c1">#             idx_chan = k.iloc[0, -1]</span>
+<span class="c1">#             df_tmp = get_sync_events(data[idx_chan, :], sf, k.iloc[:, :-2],</span>
+<span class="c1">#                                      center=center, time_before=time_before,</span>
+<span class="c1">#                                      time_after=time_after)</span>
+<span class="c1">#             if df_tmp is None:</span>
+<span class="c1">#                 continue</span>
+<span class="c1">#</span>
+<span class="c1">#             df_tmp[&#39;Channel&#39;] = c</span>
+<span class="c1">#             df_tmp[&#39;IdxChannel&#39;] = idx_chan</span>
+<span class="c1">#             df_sync = df_sync.append(df_tmp, ignore_index=True)</span>
+<span class="c1">#     else:</span>
+<span class="c1">#         # Single-channel</span>
+<span class="c1">#         data = np.squeeze(data)</span>
+<span class="c1">#         assert data.ndim == 1, &#39;Data must be 1D for single-channel detection.&#39;  # noqa</span>
+<span class="c1">#         # Define number of samples before and after the peak</span>
+<span class="c1">#         assert time_before &gt;= 0</span>
+<span class="c1">#         assert time_after &gt;= 0</span>
+<span class="c1">#         bef = int(sf * time_before)</span>
+<span class="c1">#         aft = int(sf * time_after)</span>
+<span class="c1">#         # Convert to integer sample indices in data</span>
+<span class="c1">#         peaks = (detection[center] * sf).astype(int).to_numpy()</span>
+<span class="c1">#         # Get centered indices</span>
+<span class="c1">#         idx, idx_nomask = get_centered_indices(data, peaks, bef, aft)</span>
+<span class="c1">#         # If no good epochs are returned, raise an error and return None</span>
+<span class="c1">#         if len(idx_nomask) == 0:</span>
+<span class="c1">#             logger.warning(</span>
+<span class="c1">#                 &#39;Time before and/or time after exceed data bounds, please &#39;</span>
+<span class="c1">#                 &#39;lower the temporal window around center; returning None.&#39;</span>
+<span class="c1">#             )</span>
+<span class="c1">#             return None</span>
+<span class="c1">#</span>
+<span class="c1">#         # Get data at indices and time vector</span>
+<span class="c1">#         amps = data[idx]</span>
+<span class="c1">#         time = np.arange(-bef, aft + 1, dtype=&#39;int&#39;) / sf</span>
+<span class="c1">#</span>
+<span class="c1">#         # Convert to dataframe</span>
+<span class="c1">#         df_sync = pd.DataFrame(amps.T)</span>
+<span class="c1">#         df_sync[&#39;Time&#39;] = time</span>
+<span class="c1">#         df_sync = df_sync.melt(id_vars=&#39;Time&#39;, var_name=&#39;Event&#39;,</span>
+<span class="c1">#                                value_name=&#39;Amplitude&#39;)</span>
+<span class="c1">#     return df_sync</span>
 
 
 <div class="viewcode-block" id="moving_transform"><a class="viewcode-back" href="../../generated/yasa.moving_transform.html#yasa.moving_transform">[docs]</a><span class="k">def</span> <span class="nf">moving_transform</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">window</span><span class="o">=.</span><span class="mi">3</span><span class="p">,</span> <span class="n">step</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;corr&#39;</span><span class="p">,</span>
@@ -269,7 +442,7 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    x : 1D np.array</span>
+<span class="sd">    x : np.array</span>
 <span class="sd">        Input array.</span>
 <span class="sd">    cut : float</span>
 <span class="sd">        Proportion (in range 0-1) of total data to trim of each end.</span>
@@ -278,15 +451,16 @@
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    trimmed_std : float</span>
-<span class="sd">        Sample standard deviation of the trimmed array.</span>
+<span class="sd">        Sample standard deviation of the trimmed array, calculated on the last</span>
+<span class="sd">        axis.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
     <span class="n">lowercut</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cut</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span>
     <span class="n">uppercut</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="n">lowercut</span>
-    <span class="n">atmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">lowercut</span><span class="p">,</span> <span class="n">uppercut</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">atmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">lowercut</span><span class="p">,</span> <span class="n">uppercut</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">sl</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">lowercut</span><span class="p">,</span> <span class="n">uppercut</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">atmp</span><span class="p">[</span><span class="n">sl</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">atmp</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">sl</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="sliding_window"><a class="viewcode-back" href="../../generated/yasa.sliding_window.html#yasa.sliding_window">[docs]</a><span class="k">def</span> <span class="nf">sliding_window</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
@@ -374,7 +548,7 @@
 <span class="sd">            [-83,  31, -12, -41, -87, -92, -11, -48,  29, -17],</span>
 <span class="sd">            [-51,   3,  31, -99,  33, -47,   5, -97, -47,  90]]])</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">numpy.lib.stride_tricks</span> <span class="kn">import</span> <span class="n">as_strided</span>
+    <span class="kn">from</span> <span class="nn">numpy.lib.stride_tricks</span> <span class="k">import</span> <span class="n">as_strided</span>
     <span class="k">assert</span> <span class="n">axis</span> <span class="o">&lt;=</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span><span class="p">,</span> <span class="s2">&quot;Axis value out of range.&quot;</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s1">&#39;sf must be int or float&#39;</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s1">&#39;window must be int or float&#39;</span>
@@ -507,7 +681,7 @@
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.4.4.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
     </p>
   </div>
 </footer>
