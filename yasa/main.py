@@ -150,10 +150,10 @@ class _DetectionResults(object):
                        'Oscillations': average,
                        'Symmetry': average}
 
-            if 'SOPhase' in self._events:
-                from scipy.stats import circmean
-                aggfunc['SOPhase'] = lambda x: circmean(x, low=-np.pi,
-                                                        high=np.pi)
+            # if 'SOPhase' in self._events:
+            #     from scipy.stats import circmean
+            #     aggfunc['SOPhase'] = lambda x: circmean(x, low=-np.pi,
+            #                                             high=np.pi)
 
         elif event_type == 'sw':
             aggfunc = {'Start': 'count',
@@ -274,11 +274,10 @@ class _DetectionResults(object):
 
 
 def spindles_detect(data, sf=None, ch_names=None, hypno=None,
-                    include=(1, 2, 3), freq_sp=(12, 15), duration=(0.5, 2),
-                    freq_broad=(1, 30), min_distance=500,
+                    include=(1, 2, 3), freq_sp=(12, 15), freq_broad=(1, 30),
+                    duration=(0.5, 2), min_distance=500,
                     thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
-                    coupling=False, freq_so=(0.1, 1.25), multi_only=False,
-                    remove_outliers=False, verbose=False):
+                    multi_only=False, remove_outliers=False, verbose=False):
     """Spindles detection.
 
     Parameters
@@ -324,12 +323,11 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         uses a FIR filter (implemented in MNE) with a 1.5Hz transition band,
         which means that for `freq_sp = (12, 15 Hz)`, the -6 dB points are
         located at 11.25 and 15.75 Hz.
+    freq_broad : tuple or list
+        Broad band frequency range. Default is 1 to 30 Hz.
     duration : tuple or list
         The minimum and maximum duration of the spindles.
         Default is 0.5 to 2 seconds.
-    freq_broad : tuple or list
-        Broad band frequency of interest.
-        Default is 1 to 30 Hz.
     min_distance : int
         If two spindles are closer than ``min_distance`` (in ms), they are
         merged into a single spindles. Default is 500 ms.
@@ -348,34 +346,6 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
 
             thresh = {'rel_pow': None, 'corr': 0.65, 'rms': 1.5}
             thresh = {'rel_pow': None, 'corr': None, 'rms': 3}
-    coupling : boolean
-        If True, YASA will also calculate the coupling between each detected
-        spindles and the slow-oscillation signal. The coupling is given by the
-        phase (in radians) of the filtered slow-oscillation signal
-        at the most prominent peak of the spindles.
-
-        Importantly, since the resulting variable is expressed in radians,
-        one should use circular statistics to calculate the mean direction
-        and vector length:
-
-        .. code-block:: python
-
-            import pingouin as pg
-            mean_direction = pg.circ_mean(sp['SOPhase'])
-            vector_length = pg.circ_r(sp['SOPhase'])
-
-        For more details, please refer to the `Jupyter notebook
-        <https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb>`_
-
-        .. versionadded:: 0.1.9
-
-    freq_so : tuple or list
-        Slow-oscillations frequency of interest. This is only relevant if
-        ``coupling=True``. Default is 0.1 to 1.25 Hz, with a narrow transition
-        bandwidth of 0.1 Hz.
-
-        .. versionadded:: 0.1.9
-
     multi_only : boolean
         Define the behavior of the multi-channel detection. If True, only
         spindles that are present on at least two channels are kept. If False,
@@ -438,8 +408,6 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
       normalized from 0 (start) to 1 (end). Ideally this value should be close
       to 0.5, indicating that the most prominent peak is halfway through the
       spindle.
-    * ``'SOPhase'``: SO phase (in radians) at the most prominent peak.
-      This is only calculated when ``coupling=True``.
     * ``'Stage'`` : Sleep stage during which spindle occured, if ``hypno``
       was provided.
 
@@ -513,13 +481,13 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
     inst_freq = (sf / (2 * np.pi) * np.diff(inst_phase, axis=-1))
 
     # Extract the SO signal for coupling
-    if coupling:
-        # We need to use the original (non-filtered data)
-        data_so = filter_data(data, sf, freq_so[0], freq_so[1], method='fir',
-                              l_trans_bandwidth=0.1, h_trans_bandwidth=0.1,
-                              verbose=0)
-        # Now extract the instantaneous phase using Hilbert transform
-        so_phase = np.angle(signal.hilbert(data_so, N=nfast)[:, :n_samples])
+    # if coupling:
+    #     # We need to use the original (non-filtered data)
+    #     data_so = filter_data(data, sf, freq_so[0], freq_so[1], method='fir',
+    #                           l_trans_bandwidth=0.1, h_trans_bandwidth=0.1,
+    #                           verbose=0)
+    #     # Now extract the instantaneous phase using Hilbert transform
+    #     so_phase = np.angle(signal.hilbert(data_so, N=nfast)[:, :n_samples])
 
     # Initialize empty output dataframe
     df = pd.DataFrame()
@@ -634,7 +602,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         sp_rel = np.zeros(len(sp))
         sp_sta = np.zeros(len(sp))
         sp_pro = np.zeros(len(sp))
-        sp_cou = np.zeros(len(sp))
+        # sp_cou = np.zeros(len(sp))
 
         # Number of oscillations (number of peaks separated by at least 60 ms)
         # --> 60 ms because 1000 ms / 16 Hz = 62.5 m, in other words, at 16 Hz,
@@ -674,8 +642,8 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
             sp_sym[j] = pk / sp_det.size
 
             # SO-spindles coupling
-            if coupling:
-                sp_cou[j] = so_phase[i, sp[j]][pk]
+            # if coupling:
+            #     sp_cou[j] = so_phase[i, sp[j]][pk]
 
             # Sleep stage
             if hypno is not None:
@@ -693,7 +661,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
                      'Frequency': sp_freq,
                      'Oscillations': sp_osc,
                      'Symmetry': sp_sym,
-                     'SOPhase': sp_cou,
+                     # 'SOPhase': sp_cou,
                      'Stage': sp_sta}
 
         df_chan = pd.DataFrame(sp_params)[good_dur]
@@ -731,8 +699,8 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         to_drop.append('Stage')
     else:
         df['Stage'] = df['Stage'].astype(int)
-    if not coupling:
-        to_drop.append('SOPhase')
+    # if not coupling:
+    #     to_drop.append('SOPhase')
     if len(to_drop):
         df = df.drop(columns=to_drop)
 

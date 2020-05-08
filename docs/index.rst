@@ -134,10 +134,11 @@ Typical uses
   import yasa
 
   # Single-channel spindles detection (shows all the default implicit parameters)
-  sp = yasa.spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
-                            duration=(0.5, 2), freq_broad=(1, 30), min_distance=500,
+  sp = yasa.spindles_detect(data, sf=None, ch_names=None, hypno=None,
+                            include=(1, 2, 3), freq_sp=(12, 15), freq_broad=(1, 30),
+                            duration=(0.5, 2),  min_distance=500,
                             thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
-                            remove_outliers=False, coupling=False)
+                            multi_only=False, remove_outliers=False, verbose=False)
 
   # Return a Pandas DataFrame with all detected spindles
   sp.summary()

@@ -89,7 +89,7 @@ class TestMain(unittest.TestCase):
         spindles_detect(data, sf, thresh={'rel_pow': 0.25, 'corr': .60})
 
         # Test with disabled thresholds
-        spindles_detect(data, sf, thresh={'rel_pow': None}, coupling=True)
+        spindles_detect(data, sf, thresh={'rel_pow': None})
         spindles_detect(data, sf, thresh={'corr': None}, verbose='debug')
         spindles_detect(data, sf, thresh={'rms': None})
         spindles_detect(data, sf, thresh={'rms': None, 'corr': None})
@@ -152,9 +152,8 @@ class TestMain(unittest.TestCase):
         assert sp_multi.summary().shape[0] < sp.summary().shape[0]
         assert sp_no_out.summary().shape[0] < sp.summary().shape[0]
 
-        # Test with hypnogram + coupling
-        sp = spindles_detect(data_full, sf, hypno=hypno_full,
-                             include=2, coupling=True)
+        # Test with hypnogram
+        sp = spindles_detect(data_full, sf, hypno=hypno_full, include=2)
         sp.summary(grp_chan=False, grp_stage=False)
         sp.summary(grp_chan=False, grp_stage=True, average='median')
         sp.summary(grp_chan=True, grp_stage=False)

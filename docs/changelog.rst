@@ -29,11 +29,12 @@ One can also quickly plot an average "template" of all the detected events:
 
 For more details, please refer to the documentation of :py:meth:`yasa.SpindlesResults`, :py:meth:`yasa.SWResults` and :py:meth:`yasa.REMResults`.
 
-**Other enhancements**
+**Other changes**
 
 a. Downsampling of data in detection functions has been removed! In other words, YASA will no longer downsample the data to 100 / 128 Hz before applying the detection. If the detection is too slow, we recommend that you manually downsample your data before applying the detection. See for example :py:func:`mne.filter.resample`.
 b. Filtering and Hilbert transform are now applied at once on all channels (instead of looping across individual channels) in the :py:func:`yasa.spindles_detect` and :py:func:`yasa.sw_detect` functions. This should lead to sensitive speed up in computation time.
 c. :py:func:`yasa.trimbothstd` can now work with ND arrays. The trimmed standard deviation will always be calculated on the last axis of the array.
+d. Removed ``coupling`` argument from :py:func:`yasa.spindles_detect`. Instead, slow-oscillations / sigma coupling can only be calculated from the slow-waves detection, which is 1) the most standard way, 2) better because PAC assumptions require a strong oscillatory component in the lower frequency range (slow-oscillations). This also avoids unecessary confusion between spindles-derived coupling and slow-waves-derived coupling. For more details, refer to the tutorial.
 
 v0.2.0 (April 2020)
 -------------------
