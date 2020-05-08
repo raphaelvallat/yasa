@@ -19,9 +19,9 @@ def fcn_spindle(data, sf, time, hypno):
     See http://visbrain.org/sleep.html#use-your-own-detections-in-sleep
     """
     # Apply on the full recording
-    # sp = spindles_detect(data, sf)
+    # sp = spindles_detect(data, sf).summary()
     # NREM sleep only
-    sp = spindles_detect(data, sf, hypno=hypno)
+    sp = spindles_detect(data, sf, hypno=hypno).summary()
     return (sp[['Start', 'End']].values * sf).astype(int)
 
 
@@ -31,8 +31,8 @@ def fcn_sw(data, sf, time, hypno):
     """
     # On N2 / N3 sleep only
     # Note that if you want to apply the detection on N3 sleep only, you should
-    # use sw_detect(..., include=(3))
-    sw = sw_detect(data, sf, hypno=hypno)
+    # use sw_detect(..., include=(3)).summary()
+    sw = sw_detect(data, sf, hypno=hypno).summary()
     return (sw[['Start', 'End']].values * sf).astype(int)
 
 

@@ -73,7 +73,7 @@ class TestMain(unittest.TestCase):
 
         sp = spindles_detect(data, sf, verbose=True)
         assert sp.summary().shape[0] == 2
-        sp.get_bool_vector()
+        sp.get_mask()
         sp.get_sync_events()
 
         sp.get_sync_events(time_before=10)  # Invalid time window
@@ -105,7 +105,7 @@ class TestMain(unittest.TestCase):
 
         with self.assertLogs('yasa', level='WARNING'):
             spindles_detect(data_n3, sf)
-        # assert sp is None --> Fails
+        # assert sp is None --> Fails?
 
         # Ensure that the two warnings are tested
         with self.assertLogs('yasa', level='WARNING'):
@@ -137,7 +137,7 @@ class TestMain(unittest.TestCase):
         #######################################################################
 
         sp = spindles_detect(data_full, sf, chan_full)
-        sp.get_bool_vector()
+        sp.get_mask()
         sp.get_sync_events()
         sp.summary()
         sp.summary(grp_chan=True)
@@ -189,7 +189,7 @@ class TestMain(unittest.TestCase):
         # With N3 hypnogram
         sw = sw_detect(data_sw, sf, hypno=hypno_sw, coupling=True)
         sw.summary()
-        sw.get_bool_vector()
+        sw.get_mask()
         sw.get_sync_events()
         sw.plot_average(ci=None)
         np.testing.assert_array_equal(np.squeeze(sw._data), data_sw)
@@ -214,7 +214,7 @@ class TestMain(unittest.TestCase):
         #######################################################################
 
         sw = sw_detect(data_full, sf, chan_full)
-        sw.get_bool_vector()
+        sw.get_mask()
         sw.get_sync_events()
         sw.plot_average(ci=None)
 
@@ -260,7 +260,7 @@ class TestMain(unittest.TestCase):
         rem2 = rem_detect(loc, roc, sf, remove_outliers=True)
         assert rem.summary().shape[0] > rem2.summary().shape[0]
         rem.summary()
-        rem.get_bool_vector()
+        rem.get_mask()
         rem.get_sync_events()
         rem.plot_average(ci=None)
 

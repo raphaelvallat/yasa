@@ -20,7 +20,7 @@ Similarly, the :py:func:`yasa.get_bool_vector` and :py:func:`yasa.get_sync_event
 
 >>> sw = yasa.sw_detect(...)
 >>> sw.summary()
->>> sw.get_bool_vector()
+>>> sw.get_mask()
 >>> sw.get_sync_events(center='NegPeak', time_before=0.4, time_after=0.8)
 
 One can also quickly plot an average "template" of all the detected events:

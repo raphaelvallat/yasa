@@ -78,14 +78,14 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None,
     logger.info('Sampling frequency = %.2f Hz', sf)
     logger.info('Data duration = %.2f seconds', n_samples / sf)
     all_ptp = np.ptp(data, axis=-1)
-    all_trimstd = trimbothstd(data, cut=0.10)
+    all_trimstd = trimbothstd(data, cut=0.05)
     bad_chan = np.zeros(n_chan, dtype=bool)
     for i in range(n_chan):
         logger.info('Trimmed standard deviation of %s = %.4f uV'
                     % (ch_names[i], all_trimstd[i]))
         logger.info('Peak-to-peak amplitude of %s = %.4f uV'
                     % (ch_names[i], all_ptp[i]))
-        if check_amp and not(1 < all_trimstd[i] < 1e3):
+        if check_amp and not(0.1 < all_trimstd[i] < 1e3):
             logger.error('Wrong data amplitude for %s '
                          '(trimmed STD = %.3f). Unit of data MUST be uV! '
                          'Channel will be skipped.'
@@ -117,16 +117,16 @@ class _DetectionResults(object):
         self._ch_names = ch_names
         self._data_filt = data_filt
 
-    def get_bool_vector(self):
-        """get_bool_vector"""
+    def get_mask(self):
+        """get_mask"""
         from yasa.others import _index_to_events
-        bool_vector = np.zeros(self._data.shape, dtype=int)
+        mask = np.zeros(self._data.shape, dtype=int)
         for i in self._events['IdxChannel'].unique():
             ev_chan = self._events[self._events['IdxChannel'] == i]
             idx_ev = _index_to_events(
                 ev_chan[['Start', 'End']].to_numpy() * self._sf)
-            bool_vector[i, idx_ev] = 1
-        return bool_vector
+            mask[i, idx_ev] = 1
+        return np.squeeze(mask)
 
     def summary(self, event_type, grp_chan=False, grp_stage=False,
                 average='mean', sort=True):
@@ -260,7 +260,7 @@ class _DetectionResults(object):
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         sns.lineplot(data=df_sync, x='Time', y='Amplitude', hue='Channel',
                      ax=ax, **kwargs)
-        ax.legend(frameon=False, loc='lower right')
+        # ax.legend(frameon=False, loc='lower right')
         ax.set_xlim(df_sync['Time'].min(), df_sync['Time'].max())
         ax.set_title(title)
         ax.set_xlabel('Time (sec)')
@@ -443,6 +443,9 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
     * ``'Stage'`` : Sleep stage during which spindle occured, if ``hypno``
       was provided.
 
+      All parameters are calculated from the broadband-filtered EEG
+      (frequency range defined in ``freq_broad``).
+
     For better results, apply this detection only on artefact-free NREM sleep.
 
     References
@@ -493,8 +496,8 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
     # Filtering
     nfast = next_fast_len(n_samples)
     # 1) Broadband bandpass filter (optional -- careful of lower freq for PAC)
-    # data = filter_data(data, sf, freq_broad[0], freq_broad[1], method='fir',
-    #                    verbose=0)
+    data_broad = filter_data(data, sf, freq_broad[0], freq_broad[1],
+                             method='fir', verbose=0)
     # 2) Sigma bandpass filter
     # The width of the transition band is set to 1.5 Hz on each side,
     # meaning that for freq_sp = (12, 15 Hz), the -6 dB points are located at
@@ -511,6 +514,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
 
     # Extract the SO signal for coupling
     if coupling:
+        # We need to use the original (non-filtered data)
         data_so = filter_data(data, sf, freq_so[0], freq_so[1], method='fir',
                               l_trans_bandwidth=0.1, h_trans_bandwidth=0.1,
                               verbose=0)
@@ -534,7 +538,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         # Here we use a step of 200 ms to speed up the computation.
         # Note that even if the threshold is None we still need to calculate it
         # for the individual spindles parameter (RelPow).
-        f, t, Sxx = stft_power(data[i, :], sf, window=2, step=.2,
+        f, t, Sxx = stft_power(data_broad[i, :], sf, window=2, step=.2,
                                band=freq_broad, interp=False, norm=True)
         idx_sigma = np.logical_and(f >= freq_sp[0], f <= freq_sp[1])
         rel_pow = Sxx[idx_sigma].sum(0)
@@ -549,7 +553,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         rel_pow = func(t)
 
         if do_corr:
-            _, mcorr = moving_transform(x=data_sigma[i, :], y=data[i, :],
+            _, mcorr = moving_transform(x=data_sigma[i, :], y=data_broad[i, :],
                                         sf=sf, window=.3, step=.1,
                                         method='corr', interp=True)
         if do_rms:
@@ -639,9 +643,9 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
 
         for j in np.arange(len(sp))[good_dur]:
             # Important: detrend the signal to avoid wrong PTP amplitude
-            sp_x = np.arange(data[i, sp[j]].size, dtype=np.float64)
-            sp_det = _detrend(sp_x, data[i, sp[j]])
-            # sp_det = signal.detrend(data[i, sp[i]], type='linear')
+            sp_x = np.arange(data_broad[i, sp[j]].size, dtype=np.float64)
+            sp_det = _detrend(sp_x, data_broad[i, sp[j]])
+            # sp_det = signal.detrend(data_broad[i, sp[i]], type='linear')
             sp_amp[j] = np.ptp(sp_det)  # Peak-to-peak amplitude
             sp_rms[j] = _rms(sp_det)  # Root mean square
             sp_rel[j] = np.median(rel_pow[sp[j]])  # Median relative power
@@ -692,7 +696,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
                      'SOPhase': sp_cou,
                      'Stage': sp_sta}
 
-        df_chan = pd.DataFrame.from_dict(sp_params)[good_dur]
+        df_chan = pd.DataFrame(sp_params)[good_dur]
 
         # We need at least 50 detected spindles to apply the Isolation Forest.
         if remove_outliers and df_chan.shape[0] >= 50:
@@ -752,7 +756,7 @@ class SpindlesResults(_DetectionResults):
     _events : :py:class:`pandas.DataFrame`
         Output detection dataframe
     _data : array_like
-        EEG data of shape *(n_chan, n_samples)*.
+        Original EEG data of shape *(n_chan, n_samples)*.
     _data_filt : array_like
         Sigma-filtered EEG data of shape *(n_chan, n_samples)*.
     _sf : float
@@ -786,11 +790,11 @@ class SpindlesResults(_DetectionResults):
                                grp_chan=grp_chan, grp_stage=grp_stage,
                                average=average, sort=sort)
 
-    def get_bool_vector(self):
-        """Return a boolean vector indicating for each sample in data if this
+    def get_mask(self):
+        """Return a boolean array indicating for each sample in data if this
         sample is part of a detected event (True) or not (False).
         """
-        return super().get_bool_vector()
+        return super().get_mask()
 
     def get_sync_events(self, center='Peak', time_before=1, time_after=1,
                         filtered=False):
@@ -1252,7 +1256,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
             sw_params.move_to_end('Stage')
 
         # Convert to dataframe, keeping only good events
-        df_chan = pd.DataFrame.from_dict(sw_params)[good_sw]
+        df_chan = pd.DataFrame(sw_params)[good_sw]
 
         # Remove all duplicates
         df_chan = df_chan.drop_duplicates(subset=['Start'], keep=False)
@@ -1337,11 +1341,11 @@ class SWResults(_DetectionResults):
                                grp_chan=grp_chan, grp_stage=grp_stage,
                                average=average, sort=sort)
 
-    def get_bool_vector(self):
-        """Return a boolean vector indicating for each sample in data if this
+    def get_mask(self):
+        """Return a boolean array indicating for each sample in data if this
         sample is part of a detected event (True) or not (False).
         """
-        return super().get_bool_vector()
+        return super().get_mask()
 
     def get_sync_events(self, center='NegPeak', time_before=0.4,
                         time_after=0.8, filtered=False):
@@ -1705,17 +1709,17 @@ class REMResults(_DetectionResults):
         return super().summary(event_type='rem', grp_chan=False,
                                grp_stage=grp_stage, average=average, sort=sort)
 
-    def get_bool_vector(self):
-        """Return a boolean vector indicating for each sample in data if this
+    def get_mask(self):
+        """Return a boolean array indicating for each sample in data if this
         sample is part of a detected event (True) or not (False).
         """
         # We cannot use super() because "Channel" is not present in _events.
         from yasa.others import _index_to_events
-        bool_vector = np.zeros(self._data.shape, dtype=int)
+        mask = np.zeros(self._data.shape, dtype=int)
         idx_ev = _index_to_events(
             self._events[['Start', 'End']].to_numpy() * self._sf)
-        bool_vector[:, idx_ev] = 1
-        return bool_vector
+        mask[:, idx_ev] = 1
+        return mask
 
     def get_sync_events(self, center='Peak', time_before=0.4, time_after=0.4,
                         filtered=False):
@@ -1809,7 +1813,7 @@ class REMResults(_DetectionResults):
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         sns.lineplot(data=df_sync, x='Time', y='Amplitude', hue='Channel',
                      ax=ax, **kwargs)
-        ax.legend(frameon=False, loc='lower right')
+        # ax.legend(frameon=False, loc='lower right')
         ax.set_xlim(df_sync['Time'].min(), df_sync['Time'].max())
         ax.set_title("Average REM")
         ax.set_xlabel('Time (sec)')

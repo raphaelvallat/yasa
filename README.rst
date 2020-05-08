@@ -35,7 +35,7 @@
 
 * Automatically detect sleep spindles, slow-waves, and rapid eye movements on single and multi-channel EEG data
 * Automatically reject major artifacts on single or multi-channel EEG data
-* Perform advanced spectral analyses: spectral bandpower, phase-amplitude coupling, event-locked analyses, *etc.*
+* Perform advanced spectral analyses: spectral bandpower, phase-amplitude coupling, event-locked analyses, 1/f, and more!
 * Easily manipulate sleep staging vector (hypnogram)
 
 For more details, check out the `API documentation <https://raphaelvallat.com/yasa/build/html/index.html>`_ or try the
@@ -55,6 +55,7 @@ Installation
 - scipy
 - pandas
 - matplotlib
+- seaborn
 - mne
 - numba
 - scikit-learn
@@ -97,7 +98,7 @@ Check out the `API documentation <https://raphaelvallat.com/yasa/build/html/api.
 Tutorial
 --------
 
-The examples Jupyter notebooks are really what make YASA great! In addition to showing how to use the main functions of YASA, they also provide an extensive step-by-step description of the detection algorithms, as well as several useful code snippets to analyze and plot your data.
+The examples Jupyter notebooks are really what make YASA great! In addition to showing how to use the main functions of YASA, they also provide an extensive step-by-step description of the algorithms, as well as several useful code snippets to analyze and plot your data.
 
 **Spindles**
 
@@ -136,16 +137,21 @@ Typical uses
   import yasa
 
   # Single-channel spindles detection (shows all the default implicit parameters)
-  yasa.spindles_detect(data, sf, hypno=None, include=(1, 2, 3),
-                       freq_sp=(12, 15), duration=(0.5, 2), freq_broad=(1, 30),
-                       min_distance=500, downsample=True,
-                       thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
-                       remove_outliers=False, coupling=False)
+  sp = yasa.spindles_detect(data, sf, hypno=None, include=(1, 2, 3), freq_sp=(12, 15),
+                            duration=(0.5, 2), freq_broad=(1, 30), min_distance=500,
+                            thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
+                            remove_outliers=False, coupling=False)
+
+  # Return a Pandas DataFrame with all detected spindles
+  sp.summary()
 
   # Multi-channels detection on N2 sleep only with automatic outlier rejection
-  yasa.spindles_detect_multi(data, sf, ch_names, hypno=hypno, include=(2), remove_outliers=True)
+  sp = yasa.spindles_detect(data, sf, ch_names, hypno=hypno, include=(2), remove_outliers=True)
 
-The result of the detection is a `pandas DataFrame <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>`_ where each row is a unique detected event (e.g. spindle, slow-waves, REMs) and each column a parameter of this event, including, the start and end timestamps, duration, amplitude, etc.
+  # Return spindles count / density and properties averaged across channels and sleep stages
+  sp.summary(grp_stage=True, grp_chan=True)
+
+The output of the detection is a `pandas DataFrame <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>`_ where each row is a unique detected event (e.g. spindle, slow-waves, REMs) and each column a parameter of this event, including, the start and end timestamps, duration, amplitude, etc.
 
 .. table:: Output
    :widths: auto
@@ -179,9 +185,9 @@ YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.
       See http://visbrain.org/sleep.html#use-your-own-detections-in-sleep
       """
       # Apply on the full recording...
-      # sp = spindles_detect(data, sf)
+      # sp = spindles_detect(data, sf).summary()
       # ...or on NREM sleep only
-      sp = spindles_detect(data, sf, hypno=hypno)
+      sp = spindles_detect(data, sf, hypno=hypno).summary()
       return (sp[['Start', 'End']].values * sf).astype(int)
 
   sl.replace_detections('spindle', fcn_spindle)
