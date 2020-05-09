@@ -91,7 +91,7 @@ If you want to dive right in, you can simply go to the `documentation <https://r
 
 **Rapid Eye Movements (REMs)**
 
-8. `07_REMs_detection<notebooks/07_REMs_detection.ipynb>`_: REMs detection.
+* `07_REMs_detection<notebooks/07_REMs_detection.ipynb>`_: REMs detection.
 
 **Spectral analysis**
 
@@ -196,7 +196,7 @@ Gallery
 
 Below some plots demonstrating the functionalities of YASA. To reproduce these, check out the `tutorial (Jupyter notebooks) <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_.
 
-.. figure::  /pictures/gallery.png
+.. figure::  /docs/pictures/gallery.png
   :align:   center
 
   *The two top plots show an overlay of the detected spindles (blue) and slow-waves (red) on real EEG data. The middle right panel shows a time-frequency representation of the whole-night recording (spectrogram), plotted with the hypnogram (sleep stages) on top. The middle right panel shows the sleep stage probability transition matrix, calculated across the entire night. The left and right plots of the bottom row show the average template of all detected slow-waves and spindles across the entire night, stratified by channels. The middle bottom plot shows a phase-amplitude coupling comodulogram between slower (0.2-4Hz) and faster (7.5-25Hz) frequency ranges.*

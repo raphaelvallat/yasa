@@ -2177,7 +2177,7 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     # Mark flat epochs as artefacts
     if n_flat_epochs > 0:
         logger.info(f"Rejecting {n_flat_epochs} epochs with >=50% of channels "
-                    f"that are flat.Z-scores set to np.nan for these epochs.")
+                    f"that are flat. Z-scores set to np.nan for these epochs.")
         epoch_is_art[where_flat_epochs] = 1
 
     # Log total percentage of epochs rejected
