@@ -129,7 +129,7 @@ class _DetectionResults(object):
         return np.squeeze(mask)
 
     def summary(self, event_type, grp_chan=False, grp_stage=False,
-                average='mean', sort=True):
+                aggfunc='mean', sort=True):
         """summary"""
         grouper = []
         if grp_stage is True and 'Stage' in self._events:
@@ -141,14 +141,14 @@ class _DetectionResults(object):
 
         if event_type == 'spindles':
             aggfunc = {'Start': 'count',
-                       'Duration': average,
-                       'Amplitude': average,
-                       'RMS': average,
-                       'AbsPower': average,
-                       'RelPower': average,
-                       'Frequency': average,
-                       'Oscillations': average,
-                       'Symmetry': average}
+                       'Duration': aggfunc,
+                       'Amplitude': aggfunc,
+                       'RMS': aggfunc,
+                       'AbsPower': aggfunc,
+                       'RelPower': aggfunc,
+                       'Frequency': aggfunc,
+                       'Oscillations': aggfunc,
+                       'Symmetry': aggfunc}
 
             # if 'SOPhase' in self._events:
             #     from scipy.stats import circmean
@@ -157,28 +157,28 @@ class _DetectionResults(object):
 
         elif event_type == 'sw':
             aggfunc = {'Start': 'count',
-                       'Duration': average,
-                       'ValNegPeak': average,
-                       'ValPosPeak': average,
-                       'PTP': average,
-                       'Slope': average,
-                       'Frequency': average}
+                       'Duration': aggfunc,
+                       'ValNegPeak': aggfunc,
+                       'ValPosPeak': aggfunc,
+                       'PTP': aggfunc,
+                       'Slope': aggfunc,
+                       'Frequency': aggfunc}
 
             if 'PhaseAtSigmaPeak' in self._events:
                 from scipy.stats import circmean
                 aggfunc['PhaseAtSigmaPeak'] = lambda x: circmean(x, low=-np.pi,
                                                                  high=np.pi)
-                aggfunc['ndPAC'] = average
+                aggfunc['ndPAC'] = aggfunc
 
         else:  # REM
             aggfunc = {'Start': 'count',
-                       'Duration': average,
-                       'LOCAbsValPeak': average,
-                       'ROCAbsValPeak': average,
-                       'LOCAbsRiseSlope': average,
-                       'ROCAbsRiseSlope': average,
-                       'LOCAbsFallSlope': average,
-                       'ROCAbsFallSlope': average}
+                       'Duration': aggfunc,
+                       'LOCAbsValPeak': aggfunc,
+                       'ROCAbsValPeak': aggfunc,
+                       'LOCAbsRiseSlope': aggfunc,
+                       'ROCAbsRiseSlope': aggfunc,
+                       'LOCAbsFallSlope': aggfunc,
+                       'ROCAbsFallSlope': aggfunc}
 
         # Apply grouping
         df_grp = self._events.groupby(grouper, sort=sort,
@@ -745,7 +745,7 @@ class SpindlesResults(_DetectionResults):
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         super().__init__(events, data, sf, ch_names, hypno, data_filt)
 
-    def summary(self, grp_chan=False, grp_stage=False, average='mean',
+    def summary(self, grp_chan=False, grp_stage=False, aggfunc='mean',
                 sort=True):
         """Return a summary of the spindles detection, optionally grouped
         across channels and/or stage.
@@ -757,14 +757,14 @@ class SpindlesResults(_DetectionResults):
         grp_stage : bool
             If True, group by sleep stage (provided that an hypnogram was
             used).
-        average : str or function
+        aggfunc : str or function
             Averaging function (e.g. ``'mean'`` or ``'median'``).
         sort : bool
             If True, sort group keys when grouping.
         """
         return super().summary(event_type='spindles',
                                grp_chan=grp_chan, grp_stage=grp_stage,
-                               average=average, sort=sort)
+                               aggfunc=aggfunc, sort=sort)
 
     def get_mask(self):
         """Return a boolean array indicating for each sample in data if this
@@ -1303,7 +1303,7 @@ class SWResults(_DetectionResults):
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         super().__init__(events, data, sf, ch_names, hypno, data_filt)
 
-    def summary(self, grp_chan=False, grp_stage=False, average='mean',
+    def summary(self, grp_chan=False, grp_stage=False, aggfunc='mean',
                 sort=True):
         """Return a summary of the SW detection, optionally grouped across
         channels and/or stage.
@@ -1315,14 +1315,14 @@ class SWResults(_DetectionResults):
         grp_stage : bool
             If True, group by sleep stage (provided that an hypnogram was
             used).
-        average : str or function
+        aggfunc : str or function
             Averaging function (e.g. ``'mean'`` or ``'median'``).
         sort : bool
             If True, sort group keys when grouping.
         """
         return super().summary(event_type='sw',
                                grp_chan=grp_chan, grp_stage=grp_stage,
-                               average=average, sort=sort)
+                               aggfunc=aggfunc, sort=sort)
 
     def get_mask(self):
         """Return a boolean array indicating for each sample in data if this
@@ -1679,7 +1679,7 @@ class REMResults(_DetectionResults):
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         super().__init__(events, data, sf, ch_names, hypno, data_filt)
 
-    def summary(self, grp_stage=False, average='mean', sort=True):
+    def summary(self, grp_stage=False, aggfunc='mean', sort=True):
         """Return a summary of the REM detection, optionally grouped across
         stage.
 
@@ -1688,7 +1688,7 @@ class REMResults(_DetectionResults):
         grp_stage : bool
             If True, group by sleep stage (provided that an hypnogram was
             used).
-        average : str or function
+        aggfunc : str or function
             Averaging function (e.g. ``'mean'`` or ``'median'``).
         sort : bool
             If True, sort group keys when grouping.
@@ -1696,7 +1696,7 @@ class REMResults(_DetectionResults):
         # ``grp_chan`` is always False for REM detection because the
         # REMs are always detected on a combination of LOC and ROC.
         return super().summary(event_type='rem', grp_chan=False,
-                               grp_stage=grp_stage, average=average, sort=sort)
+                               grp_stage=grp_stage, aggfunc=aggfunc, sort=sort)
 
     def get_mask(self):
         """Return a boolean array indicating for each sample in data if this
