@@ -1105,7 +1105,7 @@
 <span class="sd">      ``coupling=True``</span>
 <span class="sd">    * ``&#39;Stage&#39;``: Sleep stage (only if hypno was provided)</span>
 
-<span class="sd">    .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/slow_waves.png  # noqa</span>
+<span class="sd">    .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/master/docs/pictures/slow_waves.png  # noqa</span>
 <span class="sd">      :width: 500px</span>
 <span class="sd">      :align: center</span>
 <span class="sd">      :alt: slow-wave</span>
@@ -2265,7 +2265,7 @@
     <span class="c1"># Mark flat epochs as artefacts</span>
     <span class="k">if</span> <span class="n">n_flat_epochs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Rejecting </span><span class="si">{n_flat_epochs}</span><span class="s2"> epochs with &gt;=50</span><span class="si">% o</span><span class="s2">f channels &quot;</span>
-                    <span class="n">f</span><span class="s2">&quot;that are flat.Z-scores set to np.nan for these epochs.&quot;</span><span class="p">)</span>
+                    <span class="n">f</span><span class="s2">&quot;that are flat. Z-scores set to np.nan for these epochs.&quot;</span><span class="p">)</span>
         <span class="n">epoch_is_art</span><span class="p">[</span><span class="n">where_flat_epochs</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
 
     <span class="c1"># Log total percentage of epochs rejected</span>

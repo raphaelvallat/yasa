@@ -1017,7 +1017,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
       ``coupling=True``
     * ``'Stage'``: Sleep stage (only if hypno was provided)
 
-    .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/slow_waves.png  # noqa
+    .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/master/docs/pictures/slow_waves.png  # noqa
       :width: 500px
       :align: center
       :alt: slow-wave
