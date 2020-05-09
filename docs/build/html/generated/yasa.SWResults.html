@@ -125,8 +125,8 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SWResults.__init__" title="yasa.SWResults.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(events, data, sf, ch_names, hypno, …)</p></td>
 <td><p>Initialize self.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SWResults.get_bool_vector" title="yasa.SWResults.get_bool_vector"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_bool_vector</span></code></a>()</p></td>
-<td><p>Return a boolean vector indicating for each sample in data if this sample is part of a detected event (True) or not (False).</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SWResults.get_mask" title="yasa.SWResults.get_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_mask</span></code></a>()</p></td>
+<td><p>Return a boolean array indicating for each sample in data if this sample is part of a detected event (True) or not (False).</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SWResults.get_sync_events" title="yasa.SWResults.get_sync_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sync_events</span></code></a>([center, time_before, …])</p></td>
 <td><p>Return the raw data of each detected event after centering to a specific timepoint.</p></td>
@@ -134,21 +134,21 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#yasa.SWResults.plot_average" title="yasa.SWResults.plot_average"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_average</span></code></a>([center, time_before, …])</p></td>
 <td><p>Plot the average slow-wave.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SWResults.summary" title="yasa.SWResults.summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary</span></code></a>([grp_chan, grp_stage, average, sort])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SWResults.summary" title="yasa.SWResults.summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary</span></code></a>([grp_chan, grp_stage, aggfunc, sort])</p></td>
 <td><p>Return a summary of the SW detection, optionally grouped across channels and/or stage.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="method">
-<dt id="yasa.SWResults.get_bool_vector">
-<code class="sig-name descname">get_bool_vector</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#SWResults.get_bool_vector"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Return a boolean vector indicating for each sample in data if this
+<dt id="yasa.SWResults.get_mask">
+<code class="sig-name descname">get_mask</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#SWResults.get_mask"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Return a boolean array indicating for each sample in data if this
 sample is part of a detected event (True) or not (False).</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="yasa.SWResults.get_sync_events">
-<code class="sig-name descname">get_sync_events</code><span class="sig-paren">(</span><em class="sig-param">center='NegPeak'</em>, <em class="sig-param">time_before=0.4</em>, <em class="sig-param">time_after=0.8</em>, <em class="sig-param">filtered=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#SWResults.get_sync_events"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-name descname">get_sync_events</code><span class="sig-paren">(</span><em class="sig-param">center='NegPeak'</em>, <em class="sig-param">time_before=0.4</em>, <em class="sig-param">time_after=0.8</em>, <em class="sig-param">filt=(None</em>, <em class="sig-param">None)</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#SWResults.get_sync_events"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Return the raw data of each detected event after
 centering to a specific timepoint.</p>
 <dl class="field-list">
@@ -161,7 +161,10 @@ Default is to use the negative peak of the slow-wave.</p>
 </dd>
 <dt><strong>time_after</strong><span class="classifier">float</span></dt><dd><p>Time (in seconds) after <code class="docutils literal notranslate"><span class="pre">center</span></code>.</p>
 </dd>
-<dt><strong>filtered</strong><span class="classifier">bool</span></dt><dd><p>If True, use the filtered signal.</p>
+<dt><strong>filt</strong><span class="classifier">tuple</span></dt><dd><p>Optional filtering to apply to data. For instance, <code class="docutils literal notranslate"><span class="pre">filt=(1,</span> <span class="pre">30)</span></code>
+will apply a 1 to 30 Hz bandpass filter, and <code class="docutils literal notranslate"><span class="pre">filt=(None,</span> <span class="pre">40)</span></code>
+will apply a 40 Hz lowpass filter. Filtering is done using default
+parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v0.20.3)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
 </dd>
 </dl>
 </dd>
@@ -182,7 +185,7 @@ Default is to use the negative peak of the slow-wave.</p>
 
 <dl class="method">
 <dt id="yasa.SWResults.plot_average">
-<code class="sig-name descname">plot_average</code><span class="sig-paren">(</span><em class="sig-param">center='NegPeak'</em>, <em class="sig-param">time_before=0.4</em>, <em class="sig-param">time_after=0.8</em>, <em class="sig-param">filtered=False</em>, <em class="sig-param">figsize=(6</em>, <em class="sig-param">4.5)</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#SWResults.plot_average"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-name descname">plot_average</code><span class="sig-paren">(</span><em class="sig-param">center='NegPeak'</em>, <em class="sig-param">time_before=0.4</em>, <em class="sig-param">time_after=0.8</em>, <em class="sig-param">filt=(None</em>, <em class="sig-param">None)</em>, <em class="sig-param">figsize=(6</em>, <em class="sig-param">4.5)</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#SWResults.plot_average"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Plot the average slow-wave.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -194,7 +197,10 @@ Default is to use the negative peak of the slow-wave.</p>
 </dd>
 <dt><strong>time_after</strong><span class="classifier">float</span></dt><dd><p>Time (in seconds) after <code class="docutils literal notranslate"><span class="pre">center</span></code>.</p>
 </dd>
-<dt><strong>filtered</strong><span class="classifier">bool</span></dt><dd><p>If True, use the filtered signal.</p>
+<dt><strong>filt</strong><span class="classifier">tuple</span></dt><dd><p>Optional filtering to apply to data. For instance, <code class="docutils literal notranslate"><span class="pre">filt=(1,</span> <span class="pre">30)</span></code>
+will apply a 1 to 30 Hz bandpass filter, and <code class="docutils literal notranslate"><span class="pre">filt=(None,</span> <span class="pre">40)</span></code>
+will apply a 40 Hz lowpass filter. Filtering is done using default
+parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v0.20.3)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
 </dd>
 <dt><strong>figsize</strong><span class="classifier">tuple</span></dt><dd><p>Figure size in inches.</p>
 </dd>
@@ -207,7 +213,7 @@ Default is to use the negative peak of the slow-wave.</p>
 
 <dl class="method">
 <dt id="yasa.SWResults.summary">
-<code class="sig-name descname">summary</code><span class="sig-paren">(</span><em class="sig-param">grp_chan=False</em>, <em class="sig-param">grp_stage=False</em>, <em class="sig-param">average='mean'</em>, <em class="sig-param">sort=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#SWResults.summary"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-name descname">summary</code><span class="sig-paren">(</span><em class="sig-param">grp_chan=False</em>, <em class="sig-param">grp_stage=False</em>, <em class="sig-param">aggfunc='mean'</em>, <em class="sig-param">sort=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#SWResults.summary"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Return a summary of the SW detection, optionally grouped across
 channels and/or stage.</p>
 <dl class="field-list simple">
@@ -218,7 +224,7 @@ channels and/or stage.</p>
 <dt><strong>grp_stage</strong><span class="classifier">bool</span></dt><dd><p>If True, group by sleep stage (provided that an hypnogram was
 used).</p>
 </dd>
-<dt><strong>average</strong><span class="classifier">str or function</span></dt><dd><p>Averaging function (e.g. <code class="docutils literal notranslate"><span class="pre">'mean'</span></code> or <code class="docutils literal notranslate"><span class="pre">'median'</span></code>).</p>
+<dt><strong>aggfunc</strong><span class="classifier">str or function</span></dt><dd><p>Averaging function (e.g. <code class="docutils literal notranslate"><span class="pre">'mean'</span></code> or <code class="docutils literal notranslate"><span class="pre">'median'</span></code>).</p>
 </dd>
 <dt><strong>sort</strong><span class="classifier">bool</span></dt><dd><p>If True, sort group keys when grouping.</p>
 </dd>

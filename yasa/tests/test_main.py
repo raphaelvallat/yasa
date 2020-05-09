@@ -79,7 +79,7 @@ class TestMain(unittest.TestCase):
         sp.plot_average(ci=None, filt=(None, 30))  # Skip bootstrapping
         np.testing.assert_array_equal(np.squeeze(sp._data), data)
         assert sp._sf == sf
-        sp.summary(grp_chan=True, grp_stage=True, average='median', sort=False)
+        sp.summary(grp_chan=True, grp_stage=True, aggfunc='median', sort=False)
 
         # Test with custom thresholds
         spindles_detect(data, sf, thresh={'rel_pow': 0.25})
@@ -153,7 +153,7 @@ class TestMain(unittest.TestCase):
         # Test with hypnogram
         sp = spindles_detect(data_full, sf, hypno=hypno_full, include=2)
         sp.summary(grp_chan=False, grp_stage=False)
-        sp.summary(grp_chan=False, grp_stage=True, average='median')
+        sp.summary(grp_chan=False, grp_stage=True, aggfunc='median')
         sp.summary(grp_chan=True, grp_stage=False)
         sp.summary(grp_chan=True, grp_stage=True, sort=False)
 
@@ -222,7 +222,7 @@ class TestMain(unittest.TestCase):
         # Test with hypnogram
         sw = sw_detect(data_full, sf, chan_full, hypno=hypno_full)
         sw.summary(grp_chan=False, grp_stage=False)
-        sw.summary(grp_chan=False, grp_stage=True, average='median')
+        sw.summary(grp_chan=False, grp_stage=True, aggfunc='median')
         sw.summary(grp_chan=True, grp_stage=False)
         sw.summary(grp_chan=True, grp_stage=True, sort=False)
         sw.plot_average(ci=None)
@@ -269,7 +269,7 @@ class TestMain(unittest.TestCase):
                           4 * np.ones(int(loc.size / 2))]
         rem2 = rem_detect(loc, roc, sf, hypno=hypno_rem)
         assert rem.summary().shape[0] > rem2.summary().shape[0]
-        rem2.summary(grp_stage=True, average='median')
+        rem2.summary(grp_stage=True, aggfunc='median')
 
         # Test with wrong data amplitude on ROC
         with self.assertLogs('yasa', level='ERROR'):

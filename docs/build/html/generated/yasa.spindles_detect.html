@@ -89,7 +89,7 @@
 <h1>yasa.spindles_detect</h1>
 <dl class="function">
 <dt id="yasa.spindles_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">spindles_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf=None</em>, <em class="sig-param">ch_names=None</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(1</em>, <em class="sig-param">2</em>, <em class="sig-param">3)</em>, <em class="sig-param">freq_sp=(12</em>, <em class="sig-param">15)</em>, <em class="sig-param">duration=(0.5</em>, <em class="sig-param">2)</em>, <em class="sig-param">freq_broad=(1</em>, <em class="sig-param">30)</em>, <em class="sig-param">min_distance=500</em>, <em class="sig-param">thresh={'corr': 0.65</em>, <em class="sig-param">'rel_pow': 0.2</em>, <em class="sig-param">'rms': 1.5}</em>, <em class="sig-param">coupling=False</em>, <em class="sig-param">freq_so=(0.1</em>, <em class="sig-param">1.25)</em>, <em class="sig-param">multi_only=False</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#spindles_detect"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">spindles_detect</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf=None</em>, <em class="sig-param">ch_names=None</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=(1</em>, <em class="sig-param">2</em>, <em class="sig-param">3)</em>, <em class="sig-param">freq_sp=(12</em>, <em class="sig-param">15)</em>, <em class="sig-param">freq_broad=(1</em>, <em class="sig-param">30)</em>, <em class="sig-param">duration=(0.5</em>, <em class="sig-param">2)</em>, <em class="sig-param">min_distance=500</em>, <em class="sig-param">thresh={'corr': 0.65</em>, <em class="sig-param">'rel_pow': 0.2</em>, <em class="sig-param">'rms': 1.5}</em>, <em class="sig-param">multi_only=False</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#spindles_detect"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Spindles detection.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
@@ -106,7 +106,7 @@ Can be omitted if <code class="docutils literal notranslate"><span class="pre">d
 <dt><strong>ch_names</strong><span class="classifier">list of str</span></dt><dd><p>Channel names. Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a
 <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
-<dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Sleep stage vector (hypnogram). If the hypnogram is loaded, the
+<dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Sleep stage (hypnogram). If the hypnogram is loaded, the
 detection will only be applied to the value defined in
 <code class="docutils literal notranslate"><span class="pre">include</span></code> (default = N1 + N2 + N3 sleep).</p>
 <p>The hypnogram must have the same number of samples as <code class="docutils literal notranslate"><span class="pre">data</span></code>.
@@ -136,11 +136,10 @@ uses a FIR filter (implemented in MNE) with a 1.5Hz transition band,
 which means that for <cite>freq_sp = (12, 15 Hz)</cite>, the -6 dB points are
 located at 11.25 and 15.75 Hz.</p>
 </dd>
+<dt><strong>freq_broad</strong><span class="classifier">tuple or list</span></dt><dd><p>Broad band frequency range. Default is 1 to 30 Hz.</p>
+</dd>
 <dt><strong>duration</strong><span class="classifier">tuple or list</span></dt><dd><p>The minimum and maximum duration of the spindles.
 Default is 0.5 to 2 seconds.</p>
-</dd>
-<dt><strong>freq_broad</strong><span class="classifier">tuple or list</span></dt><dd><p>Broad band frequency of interest.
-Default is 1 to 30 Hz.</p>
 </dd>
 <dt><strong>min_distance</strong><span class="classifier">int</span></dt><dd><p>If two spindles are closer than <code class="docutils literal notranslate"><span class="pre">min_distance</span></code> (in ms), they are
 merged into a single spindles. Default is 500 ms.</p>
@@ -157,30 +156,6 @@ root mean square of sigma-filtered signal.</p></li>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">thresh</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="mf">0.65</span><span class="p">,</span> <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">}</span>
 <span class="n">thresh</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}</span>
 </pre></div>
-</div>
-</dd>
-<dt><strong>coupling</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will also calculate the coupling between each detected
-spindles and the slow-oscillation signal. The coupling is given by the
-phase (in radians) of the filtered slow-oscillation signal
-at the most prominent peak of the spindles.</p>
-<p>Importantly, since the resulting variable is expressed in radians,
-one should use circular statistics to calculate the mean direction
-and vector length:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pingouin</span> <span class="kn">as</span> <span class="nn">pg</span>
-<span class="n">mean_direction</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">circ_mean</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="s1">&#39;SOPhase&#39;</span><span class="p">])</span>
-<span class="n">vector_length</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">circ_r</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="s1">&#39;SOPhase&#39;</span><span class="p">])</span>
-</pre></div>
-</div>
-<p>For more details, please refer to the <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb">Jupyter notebook</a></p>
-<div class="versionadded">
-<p><span class="versionmodified added">New in version 0.1.9.</span></p>
-</div>
-</dd>
-<dt><strong>freq_so</strong><span class="classifier">tuple or list</span></dt><dd><p>Slow-oscillations frequency of interest. This is only relevant if
-<code class="docutils literal notranslate"><span class="pre">coupling=True</span></code>. Default is 0.1 to 1.25 Hz, with a narrow transition
-bandwidth of 0.1 Hz.</p>
-<div class="versionadded">
-<p><span class="versionmodified added">New in version 0.1.9.</span></p>
 </div>
 </dd>
 <dt><strong>multi_only</strong><span class="classifier">boolean</span></dt><dd><p>Define the behavior of the multi-channel detection. If True, only
@@ -227,7 +202,7 @@ sleep stage:</p>
 </dl>
 <p class="rubric">Notes</p>
 <p>The parameters that are calculated for each spindle are:</p>
-<ul class="simple">
+<ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">'Start'</span></code>: Start time of the spindle, in seconds from the beginning of
 data.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">'Peak'</span></code>: Time at the most prominent spindle peak (in seconds).</p></li>
@@ -249,10 +224,11 @@ in spindle.)</p></li>
 normalized from 0 (start) to 1 (end). Ideally this value should be close
 to 0.5, indicating that the most prominent peak is halfway through the
 spindle.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">'SOPhase'</span></code>: SO phase (in radians) at the most prominent peak.
-This is only calculated when <code class="docutils literal notranslate"><span class="pre">coupling=True</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">'Stage'</span></code> : Sleep stage during which spindle occured, if <code class="docutils literal notranslate"><span class="pre">hypno</span></code>
-was provided.</p></li>
+was provided.</p>
+<p>All parameters are calculated from the broadband-filtered EEG
+(frequency range defined in <code class="docutils literal notranslate"><span class="pre">freq_broad</span></code>).</p>
+</li>
 </ul>
 <p>For better results, apply this detection only on artefact-free NREM sleep.</p>
 <p class="rubric">References</p>

@@ -32,7 +32,7 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
     sf : float
         The sampling frequency of data AND the hypnogram.
     hypno : array_like
-        Sleep stage vector (hypnogram), optional.
+        Sleep stage (hypnogram), optional.
 
         The hypnogram must have the exact same number of samples as ``data``.
         To upsample your hypnogram, please refer to

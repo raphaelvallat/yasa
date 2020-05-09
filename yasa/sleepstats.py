@@ -112,7 +112,7 @@ def sleep_statistics(hypno, sf_hyp):
     Parameters
     ----------
     hypno : array_like
-        Hypnogram vector, assumed to be already cropped to time in bed (TIB,
+        Hypnogram, assumed to be already cropped to time in bed (TIB,
         also referred to as Total Recording Time,
         i.e. "lights out" to "lights on").
 

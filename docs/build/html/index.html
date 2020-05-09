@@ -102,111 +102,89 @@
 <ul class="simple">
 <li><p>Automatically detect sleep spindles, slow-waves, and rapid eye movements on single and multi-channel EEG data</p></li>
 <li><p>Automatically reject major artifacts on single or multi-channel EEG data</p></li>
-<li><p>Perform advanced spectral analyses: spectral bandpower, phase-amplitude coupling, event-locked analyses, <em>etc.</em></p></li>
-<li><p>Easily manipulate sleep staging vector (hypnogram)</p></li>
+<li><p>Perform advanced spectral analyses: spectral bandpower, phase-amplitude coupling, event-locked analyses, 1/f, and more!</p></li>
+<li><p>Manipulate hypnogram and calculate sleep statistics</p></li>
 </ul>
 <p>For more details, check out the <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/index.html">API documentation</a> or try the
-<a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">tutorial</a>.</p>
+<a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">tutorial (Jupyter notebooks)</a>.</p>
 <div class="section" id="installation">
 <h1>Installation</h1>
+<p>To install YASA, simply open a terminal or Anaconda command prompt and enter:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip install --upgrade yasa
 </pre></div>
 </div>
-<p><strong>Dependencies</strong></p>
-<ul class="simple">
-<li><p>python&gt;=3.6</p></li>
-<li><p>numpy</p></li>
-<li><p>scipy</p></li>
-<li><p>pandas</p></li>
-<li><p>matplotlib</p></li>
-<li><p>mne</p></li>
-<li><p>numba</p></li>
-<li><p>scikit-learn</p></li>
-<li><p><a class="reference external" href="https://etiennecmb.github.io/tensorpac/">tensorpac</a> (for phase-amplitude coupling)</p></li>
-<li><p><a class="reference external" href="https://pyriemann.readthedocs.io/en/latest/api.html">pyriemann</a> (for atifact rejection based on covariance matrices)</p></li>
-<li><p><a class="reference external" href="https://github.com/hbldh/lspopt">lspopt</a> (for multitaper spectrogram estimation)</p></li>
-</ul>
-<p>Several functions of YASA are written using <a class="reference external" href="http://numba.pydata.org/">Numba</a>, a just-in-time compiler for Python. This allows to greatly speed up the computation time of the microstructure detection (typically a few seconds for a full night recording).</p>
 <p><strong>What are the prerequisites for using YASA?</strong></p>
-<p>YASA works best when used in combination with the <a class="reference external" href="https://mne.tools/stable/index.html">MNE library</a>. For example, to read an EDF file,
-one can use the <a class="reference external" href="https://mne.tools/stable/generated/mne.io.read_raw_edf.html?highlight=read_raw_edf#mne.io.read_raw_edf">mne.io.read_raw_edf</a> function.</p>
-<p>In order to use YASA, you need:</p>
+<p>To use YASA, all you need is:</p>
 <ul class="simple">
-<li><p>Some basic knowledge of Python and especially the <a class="reference external" href="https://docs.scipy.org/doc/numpy/user/quickstart.html">NumPy</a>, <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html">Pandas</a> and <a class="reference external" href="https://martinos.org/mne/stable/index.html">MNE</a> libraries.</p></li>
+<li><p>Some basic knowledge of Python, especially the <a class="reference external" href="https://docs.scipy.org/doc/numpy/user/quickstart.html">NumPy</a>, <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html">Pandas</a> and <a class="reference external" href="https://martinos.org/mne/stable/index.html">MNE</a> packages.</p></li>
 <li><p>A Python editor: YASA works best with <a class="reference external" href="https://jupyterlab.readthedocs.io/en/stable/index.html">Jupyter Lab</a>, a web-based interactive user interface.</p></li>
-<li><p>Some sleep EEG data, either as a NumPy array, or as a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.Raw.html">mne.Raw</a> object.</p></li>
-<li><p>Optionally, a sleep staging vector (a.k.a hypnogram) to perform calculations on specific sleep stages. To facilitate masking and indexing operations, the data and hypnogram MUST have the same sampling frequency and number of samples. YASA provide some convenient functions to load and upsample hypnogram data to the desired shape.</p></li>
+<li><p>Some sleep EEG data and optionally a sleep staging file (hypnogram) to perform calculations on specific sleep stages. To facilitate masking and indexing operations, the data and hypnogram must have the same sampling frequency and number of samples. YASA provide some convenient functions to load and upsample hypnogram data to the desired shape.</p></li>
 </ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<dl class="simple">
-<dt>The default hypnogram format in YASA is a one dimensional integer vector where:</dt><dd><ul class="simple">
-<li><p>-2 = Unscored</p></li>
-<li><p>-1 = Artefact / Movement</p></li>
-<li><p>0 = Wake</p></li>
-<li><p>1 = N1 sleep</p></li>
-<li><p>2 = N2 sleep</p></li>
-<li><p>3 = N3 sleep</p></li>
-<li><p>4 = REM</p></li>
-</ul>
-</dd>
-</dl>
+<p><strong>I have sleep EEG data in European Data Format (.edf), how do I load the data in Python?</strong></p>
+<p>If you have sleep EEG data in standard formats (e.g. EDF or BrainVision), you can use the excellent <a class="reference external" href="https://mne.tools/stable/index.html">MNE package</a> to load and preprocess your data in Python. A simple preprocessing pipeline using MNE is shown below:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">mne</span>
+<span class="c1"># Load the EDF file, excluding the EOGs and EKG channels</span>
+<span class="n">raw</span> <span class="o">=</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">read_raw_edf</span><span class="p">(</span><span class="s1">&#39;MYEDFFILE.edf&#39;</span><span class="p">,</span> <span class="n">preload</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;EOG1&#39;</span><span class="p">,</span> <span class="s1">&#39;EOG2&#39;</span><span class="p">,</span> <span class="s1">&#39;EKG&#39;</span><span class="p">])</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>                      <span class="c1"># Downsample the data to 100 Hz</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">40</span><span class="p">)</span>                    <span class="c1"># Apply a bandpass filter from 0.1 to 40 Hz</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">pick_channels</span><span class="p">([</span><span class="s1">&#39;C4-A1&#39;</span><span class="p">,</span> <span class="s1">&#39;C3-A2&#39;</span><span class="p">])</span>  <span class="c1"># Select a subset of EEG channels</span>
+</pre></div>
 </div>
 </div>
-<div class="section" id="examples">
-<h1>Examples</h1>
-<p>Check out the <a class="reference internal" href="api.html#api-ref"><span class="std std-ref">API reference</span></a> for more details on YASA’s functions.</p>
-<div class="section" id="id1">
-<h2>Tutorial</h2>
-<p>The examples Jupyter notebooks are really what make YASA great! In addition to showing how to use the main functions of YASA, they also provide an extensive step-by-step description of the detection algorithms, as well as several useful code snippets to analyze and plot your data.</p>
+<div class="section" id="how-do-i-get-started-with-yasa">
+<h1>How do I get started with YASA?</h1>
+<p>If you want to dive right in, you can simply go to the main documentation (<a class="reference internal" href="api.html#api-ref"><span class="std std-ref">API reference</span></a>) and try to apply YASA’s functions on your own EEG data. However, for most users, we strongly recommend that you first try running the examples Jupyter notebooks to get a sense of how YASA works and what it can do! The advantage is that the notebooks also come with example datasets so they should work right out of the box as long as you’ve installed YASA first. The notebooks and datasets can be found on <a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">GitHub</a> (make sure that you download the whole <em>notebooks/</em> folder). A short description of all notebooks is provided below:</p>
 <p><strong>Spindles</strong></p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb">01_spindles_detection.ipynb</a>: single-channel spindles detection and step-by-step description of the algorithm.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/02_spindles_detection_multi.ipynb">02_spindles_detection_multi.ipynb</a>: multi-channel spindles detection using MNE data.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/03_spindles_detection_NREM_only.ipynb">03_spindles_detection_NREM_only.ipynb</a>: spindles detection on NREM sleep only.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/04_spindles_slow_fast.ipynb">04_spindles_slow_fast.ipynb</a>: slow and fast spindles analysis.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/run_visbrain.py">run_visbrain.py</a>: interactive display with the Visbrain graphical user interface.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb">01_spindles_detection</a>: single-channel spindles detection and step-by-step description of the spindles detection algorithm.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/02_spindles_detection_multi.ipynb">02_spindles_detection_multi</a>: multi-channel spindles detection.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/03_spindles_detection_NREM_only.ipynb">03_spindles_detection_NREM_only</a>: how to limit the spindles detection on specific sleep stages using an hypnogram.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/04_spindles_slow_fast.ipynb">04_spindles_slow_fast</a>: slow versus fast spindles.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/run_visbrain.py">run_visbrain</a>: interactive display of the detected spindles using the Visbrain visualization software in Python.</p></li>
 </ul>
 <p><strong>Slow-waves</strong></p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb">05_sw_detection.ipynb</a>: single-channel slow-waves detection and step-by-step description of the algorithm.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection_multi.ipynb">06_sw_detection_multi.ipynb</a>: multi-channel slow-waves detection using MNE data.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb">05_sw_detection</a>: single-channel slow-waves detection and step-by-step description of the slow-waves detection algorithm.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection_multi.ipynb">06_sw_detection_multi</a>: multi-channel slow-waves detection.</p></li>
 </ul>
 <p><strong>Rapid Eye Movements (REMs)</strong></p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb">07_REMs_detection.ipynb</a>: REMs detection.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb">07_REMs_detection</a>: REMs detection.</p></li>
 </ul>
 <p><strong>Spectral analysis</strong></p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_bandpower.ipynb">08_bandpower.ipynb</a>: bandpower per channel and per sleep stage.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_IRASA.ipynb">09_IRASA.ipynb</a>: separate the aperiodic (= fractal = 1/f) components of the EEG power spectra using the IRASA method.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_spectrogram.ipynb">10_spectrogram.ipynb</a>: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_nonlinear_features.ipynb">11_nonlinear_features.ipynb</a>: extract epoch-based non-linear features of sleep EEG.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb">12_spindles-SO_coupling.ipynb</a>: performs event-locked spindles-SO coupling, as well as data-driven Phase-Amplitude Coupling.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_bandpower.ipynb">08_bandpower</a>: calculate spectral band power, optionally averaged across channels and sleep stages.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_IRASA.ipynb">09_IRASA</a>: separate the aperiodic (= fractal = 1/f) components of the EEG power spectrum using the IRASA method.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_spectrogram.ipynb">10_spectrogram</a>: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_nonlinear_features.ipynb">11_nonlinear_features</a>: calculate non-linear EEG features on 30-seconds epochs and perform sleep stage classification.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb">12_spindles-SO_coupling</a>: slow-oscillations/spindles phase-amplitude coupling and data-driven comodulogram.</p></li>
 </ul>
 <p><strong>Artifact rejection</strong></p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb">13_artifact_rejection.ipynb</a>: automatic artifact rejection on single and multi-channel EEG data.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb">13_artifact_rejection</a>: automatic artifact rejection on single and multi-channel EEG data.</p></li>
 </ul>
-</div>
-<div class="section" id="typical-uses">
-<h2>Typical uses</h2>
+<div class="section" id="typical-use-spindles-detection">
+<h2>Typical use: spindles detection</h2>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">yasa</span>
 
-<span class="c1"># Single-channel spindles detection (shows all the default implicit parameters)</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
-                     <span class="n">freq_sp</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="n">duration</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">freq_broad</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
-                     <span class="n">min_distance</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">downsample</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-                     <span class="n">thresh</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;rel_pow&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;corr&#39;</span><span class="p">:</span> <span class="mf">0.65</span><span class="p">,</span> <span class="s1">&#39;rms&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">},</span>
-                     <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">coupling</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="c1"># 1) Single-channel spindles detection, in its simplest form.</span>
+<span class="c1"># There are many optional arguments that you can change to customize the detection.</span>
+<span class="n">sp</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">)</span>
+<span class="c1"># The output of the the detection (`sp`) is a class that has several attributes and methods.</span>
+<span class="c1"># For instance, to get the full detection dataframe, one can simply use:</span>
+<span class="n">sp</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+<span class="c1"># To plot an average template of all the detected spindles,</span>
+<span class="c1"># centered around the most prominent peak (+/- 1 second)</span>
+<span class="n">sp</span><span class="o">.</span><span class="n">plot_average</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="s1">&#39;Peak&#39;</span><span class="p">,</span> <span class="n">time_before</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">time_after</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-<span class="c1"># Multi-channels detection on N2 sleep only with automatic outlier rejection</span>
-<span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect_multi</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c1"># 2) Multi-channels spindles detection limited to N2/N3 sleep, with automatic outlier rejection</span>
+<span class="n">sp</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c1"># Return spindles count / density and parameters averaged across channels and sleep stages</span>
+<span class="n">sp</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="n">grp_stage</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">grp_chan</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The result of the detection is a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">pandas DataFrame</a> where each row is a unique detected event (e.g. spindle, slow-waves, REMs) and each column a parameter of this event, including, the start and end timestamps, duration, amplitude, etc.</p>
-<table class="colwidths-auto docutils align-default" id="id2">
-<caption><span class="caption-text">Output dataframe</span></caption>
+<p>The output of <code class="docutils literal notranslate"><span class="pre">sp.summary()</span></code> is a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">pandas DataFrame</a> where each row is a  detected spindle and each column a parameter of this event, including the start and end timestamps (in seconds from the beginning of the data), duration, amplitude, etc.</p>
+<table class="colwidths-auto docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Start</p></th>
 <th class="head"><p>End</p></th>
@@ -245,7 +223,7 @@ one can use the <a class="reference external" href="https://mne.tools/stable/gen
 </tr>
 </tbody>
 </table>
-<p>In turn, the detection dataframe can be easily used to plot the events.</p>
+<p>In turn, the detection dataframe can be used to plot the events.</p>
 <div class="figure align-center">
 <img alt="https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/detection.png" src="https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/detection.png" />
 </div>
@@ -263,9 +241,9 @@ one can use the <a class="reference external" href="https://mne.tools/stable/gen
 <span class="sd">    See http://visbrain.org/sleep.html#use-your-own-detections-in-sleep</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Apply on the full recording...</span>
-    <span class="c1"># sp = spindles_detect(data, sf)</span>
+    <span class="c1"># sp = spindles_detect(data, sf).summary()</span>
     <span class="c1"># ...or on NREM sleep only</span>
-    <span class="n">sp</span> <span class="o">=</span> <span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">)</span>
+    <span class="n">sp</span> <span class="o">=</span> <span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">)</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">sp</span><span class="p">[[</span><span class="s1">&#39;Start&#39;</span><span class="p">,</span> <span class="s1">&#39;End&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
 
 <span class="n">sl</span><span class="o">.</span><span class="n">replace_detections</span><span class="p">(</span><span class="s1">&#39;spindle&#39;</span><span class="p">,</span> <span class="n">fcn_spindle</span><span class="p">)</span>
@@ -289,6 +267,14 @@ which uses the events parameters (e.g. amplitude, duration, frequency, etc) as i
 <span class="n">yasa</span><span class="o">.</span><span class="n">rem_detect</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">roc</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>   <span class="c1"># REMs</span>
 </pre></div>
 </div>
+</div>
+</div>
+<div class="section" id="gallery">
+<h1>Gallery</h1>
+<p>Below some plots demonstrating the functionalities of YASA. To reproduce these, check out the <a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">tutorial (Jupyter notebooks)</a>.</p>
+<div class="figure align-center" id="id2">
+<img alt="_images/gallery.png" src="_images/gallery.png" />
+<p class="caption"><span class="caption-text"><em>The two top plots show an overlay of the detected spindles (blue) and slow-waves (red) on real EEG data. The middle right panel shows a time-frequency representation of the whole-night recording (spectrogram), plotted with the hypnogram (sleep stages) on top. The middle right panel shows the sleep stage probability transition matrix, calculated across the entire night. The left and right plots of the bottom row show the average template of all detected slow-waves and spindles across the entire night, stratified by channels. The middle bottom plot shows a phase-amplitude coupling comodulogram between slower (0.2-4Hz) and faster (7.5-25Hz) frequency ranges.</em></span></p>
 </div>
 </div>
 <div class="section" id="development">

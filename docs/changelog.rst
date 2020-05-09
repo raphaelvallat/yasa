@@ -14,7 +14,7 @@ Second, I was getting some feedback that it was difficult to get summary statist
 
 >>> sp = yasa.spindles_detect(...)
 >>> sp.summary()  # Returns the full detection dataframe
->>> sp.summary(grp_chan=True, grp_stage=True, average='mean')
+>>> sp.summary(grp_chan=True, grp_stage=True, aggfunc='mean')
 
 Similarly, the :py:func:`yasa.get_bool_vector` and :py:func:`yasa.get_sync_events` functions are now directly implemented into the output, i.e.
 
@@ -29,12 +29,15 @@ One can also quickly plot an average "template" of all the detected events:
 
 For more details, please refer to the documentation of :py:meth:`yasa.SpindlesResults`, :py:meth:`yasa.SWResults` and :py:meth:`yasa.REMResults`.
 
+.. important::
+  This is an experimental feature, and it's likely that these functions will be modified, renamed, or even deprecated in future releases based on feedbacks from users. Please make sure to let me know what you think about the new output of the detection functions!
+
 **Other changes**
 
-a. Downsampling of data in detection functions has been removed! In other words, YASA will no longer downsample the data to 100 / 128 Hz before applying the detection. If the detection is too slow, we recommend that you manually downsample your data before applying the detection. See for example :py:func:`mne.filter.resample`.
-b. Filtering and Hilbert transform are now applied at once on all channels (instead of looping across individual channels) in the :py:func:`yasa.spindles_detect` and :py:func:`yasa.sw_detect` functions. This should lead to sensitive speed up in computation time.
-c. :py:func:`yasa.trimbothstd` can now work with ND arrays. The trimmed standard deviation will always be calculated on the last axis of the array.
-d. Removed ``coupling`` argument from :py:func:`yasa.spindles_detect`. Instead, slow-oscillations / sigma coupling can only be calculated from the slow-waves detection, which is 1) the most standard way, 2) better because PAC assumptions require a strong oscillatory component in the lower frequency range (slow-oscillations). This also avoids unecessary confusion between spindles-derived coupling and slow-waves-derived coupling. For more details, refer to the tutorial.
+a. The ``coupling`` argument has been removed from the :py:func:`yasa.spindles_detect` function. Instead, slow-oscillations / sigma coupling can only be calculated from the slow-waves detection, which is 1) the most standard way, 2) better because PAC assumptions require a strong oscillatory component in the lower frequency range (slow-oscillations). This also avoids unecessary confusion between spindles-derived coupling and slow-waves-derived coupling. For more details, refer to the Jupyter notebooks.
+b. Downsampling of data in detection functions has been removed. In other words, YASA will no longer downsample the data to 100 / 128 Hz before applying the events detection. If the detection is too slow, we recommend that you manually downsample your data before applying the detection. See for example :py:func:`mne.filter.resample`.
+c. :py:func:`yasa.trimbothstd` can now work with multi-dimensional arrays. The trimmed standard deviation will always be calculated on the last axis of the array.
+d. Filtering and Hilbert transform are now applied at once on all channels (instead of looping across individual channels) in the :py:func:`yasa.spindles_detect` and :py:func:`yasa.sw_detect` functions. This should lead to some improvements in computation time.
 
 v0.2.0 (April 2020)
 -------------------

@@ -140,7 +140,7 @@ class _DetectionResults(object):
             return self._events.copy()
 
         if event_type == 'spindles':
-            aggfunc = {'Start': 'count',
+            aggdict = {'Start': 'count',
                        'Duration': aggfunc,
                        'Amplitude': aggfunc,
                        'RMS': aggfunc,
@@ -152,11 +152,11 @@ class _DetectionResults(object):
 
             # if 'SOPhase' in self._events:
             #     from scipy.stats import circmean
-            #     aggfunc['SOPhase'] = lambda x: circmean(x, low=-np.pi,
+            #     aggdict['SOPhase'] = lambda x: circmean(x, low=-np.pi,
             #                                             high=np.pi)
 
         elif event_type == 'sw':
-            aggfunc = {'Start': 'count',
+            aggdict = {'Start': 'count',
                        'Duration': aggfunc,
                        'ValNegPeak': aggfunc,
                        'ValPosPeak': aggfunc,
@@ -166,12 +166,12 @@ class _DetectionResults(object):
 
             if 'PhaseAtSigmaPeak' in self._events:
                 from scipy.stats import circmean
-                aggfunc['PhaseAtSigmaPeak'] = lambda x: circmean(x, low=-np.pi,
+                aggdict['PhaseAtSigmaPeak'] = lambda x: circmean(x, low=-np.pi,
                                                                  high=np.pi)
-                aggfunc['ndPAC'] = aggfunc
+                aggdict['ndPAC'] = aggfunc
 
         else:  # REM
-            aggfunc = {'Start': 'count',
+            aggdict = {'Start': 'count',
                        'Duration': aggfunc,
                        'LOCAbsValPeak': aggfunc,
                        'ROCAbsValPeak': aggfunc,
@@ -182,7 +182,7 @@ class _DetectionResults(object):
 
         # Apply grouping
         df_grp = self._events.groupby(grouper, sort=sort,
-                                      as_index=False).agg(aggfunc)
+                                      as_index=False).agg(aggdict)
         df_grp = df_grp.rename(columns={'Start': 'Count'})
 
         # Calculate density (= number per min of each stage)
@@ -303,7 +303,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         Channel names. Can be omitted if ``data`` is a
         :py:class:`mne.io.BaseRaw`.
     hypno : array_like
-        Sleep stage vector (hypnogram). If the hypnogram is loaded, the
+        Sleep stage (hypnogram). If the hypnogram is loaded, the
         detection will only be applied to the value defined in
         ``include`` (default = N1 + N2 + N3 sleep).
 
@@ -865,7 +865,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         Channel names. Can be omitted if ``data`` is a
         :py:class:`mne.io.BaseRaw`.
     hypno : array_like
-        Sleep stage vector (hypnogram). If the hypnogram is loaded, the
+        Sleep stage (hypnogram). If the hypnogram is loaded, the
         detection will only be applied to the value defined in
         ``include`` (default = N2 + N3 sleep).
 
@@ -1429,7 +1429,7 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
     sf : float
         Sampling frequency of the data, in Hz.
     hypno : array_like
-        Sleep stage vector (hypnogram). If the hypnogram is loaded, the
+        Sleep stage (hypnogram). If the hypnogram is loaded, the
         detection will only be applied to the value defined in
         ``include`` (default = REM sleep).
 
@@ -1858,7 +1858,7 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
         Default to 5 seconds. Shorter windows (e.g. 1 or 2-seconds) will
         drastically increase computation time when ``method='covar'``.
     hypno : array_like
-        Sleep stage vector (hypnogram). If the hypnogram is passed, the
+        Sleep stage (hypnogram). If the hypnogram is passed, the
         detection will be applied separately for each of the stages defined in
         ``include``.
 

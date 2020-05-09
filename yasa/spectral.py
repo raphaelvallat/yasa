@@ -40,7 +40,7 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         channels will be labelled ['CHAN000', 'CHAN001', ...].
         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
     hypno : array_like
-        Sleep stage vector (hypnogram). If the hypnogram is loaded, the
+        Sleep stage (hypnogram). If the hypnogram is loaded, the
         bandpower will be extracted for each sleep stage defined in
         ``include``.
 
