@@ -142,7 +142,7 @@ The output of ``sp.summary()`` is a `pandas DataFrame <https://pandas.pydata.org
 
 In turn, the detection dataframe can be used to plot the events.
 
-.. figure::  https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/detection.png
+.. figure::  /pictures/detection.png
    :align:   center
 
 Interactive visualization with Visbrain
@@ -172,7 +172,7 @@ YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.
 
 Then navigate to the *Detection* tab and click on *Apply* to run the YASA algorithm on the specified channel.
 
-.. figure::  https://raw.githubusercontent.com/raphaelvallat/yasa/master/images/visbrain.PNG
+.. figure::  /pictures/visbrain.PNG
    :align:   center
 
 
