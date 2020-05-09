@@ -91,7 +91,7 @@ If you want to dive right in, you can simply go to the `documentation <https://r
 
 **Rapid Eye Movements (REMs)**
 
-* `07_REMs_detection<notebooks/07_REMs_detection.ipynb>`_: REMs detection.
+* `07_REMs_detection <notebooks/07_REMs_detection.ipynb>`_: REMs detection.
 
 **Spectral analysis**
 
@@ -103,7 +103,7 @@ If you want to dive right in, you can simply go to the `documentation <https://r
 
 **Artifact rejection**
 
-* `13_artifact_rejection.ipynb <notebooks/13_artifact_rejection.ipynb>`_: automatic artifact rejection on single and multi-channel EEG data.
+* `13_artifact_rejection <notebooks/13_artifact_rejection.ipynb>`_: automatic artifact rejection on single and multi-channel EEG data.
 
 Typical use: spindles detection
 -------------------------------
