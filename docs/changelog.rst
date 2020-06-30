@@ -10,6 +10,7 @@ v0.3.1 (dev)
 
 a. Added ``hue`` input parameter to :py:meth:`yasa.SpindlesResults.plot_average`, :py:meth:`yasa.SWResults.plot_average` to allow plotting by stage.
 b. The ``get_sync_events()`` method now also returns the sleep stage when available.
+c. The :py:func:`yasa.sw_detect` now also returns the timestamp of the sigma peak in the SW-through-locked 4-seconds epochs. The timestamp is expressed in seconds from the beginning of the recording and can be found in the ``SigmaPeak`` column.
 
 v0.3.0 (May 2020)
 -----------------
