@@ -13,15 +13,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
-
-
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -32,7 +23,6 @@ import os
 import sys
 import time
 import yasa
-import matplotlib as mpl
 import sphinx_bootstrap_theme
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -51,17 +41,14 @@ extensions = ['sphinx.ext.mathjax',
 
 # Generate the API documentation when building
 autosummary_generate = True
-# autodoc_default_options = {
-#     'members': True,
-#     'member-order': 'groupwise',
-#     'undoc-members': False,
-#     # 'special-members': '__init__',
-#     # 'exclude-members': '__weakref__'
-# }
+autodoc_default_options = {
+    'members': True,
+    'member-order': 'groupwise',
+    'undoc-members': False,
+    # 'special-members': '__init__',
+    # 'exclude-members': '__weakref__'
+}
 
-autodoc_member_order = 'groupwise'
-autodoc_default_flags = ['members', 'inherited-members', 'no-undoc-members']
-autoclass_content = "class"
 numpydoc_show_class_members = False
 
 # Include the example source for plots in API docs
@@ -131,12 +118,10 @@ html_theme_options = {
     'bootstrap_version': "3",
     'navbar_class': "navbar",
     'navbar_links': [
-                     ("Functions", "api"),
-                     ("What's new", "changelog"),
-                     ("Contribute", "contributing"),
-                     ],
-
-    }
+        ("Functions", "api"),
+        ("What's new", "changelog"),
+        ("Contribute", "contributing")],
+}
 
 html_logo = 'pictures/yasa_128x128.png'
 html_favicon = 'pictures/favicon.ico'
@@ -200,20 +185,22 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
+
 # Add the 'copybutton' javascript, to hide/show the prompt in code
 # examples, originally taken from scikit-learn's doc/conf.py
 def setup(app):
-    app.add_javascript('copybutton.js')
-    # app.add_stylesheet('style.css')
+    app.add_js_file('copybutton.js')
+    # app.add_css_file('style.css')
 
 
 # -- Intersphinx ------------------------------------------------
 
-intersphinx_mapping = {'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-                       'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
-                       'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
-                       'sklearn': ('https://scikit-learn.org/stable/', None),
-                       'mne': ('https://martinos.org/mne/stable/', None),
-                       'seaborn': ('https://seaborn.pydata.org/', None),
-                       'pyriemann': ('https://pyriemann.readthedocs.io/en/latest/', None),
-                       }
+intersphinx_mapping = {
+    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'sklearn': ('https://scikit-learn.org/stable/', None),
+    'mne': ('https://martinos.org/mne/stable/', None),
+    'seaborn': ('https://seaborn.pydata.org/', None),
+    'pyriemann': ('https://pyriemann.readthedocs.io/en/latest/', None),
+}

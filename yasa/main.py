@@ -109,6 +109,7 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None,
 
 class _DetectionResults(object):
     """Main class for detection results."""
+
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         self._events = events
         self._data = data
@@ -130,7 +131,7 @@ class _DetectionResults(object):
 
     def summary(self, event_type, grp_chan=False, grp_stage=False,
                 aggfunc='mean', sort=True):
-        """summary"""
+        """Summary"""
         grouper = []
         if grp_stage is True and 'Stage' in self._events:
             grouper.append('Stage')
@@ -203,12 +204,17 @@ class _DetectionResults(object):
 
     def get_sync_events(self, center, time_before, time_after,
                         filt=(None, None)):
-        """get_sync_events (not for REM, spindles & SW only)"""
+        """Get_sync_events
+        (not for REM, spindles & SW only)
+        """
         from yasa.others import get_centered_indices
         assert time_before >= 0
         assert time_after >= 0
         bef = int(self._sf * time_before)
         aft = int(self._sf * time_after)
+        # Step size is determined by sf: 0.01 sec at 100 Hz, 0.002 sec at
+        # 500 Hz, 0.00390625 sec at 256 Hz. Should we add a step_size=0.01
+        # option?
         time = np.arange(-bef, aft + 1, dtype='int') / self._sf
 
         if any(filt):
@@ -221,12 +227,13 @@ class _DetectionResults(object):
         df_sync = pd.DataFrame()
 
         for i in self._events['IdxChannel'].unique():
-            ev_chan = self._events[self._events['IdxChannel'] == i]
+            ev_chan = self._events[self._events['IdxChannel'] == i].copy()
+            ev_chan['Event'] = np.arange(ev_chan.shape[0])
             peaks = (ev_chan[center] * self._sf).astype(int).to_numpy()
             # Get centered indices
-            idx, idx_nomask = get_centered_indices(data[i, :], peaks, bef, aft)
+            idx, idx_valid = get_centered_indices(data[i, :], peaks, bef, aft)
             # If no good epochs are returned raise a warning
-            if len(idx_nomask) == 0:
+            if len(idx_valid) == 0:
                 logger.error(
                     'Time before and/or time after exceed data bounds, please '
                     'lower the temporal window around center. '
@@ -238,26 +245,36 @@ class _DetectionResults(object):
             amps = data[i, idx]
             df_chan = pd.DataFrame(amps.T)
             df_chan['Time'] = time
+            # Convert to long-format
             df_chan = df_chan.melt(id_vars='Time', var_name='Event',
                                    value_name='Amplitude')
+            # Append stage
+            if 'Stage' in self._events:
+                df_chan = df_chan.merge(
+                    ev_chan[['Event', 'Stage']].iloc[idx_valid]
+                )
+            # Append channel name
             df_chan['Channel'] = ev_chan['Channel'].iloc[0]
             df_chan['IdxChannel'] = i
+            # Append to master dataframe
             df_sync = df_sync.append(df_chan, ignore_index=True)
 
         return df_sync
 
-    def plot_average(self, event_type, center='Peak', time_before=1,
-                     time_after=1, filt=(None, None), figsize=(6, 4.5),
-                     **kwargs):
-        """plot_average (not for REM, spindles & SW only)"""
+    def plot_average(self, event_type, center='Peak', hue='Channel',
+                     time_before=1, time_after=1, filt=(None, None),
+                     figsize=(6, 4.5), **kwargs):
+        """plot_average
+        (not for REM, spindles & SW only)
+        """
         import seaborn as sns
         import matplotlib.pyplot as plt
 
         df_sync = self.get_sync_events(center=center, time_before=time_before,
-                                       time_after=time_after,
-                                       filt=filt)
-
+                                       time_after=time_after, filt=filt)
         assert not df_sync.empty, "Could not calculate event-locked data."
+        assert hue in ['Stage', 'Channel'], "hue must be 'Channel' or 'Stage'"
+        assert hue in df_sync.columns, "%s is not present in data." % hue
 
         if event_type == 'spindles':
             title = "Average spindle"
@@ -266,8 +283,8 @@ class _DetectionResults(object):
 
         # Start figure
         fig, ax = plt.subplots(1, 1, figsize=figsize)
-        sns.lineplot(data=df_sync, x='Time', y='Amplitude', hue='Channel',
-                     ax=ax, **kwargs)
+        sns.lineplot(data=df_sync, x='Time', y='Amplitude', hue=hue, ax=ax,
+                     **kwargs)
         # ax.legend(frameon=False, loc='lower right')
         ax.set_xlim(df_sync['Time'].min(), df_sync['Time'].max())
         ax.set_title(title)
@@ -299,6 +316,10 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
     sf : float
         Sampling frequency of the data in Hz.
         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+
+        .. tip:: If the detection is taking too long, make sure to downsample
+            your data to 100 Hz (or 128 Hz). For more details, please refer to
+            :py:func:`mne.filter.resample`.
     ch_names : list of str
         Channel names. Can be omitted if ``data`` is a
         :py:class:`mne.io.BaseRaw`.
@@ -742,6 +763,7 @@ class SpindlesResults(_DetectionResults):
     _hypno : array_like or None
         Sleep staging vector.
     """
+
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         super().__init__(events, data, sf, ch_names, hypno, data_filt)
 
@@ -803,12 +825,13 @@ class SpindlesResults(_DetectionResults):
             'Amplitude' : Raw or filtered data for event
             'Channel' : Channel
             'IdxChannel' : Index of channel in data
+            'Stage': Sleep stage in which the events occured (if available)
         """
         return super().get_sync_events(center=center, time_before=time_before,
                                        time_after=time_after,
                                        filt=filt)
 
-    def plot_average(self, center='Peak', time_before=1,
+    def plot_average(self, center='Peak', hue='Channel', time_before=1,
                      time_after=1, filt=(None, None), figsize=(6, 4.5),
                      **kwargs):
         """
@@ -819,6 +842,9 @@ class SpindlesResults(_DetectionResults):
         center : str
             Landmark of the event to synchronize the timing on.
             Default is to use the most prominent peak of the spindle.
+        hue : str
+            Grouping variable that will produce lines with different colors.
+            Can be either 'Channel' or 'Stage'.
         time_before : float
             Time (in seconds) before ``center``.
         time_after : float
@@ -833,8 +859,8 @@ class SpindlesResults(_DetectionResults):
         **kwargs : dict
             Optional argument that are passed to :py:func:`seaborn.lineplot`.
         """
-        return super().plot_average(event_type='spindles',
-                                    center=center, time_before=time_before,
+        return super().plot_average(event_type='spindles', center=center,
+                                    hue=hue, time_before=time_before,
                                     time_after=time_after, filt=filt,
                                     figsize=figsize, **kwargs)
 
@@ -861,6 +887,10 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     sf : float
         Sampling frequency of the data in Hz.
         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+
+        .. tip:: If the detection is taking too long, make sure to downsample
+            your data to 100 Hz (or 128 Hz). For more details, please refer to
+            :py:func:`mne.filter.resample`.
     ch_names : list of str
         Channel names. Can be omitted if ``data`` is a
         :py:class:`mne.io.BaseRaw`.
@@ -1300,6 +1330,7 @@ class SWResults(_DetectionResults):
     _hypno : array_like or None
         Sleep staging vector.
     """
+
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         super().__init__(events, data, sf, ch_names, hypno, data_filt)
 
@@ -1358,14 +1389,16 @@ class SWResults(_DetectionResults):
 
             'Event' : Event number
             'Time' : Timing of the events (in seconds)
-            'Amplitude' : Raw data for event
-            'Chan' : Channel (only in multi-channel detection)
+            'Amplitude' : Raw or filtered data for event
+            'Channel' : Channel
+            'IdxChannel' : Index of channel in data
+            'Stage': Sleep stage in which the events occured (if available)
         """
         return super().get_sync_events(center=center, time_before=time_before,
                                        time_after=time_after,
                                        filt=filt)
 
-    def plot_average(self, center='NegPeak', time_before=0.4,
+    def plot_average(self, center='NegPeak', hue='Channel', time_before=0.4,
                      time_after=0.8, filt=(None, None), figsize=(6, 4.5),
                      **kwargs):
         """
@@ -1376,6 +1409,9 @@ class SWResults(_DetectionResults):
         center : str
             Landmark of the event to synchronize the timing on.
             Default is to use the negative peak of the slow-wave.
+        hue : str
+            Grouping variable that will produce lines with different colors.
+            Can be either 'Channel' or 'Stage'.
         time_before : float
             Time (in seconds) before ``center``.
         time_after : float
@@ -1390,8 +1426,8 @@ class SWResults(_DetectionResults):
         **kwargs : dict
             Optional argument that are passed to :py:func:`seaborn.lineplot`.
         """
-        return super().plot_average(event_type='sw',
-                                    center=center, time_before=time_before,
+        return super().plot_average(event_type='sw', center=center,
+                                    hue=hue, time_before=time_before,
                                     time_after=time_after, filt=filt,
                                     figsize=figsize, **kwargs)
 
@@ -1676,6 +1712,7 @@ class REMResults(_DetectionResults):
     _hypno : array_like or None
         Sleep staging vector.
     """
+
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         super().__init__(events, data, sf, ch_names, hypno, data_filt)
 
@@ -1738,8 +1775,9 @@ class REMResults(_DetectionResults):
 
             'Event' : Event number
             'Time' : Timing of the events (in seconds)
-            'Amplitude' : Raw data for event
-            'Chan' : Channel
+            'Amplitude' : Raw or filtered data for event
+            'Channel' : Channel
+            'IdxChannel' : Index of channel in data
         """
         from yasa.others import get_centered_indices
         assert time_before >= 0

@@ -3,6 +3,14 @@
 What's new
 ##########
 
+v0.3.1 (dev)
+------------
+
+**New features**
+
+a. Added ``hue`` input parameter to :py:meth:`yasa.SpindlesResults.plot_average`, :py:meth:`yasa.SWResults.plot_average` to allow plotting by stage.
+b. The ``get_sync_events()`` method now also returns the sleep stage when available.
+
 v0.3.0 (May 2020)
 -----------------
 

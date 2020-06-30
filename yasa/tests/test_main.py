@@ -156,6 +156,8 @@ class TestMain(unittest.TestCase):
         sp.summary(grp_chan=False, grp_stage=True, aggfunc='median')
         sp.summary(grp_chan=True, grp_stage=False)
         sp.summary(grp_chan=True, grp_stage=True, sort=False)
+        sp.plot_average(ci=None)
+        sp.plot_average(hue="Stage", ci=None)
 
         # Using a MNE raw object (and disabling one threshold)
         spindles_detect(data_mne, thresh={'corr': None, 'rms': 3})
@@ -226,6 +228,7 @@ class TestMain(unittest.TestCase):
         sw.summary(grp_chan=True, grp_stage=False)
         sw.summary(grp_chan=True, grp_stage=True, sort=False)
         sw.plot_average(ci=None)
+        sw.plot_average(hue="Stage", ci=None)
 
         # Using a MNE raw object
         sw_detect(data_mne)
