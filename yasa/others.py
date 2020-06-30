@@ -571,7 +571,7 @@ def get_centered_indices(data, idx, npts_before, npts_after):
     idx_ep = np.apply_along_axis(rng, 1, idx[..., np.newaxis])
     # We drop the events for which the indices exceed data
     idx_ep = np.ma.mask_rows(np.ma.masked_outside(idx_ep, 0, data.shape[0]))
-    # Indices of non-masked epochs in idx
+    # Indices of non-masked (valid) epochs in idx
     idx_ep_nomask = np.unique(idx_ep.nonzero()[0])
     idx_ep = np.ma.compress_rows(idx_ep)
     return idx_ep, idx_ep_nomask

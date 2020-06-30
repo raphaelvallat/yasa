@@ -212,7 +212,7 @@ class _DetectionResults(object):
         assert time_after >= 0
         bef = int(self._sf * time_before)
         aft = int(self._sf * time_after)
-        # Step size is determined by sf: 0.01 sec at 100 Hz, 0.002 sec at
+        # TODO: Step size is determined by sf: 0.01 sec at 100 Hz, 0.002 sec at
         # 500 Hz, 0.00390625 sec at 256 Hz. Should we add a step_size=0.01
         # option?
         time = np.arange(-bef, aft + 1, dtype='int') / self._sf
@@ -949,12 +949,15 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     coupling : boolean
         If True, YASA will also calculate the phase-amplitude coupling between
         the slow-waves phase and the spindles-related sigma band
-        amplitude. Specifically, two PAC metrics will be calculated:
+        amplitude. Specifically, the following columns will be added to the
+        output dataframe:
 
-        1. ``PhaseAtSigmaPeak``: the phase of the bandpas-filtered slow-wave
-           signal (in radians) at the maximum sigma peak amplitude within an
-           4-seconds epoch centered around the negative peak (through) of the
-           current slow-wave.
+        1. ``'SigmaPeak'``: The location (in seconds) of the maximum sigma peak
+           amplitude within a 4-seconds epoch centered around the negative peak
+           (through) of the current slow-wave.
+
+        2. ``PhaseAtSigmaPeak``: the phase of the bandpas-filtered slow-wave
+           signal (in radians) at ``'SigmaPeak'``.
 
            Importantly, since ``PhaseAtSigmaPeak`` is expressed in radians,
            one should use circular statistics to calculate the mean direction
@@ -966,7 +969,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
                mean_direction = pg.circ_mean(sw['PhaseAtSigmaPeak'])
                vector_length = pg.circ_r(sw['PhaseAtSigmaPeak'])
 
-        2. ``ndPAC``: the normalized Mean Vector Length
+        3. ``ndPAC``: the normalized Mean Vector Length
            (also called the normalized direct PAC, or ndPAC) within a 4-sec
            epoch centered around the negative peak of the slow-wave.
 
@@ -1039,9 +1042,12 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     * ``'Slope'``: Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec,
       calculated on the ``freq_sw`` bandpass-filtered signal)
     * ``'Frequency'``: Frequency of the slow-wave (= 1 / ``Duration``)
+    * ``'SigmaPeak'``: Location of the sigma peak amplitude within a 4-sec
+      epoch centered around the negative peak of the slow-wave. This is only
+      calculated when ``coupling=True``.
     * ``'PhaseAtSigmaPeak'``: SW phase at max sigma amplitude within a
-      4-sec epoch centered the negative peak of the slow-wave. This is only
-      calculated when ``coupling=True``
+      4-sec epoch centered around the negative peak of the slow-wave. This is
+      only calculated when ``coupling=True``
     * ``'ndPAC'``: Normalized direct PAC within a 4-sec epoch centered
       the negative peak of the slow-wave. This is only calculated when
       ``coupling=True``
@@ -1224,52 +1230,80 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
             logger.warning('No SW were found in channel %s.', ch_names[i])
             continue
 
-        # Create a dictionnary and then a dataframe
-        sw_params = OrderedDict({'Start': sw_start,
-                                 'NegPeak': sw_idx_neg,
-                                 'MidCrossing': sw_midcrossing,
-                                 'PosPeak': sw_idx_pos,
-                                 'End': sw_end,
-                                 'Duration': sw_dur,
-                                 'ValNegPeak': data_filt[i, idx_neg_peaks],
-                                 'ValPosPeak': data_filt[i, idx_pos_peaks],
-                                 'PTP': sw_ptp,
-                                 'Slope': sw_slope,
-                                 'Frequency': 1 / sw_dur,
-                                 'Stage': sw_sta,
-                                 })
+        # Filter good events
+        idx_neg_peaks = idx_neg_peaks[good_sw]
+        idx_pos_peaks = idx_pos_peaks[good_sw]
+        sw_start = sw_start[good_sw]
+        sw_idx_neg = sw_idx_neg[good_sw]
+        sw_midcrossing = sw_midcrossing[good_sw]
+        sw_idx_pos = sw_idx_pos[good_sw]
+        sw_end = sw_end[good_sw]
+        sw_dur = sw_dur[good_sw]
+        sw_ptp = sw_ptp[good_sw]
+        sw_slope = sw_slope[good_sw]
+        sw_sta = sw_sta[good_sw]
+
+        # Create a dictionnary
+        sw_params = OrderedDict({
+            'Start': sw_start,
+            'NegPeak': sw_idx_neg,
+            'MidCrossing': sw_midcrossing,
+            'PosPeak': sw_idx_pos,
+            'End': sw_end,
+            'Duration': sw_dur,
+            'ValNegPeak': data_filt[i, idx_neg_peaks],
+            'ValPosPeak': data_filt[i, idx_pos_peaks],
+            'PTP': sw_ptp,
+            'Slope': sw_slope,
+            'Frequency': 1 / sw_dur,
+            'Stage': sw_sta,
+        })
 
         # Add phase (in radians) of slow-oscillation signal at maximum
         # spindles-related sigma amplitude within a 4-seconds centered epochs.
         if coupling:
-            # Get Phase and Amplitude for each centered epoch
+            # Get phase and amplitude for each centered epoch
+            # TODO: allow user-specified window size.
             time_before = time_after = 2
             bef = int(sf * time_before)
             aft = int(sf * time_after)
+            # Center of each epoch is defined as the negative peak of the SW
             n_peaks = idx_neg_peaks.shape[0]
-            idx, idx_nomask = get_centered_indices(data[i, :], idx_neg_peaks,
-                                                   bef, aft)
+            # idx.shape = (len(idx_valid), bef + aft + 1)
+            idx, idx_valid = get_centered_indices(data[i, :], idx_neg_peaks,
+                                                  bef, aft)
             sw_pha_ev = sw_pha[i, idx]
             sp_amp_ev = sp_amp[i, idx]
-            # Find SW phase at max sigma amplitude in epoch
-            idx_max_amp = sp_amp_ev.argmax(axis=1)[..., None]
-            pha_at_max = np.take_along_axis(sw_pha_ev, idx_max_amp, axis=1)
-            pha_at_max = np.squeeze(pha_at_max)
+            # 1) Find location of max sigma amplitude in epoch
+            idx_max_amp = sp_amp_ev.argmax(axis=1)
             # Now we need to append it back to the original unmasked shape
-            pha_at_max_full = np.ones(n_peaks) * np.nan
-            pha_at_max_full[idx_nomask] = pha_at_max
-            sw_params['PhaseAtSigmaPeak'] = pha_at_max_full
-            # Normalized Direct PAC, without thresholding
-            ndp = tpm.ndpac(sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=1)
-            ndp = np.squeeze(ndp)
-            ndp_full = np.ones(n_peaks) * np.nan
-            ndp_full[idx_nomask] = ndp
-            sw_params['ndPAC'] = ndp_full
+            # to avoid error when idx.shape[0] != idx_valid.shape, i.e.
+            # some epochs were out of data bounds.
+            sw_params['SigmaPeak'] = np.ones(n_peaks) * np.nan
+            # Timestamp at sigma peak, expressed in seconds from negative peak
+            # e.g. -0.39, 0.5, 1, 2 -- limits are [time_before, time_after]
+            time_sigpk = (idx_max_amp - bef) / sf
+            # convert to absolute time from beginning of the recording
+            # time_sigpk only includes valid epoch
+            time_sigpk_abs = sw_idx_neg[idx_valid] + time_sigpk
+            sw_params['SigmaPeak'][idx_valid] = time_sigpk_abs
+            # 2) PhaseAtSigmaPeak
+            # Find SW phase at max sigma amplitude in epoch
+            pha_at_max = np.squeeze(np.take_along_axis(sw_pha_ev,
+                                                       idx_max_amp[..., None],
+                                                       axis=1))
+            sw_params['PhaseAtSigmaPeak'] = np.ones(n_peaks) * np.nan
+            sw_params['PhaseAtSigmaPeak'][idx_valid] = pha_at_max
+            # 3) Normalized Direct PAC, without thresholding
+            ndp = np.squeeze(tpm.ndpac(sw_pha_ev[None, ...],
+                                       sp_amp_ev[None, ...], p=1))
+            sw_params['ndPAC'] = np.ones(n_peaks) * np.nan
+            sw_params['ndPAC'][idx_valid] = ndp
             # Make sure that Stage is the last column of the dataframe
             sw_params.move_to_end('Stage')
 
         # Convert to dataframe, keeping only good events
-        df_chan = pd.DataFrame(sw_params)[good_sw]
+        df_chan = pd.DataFrame(sw_params)
 
         # Remove all duplicates
         df_chan = df_chan.drop_duplicates(subset=['Start'], keep=False)
@@ -1796,9 +1830,9 @@ class REMResults(_DetectionResults):
         # Get location of peaks in data
         peaks = (self._events[center] * self._sf).astype(int).to_numpy()
         # Get centered indices (here we could use second channel as well).
-        idx, idx_nomask = get_centered_indices(data[0, :], peaks, bef, aft)
+        idx, idx_valid = get_centered_indices(data[0, :], peaks, bef, aft)
         # If no good epochs are returned raise a warning
-        assert len(idx_nomask), (
+        assert len(idx_valid), (
             'Time before and/or time after exceed data bounds, please '
             'lower the temporal window around center.')
 

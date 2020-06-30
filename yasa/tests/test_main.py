@@ -122,6 +122,7 @@ class TestMain(unittest.TestCase):
 
         # Test with a random array
         with self.assertLogs('yasa', level='ERROR'):
+            np.random.seed(123)
             sp = spindles_detect(np.random.random(size=1000), sf)
         assert sp is None
 
