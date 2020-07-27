@@ -6,6 +6,6 @@ numba
 matplotlib
 seaborn
 lspopt
-tensorpac>=0.6.3
+tensorpac>=0.6.4
 scikit-learn>=0.21
 pyriemann

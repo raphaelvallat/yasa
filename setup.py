@@ -24,7 +24,7 @@ INSTALL_REQUIRES = [
     'mne>=0.20.0',
     'numba',
     'scikit-learn>=0.21',
-    'tensorpac>=0.6.3',
+    'tensorpac>=0.6.4',
     'pyriemann',
     'lspopt'
 ]

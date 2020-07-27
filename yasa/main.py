@@ -1295,8 +1295,8 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
             sw_params['PhaseAtSigmaPeak'] = np.ones(n_peaks) * np.nan
             sw_params['PhaseAtSigmaPeak'][idx_valid] = pha_at_max
             # 3) Normalized Direct PAC, without thresholding
-            ndp = np.squeeze(tpm.ndpac(sw_pha_ev[None, ...],
-                                       sp_amp_ev[None, ...], p=1))
+            ndp = np.squeeze(tpm.norm_direct_pac(sw_pha_ev[None, ...],
+                                                 sp_amp_ev[None, ...], p=1))
             sw_params['ndPAC'] = np.ones(n_peaks) * np.nan
             sw_params['ndPAC'][idx_valid] = ndp
             # Make sure that Stage is the last column of the dataframe
