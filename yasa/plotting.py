@@ -164,6 +164,12 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
             ax0.set_yticks([2, 1, 0, -1, -2, -3, -4])
             ax0.set_yticklabels(['Uns', 'Art', 'W', 'R', 'N1', 'N2', 'N3'])
             ax0.set_ylim(-4.5, 2.5)
+        elif -2 in hypno and -1 not in hypno:
+            # Only Unscored are present
+            ax0.set_yticks([2, 0, -1, -2, -3, -4])
+            ax0.set_yticklabels(['Uns', 'W', 'R', 'N1', 'N2', 'N3'])
+            ax0.set_ylim(-4.5, 2.5)
+
         elif -2 not in hypno and -1 in hypno:
             # Only Artefacts are present
             ax0.set_yticks([1, 0, -1, -2, -3, -4])
