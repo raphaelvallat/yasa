@@ -70,8 +70,24 @@ class SleepStaging:
         self.sf = sf
         self.metadata = metadata
 
-    def fit(self, freq_broad=(0.5, 40)):
-        """Extract features from data."""
+    def fit(self, freq_broad=(0.5, 40), win_sec=4):
+        """Extract features from data.
+        
+        Parameters
+        ----------
+        freq_broad : tuple or list
+            Broad band frequency range. Default is 0.5 to 40 Hz.
+        win_sec : int or float
+            The length of the sliding window, in seconds, used for the Welch PSD
+            calculation. Ideally, this should be at least two times the inverse of
+            the lower frequency of interest (e.g. for a lower frequency of interest
+            of 0.5 Hz, the window length should be at least 2 * 1 / 0.5 =
+            4 seconds).
+
+        Returns
+        -------
+        self : returns an instance of self.
+        """
         # 1) Preprocessing
         # - Filter the data
         eeg_filt = filter_data(
@@ -95,7 +111,7 @@ class SleepStaging:
         }
 
         # 3) Calculate spectral power features
-        win = int(4 * self.sf)
+        win = int(win_sec * self.sf)
         freqs, psd = sp_sig.welch(
             eeg_ep, self.sf, window='hamming', nperseg=win, average='median')
         bp = bandpower_from_psd_ndarray(psd, freqs)
@@ -152,8 +168,28 @@ class SleepStaging:
         # 9) Add to self
         self.features = features
 
+    def get_features(self, **kwargs):
+        """Extract features from data and return a copy of the features dataframe.
+        
+        Parameters
+        ----------
+        kwargs : key, value mappings
+            Keyword arguments are passed through to the fit method.
+
+        Returns
+        -------
+        features : :py:class:`pandas.DataFrame`
+            Feature dataframe.
+        """
+        if not hasattr(self, 'features'):
+            self.fit(**kwargs)
+        return self.features.copy()
+
     def predict(self, path_to_model):
-        """Predict sleep stage."""
+        """
+        Extract the features and predict the associated sleep stage with a user-specified 
+        pre-trained classifier.
+        """
         if not hasattr(self, 'features'):
             self.fit()
         # clf = joblib.load(path_to_model)
