@@ -7,6 +7,7 @@ from .others import *
 from .plotting import *
 from .sleepstats import *
 from .spectral import *
+from .staging import *
 
 # Define YASA logger
 logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s',
