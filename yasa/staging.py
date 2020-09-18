@@ -1,6 +1,7 @@
 """
 Automatic sleep staging of polysomnography data.
 """
+import os
 import joblib
 import logging
 import numpy as np
@@ -188,14 +189,8 @@ class SleepStaging:
             self.fit(**kwargs)
         return self._features.copy()
 
-    def predict(self, path_to_model):
-        """
-        Extract the features and predict the associated sleep stage with a
-        user-specified pre-trained classifier.
-        """
-        if not hasattr(self, '_features'):
-            self.fit()
-        clf = joblib.load(path_to_model)
+    def _validate_predict(self, clf):
+        """Validate classifier."""
         # Check that we're using exactly the same features
         f_diff = np.setdiff1d(clf.feature_name_, self.feature_name_)
         if len(f_diff):
@@ -207,7 +202,33 @@ class SleepStaging:
             raise ValueError("The following features are present in the "
                              "current feature set but not in the classifier:",
                              f_diff)
+
+    def predict(self, path_to_model):
+        """
+        Return the predicted value for each sample.
+        """
+        if not hasattr(self, '_features'):
+            self.fit()
+        # Load and validate pre-trained classifier
+        assert os.path.isfile(path_to_model), "File does not exist."
+        clf = joblib.load(path_to_model)
+        self._validate_predict(clf)
         # Now we make sure that the features are aligned
         X = self._features.copy()[clf.feature_name_]
         # Finally, we return the predicted sleep stages
         return clf.predict(X)
+
+    def predict_proba(self, path_to_model):
+        """
+        Return the predicted probability for each class for each sample.
+        """
+        if not hasattr(self, '_features'):
+            self.fit()
+        # Load and validate pre-trained classifier
+        assert os.path.isfile(path_to_model), "File does not exist."
+        clf = joblib.load(path_to_model)
+        self._validate_predict(clf)
+        # Now we make sure that the features are aligned
+        X = self._features.copy()[clf.feature_name_]
+        # Finally, we return the predicted sleep stages
+        return clf.predict_proba(X)
