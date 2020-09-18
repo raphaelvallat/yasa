@@ -72,17 +72,17 @@ class SleepStaging:
 
     def fit(self, freq_broad=(0.5, 40), win_sec=4):
         """Extract features from data.
-        
+
         Parameters
         ----------
         freq_broad : tuple or list
             Broad band frequency range. Default is 0.5 to 40 Hz.
         win_sec : int or float
-            The length of the sliding window, in seconds, used for the Welch PSD
-            calculation. Ideally, this should be at least two times the inverse of
-            the lower frequency of interest (e.g. for a lower frequency of interest
-            of 0.5 Hz, the window length should be at least 2 * 1 / 0.5 =
-            4 seconds).
+            The length of the sliding window, in seconds, used for the Welch
+            PSD calculation. Ideally, this should be at least two times the
+            inverse of the lower frequency of interest (e.g. for a lower
+            frequency of interest of 0.5 Hz, the window length should be at
+            least 2 * 1 / 0.5 = 4 seconds).
 
         Returns
         -------
@@ -166,11 +166,14 @@ class SleepStaging:
                     features[c] = self.metadata[c]
 
         # 9) Add to self
-        self.features = features
+        # Note that we sort the column names here (same behavior as lightGBM)
+        features.sort_index(axis=1, inplace=True)
+        self._features = features
+        self.feature_name_ = self._features.columns.tolist()
 
     def get_features(self, **kwargs):
-        """Extract features from data and return a copy of the features dataframe.
-        
+        """Extract features from data and return a copy of the dataframe.
+
         Parameters
         ----------
         kwargs : key, value mappings
@@ -181,19 +184,30 @@ class SleepStaging:
         features : :py:class:`pandas.DataFrame`
             Feature dataframe.
         """
-        if not hasattr(self, 'features'):
+        if not hasattr(self, '_features'):
             self.fit(**kwargs)
-        return self.features.copy()
+        return self._features.copy()
 
     def predict(self, path_to_model):
         """
-        Extract the features and predict the associated sleep stage with a user-specified 
-        pre-trained classifier.
+        Extract the features and predict the associated sleep stage with a
+        user-specified pre-trained classifier.
         """
-        if not hasattr(self, 'features'):
+        if not hasattr(self, '_features'):
             self.fit()
-        # clf = joblib.load(path_to_model)
-
-    def score(self, y_true, metric='accuracy'):
-        """Validate automatic scoring against ground-truth scoring."""
-        pass
+        clf = joblib.load(path_to_model)
+        # Check that we're using exactly the same features
+        f_diff = np.setdiff1d(clf.feature_name_, self.feature_name_)
+        if len(f_diff):
+            raise ValueError("The following features are present in the "
+                             "classifier but not in the current features set:",
+                             f_diff)
+        f_diff = np.setdiff1d(self.feature_name_, clf.feature_name_, )
+        if len(f_diff):
+            raise ValueError("The following features are present in the "
+                             "current feature set but not in the classifier:",
+                             f_diff)
+        # Now we make sure that the features are aligned
+        X = self._features.copy()[clf.feature_name_]
+        # Finally, we return the predicted sleep stages
+        return clf.predict(X)
