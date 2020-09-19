@@ -26,8 +26,13 @@ class SleepStaging:
     ----------
     eeg : array_like
         Single-channel EEG data. Preferentially the C4-M1 or C3-M2 derivation.
+        The units of the data must be uV.
     sf : float
         Sampling frequency of the data in Hz.
+    eog : array_like or None
+        Single-channel EOG data. Preferentially the E1 (left)-M2 derivation.
+        The units of the data must be uV, and the sampling frequency must be
+        the same as the EEG.
     metadata : dict or None
         A dictionary of metadata. Currently supported keys are:
 
@@ -36,7 +41,7 @@ class SleepStaging:
           False = female)
     """
 
-    def __init__(self, eeg, sf, metadata=None):
+    def __init__(self, eeg, sf, *, eog=None, metadata=None):
         # Type checks
         assert isinstance(sf, (int, float)), "sf must be an int or a float."
         assert isinstance(metadata, (dict, type(None))
@@ -57,6 +62,12 @@ class SleepStaging:
         duration_minutes = eeg.size / sf / 60
         assert duration_minutes >= 5, 'At least 5 minutes of data is required.'
 
+        # Validate EOG data
+        if eog is not None:
+            eog = np.squeeze(np.asarray(eog, dtype=np.float64))
+            assert eog.ndim == 1, 'Only single-channel EOG data is supported.'
+            assert eog.size == eeg.size, 'EOG must have the same size as EEG.'
+
         # Validate sampling frequency
         assert sf > 80, 'Sampling frequency must be at least 80 Hz.'
         if sf >= 1000:
@@ -69,6 +80,7 @@ class SleepStaging:
         # Add to self
         self.eeg = eeg
         self.sf = sf
+        self.eog = eog
         self.metadata = metadata
 
     def fit(self, freq_broad=(0.5, 40), win_sec=4):
@@ -77,7 +89,7 @@ class SleepStaging:
         Parameters
         ----------
         freq_broad : tuple or list
-            Broad band frequency range. Default is 0.5 to 40 Hz.
+            Broadband bandpass filter. Default is 0.5 to 40 Hz.
         win_sec : int or float
             The length of the sliding window, in seconds, used for the Welch
             PSD calculation. Ideally, this should be at least two times the
@@ -89,6 +101,9 @@ class SleepStaging:
         -------
         self : returns an instance of self.
         """
+        #######################################################################
+        # EEG FEATURES
+        #######################################################################
         # 1) Preprocessing
         # - Filter the data
         eeg_filt = filter_data(
@@ -132,7 +147,7 @@ class SleepStaging:
         dx = freqs[1] - freqs[0]
         features['eeg_abspow'] = np.trapz(psd[:, idx_broad], dx=dx)
 
-        # 4) Calculate entropy features
+        # 4) Calculate entropy and zero-crossing
         features['eeg_perm'] = np.apply_along_axis(
             ent.perm_entropy, axis=1, arr=eeg_ep, normalize=True)
         features['eeg_higuchi'] = np.apply_along_axis(
@@ -159,6 +174,76 @@ class SleepStaging:
         cols_norm.remove('time_norm')  # make sure we remove 'time_norm'
         features[cols_norm] = robust_scale(
             features[cols_norm], quantile_range=(5, 95))
+
+        #######################################################################
+        # EOG FEATURES
+        #######################################################################
+
+        if self.eog is not None:
+            # 1) Preprocessing
+            # - Filter the data
+            eog_filt = filter_data(
+                self.eog, self.sf, l_freq=freq_broad[0], h_freq=freq_broad[1],
+                verbose=False)
+            # - Extract 30 sec epochs.
+            times, eog_ep = sliding_window(eog_filt, sf=self.sf, window=30)
+
+            # 2) Calculate standard descriptive statistics
+            feat_eog = {
+                'eog_absmean': np.abs(eog_ep).mean(axis=1),
+                'eog_std': eog_ep.std(ddof=1, axis=1),
+                'eog_iqr': sp_stats.iqr(eog_ep, axis=1),
+                'eog_skew': sp_stats.skew(eog_ep, axis=1),
+                'eog_kurt': sp_stats.kurtosis(eog_ep, axis=1)
+            }
+
+            # 3) Calculate spectral power features
+            freqs, psd = sp_sig.welch(
+                eog_ep, self.sf, window='hamming', nperseg=win,
+                average='median')
+            bp = bandpower_from_psd_ndarray(psd, freqs)
+            bands = ['delta', 'theta', 'alpha', 'sigma', 'beta', 'gamma']
+            for i, b in enumerate(bands):
+                feat_eog['eog_' + b] = bp[i]
+
+            # Add total power
+            idx_broad = np.logical_and(
+                freqs >= freq_broad[0], freqs <= freq_broad[1])
+            dx = freqs[1] - freqs[0]
+            features['eog_abspow'] = np.trapz(psd[:, idx_broad], dx=dx)
+
+            # 4) Calculate entropy and zero-crossing
+            features['eog_perm'] = np.apply_along_axis(
+                ent.perm_entropy, axis=1, arr=eog_ep, normalize=True)
+            features['eog_higuchi'] = np.apply_along_axis(
+                ent.higuchi_fd, axis=1, arr=eog_ep)
+            features['eog_nzc'] = np.apply_along_axis(
+                lambda x: len(_zerocrossings(x)), axis=1, arr=eog_ep)
+
+            # 5) Save features to dataframe
+            feat_eog = pd.DataFrame(feat_eog)
+            feat_eog.index.name = 'epoch'
+            cols_eog = feat_eog.filter(like="eog_").columns.tolist()
+
+            # 6) Apply centered rolling average (5 min 30 window)
+            roll = feat_eog[cols_eog].rolling(
+                window=11, center=True, min_periods=1)
+            feat_rollmean = roll.mean().add_suffix('_rollavg_c5min_norm')
+            feat_eog = feat_eog.join(feat_rollmean)
+
+            # 7) Apply in-place normalization on all "*_norm" columns
+            feat_eog = feat_eog.join(
+                feat_eog[cols_eog].add_suffix("_norm"))
+            cols_norm = feat_eog.filter(like="_norm").columns.tolist()
+            feat_eog[cols_norm] = robust_scale(
+                feat_eog[cols_norm], quantile_range=(5, 95))
+
+            # 7) Merge with EEG dataframe
+            features = features.join(feat_eog)
+
+        #######################################################################
+        # METADATA AND EXPORT
+        #######################################################################
 
         # 8) Add metadata if present
         if self.metadata is not None:
