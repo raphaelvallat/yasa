@@ -12,8 +12,9 @@ import scipy.stats as sp_stats
 from mne.filter import filter_data
 from sklearn.preprocessing import robust_scale
 
+from .others import sliding_window
 from .spectral import bandpower_from_psd_ndarray
-from .others import sliding_window, _zerocrossings
+
 
 logger = logging.getLogger('yasa')
 
@@ -21,6 +22,10 @@ logger = logging.getLogger('yasa')
 class SleepStaging:
     """
     Automatic sleep staging of polysomnography data.
+
+    To run the automatic sleep staging, you must install the lightGBM
+    (https://lightgbm.readthedocs.io/) and entropy
+    (https://github.com/raphaelvallat/entropy) packages.
 
     Parameters
     ----------
@@ -114,6 +119,11 @@ class SleepStaging:
 
         # 2) Calculate standard descriptive statistics
         perc = np.percentile(eeg_ep, q=[10, 90], axis=1)
+
+        def nzc(x):
+            """Calculate the number of zero-crossings along the last axis."""
+            return ((x[..., :-1] * x[..., 1:]) < 0).sum(axis=-1)
+
         features = {
             'time_hour': times / 3600,
             'time_norm': times / times[-1],
@@ -123,13 +133,15 @@ class SleepStaging:
             'eeg_90p': perc[1],
             'eeg_iqr': sp_stats.iqr(eeg_ep, axis=1),
             'eeg_skew': sp_stats.skew(eeg_ep, axis=1),
-            'eeg_kurt': sp_stats.kurtosis(eeg_ep, axis=1)
+            'eeg_kurt': sp_stats.kurtosis(eeg_ep, axis=1),
+            'eeg_nzc': nzc(eeg_ep),
         }
 
         # 3) Calculate spectral power features
         win = int(win_sec * self.sf)
         freqs, psd = sp_sig.welch(
             eeg_ep, self.sf, window='hamming', nperseg=win, average='median')
+
         bp = bandpower_from_psd_ndarray(psd, freqs)
         bands = ['delta', 'theta', 'alpha', 'sigma', 'beta', 'gamma']
         for i, b in enumerate(bands):
@@ -147,13 +159,11 @@ class SleepStaging:
         dx = freqs[1] - freqs[0]
         features['eeg_abspow'] = np.trapz(psd[:, idx_broad], dx=dx)
 
-        # 4) Calculate entropy and zero-crossing
+        # 4) Calculate entropy features
         features['eeg_perm'] = np.apply_along_axis(
             ent.perm_entropy, axis=1, arr=eeg_ep, normalize=True)
         features['eeg_higuchi'] = np.apply_along_axis(
             ent.higuchi_fd, axis=1, arr=eeg_ep)
-        features['eeg_nzc'] = np.apply_along_axis(
-            lambda x: len(_zerocrossings(x)), axis=1, arr=eeg_ep)
 
         # 5) Save features to dataframe
         features = pd.DataFrame(features)
@@ -194,7 +204,8 @@ class SleepStaging:
                 'eog_std': eog_ep.std(ddof=1, axis=1),
                 'eog_iqr': sp_stats.iqr(eog_ep, axis=1),
                 'eog_skew': sp_stats.skew(eog_ep, axis=1),
-                'eog_kurt': sp_stats.kurtosis(eog_ep, axis=1)
+                'eog_kurt': sp_stats.kurtosis(eog_ep, axis=1),
+                'eog_nzc': nzc(eog_ep),
             }
 
             # 3) Calculate spectral power features
@@ -212,13 +223,11 @@ class SleepStaging:
             dx = freqs[1] - freqs[0]
             features['eog_abspow'] = np.trapz(psd[:, idx_broad], dx=dx)
 
-            # 4) Calculate entropy and zero-crossing
+            # 4) Calculate entropy features
             features['eog_perm'] = np.apply_along_axis(
                 ent.perm_entropy, axis=1, arr=eog_ep, normalize=True)
             features['eog_higuchi'] = np.apply_along_axis(
                 ent.higuchi_fd, axis=1, arr=eog_ep)
-            features['eog_nzc'] = np.apply_along_axis(
-                lambda x: len(_zerocrossings(x)), axis=1, arr=eog_ep)
 
             # 5) Save features to dataframe
             feat_eog = pd.DataFrame(feat_eog)
@@ -290,7 +299,11 @@ class SleepStaging:
 
     def predict(self, path_to_model):
         """
-        Return the predicted value for each sample.
+        Return the predicted sleep stage for each 30-sec epoch of data.
+
+        Currently, only classifiers that were trained using a LGBMClassifier
+        (https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html)
+        are supported.
         """
         if not hasattr(self, '_features'):
             self.fit()
@@ -305,7 +318,12 @@ class SleepStaging:
 
     def predict_proba(self, path_to_model):
         """
-        Return the predicted probability for each class for each sample.
+        Return the predicted probability for each sleep stage for each 30-sec
+        epoch of data.
+
+        Currently, only classifiers that were trained using a LGBMClassifier
+        (https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html)
+        are supported.
         """
         if not hasattr(self, '_features'):
             self.fit()
