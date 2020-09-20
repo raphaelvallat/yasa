@@ -286,6 +286,7 @@ class SleepStaging:
     def _validate_predict(self, clf):
         """Validate classifier."""
         # Check that we're using exactly the same features
+        # Note that clf.feature_name_ is only available in lightgbm>=3.0
         f_diff = np.setdiff1d(clf.feature_name_, self.feature_name_)
         if len(f_diff):
             raise ValueError("The following features are present in the "
