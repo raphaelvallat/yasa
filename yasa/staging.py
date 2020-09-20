@@ -412,4 +412,6 @@ class SleepStaging:
         # Now we make sure that the features are aligned
         X = self._features.copy()[clf.feature_name_]
         # Finally, we return the predicted sleep stages
-        return clf.predict_proba(X)
+        proba = pd.DataFrame(clf.predict_proba(X), columns=clf.classes_)
+        proba.index.name = 'epoch'
+        return proba
