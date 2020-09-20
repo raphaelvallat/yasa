@@ -30,7 +30,8 @@ class SleepStaging:
     Parameters
     ----------
     eeg : array_like
-        Single-channel EEG data. Preferentially the C4-M1 or C3-M2 derivation.
+        Single-channel EEG data. Preferentially a central electrode referenced
+        either to the mastoids (C4-M1, C3-M2) or to the Fpz electrode (C4-Fpz).
         The units of the data must be uV.
     sf : float
         Sampling frequency of the data in Hz.
@@ -88,23 +89,45 @@ class SleepStaging:
         self.eog = eog
         self.metadata = metadata
 
-    def fit(self, freq_broad=(0.5, 40), win_sec=4):
+    def fit(self, freq_broad=(0.5, 30), win_sec=4, bands=[(0.5, 4, 'delta'),
+            (4, 8, 'theta'), (8, 12, 'alpha'), (12, 16, 'sigma'),
+            (16, 30, 'beta')]):
         """Extract features from data.
 
         Parameters
         ----------
         freq_broad : tuple or list
-            Broadband bandpass filter. Default is 0.5 to 40 Hz.
+            Broadband bandpass filter. Default is 0.5 to 35 Hz.
         win_sec : int or float
             The length of the sliding window, in seconds, used for the Welch
             PSD calculation. Ideally, this should be at least two times the
             inverse of the lower frequency of interest (e.g. for a lower
             frequency of interest of 0.5 Hz, the window length should be at
             least 2 * 1 / 0.5 = 4 seconds).
+        bands : list of tuples
+            List of frequency bands of interests. Each tuple must contain the
+            lower and upper frequencies, as well as the band name
+            (e.g. (0.5, 4, 'delta')).
+
 
         Returns
         -------
         self : returns an instance of self.
+
+        Examples
+        --------
+        Using an EDF file
+
+        >>> import mne
+        >>> import yasa
+        >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
+        >>> data = raw.get_data() * 1e6  # We convert from Volts to uVolts
+        >>> sf = raw.info['sfreq']
+        >>> chan = raw.info['ch_names']
+        >>> eeg = data[chan.index('C4-M1'), :]
+        >>> eog = data[chan.index('EOG-L'), :]
+        >>> sls = yasa.SleepStaging(eeg=eeg, sf=sf, eog=eog)
+        >>> features = sls.get_features()
         """
         #######################################################################
         # EEG FEATURES
@@ -142,9 +165,8 @@ class SleepStaging:
         freqs, psd = sp_sig.welch(
             eeg_ep, self.sf, window='hamming', nperseg=win, average='median')
 
-        bp = bandpower_from_psd_ndarray(psd, freqs)
-        bands = ['delta', 'theta', 'alpha', 'sigma', 'beta', 'gamma']
-        for i, b in enumerate(bands):
+        bp = bandpower_from_psd_ndarray(psd, freqs, bands=bands)
+        for i, (_, _, b) in enumerate(bands):
             features['eeg_' + b] = bp[i]
 
         # Add power ratios
@@ -170,13 +192,11 @@ class SleepStaging:
         features.index.name = 'epoch'
         cols_eeg = features.filter(like="eeg_").columns.tolist()
 
-        # 6) Apply centered rolling average / std (5 min 30)
+        # 6) Apply centered rolling average (5 min 30)
         roll = features[cols_eeg].rolling(
             window=11, center=True, min_periods=1)
         feat_rollmean = roll.mean().add_suffix('_rollavg_c5min_norm')
         features = features.join(feat_rollmean)
-        # feat_rollstd = roll.std(ddof=0).add_suffix('_rollstd_c5min_norm')
-        # features = features.join(feat_rollstd)
 
         # 7) Apply in-place normalization on all "*_norm" columns
         features = features.join(features[cols_eeg].add_suffix("_norm"))
@@ -212,10 +232,10 @@ class SleepStaging:
             freqs, psd = sp_sig.welch(
                 eog_ep, self.sf, window='hamming', nperseg=win,
                 average='median')
-            bp = bandpower_from_psd_ndarray(psd, freqs)
-            bands = ['delta', 'theta', 'alpha', 'sigma', 'beta', 'gamma']
-            for i, b in enumerate(bands):
-                feat_eog['eog_' + b] = bp[i]
+
+            bp = bandpower_from_psd_ndarray(psd, freqs, bands=bands)
+            for i, (_, _, b) in enumerate(bands):
+                features['eog_' + b] = bp[i]
 
             # Add total power
             idx_broad = np.logical_and(
@@ -278,6 +298,21 @@ class SleepStaging:
         -------
         features : :py:class:`pandas.DataFrame`
             Feature dataframe.
+
+        Examples
+        --------
+        Using an EDF file
+
+        >>> import mne
+        >>> import yasa
+        >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
+        >>> data = raw.get_data() * 1e6  # We convert from Volts to uVolts
+        >>> sf = raw.info['sfreq']
+        >>> chan = raw.info['ch_names']
+        >>> eeg = data[chan.index('C4-M1'), :]
+        >>> eog = data[chan.index('EOG-L'), :]
+        >>> sls = yasa.SleepStaging(eeg=eeg, sf=sf, eog=eog)
+        >>> features = sls.get_features()
         """
         if not hasattr(self, '_features'):
             self.fit(**kwargs)
@@ -304,6 +339,27 @@ class SleepStaging:
         Currently, only classifiers that were trained using a LGBMClassifier
         (https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html)
         are supported.
+
+        Parameters
+        ----------
+        path_to_model : str
+            Full path to a trained LightGBMClassifier, exported as a
+            joblib file.
+
+        Examples
+        --------
+        Using an EDF file
+
+        >>> import mne
+        >>> import yasa
+        >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
+        >>> data = raw.get_data() * 1e6  # We convert from Volts to uVolts
+        >>> sf = raw.info['sfreq']
+        >>> chan = raw.info['ch_names']
+        >>> eeg = data[chan.index('C4-M1'), :]
+        >>> eog = data[chan.index('EOG-L'), :]
+        >>> sls = yasa.SleepStaging(eeg=eeg, sf=sf, eog=eog)
+        >>> predicted_hypnogram = sls.predict()
         """
         if not hasattr(self, '_features'):
             self.fit()
@@ -324,6 +380,27 @@ class SleepStaging:
         Currently, only classifiers that were trained using a LGBMClassifier
         (https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html)
         are supported.
+
+        Parameters
+        ----------
+        path_to_model : str
+            Full path to a trained LightGBMClassifier, exported as a
+            joblib file.
+
+        Examples
+        --------
+        Using an EDF file
+
+        >>> import mne
+        >>> import yasa
+        >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
+        >>> data = raw.get_data() * 1e6  # We convert from Volts to uVolts
+        >>> sf = raw.info['sfreq']
+        >>> chan = raw.info['ch_names']
+        >>> eeg = data[chan.index('C4-M1'), :]
+        >>> eog = data[chan.index('EOG-L'), :]
+        >>> sls = yasa.SleepStaging(eeg=eeg, sf=sf, eog=eog)
+        >>> predicted_proba = sls.predict_proba()
         """
         if not hasattr(self, '_features'):
             self.fit()
