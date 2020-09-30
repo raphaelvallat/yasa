@@ -10,7 +10,9 @@ import entropy as ent
 import scipy.signal as sp_sig
 import scipy.stats as sp_stats
 import matplotlib.pyplot as plt
+# import tensorpac.methods as tpm
 from mne.filter import filter_data
+# from scipy.fftpack import next_fast_len
 from sklearn.preprocessing import robust_scale
 
 from .others import sliding_window
@@ -134,11 +136,12 @@ class SleepStaging:
         #######################################################################
         # 1) Preprocessing
         # - Filter the data
+        sf = self.sf
         eeg_filt = filter_data(
-            self.eeg, self.sf, l_freq=freq_broad[0], h_freq=freq_broad[1],
+            self.eeg, sf, l_freq=freq_broad[0], h_freq=freq_broad[1],
             verbose=False)
         # - Extract 30 sec epochs. Data is now of shape (n_epochs, n_samples).
-        times, eeg_ep = sliding_window(eeg_filt, sf=self.sf, window=30)
+        times, eeg_ep = sliding_window(eeg_filt, sf=sf, window=30)
 
         # 2) Calculate standard descriptive statistics
         perc = np.percentile(eeg_ep, q=[10, 90], axis=1)
@@ -161,9 +164,9 @@ class SleepStaging:
         }
 
         # 3) Calculate spectral power features
-        win = int(win_sec * self.sf)
+        win = int(win_sec * sf)
         freqs, psd = sp_sig.welch(
-            eeg_ep, self.sf, window='hamming', nperseg=win, average='median')
+            eeg_ep, sf, window='hamming', nperseg=win, average='median')
 
         bp = bandpower_from_psd_ndarray(psd, freqs, bands=bands)
         for i, (_, _, b) in enumerate(bands):
@@ -180,6 +183,22 @@ class SleepStaging:
             freqs >= freq_broad[0], freqs <= freq_broad[1])
         dx = freqs[1] - freqs[0]
         features['eeg_abspow'] = np.trapz(psd[:, idx_broad], dx=dx)
+
+        # Add SW / spindles coupling (SLOW, +30% computation time)
+        # n_samp = eeg_ep.shape[-1]
+        # nfast = next_fast_len(n_samp)
+        # eeg_ep_so = filter_data(
+        #     eeg_ep, sf, 0.5, 1.25, l_trans_bandwidth=0.2,
+        #     h_trans_bandwidth=0.2, verbose=0
+        # )
+        # eeg_ep_sp = filter_data(
+        #     eeg_ep, sf, 12, 16, l_trans_bandwidth=1.5,
+        #     h_trans_bandwidth=1.5, verbose=0
+        # )
+        # sw_pha = np.angle(sp_sig.hilbert(eeg_ep_so, N=nfast)[..., :n_samp])
+        # sp_amp = np.abs(sp_sig.hilbert(eeg_ep_sp, N=nfast)[..., :n_samp])
+        # ndp = tpm.norm_direct_pac(sw_pha[None, ...], sp_amp[None, ...], p=1))
+        # features['eeg_coupling'] = np.squeeze(ndp)
 
         # 4) Calculate entropy features
         features['eeg_perm'] = np.apply_along_axis(
@@ -213,10 +232,10 @@ class SleepStaging:
             # 1) Preprocessing
             # - Filter the data
             eog_filt = filter_data(
-                self.eog, self.sf, l_freq=freq_broad[0], h_freq=freq_broad[1],
+                self.eog, sf, l_freq=freq_broad[0], h_freq=freq_broad[1],
                 verbose=False)
             # - Extract 30 sec epochs.
-            times, eog_ep = sliding_window(eog_filt, sf=self.sf, window=30)
+            times, eog_ep = sliding_window(eog_filt, sf=sf, window=30)
 
             # 2) Calculate standard descriptive statistics
             feat_eog = {
@@ -230,7 +249,7 @@ class SleepStaging:
 
             # 3) Calculate spectral power features
             freqs, psd = sp_sig.welch(
-                eog_ep, self.sf, window='hamming', nperseg=win,
+                eog_ep, sf, window='hamming', nperseg=win,
                 average='median')
 
             bp = bandpower_from_psd_ndarray(psd, freqs, bands=bands)
