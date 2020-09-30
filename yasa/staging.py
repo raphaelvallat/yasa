@@ -176,7 +176,7 @@ class SleepStaging:
         features['eeg_dt'] = delta / features['eeg_theta']
         features['eeg_ds'] = delta / features['eeg_sigma']
         features['eeg_db'] = delta / features['eeg_beta']
-        features['eeg_at'] = delta / features['eeg_theta']
+        features['eeg_at'] = features['eeg_alpha'] / features['eeg_theta']
 
         # Add total power
         idx_broad = np.logical_and(
