@@ -10,9 +10,9 @@ import entropy as ent
 import scipy.signal as sp_sig
 import scipy.stats as sp_stats
 import matplotlib.pyplot as plt
-# import tensorpac.methods as tpm
+import tensorpac.methods as tpm
 from mne.filter import filter_data
-# from scipy.fftpack import next_fast_len
+from scipy.fftpack import next_fast_len
 from sklearn.preprocessing import robust_scale
 
 from .others import sliding_window
@@ -91,26 +91,8 @@ class SleepStaging:
         self.eog = eog
         self.metadata = metadata
 
-    def fit(self, freq_broad=(0.5, 30), win_sec=4, bands=[(0.5, 4, 'delta'),
-            (4, 8, 'theta'), (8, 12, 'alpha'), (12, 16, 'sigma'),
-            (16, 30, 'beta')]):
+    def fit(self):
         """Extract features from data.
-
-        Parameters
-        ----------
-        freq_broad : tuple or list
-            Broadband bandpass filter. Default is 0.5 to 35 Hz.
-        win_sec : int or float
-            The length of the sliding window, in seconds, used for the Welch
-            PSD calculation. Ideally, this should be at least two times the
-            inverse of the lower frequency of interest (e.g. for a lower
-            frequency of interest of 0.5 Hz, the window length should be at
-            least 2 * 1 / 0.5 = 4 seconds).
-        bands : list of tuples
-            List of frequency bands of interests. Each tuple must contain the
-            lower and upper frequencies, as well as the band name
-            (e.g. (0.5, 4, 'delta')).
-
 
         Returns
         -------
@@ -131,6 +113,23 @@ class SleepStaging:
         >>> sls = yasa.SleepStaging(eeg=eeg, sf=sf, eog=eog)
         >>> features = sls.get_features()
         """
+        #######################################################################
+        # MAIN PARAMETERS
+        #######################################################################
+        # Bandpass filter
+        freq_broad = (0.4, 30)
+        # FFT & bandpower parameters
+        win_sec = 5  # = 2 / freq_broad[0]
+        bands = [
+            (0.4, 1, 'sdelta'), (1, 4, 'fdelta'), (4, 8, 'theta'),
+            (8, 12, 'alpha'), (12, 16, 'sigma'), (16, 30, 'beta')
+        ]
+        # Filter parameters for coupling
+        freq_so = (0.4, 1.2)
+        trans_so = 0.2
+        freq_sp = (12, 16)
+        trans_sp = 1
+
         #######################################################################
         # EEG FEATURES
         #######################################################################
@@ -173,10 +172,11 @@ class SleepStaging:
             features['eeg_' + b] = bp[i]
 
         # Add power ratios
-        features['eeg_dt'] = features['eeg_delta'] / features['eeg_theta']
-        features['eeg_ds'] = features['eeg_delta'] / features['eeg_sigma']
-        features['eeg_db'] = features['eeg_delta'] / features['eeg_beta']
-        features['eeg_at'] = features['eeg_alpha'] / features['eeg_theta']
+        delta = features['eeg_sdelta'] + features['eeg_fdelta']
+        features['eeg_dt'] = delta / features['eeg_theta']
+        features['eeg_ds'] = delta / features['eeg_sigma']
+        features['eeg_db'] = delta / features['eeg_beta']
+        features['eeg_at'] = delta / features['eeg_theta']
 
         # Add total power
         idx_broad = np.logical_and(
@@ -185,20 +185,20 @@ class SleepStaging:
         features['eeg_abspow'] = np.trapz(psd[:, idx_broad], dx=dx)
 
         # Add SW / spindles coupling (SLOW, +30% computation time)
-        # n_samp = eeg_ep.shape[-1]
-        # nfast = next_fast_len(n_samp)
-        # eeg_ep_so = filter_data(
-        #     eeg_ep, sf, 0.5, 1.25, l_trans_bandwidth=0.2,
-        #     h_trans_bandwidth=0.2, verbose=0
-        # )
-        # eeg_ep_sp = filter_data(
-        #     eeg_ep, sf, 12, 16, l_trans_bandwidth=1.5,
-        #     h_trans_bandwidth=1.5, verbose=0
-        # )
-        # sw_pha = np.angle(sp_sig.hilbert(eeg_ep_so, N=nfast)[..., :n_samp])
-        # sp_amp = np.abs(sp_sig.hilbert(eeg_ep_sp, N=nfast)[..., :n_samp])
-        # ndp = tpm.norm_direct_pac(sw_pha[None, ...], sp_amp[None, ...], p=1))
-        # features['eeg_coupling'] = np.squeeze(ndp)
+        n_samp = eeg_ep.shape[-1]
+        nfast = next_fast_len(n_samp)
+        eeg_ep_so = filter_data(
+            eeg_ep, sf, freq_so[0], freq_so[1], l_trans_bandwidth=trans_so,
+            h_trans_bandwidth=trans_so, verbose=0
+        )
+        eeg_ep_sp = filter_data(
+            eeg_ep, sf, freq_sp[0], freq_sp[1], l_trans_bandwidth=trans_sp,
+            h_trans_bandwidth=trans_sp, verbose=0
+        )
+        sw_pha = np.angle(sp_sig.hilbert(eeg_ep_so, N=nfast)[..., :n_samp])
+        sp_amp = np.abs(sp_sig.hilbert(eeg_ep_sp, N=nfast)[..., :n_samp])
+        ndp = tpm.norm_direct_pac(sw_pha[None, ...], sp_amp[None, ...], p=1)
+        features['eeg_coupling'] = np.squeeze(ndp)
 
         # 4) Calculate entropy features
         features['eeg_perm'] = np.apply_along_axis(
@@ -305,13 +305,8 @@ class SleepStaging:
         self._features = features
         self.feature_name_ = self._features.columns.tolist()
 
-    def get_features(self, **kwargs):
+    def get_features(self):
         """Extract features from data and return a copy of the dataframe.
-
-        Parameters
-        ----------
-        kwargs : key, value mappings
-            Keyword arguments are passed through to the fit method.
 
         Returns
         -------
@@ -334,7 +329,7 @@ class SleepStaging:
         >>> features = sls.get_features()
         """
         if not hasattr(self, '_features'):
-            self.fit(**kwargs)
+            self.fit()
         return self._features.copy()
 
     def _validate_predict(self, clf):
