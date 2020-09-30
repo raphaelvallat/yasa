@@ -9,12 +9,12 @@ import pandas as pd
 import entropy as ent
 import scipy.signal as sp_sig
 import scipy.stats as sp_stats
+import matplotlib.pyplot as plt
 from mne.filter import filter_data
 from sklearn.preprocessing import robust_scale
 
 from .others import sliding_window
 from .spectral import bandpower_from_psd_ndarray
-
 
 logger = logging.getLogger('yasa')
 
@@ -333,7 +333,7 @@ class SleepStaging:
                              "current feature set but not in the classifier:",
                              f_diff)
 
-    def predict(self, path_to_model):
+    def predict(self, path_to_model, smooth=False):
         """
         Return the predicted sleep stage for each 30-sec epoch of data.
 
@@ -346,6 +346,9 @@ class SleepStaging:
         path_to_model : str
             Full path to a trained LightGBMClassifier, exported as a
             joblib file.
+        smooth : boolean
+            If True, smooth the probability using a 3 min 30 centered rolling
+            average.
 
         Examples
         --------
@@ -370,10 +373,16 @@ class SleepStaging:
         self._validate_predict(clf)
         # Now we make sure that the features are aligned
         X = self._features.copy()[clf.feature_name_]
-        # Finally, we return the predicted sleep stages
-        return clf.predict(X)
+        if not smooth:
+            # Case 1: raw predictions
+            self._predicted = clf.predict(X)
+        else:
+            # Case 2: smoothed predictions
+            proba = self.predict_proba(path_to_model, smooth=True)
+            self._predicted = proba.idxmax(axis=1).to_numpy()
+        return self._predicted.copy()
 
-    def predict_proba(self, path_to_model):
+    def predict_proba(self, path_to_model, smooth=False):
         """
         Return the predicted probability for each sleep stage for each 30-sec
         epoch of data.
@@ -387,6 +396,9 @@ class SleepStaging:
         path_to_model : str
             Full path to a trained LightGBMClassifier, exported as a
             joblib file.
+        smooth : boolean
+            If True, smooth the probability using a 3 min 30 centered rolling
+            average.
 
         Examples
         --------
@@ -414,4 +426,45 @@ class SleepStaging:
         # Finally, we return the predicted sleep stages
         proba = pd.DataFrame(clf.predict_proba(X), columns=clf.classes_)
         proba.index.name = 'epoch'
-        return proba
+        # Optional: smooth the predictions
+        if smooth:
+            # 7 * 30-sec epochs = 3 minutes 30
+            proba = proba.rolling(
+                window=7, center=True, min_periods=1, win_type="triang"
+            ).mean()
+        self._proba = proba
+        return proba.copy()
+
+    def plot_predict_proba(self, proba=None, majority_only=False,
+                           palette=['#99d7f1', '#009DDC', 'xkcd:twilight blue',
+                                    'xkcd:rich purple', 'xkcd:sunflower']):
+        """
+        Plot the predicted probability for each sleep stage for each 30-sec
+        epoch of data.
+
+        Parameters
+        ----------
+        proba : self or DataFrame
+            A dataframe with the probability of each sleep stage for each
+            30-sec epoch of data.
+        majority_only : boolean
+            If True, probabilities of the non-majority classes will be set
+            to 0.
+        """
+        if proba is None and not hasattr(self, '_features'):
+            raise ValueError("Must call .predict_proba before this function")
+        if proba is None:
+            proba = self._proba.copy()
+        else:
+            assert isinstance(proba, pd.DataFrame), 'proba must be a dataframe'
+        if majority_only:
+            cond = proba.apply(lambda x: x == x.max(), axis=1)
+            proba = proba.where(cond, other=0)
+        ax = proba.plot(kind='area', color=palette, figsize=(10, 5), alpha=.8,
+                        stacked=True, lw=0)
+        ax.set_xlim(0, proba.shape[0])
+        ax.set_ylim(0, 1)
+        ax.set_ylabel("Probability")
+        ax.set_xlabel("Time (30-sec epoch)")
+        plt.legend(frameon=False, bbox_to_anchor=(1, 1))
+        return ax
