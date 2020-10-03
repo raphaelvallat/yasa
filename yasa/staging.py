@@ -428,6 +428,10 @@ class SleepStaging:
         >>> eog = data[chan.index('EOG-L'), :]
         >>> sls = yasa.SleepStaging(eeg=eeg, sf=sf, eog=eog)
         >>> predicted_proba = sls.predict_proba()
+
+        Calculate confidence (in %) from the probabilities
+
+        >>> confidence = predicted_proba.max(axis=1)
         """
         if not hasattr(self, '_features'):
             self.fit()
@@ -476,6 +480,10 @@ class SleepStaging:
             proba = proba.where(cond, other=0)
         ax = proba.plot(kind='area', color=palette, figsize=(10, 5), alpha=.8,
                         stacked=True, lw=0)
+        # Add confidence
+        # confidence = proba.max(1)
+        # ax.plot(confidence, lw=1, color='k', ls='-', alpha=0.5,
+        #         label='Confidence')
         ax.set_xlim(0, proba.shape[0])
         ax.set_ylim(0, 1)
         ax.set_ylabel("Probability")
