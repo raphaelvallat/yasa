@@ -361,7 +361,7 @@ class SleepStaging:
             Full path to a trained LightGBMClassifier, exported as a
             joblib file.
         smooth : boolean
-            If True, smooth the probability using a 3 min 30 centered rolling
+            If True, smooth the probability using a 2 min 30 centered rolling
             average.
 
         Examples
@@ -411,7 +411,7 @@ class SleepStaging:
             Full path to a trained LightGBMClassifier, exported as a
             joblib file.
         smooth : boolean
-            If True, smooth the probability using a 3 min 30 centered rolling
+            If True, smooth the probability using a 2 min 30 centered rolling
             average.
 
         Examples
@@ -446,9 +446,10 @@ class SleepStaging:
         proba.index.name = 'epoch'
         # Optional: smooth the predictions
         if smooth:
-            # 7 * 30-sec epochs = 3 minutes 30
+            # 5 * 30-sec epochs = 2 minutes 30
+            # w = [1/3, 2/3, 1, 2/3, 1/3]
             proba = proba.rolling(
-                window=7, center=True, min_periods=1, win_type="triang"
+                window=5, center=True, min_periods=1, win_type="triang"
             ).mean()
         self._proba = proba
         return proba.copy()
