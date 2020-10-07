@@ -140,11 +140,6 @@ class SleepStaging:
             (0.4, 1, 'sdelta'), (1, 4, 'fdelta'), (4, 8, 'theta'),
             (8, 12, 'alpha'), (12, 16, 'sigma'), (16, 30, 'beta')
         ]
-        # Filter parameters for coupling
-        freq_so = (0.4, 1.2)
-        trans_so = 0.2
-        freq_sp = (12, 16)
-        trans_sp = 1
 
         #######################################################################
         # EEG FEATURES
@@ -199,22 +194,6 @@ class SleepStaging:
             freqs >= freq_broad[0], freqs <= freq_broad[1])
         dx = freqs[1] - freqs[0]
         features['eeg_abspow'] = np.trapz(psd[:, idx_broad], dx=dx)
-
-        # Add SW / spindles coupling (SLOW, +30% computation time)
-        n_samp = eeg_ep.shape[-1]
-        nfast = next_fast_len(n_samp)
-        eeg_ep_so = filter_data(
-            eeg_ep, sf, freq_so[0], freq_so[1], l_trans_bandwidth=trans_so,
-            h_trans_bandwidth=trans_so, verbose=0
-        )
-        eeg_ep_sp = filter_data(
-            eeg_ep, sf, freq_sp[0], freq_sp[1], l_trans_bandwidth=trans_sp,
-            h_trans_bandwidth=trans_sp, verbose=0
-        )
-        sw_pha = np.angle(sp_sig.hilbert(eeg_ep_so, N=nfast)[..., :n_samp])
-        sp_amp = np.abs(sp_sig.hilbert(eeg_ep_sp, N=nfast)[..., :n_samp])
-        ndp = tpm.norm_direct_pac(sw_pha[None, ...], sp_amp[None, ...], p=1)
-        features['eeg_coupling'] = np.squeeze(ndp)
 
         # 4) Calculate entropy features
         features['eeg_perm'] = np.apply_along_axis(
@@ -336,13 +315,6 @@ class SleepStaging:
         >>> import mne
         >>> import yasa
         >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
-        >>> data = raw.get_data() * 1e6  # We convert from Volts to uVolts
-        >>> sf = raw.info['sfreq']
-        >>> chan = raw.info['ch_names']
-        >>> eeg = data[chan.index('C4-M1'), :]
-        >>> eog = data[chan.index('EOG-L'), :]
-        >>> sls = yasa.SleepStaging(eeg=eeg, sf=sf, eog=eog)
-        >>> features = sls.get_features()
         """
         if not hasattr(self, '_features'):
             self.fit()
@@ -387,13 +359,6 @@ class SleepStaging:
         >>> import mne
         >>> import yasa
         >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
-        >>> data = raw.get_data() * 1e6  # We convert from Volts to uVolts
-        >>> sf = raw.info['sfreq']
-        >>> chan = raw.info['ch_names']
-        >>> eeg = data[chan.index('C4-M1'), :]
-        >>> eog = data[chan.index('EOG-L'), :]
-        >>> sls = yasa.SleepStaging(eeg=eeg, sf=sf, eog=eog)
-        >>> predicted_hypnogram = sls.predict()
         """
         if not hasattr(self, '_features'):
             self.fit()
@@ -437,13 +402,6 @@ class SleepStaging:
         >>> import mne
         >>> import yasa
         >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
-        >>> data = raw.get_data() * 1e6  # We convert from Volts to uVolts
-        >>> sf = raw.info['sfreq']
-        >>> chan = raw.info['ch_names']
-        >>> eeg = data[chan.index('C4-M1'), :]
-        >>> eog = data[chan.index('EOG-L'), :]
-        >>> sls = yasa.SleepStaging(eeg=eeg, sf=sf, eog=eog)
-        >>> predicted_proba = sls.predict_proba()
 
         Calculate confidence (in %) from the probabilities
 
