@@ -2,6 +2,7 @@
 Automatic sleep staging of polysomnography data.
 """
 import os
+import mne
 import joblib
 import logging
 import numpy as np
@@ -31,16 +32,19 @@ class SleepStaging:
 
     Parameters
     ----------
-    eeg : array_like
-        Single-channel EEG data. Preferentially a central electrode referenced
-        either to the mastoids (C4-M1, C3-M2) or to the Fpz electrode (C4-Fpz).
-        The units of the data must be uV.
-    sf : float
-        Sampling frequency of the data in Hz.
-    eog : array_like or None
-        Single-channel EOG data. Preferentially the E1 (left)-M2 derivation.
-        The units of the data must be uV, and the sampling frequency must be
-        the same as the EEG.
+    raw : :py:class:`mne.io.BaseRaw`
+        An MNE Raw instance.
+    eeg_name : str
+        The name of the EEG channel in ``raw``. Preferentially a central
+        electrode referenced either to the mastoids (C4-M1, C3-M2) or to the
+        Fpz electrode (C4-Fpz). Data are assumed to be in Volts (MNE default)
+        and will be converted to uV.
+    loc_name : str or None
+        The name of the LOC (Right EOG) channel in ``raw``.
+    roc_name : str or None
+        The name of the ROC (Right EOG) channel in ``raw``.
+    emg_name : str or None
+        The name of the EMG channel in ``raw``.
     metadata : dict or None
         A dictionary of metadata. Currently supported keys are:
 
@@ -49,13 +53,11 @@ class SleepStaging:
           False = female)
     """
 
-    def __init__(self, eeg, sf, *, eog=None, metadata=None):
-        # Type checks
-        assert isinstance(sf, (int, float)), "sf must be an int or a float."
+    def __init__(self, raw, *, eeg_name, loc_name=None, roc_name=None,
+                 emg_name=None, metadata=None):
+        # Validate metadata
         assert isinstance(metadata, (dict, type(None))
                           ), "metadata must be a dict or None"
-
-        # Validate metadata
         if isinstance(metadata, dict):
             if 'age' in metadata.keys():
                 assert 0 < metadata['age'] < 120, ('age must be between 0 and '
@@ -64,17 +66,34 @@ class SleepStaging:
                 metadata['male'] = int(metadata['male'])
                 assert metadata['male'] in [0, 1], 'male must be 0 or 1.'
 
-        # Validate EEG data
-        eeg = np.squeeze(np.asarray(eeg, dtype=np.float64))
-        assert eeg.ndim == 1, 'Only single-channel EEG data is supported.'
-        duration_minutes = eeg.size / sf / 60
+        # Validate Raw instance and load data
+        assert isinstance(raw, mne.io.BaseRaw), 'raw must be a MNE Raw object.'
+        sf = raw.info['sfreq']
+        ch_names = np.array([eeg_name, loc_name, roc_name, emg_name])
+        ch_types = np.array(['eeg', 'loc', 'roc', 'emg'])
+        keep_chan = []
+        for c in ch_names:
+            if c is not None:
+                assert c in raw.ch_names, '%s is not a channel of Raw' % c
+                keep_chan.append(True)
+            else:
+                keep_chan.append(False)
+        # Subset
+        ch_names = ch_names[keep_chan].tolist()
+        ch_types = ch_types[keep_chan].tolist()
+        # Keep only selected channels
+        raw = raw.pick_channels(ch_names, ordered=True)
+        # Get data and convert to microVolts
+        data = raw.get_data() * 1e6
+        # Extract duration of recording in minutes
+        duration_minutes = data.shape[1] / sf / 60
         assert duration_minutes >= 5, 'At least 5 minutes of data is required.'
 
-        # Validate EOG data
-        if eog is not None:
-            eog = np.squeeze(np.asarray(eog, dtype=np.float64))
-            assert eog.ndim == 1, 'Only single-channel EOG data is supported.'
-            assert eog.size == eeg.size, 'EOG must have the same size as EEG.'
+        # Extract channels
+        eeg = data[0, :]
+        loc = data[ch_types.index('loc')] if 'loc' in ch_types else None
+        roc = data[ch_types.index('roc')] if 'roc' in ch_types else None
+        emg = data[ch_types.index('emg')] if 'emg' in ch_types else None
 
         # Validate sampling frequency
         assert sf > 80, 'Sampling frequency must be at least 80 Hz.'
@@ -86,9 +105,13 @@ class SleepStaging:
             )
 
         # Add to self
-        self.eeg = eeg
         self.sf = sf
-        self.eog = eog
+        self.ch_names = ch_names
+        self.ch_types = ch_types
+        self.eeg = eeg
+        self.loc = loc
+        self.roc = roc
+        self.emg = emg
         self.metadata = metadata
 
     def fit(self):
@@ -105,13 +128,6 @@ class SleepStaging:
         >>> import mne
         >>> import yasa
         >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
-        >>> data = raw.get_data() * 1e6  # We convert from Volts to uVolts
-        >>> sf = raw.info['sfreq']
-        >>> chan = raw.info['ch_names']
-        >>> eeg = data[chan.index('C4-M1'), :]
-        >>> eog = data[chan.index('EOG-L'), :]
-        >>> sls = yasa.SleepStaging(eeg=eeg, sf=sf, eog=eog)
-        >>> features = sls.get_features()
         """
         #######################################################################
         # MAIN PARAMETERS
