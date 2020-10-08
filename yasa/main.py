@@ -1230,7 +1230,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
             pha_at_max_full[idx_nomask] = pha_at_max
             sw_params['PhaseAtSigmaPeak'] = pha_at_max_full
             # Normalized Direct PAC, without thresholding
-            ndp = tpm.ndpac(sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=1)
+            ndp = tpm.norm_direct_pac(sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=1)
             ndp = np.squeeze(ndp)
             ndp_full = np.ones(n_peaks) * np.nan
             ndp_full[idx_nomask] = ndp
