@@ -1,6 +1,4 @@
-"""
-Automatic sleep staging of polysomnography data.
-"""
+"""Automatic sleep staging of polysomnography data."""
 import os
 import mne
 import joblib
@@ -11,9 +9,7 @@ import entropy as ent
 import scipy.signal as sp_sig
 import scipy.stats as sp_stats
 import matplotlib.pyplot as plt
-import tensorpac.methods as tpm
 from mne.filter import filter_data
-from scipy.fftpack import next_fast_len
 from sklearn.preprocessing import robust_scale
 
 from .others import sliding_window
@@ -55,9 +51,14 @@ class SleepStaging:
 
     def __init__(self, raw, *, eeg_name, loc_name=None, roc_name=None,
                  emg_name=None, metadata=None):
+        # Type check
+        assert isinstance(eeg_name, str)
+        assert isinstance(loc_name, (str, type(None)))
+        assert isinstance(roc_name, (str, type(None)))
+        assert isinstance(emg_name, (str, type(None)))
+        assert isinstance(metadata, (dict, type(None)))
+
         # Validate metadata
-        assert isinstance(metadata, (dict, type(None))
-                          ), "metadata must be a dict or None"
         if isinstance(metadata, dict):
             if 'age' in metadata.keys():
                 assert 0 < metadata['age'] < 120, ('age must be between 0 and '
@@ -74,26 +75,20 @@ class SleepStaging:
         keep_chan = []
         for c in ch_names:
             if c is not None:
-                assert c in raw.ch_names, '%s is not a channel of Raw' % c
+                assert c in raw.ch_names, '%s does not exist' % c
                 keep_chan.append(True)
             else:
                 keep_chan.append(False)
         # Subset
         ch_names = ch_names[keep_chan].tolist()
         ch_types = ch_types[keep_chan].tolist()
-        # Keep only selected channels
-        raw = raw.pick_channels(ch_names, ordered=True)
+        # Keep only selected channels (creating a copy of Raw)
+        raw_pick = raw.copy().pick_channels(ch_names, ordered=True)
         # Get data and convert to microVolts
-        data = raw.get_data() * 1e6
+        data = raw_pick.get_data() * 1e6
         # Extract duration of recording in minutes
         duration_minutes = data.shape[1] / sf / 60
         assert duration_minutes >= 5, 'At least 5 minutes of data is required.'
-
-        # Extract channels
-        eeg = data[0, :]
-        loc = data[ch_types.index('loc')] if 'loc' in ch_types else None
-        roc = data[ch_types.index('roc')] if 'roc' in ch_types else None
-        emg = data[ch_types.index('emg')] if 'emg' in ch_types else None
 
         # Validate sampling frequency
         assert sf > 80, 'Sampling frequency must be at least 80 Hz.'
@@ -108,10 +103,7 @@ class SleepStaging:
         self.sf = sf
         self.ch_names = ch_names
         self.ch_types = ch_types
-        self.eeg = eeg
-        self.loc = loc
-        self.roc = roc
-        self.emg = emg
+        self.data = data
         self.metadata = metadata
 
     def fit(self):
@@ -136,165 +128,106 @@ class SleepStaging:
         freq_broad = (0.4, 30)
         # FFT & bandpower parameters
         win_sec = 5  # = 2 / freq_broad[0]
+        sf = self.sf
+        win = int(win_sec * sf)
+        kwargs_welch = dict(window='hamming', nperseg=win, average='median')
         bands = [
             (0.4, 1, 'sdelta'), (1, 4, 'fdelta'), (4, 8, 'theta'),
             (8, 12, 'alpha'), (12, 16, 'sigma'), (16, 30, 'beta')
         ]
 
-        #######################################################################
-        # EEG FEATURES
-        #######################################################################
-        # 1) Preprocessing
-        # - Filter the data
-        sf = self.sf
-        eeg_filt = filter_data(
-            self.eeg, sf, l_freq=freq_broad[0], h_freq=freq_broad[1],
-            verbose=False)
-        # - Extract 30 sec epochs. Data is now of shape (n_epochs, n_samples).
-        times, eeg_ep = sliding_window(eeg_filt, sf=sf, window=30)
-
-        # 2) Calculate standard descriptive statistics
-        perc = np.percentile(eeg_ep, q=[10, 90], axis=1)
-
         def nzc(x):
             """Calculate the number of zero-crossings along the last axis."""
             return ((x[..., :-1] * x[..., 1:]) < 0).sum(axis=-1)
 
-        features = {
-            'time_hour': times / 3600,
-            'time_norm': times / times[-1],
-            'eeg_absmean': np.abs(eeg_ep).mean(axis=1),
-            'eeg_std': eeg_ep.std(ddof=1, axis=1),
-            'eeg_10p': perc[0],
-            'eeg_90p': perc[1],
-            'eeg_iqr': sp_stats.iqr(eeg_ep, axis=1),
-            'eeg_skew': sp_stats.skew(eeg_ep, axis=1),
-            'eeg_kurt': sp_stats.kurtosis(eeg_ep, axis=1),
-            'eeg_nzc': nzc(eeg_ep),
-        }
-
-        # 3) Calculate spectral power features
-        win = int(win_sec * sf)
-        freqs, psd = sp_sig.welch(
-            eeg_ep, sf, window='hamming', nperseg=win, average='median')
-
-        bp = bandpower_from_psd_ndarray(psd, freqs, bands=bands)
-        for i, (_, _, b) in enumerate(bands):
-            features['eeg_' + b] = bp[i]
-
-        # Add power ratios
-        delta = features['eeg_sdelta'] + features['eeg_fdelta']
-        features['eeg_dt'] = delta / features['eeg_theta']
-        features['eeg_ds'] = delta / features['eeg_sigma']
-        features['eeg_db'] = delta / features['eeg_beta']
-        features['eeg_at'] = features['eeg_alpha'] / features['eeg_theta']
-
-        # Add total power
-        idx_broad = np.logical_and(
-            freqs >= freq_broad[0], freqs <= freq_broad[1])
-        dx = freqs[1] - freqs[0]
-        features['eeg_abspow'] = np.trapz(psd[:, idx_broad], dx=dx)
-
-        # 4) Calculate entropy features
-        features['eeg_perm'] = np.apply_along_axis(
-            ent.perm_entropy, axis=1, arr=eeg_ep, normalize=True)
-        features['eeg_higuchi'] = np.apply_along_axis(
-            ent.higuchi_fd, axis=1, arr=eeg_ep)
-
-        # 5) Save features to dataframe
-        features = pd.DataFrame(features)
-        features.index.name = 'epoch'
-        cols_eeg = features.filter(like="eeg_").columns.tolist()
-
-        # 6) Apply centered rolling average (5 min 30)
-        roll = features[cols_eeg].rolling(
-            window=11, center=True, min_periods=1)
-        feat_rollmean = roll.mean().add_suffix('_rollavg_c5min_norm')
-        features = features.join(feat_rollmean)
-
-        # 7) Apply in-place normalization on all "*_norm" columns
-        features = features.join(features[cols_eeg].add_suffix("_norm"))
-        cols_norm = features.filter(like="_norm").columns.tolist()
-        cols_norm.remove('time_norm')  # make sure we remove 'time_norm'
-        features[cols_norm] = robust_scale(
-            features[cols_norm], quantile_range=(5, 95))
-
         #######################################################################
-        # EOG FEATURES
+        # CALCULATE FEATURES
         #######################################################################
 
-        if self.eog is not None:
-            # 1) Preprocessing
+        features = []
+
+        for i, c in enumerate(self.ch_types):
+            # Preprocessing
             # - Filter the data
-            eog_filt = filter_data(
-                self.eog, sf, l_freq=freq_broad[0], h_freq=freq_broad[1],
-                verbose=False)
-            # - Extract 30 sec epochs.
-            times, eog_ep = sliding_window(eog_filt, sf=sf, window=30)
+            dt_filt = filter_data(
+                self.data[i, :],
+                sf, l_freq=freq_broad[0], h_freq=freq_broad[1], verbose=False)
+            # - Extract epochs. Data is now of shape (n_epochs, n_samples).
+            times, epochs = sliding_window(dt_filt, sf=sf, window=30)
 
-            # 2) Calculate standard descriptive statistics
-            feat_eog = {
-                'eog_absmean': np.abs(eog_ep).mean(axis=1),
-                'eog_std': eog_ep.std(ddof=1, axis=1),
-                'eog_iqr': sp_stats.iqr(eog_ep, axis=1),
-                'eog_skew': sp_stats.skew(eog_ep, axis=1),
-                'eog_kurt': sp_stats.kurtosis(eog_ep, axis=1),
-                'eog_nzc': nzc(eog_ep),
+            # Calculate standard descriptive statistics
+            perc = np.percentile(epochs, q=[10, 90], axis=1)
+
+            feat = {
+                'std': np.std(epochs, ddof=1, axis=1),
+                'iqr': sp_stats.iqr(epochs, rng=(25, 75), axis=1),
+                '10p': perc[0],
+                '90p': perc[1],
+                'nzc': nzc(epochs),
             }
 
-            # 3) Calculate spectral power features
-            freqs, psd = sp_sig.welch(
-                eog_ep, sf, window='hamming', nperseg=win,
-                average='median')
-
+            # Calculate spectral power features
+            freqs, psd = sp_sig.welch(epochs, sf, **kwargs_welch)
             bp = bandpower_from_psd_ndarray(psd, freqs, bands=bands)
-            for i, (_, _, b) in enumerate(bands):
-                features['eog_' + b] = bp[i]
+            for j, (_, _, b) in enumerate(bands):
+                feat[b] = bp[j]
+
+            # Add power ratios for EEG
+            if c == 'eeg':
+                delta = feat['sdelta'] + feat['fdelta']
+                feat['dt'] = delta / feat['theta']
+                feat['ds'] = delta / feat['sigma']
+                feat['db'] = delta / feat['beta']
+                feat['at'] = feat['alpha'] / feat['theta']
 
             # Add total power
             idx_broad = np.logical_and(
                 freqs >= freq_broad[0], freqs <= freq_broad[1])
             dx = freqs[1] - freqs[0]
-            features['eog_abspow'] = np.trapz(psd[:, idx_broad], dx=dx)
+            feat['abspow'] = np.trapz(psd[:, idx_broad], dx=dx)
 
-            # 4) Calculate entropy features
-            features['eog_perm'] = np.apply_along_axis(
-                ent.perm_entropy, axis=1, arr=eog_ep, normalize=True)
-            features['eog_higuchi'] = np.apply_along_axis(
-                ent.higuchi_fd, axis=1, arr=eog_ep)
+            # Calculate entropy features
+            feat['perm'] = np.apply_along_axis(
+                ent.perm_entropy, axis=1, arr=epochs, normalize=True)
+            feat['higuchi'] = np.apply_along_axis(
+                ent.higuchi_fd, axis=1, arr=epochs)
 
-            # 5) Save features to dataframe
-            feat_eog = pd.DataFrame(feat_eog)
-            feat_eog.index.name = 'epoch'
-            cols_eog = feat_eog.filter(like="eog_").columns.tolist()
-
-            # 6) Apply centered rolling average (5 min 30 window)
-            roll = feat_eog[cols_eog].rolling(
-                window=11, center=True, min_periods=1)
-            feat_rollmean = roll.mean().add_suffix('_rollavg_c5min_norm')
-            feat_eog = feat_eog.join(feat_rollmean)
-
-            # 7) Apply in-place normalization on all "*_norm" columns
-            feat_eog = feat_eog.join(
-                feat_eog[cols_eog].add_suffix("_norm"))
-            cols_norm = feat_eog.filter(like="_norm").columns.tolist()
-            feat_eog[cols_norm] = robust_scale(
-                feat_eog[cols_norm], quantile_range=(5, 95))
-
-            # 7) Merge with EEG dataframe
-            features = features.join(feat_eog)
+            # Convert to dataframe
+            feat = pd.DataFrame(feat).add_prefix(c + '_')
+            features.append(feat)
 
         #######################################################################
-        # METADATA AND EXPORT
+        # SMOOTHING & NORMALIZATION
         #######################################################################
 
-        # 8) Add metadata if present
+        # Save features to dataframe
+        features = pd.concat(features, axis=1)
+        features.index.name = 'epoch'
+
+        # Apply centered rolling average (11 epochs = 5 min 30)
+        # Triang: [1/6, 2/6, 3/6, 4/6, 5/6, 6/6 (X), 5/6, 4/6, 3/6, 2/6, 1/6]
+        rollm = features.rolling(
+            window=11, center=True, min_periods=1, win_type='triang').mean()
+        rollm[rollm.columns] = robust_scale(rollm, quantile_range=(5, 95))
+        rollm = rollm.add_suffix('_5min_norm')
+        # Add to current set of features
+        features = features.join(rollm)
+
+        #######################################################################
+        # TEMPORAL + METADATA FEATURES AND EXPORT
+        #######################################################################
+
+        # Add temporal features
+        features['time_hour'] = times / 3600
+        features['time_norm'] = times / times[-1]
+
+        # Add metadata if present
         if self.metadata is not None:
             for c in self.metadata.keys():
                 if c in ['age', 'male']:
                     features[c] = self.metadata[c]
 
-        # 9) Add to self
+        # Add to self
         # Note that we sort the column names here (same behavior as lightGBM)
         features.sort_index(axis=1, inplace=True)
         self._features = features
