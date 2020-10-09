@@ -35,26 +35,64 @@ class SleepStaging:
         electrode referenced either to the mastoids (C4-M1, C3-M2) or to the
         Fpz electrode (C4-Fpz). Data are assumed to be in Volts (MNE default)
         and will be converted to uV.
-    loc_name : str or None
-        The name of the LOC (Right EOG) channel in ``raw``.
-    roc_name : str or None
-        The name of the ROC (Right EOG) channel in ``raw``.
+    eog_name : str or None
+        The name of the EOG channel in ``raw``. Preferentially,
+        the left LOC channel referenced either to the mastoid (e.g. E1-M2)
+        or Fpz. Can also be None.
     emg_name : str or None
-        The name of the EMG channel in ``raw``.
+        The name of the EMG channel in ``raw``. Preferentially a chin
+        electrode. Can also be None.
     metadata : dict or None
-        A dictionary of metadata. Currently supported keys are:
+        A dictionary of metadata (optional). Currently supported keys are:
 
-        * ``'age'``: Age of the participant, in years.
-        * ``'male'``: Sex of the participant (1 or True = male, 0 or
+        * ``'age'``: age of the participant, in years.
+        * ``'male'``: sex of the participant (1 or True = male, 0 or
           False = female)
+
+    Notes
+    -----
+    For each 30-seconds epoch and each channel, the following features are
+    calculated:
+
+    * Standard deviation
+    * Interquartile range
+    * 10 and 90 percentiles
+    * Skewness and kurtosis
+    * Number of zero crossings
+    * Hjorth mobility and complexity
+    * Absolute total power in the 0.4-30 Hz band.
+    * Relative power in the main frequency bands (for EEG and EOG only)
+    * Power ratios (e.g. delta / beta)
+    * Permutation entropy and singular value decomposition entropy
+    * Higuchi and Petrosian fractal dimension
+
+    In addition with the raw estimates, the algorithm also calculates a
+    smoothed and normalized version of these features. Specifically, a 5-min
+    centered weighted rolling average and a 10 min past rolling average are
+    applied. The resulting smoothed features are then normalized using a robust
+    z-score.
+
+    Note that the data are automatically downsampled to 100 Hz for faster
+    computation.
+
+    Examples
+    --------
+    >>> import mne
+    >>> import yasa
+    >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
+    >>> # Initialize the sleep staging instance
+    >>> sls = yasa.SleepStaging(raw, eeg_name="C4-M1", eog_name="LOC-M2",
+    ...                         emg_name="EMG1-EMG2",
+    ...                         metadata=dict(age=29, male=True))
+    >>> # Get the predicted sleep stages
+    >>> sls.predict("mytrainedclassifier.joblib")
     """
 
-    def __init__(self, raw, *, eeg_name, loc_name=None, roc_name=None,
-                 emg_name=None, metadata=None):
+    def __init__(self, raw, *, eeg_name, eog_name=None, emg_name=None,
+                 metadata=None):
         # Type check
         assert isinstance(eeg_name, str)
-        assert isinstance(loc_name, (str, type(None)))
-        assert isinstance(roc_name, (str, type(None)))
+        assert isinstance(eog_name, (str, type(None)))
         assert isinstance(emg_name, (str, type(None)))
         assert isinstance(metadata, (dict, type(None)))
 
@@ -70,8 +108,8 @@ class SleepStaging:
         # Validate Raw instance and load data
         assert isinstance(raw, mne.io.BaseRaw), 'raw must be a MNE Raw object.'
         sf = raw.info['sfreq']
-        ch_names = np.array([eeg_name, loc_name, roc_name, emg_name])
-        ch_types = np.array(['eeg', 'loc', 'roc', 'emg'])
+        ch_names = np.array([eeg_name, eog_name, emg_name])
+        ch_types = np.array(['eeg', 'eog', 'emg'])
         keep_chan = []
         for c in ch_names:
             if c is not None:
@@ -84,20 +122,19 @@ class SleepStaging:
         ch_types = ch_types[keep_chan].tolist()
         # Keep only selected channels (creating a copy of Raw)
         raw_pick = raw.copy().pick_channels(ch_names, ordered=True)
+
+        # Downsample if sf != 100
+        assert sf > 80, 'Sampling frequency must be at least 80 Hz.'
+        if sf != 100:
+            raw_pick.resample(100, npad="auto")
+            sf = 100
+
         # Get data and convert to microVolts
         data = raw_pick.get_data() * 1e6
+
         # Extract duration of recording in minutes
         duration_minutes = data.shape[1] / sf / 60
         assert duration_minutes >= 5, 'At least 5 minutes of data is required.'
-
-        # Validate sampling frequency
-        assert sf > 80, 'Sampling frequency must be at least 80 Hz.'
-        if sf >= 1000:
-            logger.warning(
-                'Very high sampling frequency (sf >= 1000 Hz) can '
-                'significantly reduce computation time. For faster execution, '
-                'please downsample your data to the 100-500Hz range.'
-            )
 
         # Add to self
         self.sf = sf
@@ -112,18 +149,11 @@ class SleepStaging:
         Returns
         -------
         self : returns an instance of self.
-
-        Examples
-        --------
-        Using an EDF file
-
-        >>> import mne
-        >>> import yasa
-        >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
         """
         #######################################################################
         # MAIN PARAMETERS
         #######################################################################
+
         # Bandpass filter
         freq_broad = (0.4, 30)
         # FFT & bandpower parameters
@@ -136,9 +166,24 @@ class SleepStaging:
             (8, 12, 'alpha'), (12, 16, 'sigma'), (16, 30, 'beta')
         ]
 
+        #######################################################################
+        # FUNCTIONS
+        #######################################################################
+
         def nzc(x):
             """Calculate the number of zero-crossings along the last axis."""
-            return ((x[..., :-1] * x[..., 1:]) < 0).sum(axis=-1)
+            return ((x[..., :-1] * x[..., 1:]) < 0).sum(axis=1)
+
+        def mobility(x):
+            """Calculate Hjorth mobility on the last axis."""
+            return np.sqrt(np.diff(x, axis=1).var(axis=1) / x.var(axis=1))
+
+        def petrosian(x):
+            """Calculate the Petrosian fractal dimension on the last axis."""
+            n = x.shape[1]
+            ln10 = np.log10(n)
+            diff = np.diff(x, axis=1)
+            return ln10 / (ln10 + np.log10(n / (n + 0.4 * nzc(diff))))
 
         #######################################################################
         # CALCULATE FEATURES
@@ -157,20 +202,26 @@ class SleepStaging:
 
             # Calculate standard descriptive statistics
             perc = np.percentile(epochs, q=[10, 90], axis=1)
+            hmob = mobility(epochs)
 
             feat = {
                 'std': np.std(epochs, ddof=1, axis=1),
                 'iqr': sp_stats.iqr(epochs, rng=(25, 75), axis=1),
                 '10p': perc[0],
                 '90p': perc[1],
+                'skew': sp_stats.skew(epochs, axis=1),
+                'kurt': sp_stats.kurtosis(epochs, axis=1),
                 'nzc': nzc(epochs),
+                'hmob': hmob,
+                'hcomp': mobility(np.diff(epochs, axis=1)) / hmob
             }
 
-            # Calculate spectral power features
+            # Calculate spectral power features (for EEG + EOG)
             freqs, psd = sp_sig.welch(epochs, sf, **kwargs_welch)
-            bp = bandpower_from_psd_ndarray(psd, freqs, bands=bands)
-            for j, (_, _, b) in enumerate(bands):
-                feat[b] = bp[j]
+            if c != 'emg':
+                bp = bandpower_from_psd_ndarray(psd, freqs, bands=bands)
+                for j, (_, _, b) in enumerate(bands):
+                    feat[b] = bp[j]
 
             # Add power ratios for EEG
             if c == 'eeg':
@@ -189,8 +240,13 @@ class SleepStaging:
             # Calculate entropy features
             feat['perm'] = np.apply_along_axis(
                 ent.perm_entropy, axis=1, arr=epochs, normalize=True)
+            feat['svd'] = np.apply_along_axis(
+                ent.svd_entropy, axis=1, arr=epochs, normalize=True)
+
+            # Calculate fractal dimension features
             feat['higuchi'] = np.apply_along_axis(
                 ent.higuchi_fd, axis=1, arr=epochs)
+            feat['petrosian'] = petrosian(epochs)
 
             # Convert to dataframe
             feat = pd.DataFrame(feat).add_prefix(c + '_')
@@ -206,12 +262,25 @@ class SleepStaging:
 
         # Apply centered rolling average (11 epochs = 5 min 30)
         # Triang: [1/6, 2/6, 3/6, 4/6, 5/6, 6/6 (X), 5/6, 4/6, 3/6, 2/6, 1/6]
-        rollm = features.rolling(
+        rollc = features.rolling(
             window=11, center=True, min_periods=1, win_type='triang').mean()
-        rollm[rollm.columns] = robust_scale(rollm, quantile_range=(5, 95))
-        rollm = rollm.add_suffix('_5min_norm')
+        rollc[rollc.columns] = robust_scale(rollc, quantile_range=(5, 95))
+        rollc = rollc.add_suffix('_c5min_norm')
+
+        # Now look at the past 10 minutes
+        rollp = features.rolling(window=20, min_periods=1).mean()
+        rollp[rollp.columns] = robust_scale(rollp, quantile_range=(5, 95))
+        rollp = rollp.add_suffix('_p10min_norm')
+
         # Add to current set of features
-        features = features.join(rollm)
+        features = features.join(rollc).join(rollp)
+
+        # Remove the absolute percentile features (10p and 90p)
+        # because they are dependent on the polarity of the signal.
+        cols_10p = features.columns[features.columns.str.endswith("_10p")]
+        cols_90p = features.columns[features.columns.str.endswith("_90p")]
+        features.drop(columns=cols_10p.tolist() + cols_90p.tolist(),
+                      inplace=True)
 
         #######################################################################
         # TEMPORAL + METADATA FEATURES AND EXPORT
@@ -240,14 +309,6 @@ class SleepStaging:
         -------
         features : :py:class:`pandas.DataFrame`
             Feature dataframe.
-
-        Examples
-        --------
-        Using an EDF file
-
-        >>> import mne
-        >>> import yasa
-        >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
         """
         if not hasattr(self, '_features'):
             self.fit()
@@ -285,13 +346,10 @@ class SleepStaging:
             If True, smooth the probability using a 2 min 30 centered rolling
             average.
 
-        Examples
-        --------
-        Using an EDF file
-
-        >>> import mne
-        >>> import yasa
-        >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
+        Returns
+        -------
+        pred : :py:class:`numpy.ndarray`
+            The predicted sleep stages.
         """
         if not hasattr(self, '_features'):
             self.fit()
@@ -328,17 +386,11 @@ class SleepStaging:
             If True, smooth the probability using a 2 min 30 centered rolling
             average.
 
-        Examples
-        --------
-        Using an EDF file
-
-        >>> import mne
-        >>> import yasa
-        >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
-
-        Calculate confidence (in %) from the probabilities
-
-        >>> confidence = predicted_proba.max(axis=1)
+        Returns
+        -------
+        proba : :py:class:`pandas.DataFrame`
+            The predicted probability for each sleep stage for each 30-sec
+            epoch of data.
         """
         if not hasattr(self, '_features'):
             self.fit()
