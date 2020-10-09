@@ -3,10 +3,16 @@
 What's new
 ##########
 
-v0.3.1 (dev)
+v0.4.0 (dev)
 ------------
 
+This is a major release with several new functions.
+
 **New features**
+
+a. YASA now has an automatic sleep staging module: :py:class:`yasa.SleepStaging`.
+
+**Enhancements**
 
 a. Added ``hue`` input parameter to :py:meth:`yasa.SpindlesResults.plot_average`, :py:meth:`yasa.SWResults.plot_average` to allow plotting by stage.
 b. The ``get_sync_events()`` method now also returns the sleep stage when available.

@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
     <title>yasa.sliding_window &#8212; yasa 0.3.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
-    <script type="text/javascript" src="../_static/copybutton.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -87,9 +87,9 @@
       
   <div class="section" id="yasa-sliding-window">
 <h1>yasa.sliding_window</h1>
-<dl class="function">
+<dl class="py function">
 <dt id="yasa.sliding_window">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sliding_window</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">sf</em>, <em class="sig-param">window</em>, <em class="sig-param">step=None</em>, <em class="sig-param">axis=-1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/others.html#sliding_window"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sliding_window</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf</span></em>, <em class="sig-param"><span class="n">window</span></em>, <em class="sig-param"><span class="n">step</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/others.html#sliding_window"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Calculate a sliding window of a 1D or 2D EEG signal.</p>
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 0.1.7.</span></p>
@@ -124,11 +124,11 @@ of the sliding window, shape (n_epochs, …, n_samples).</p>
 </dl>
 <p class="rubric">Notes</p>
 <p>This is a wrapper around the
-<a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.lib.stride_tricks.as_strided.html#numpy.lib.stride_tricks.as_strided" title="(in NumPy v1.17)"><code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.lib.stride_tricks.as_strided()</span></code></a> function.</p>
+<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.lib.stride_tricks.as_strided.html#numpy.lib.stride_tricks.as_strided" title="(in NumPy v1.19)"><code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.lib.stride_tricks.as_strided()</span></code></a> function.</p>
 <p class="rubric">Examples</p>
 <p>With a 1-D array</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">yasa</span> <span class="k">import</span> <span class="n">sliding_window</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">yasa</span> <span class="kn">import</span> <span class="n">sliding_window</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">times</span><span class="p">,</span> <span class="n">epochs</span> <span class="o">=</span> <span class="n">sliding_window</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">times</span>
@@ -197,7 +197,7 @@ of the sliding window, shape (n_epochs, …, n_samples).</p>
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>
 </footer>

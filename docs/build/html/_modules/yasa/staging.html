@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>yasa.staging &#8212; yasa 0.3.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../_static/copybutton.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../../_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="../../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../../_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
+          yasa</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.3.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../../api.html">Functions</a></li>
+                <li><a href="../../changelog.html">What's new</a></li>
+                <li><a href="../../contributing.html">Contribute</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <h1>Source code for yasa.staging</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Automatic sleep staging of polysomnography data.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">mne</span>
+<span class="kn">import</span> <span class="nn">joblib</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">entropy</span> <span class="k">as</span> <span class="nn">ent</span>
+<span class="kn">import</span> <span class="nn">scipy.signal</span> <span class="k">as</span> <span class="nn">sp_sig</span>
+<span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">sp_stats</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">mne.filter</span> <span class="kn">import</span> <span class="n">filter_data</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">robust_scale</span>
+
+<span class="kn">from</span> <span class="nn">.others</span> <span class="kn">import</span> <span class="n">sliding_window</span>
+<span class="kn">from</span> <span class="nn">.spectral</span> <span class="kn">import</span> <span class="n">bandpower_from_psd_ndarray</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;yasa&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SleepStaging"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging">[docs]</a><span class="k">class</span> <span class="nc">SleepStaging</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Automatic sleep staging of polysomnography data.</span>
+
+<span class="sd">    To run the automatic sleep staging, you must install the lightGBM</span>
+<span class="sd">    (https://lightgbm.readthedocs.io/) and entropy</span>
+<span class="sd">    (https://github.com/raphaelvallat/entropy) packages.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    raw : :py:class:`mne.io.BaseRaw`</span>
+<span class="sd">        An MNE Raw instance.</span>
+<span class="sd">    eeg_name : str</span>
+<span class="sd">        The name of the EEG channel in ``raw``. Preferentially a central</span>
+<span class="sd">        electrode referenced either to the mastoids (C4-M1, C3-M2) or to the</span>
+<span class="sd">        Fpz electrode (C4-Fpz). Data are assumed to be in Volts (MNE default)</span>
+<span class="sd">        and will be converted to uV.</span>
+<span class="sd">    eog_name : str or None</span>
+<span class="sd">        The name of the EOG channel in ``raw``. Preferentially,</span>
+<span class="sd">        the left LOC channel referenced either to the mastoid (e.g. E1-M2)</span>
+<span class="sd">        or Fpz.</span>
+<span class="sd">    emg_name : str or None</span>
+<span class="sd">        The name of the EMG channel in ``raw``. Preferentially a chin</span>
+<span class="sd">        electrode.</span>
+<span class="sd">    metadata : dict or None</span>
+<span class="sd">        A dictionary of metadata. Currently supported keys are:</span>
+
+<span class="sd">        * ``&#39;age&#39;``: Age of the participant, in years.</span>
+<span class="sd">        * ``&#39;male&#39;``: Sex of the participant (1 or True = male, 0 or</span>
+<span class="sd">          False = female)</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    For each 30-seconds epoch and each channel, the following features are</span>
+<span class="sd">    calculated:</span>
+
+<span class="sd">    * Standard deviation</span>
+<span class="sd">    * Interquartile range</span>
+<span class="sd">    * 10 and 90 percentiles</span>
+<span class="sd">    * Skewness and kurtosis</span>
+<span class="sd">    * Number of zero crossings</span>
+<span class="sd">    * Hjorth mobility and complexity</span>
+<span class="sd">    * Absolute total power in the 0.4-30 Hz band.</span>
+<span class="sd">    * Relative power in the main frequency bands (for EEG and EOG only)</span>
+<span class="sd">    * Power ratios (e.g. delta / beta)</span>
+<span class="sd">    * Permutation entropy and singular value decomposition entropy</span>
+<span class="sd">    * Higuchi and Petrosian fractal dimension</span>
+
+<span class="sd">    In addition with the raw estimates, the algorithm also calculates a</span>
+<span class="sd">    smoothed and normalized version of these features. Specifically, a 5-min</span>
+<span class="sd">    centered weighted rolling average and a 10 min past rolling average are</span>
+<span class="sd">    applied. The resulting smoothed features are then normalized using a robust</span>
+<span class="sd">    z-score.</span>
+
+<span class="sd">    Note that the data are automatically downsampled to 100 Hz for faster</span>
+<span class="sd">    computation.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import mne</span>
+<span class="sd">    &gt;&gt;&gt; import yasa</span>
+<span class="sd">    &gt;&gt;&gt; raw = mne.io.read_raw_edf(&quot;myfile.edf&quot;, preload=True)</span>
+<span class="sd">    &gt;&gt;&gt; # Initialize the sleep staging instance</span>
+<span class="sd">    &gt;&gt;&gt; sls = yasa.SleepStaging(raw, eeg_name=&quot;C4-M1&quot;, eog_name=&quot;LOC-M2&quot;,</span>
+<span class="sd">    ...                         emg_name=&quot;EMG1-EMG2&quot;,</span>
+<span class="sd">    ...                         metadata=dict(age=29, male=True))</span>
+<span class="sd">    &gt;&gt;&gt; # Get the predicted sleep stages</span>
+<span class="sd">    &gt;&gt;&gt; sls.predict(&quot;mytrainedclassifier.joblib&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SleepStaging.__init__"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">eeg_name</span><span class="p">,</span> <span class="n">eog_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">emg_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Type check</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eeg_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eog_name</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)))</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">emg_name</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)))</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)))</span>
+
+        <span class="c1"># Validate metadata</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s1">&#39;age&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">120</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;age must be between 0 and &#39;</span>
+                                                   <span class="s1">&#39;120.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;male&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;male&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;male&#39;</span><span class="p">])</span>
+                <span class="k">assert</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;male&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;male must be 0 or 1.&#39;</span>
+
+        <span class="c1"># Validate Raw instance and load data</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">BaseRaw</span><span class="p">),</span> <span class="s1">&#39;raw must be a MNE Raw object.&#39;</span>
+        <span class="n">sf</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;sfreq&#39;</span><span class="p">]</span>
+        <span class="n">ch_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">eeg_name</span><span class="p">,</span> <span class="n">eog_name</span><span class="p">,</span> <span class="n">emg_name</span><span class="p">])</span>
+        <span class="n">ch_types</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s1">&#39;eeg&#39;</span><span class="p">,</span> <span class="s1">&#39;eog&#39;</span><span class="p">,</span> <span class="s1">&#39;emg&#39;</span><span class="p">])</span>
+        <span class="n">keep_chan</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">ch_names</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">raw</span><span class="o">.</span><span class="n">ch_names</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> does not exist&#39;</span> <span class="o">%</span> <span class="n">c</span>
+                <span class="n">keep_chan</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">keep_chan</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="c1"># Subset</span>
+        <span class="n">ch_names</span> <span class="o">=</span> <span class="n">ch_names</span><span class="p">[</span><span class="n">keep_chan</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">ch_types</span> <span class="o">=</span> <span class="n">ch_types</span><span class="p">[</span><span class="n">keep_chan</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="c1"># Keep only selected channels (creating a copy of Raw)</span>
+        <span class="n">raw_pick</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">pick_channels</span><span class="p">(</span><span class="n">ch_names</span><span class="p">,</span> <span class="n">ordered</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Downsample if sf != 100</span>
+        <span class="k">assert</span> <span class="n">sf</span> <span class="o">&gt;</span> <span class="mi">80</span><span class="p">,</span> <span class="s1">&#39;Sampling frequency must be at least 80 Hz.&#39;</span>
+        <span class="k">if</span> <span class="n">sf</span> <span class="o">!=</span> <span class="mi">100</span><span class="p">:</span>
+            <span class="n">raw_pick</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">npad</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
+            <span class="n">sf</span> <span class="o">=</span> <span class="mi">100</span>
+
+        <span class="c1"># Get data and convert to microVolts</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">raw_pick</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span> <span class="o">*</span> <span class="mf">1e6</span>
+
+        <span class="c1"># Extract duration of recording in minutes</span>
+        <span class="n">duration_minutes</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">sf</span> <span class="o">/</span> <span class="mi">60</span>
+        <span class="k">assert</span> <span class="n">duration_minutes</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;At least 5 minutes of data is required.&#39;</span>
+
+        <span class="c1"># Add to self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sf</span> <span class="o">=</span> <span class="n">sf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ch_names</span> <span class="o">=</span> <span class="n">ch_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ch_types</span> <span class="o">=</span> <span class="n">ch_types</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">metadata</span></div>
+
+<div class="viewcode-block" id="SleepStaging.fit"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extract features from data.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        self : returns an instance of self.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#######################################################################</span>
+        <span class="c1"># MAIN PARAMETERS</span>
+        <span class="c1">#######################################################################</span>
+
+        <span class="c1"># Bandpass filter</span>
+        <span class="n">freq_broad</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.4</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+        <span class="c1"># FFT &amp; bandpower parameters</span>
+        <span class="n">win_sec</span> <span class="o">=</span> <span class="mi">5</span>  <span class="c1"># = 2 / freq_broad[0]</span>
+        <span class="n">sf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sf</span>
+        <span class="n">win</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">win_sec</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span>
+        <span class="n">kwargs_welch</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="s1">&#39;hamming&#39;</span><span class="p">,</span> <span class="n">nperseg</span><span class="o">=</span><span class="n">win</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">)</span>
+        <span class="n">bands</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="mf">0.4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;sdelta&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;fdelta&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="s1">&#39;theta&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="s1">&#39;alpha&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="s1">&#39;sigma&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="s1">&#39;beta&#39;</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="c1">#######################################################################</span>
+        <span class="c1"># FUNCTIONS</span>
+        <span class="c1">#######################################################################</span>
+
+        <span class="k">def</span> <span class="nf">nzc</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Calculate the number of zero-crossings along the last axis.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="p">((</span><span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">:])</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">mobility</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Calculate Hjorth mobility on the last axis.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">x</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="k">def</span> <span class="nf">petrosian</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Calculate the Petrosian fractal dimension on the last axis.&quot;&quot;&quot;</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">ln10</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="n">diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ln10</span> <span class="o">/</span> <span class="p">(</span><span class="n">ln10</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mf">0.4</span> <span class="o">*</span> <span class="n">nzc</span><span class="p">(</span><span class="n">diff</span><span class="p">))))</span>
+
+        <span class="c1">#######################################################################</span>
+        <span class="c1"># CALCULATE FEATURES</span>
+        <span class="c1">#######################################################################</span>
+
+        <span class="n">features</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ch_types</span><span class="p">):</span>
+            <span class="c1"># Preprocessing</span>
+            <span class="c1"># - Filter the data</span>
+            <span class="n">dt_filt</span> <span class="o">=</span> <span class="n">filter_data</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span>
+                <span class="n">sf</span><span class="p">,</span> <span class="n">l_freq</span><span class="o">=</span><span class="n">freq_broad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">h_freq</span><span class="o">=</span><span class="n">freq_broad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="c1"># - Extract epochs. Data is now of shape (n_epochs, n_samples).</span>
+            <span class="n">times</span><span class="p">,</span> <span class="n">epochs</span> <span class="o">=</span> <span class="n">sliding_window</span><span class="p">(</span><span class="n">dt_filt</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+
+            <span class="c1"># Calculate standard descriptive statistics</span>
+            <span class="n">perc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">90</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">hmob</span> <span class="o">=</span> <span class="n">mobility</span><span class="p">(</span><span class="n">epochs</span><span class="p">)</span>
+
+            <span class="n">feat</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;std&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                <span class="s1">&#39;iqr&#39;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">iqr</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="mi">75</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                <span class="s1">&#39;10p&#39;</span><span class="p">:</span> <span class="n">perc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="s1">&#39;90p&#39;</span><span class="p">:</span> <span class="n">perc</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                <span class="s1">&#39;skew&#39;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">skew</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                <span class="s1">&#39;kurt&#39;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">kurtosis</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                <span class="s1">&#39;nzc&#39;</span><span class="p">:</span> <span class="n">nzc</span><span class="p">(</span><span class="n">epochs</span><span class="p">),</span>
+                <span class="s1">&#39;hmob&#39;</span><span class="p">:</span> <span class="n">hmob</span><span class="p">,</span>
+                <span class="s1">&#39;hcomp&#39;</span><span class="p">:</span> <span class="n">mobility</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">hmob</span>
+            <span class="p">}</span>
+
+            <span class="c1"># Calculate spectral power features (for EEG + EOG)</span>
+            <span class="n">freqs</span><span class="p">,</span> <span class="n">psd</span> <span class="o">=</span> <span class="n">sp_sig</span><span class="o">.</span><span class="n">welch</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs_welch</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="o">!=</span> <span class="s1">&#39;emg&#39;</span><span class="p">:</span>
+                <span class="n">bp</span> <span class="o">=</span> <span class="n">bandpower_from_psd_ndarray</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="n">bands</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bands</span><span class="p">):</span>
+                    <span class="n">feat</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">bp</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+
+            <span class="c1"># Add power ratios for EEG</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39;eeg&#39;</span><span class="p">:</span>
+                <span class="n">delta</span> <span class="o">=</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;sdelta&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;fdelta&#39;</span><span class="p">]</span>
+                <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">/</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;theta&#39;</span><span class="p">]</span>
+                <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;ds&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">/</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span>
+                <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;db&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">/</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;beta&#39;</span><span class="p">]</span>
+                <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;theta&#39;</span><span class="p">]</span>
+
+            <span class="c1"># Add total power</span>
+            <span class="n">idx_broad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
+                <span class="n">freqs</span> <span class="o">&gt;=</span> <span class="n">freq_broad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">freqs</span> <span class="o">&lt;=</span> <span class="n">freq_broad</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">dx</span> <span class="o">=</span> <span class="n">freqs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">freqs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;abspow&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">psd</span><span class="p">[:,</span> <span class="n">idx_broad</span><span class="p">],</span> <span class="n">dx</span><span class="o">=</span><span class="n">dx</span><span class="p">)</span>
+
+            <span class="c1"># Calculate entropy features</span>
+            <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;perm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span>
+                <span class="n">ent</span><span class="o">.</span><span class="n">perm_entropy</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;svd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span>
+                <span class="n">ent</span><span class="o">.</span><span class="n">svd_entropy</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># Calculate fractal dimension features</span>
+            <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;higuchi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span>
+                <span class="n">ent</span><span class="o">.</span><span class="n">higuchi_fd</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">)</span>
+            <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;petrosian&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">petrosian</span><span class="p">(</span><span class="n">epochs</span><span class="p">)</span>
+
+            <span class="c1"># Convert to dataframe</span>
+            <span class="n">feat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span><span class="o">.</span><span class="n">add_prefix</span><span class="p">(</span><span class="n">c</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span>
+            <span class="n">features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span>
+
+        <span class="c1">#######################################################################</span>
+        <span class="c1"># SMOOTHING &amp; NORMALIZATION</span>
+        <span class="c1">#######################################################################</span>
+
+        <span class="c1"># Save features to dataframe</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">features</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;epoch&#39;</span>
+
+        <span class="c1"># Apply centered rolling average (11 epochs = 5 min 30)</span>
+        <span class="c1"># Triang: [1/6, 2/6, 3/6, 4/6, 5/6, 6/6 (X), 5/6, 4/6, 3/6, 2/6, 1/6]</span>
+        <span class="n">rollc</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span>
+            <span class="n">window</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">win_type</span><span class="o">=</span><span class="s1">&#39;triang&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">rollc</span><span class="p">[</span><span class="n">rollc</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span> <span class="o">=</span> <span class="n">robust_scale</span><span class="p">(</span><span class="n">rollc</span><span class="p">,</span> <span class="n">quantile_range</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">95</span><span class="p">))</span>
+        <span class="n">rollc</span> <span class="o">=</span> <span class="n">rollc</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s1">&#39;_c5min_norm&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Now look at the past 10 minutes</span>
+        <span class="n">rollp</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">rollp</span><span class="p">[</span><span class="n">rollp</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span> <span class="o">=</span> <span class="n">robust_scale</span><span class="p">(</span><span class="n">rollp</span><span class="p">,</span> <span class="n">quantile_range</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">95</span><span class="p">))</span>
+        <span class="n">rollp</span> <span class="o">=</span> <span class="n">rollp</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s1">&#39;_p10min_norm&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Add to current set of features</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rollc</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rollp</span><span class="p">)</span>
+
+        <span class="c1"># Remove the absolute percentile features (10p and 90p)</span>
+        <span class="c1"># because they are dependent on the polarity of the signal.</span>
+        <span class="n">cols_10p</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_10p&quot;</span><span class="p">)]</span>
+        <span class="n">cols_90p</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_90p&quot;</span><span class="p">)]</span>
+        <span class="n">features</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">cols_10p</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="o">+</span> <span class="n">cols_90p</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                      <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1">#######################################################################</span>
+        <span class="c1"># TEMPORAL + METADATA FEATURES AND EXPORT</span>
+        <span class="c1">#######################################################################</span>
+
+        <span class="c1"># Add temporal features</span>
+        <span class="n">features</span><span class="p">[</span><span class="s1">&#39;time_hour&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">times</span> <span class="o">/</span> <span class="mi">3600</span>
+        <span class="n">features</span><span class="p">[</span><span class="s1">&#39;time_norm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">times</span> <span class="o">/</span> <span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># Add metadata if present</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">,</span> <span class="s1">&#39;male&#39;</span><span class="p">]:</span>
+                    <span class="n">features</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
+
+        <span class="c1"># Add to self</span>
+        <span class="c1"># Note that we sort the column names here (same behavior as lightGBM)</span>
+        <span class="n">features</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_features</span> <span class="o">=</span> <span class="n">features</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_name_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SleepStaging.get_features"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.get_features">[docs]</a>    <span class="k">def</span> <span class="nf">get_features</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extract features from data and return a copy of the dataframe.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        features : :py:class:`pandas.DataFrame`</span>
+<span class="sd">            Feature dataframe.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_features&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">_validate_predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">clf</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Validate classifier.&quot;&quot;&quot;</span>
+        <span class="c1"># Check that we&#39;re using exactly the same features</span>
+        <span class="c1"># Note that clf.feature_name_ is only available in lightgbm&gt;=3.0</span>
+        <span class="n">f_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">clf</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f_diff</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The following features are present in the &quot;</span>
+                             <span class="s2">&quot;classifier but not in the current features set:&quot;</span><span class="p">,</span>
+                             <span class="n">f_diff</span><span class="p">)</span>
+        <span class="n">f_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">,</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f_diff</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The following features are present in the &quot;</span>
+                             <span class="s2">&quot;current feature set but not in the classifier:&quot;</span><span class="p">,</span>
+                             <span class="n">f_diff</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SleepStaging.predict"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_model</span><span class="p">,</span> <span class="n">smooth</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the predicted sleep stage for each 30-sec epoch of data.</span>
+
+<span class="sd">        Currently, only classifiers that were trained using a LGBMClassifier</span>
+<span class="sd">        (https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html)</span>
+<span class="sd">        are supported.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path_to_model : str</span>
+<span class="sd">            Full path to a trained LightGBMClassifier, exported as a</span>
+<span class="sd">            joblib file.</span>
+<span class="sd">        smooth : boolean</span>
+<span class="sd">            If True, smooth the probability using a 2 min 30 centered rolling</span>
+<span class="sd">            average.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pred : :py:class:`numpy.ndarray`</span>
+<span class="sd">            The predicted sleep stages.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_features&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+        <span class="c1"># Load and validate pre-trained classifier</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">),</span> <span class="s2">&quot;File does not exist.&quot;</span>
+        <span class="n">clf</span> <span class="o">=</span> <span class="n">joblib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_predict</span><span class="p">(</span><span class="n">clf</span><span class="p">)</span>
+        <span class="c1"># Now we make sure that the features are aligned</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">copy</span><span class="p">()[</span><span class="n">clf</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">smooth</span><span class="p">:</span>
+            <span class="c1"># Case 1: raw predictions</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_predicted</span> <span class="o">=</span> <span class="n">clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Case 2: smoothed predictions</span>
+            <span class="n">proba</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">,</span> <span class="n">smooth</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_predicted</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">idxmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predicted</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SleepStaging.predict_proba"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.predict_proba">[docs]</a>    <span class="k">def</span> <span class="nf">predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_model</span><span class="p">,</span> <span class="n">smooth</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the predicted probability for each sleep stage for each 30-sec</span>
+<span class="sd">        epoch of data.</span>
+
+<span class="sd">        Currently, only classifiers that were trained using a LGBMClassifier</span>
+<span class="sd">        (https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html)</span>
+<span class="sd">        are supported.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path_to_model : str</span>
+<span class="sd">            Full path to a trained LightGBMClassifier, exported as a</span>
+<span class="sd">            joblib file.</span>
+<span class="sd">        smooth : boolean</span>
+<span class="sd">            If True, smooth the probability using a 2 min 30 centered rolling</span>
+<span class="sd">            average.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        proba : :py:class:`pandas.DataFrame`</span>
+<span class="sd">            The predicted probability for each sleep stage for each 30-sec</span>
+<span class="sd">            epoch of data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_features&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+        <span class="c1"># Load and validate pre-trained classifier</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">),</span> <span class="s2">&quot;File does not exist.&quot;</span>
+        <span class="n">clf</span> <span class="o">=</span> <span class="n">joblib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_predict</span><span class="p">(</span><span class="n">clf</span><span class="p">)</span>
+        <span class="c1"># Now we make sure that the features are aligned</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">copy</span><span class="p">()[</span><span class="n">clf</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">]</span>
+        <span class="c1"># Finally, we return the predicted sleep stages</span>
+        <span class="n">proba</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">clf</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">columns</span><span class="o">=</span><span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">)</span>
+        <span class="n">proba</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;epoch&#39;</span>
+        <span class="c1"># Optional: smooth the predictions</span>
+        <span class="k">if</span> <span class="n">smooth</span><span class="p">:</span>
+            <span class="c1"># 5 * 30-sec epochs = 2 minutes 30</span>
+            <span class="c1"># w = [1/3, 2/3, 1, 2/3, 1/3]</span>
+            <span class="n">proba</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span>
+                <span class="n">window</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">win_type</span><span class="o">=</span><span class="s2">&quot;triang&quot;</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_proba</span> <span class="o">=</span> <span class="n">proba</span>
+        <span class="k">return</span> <span class="n">proba</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SleepStaging.plot_predict_proba"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.plot_predict_proba">[docs]</a>    <span class="k">def</span> <span class="nf">plot_predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proba</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">majority_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">palette</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;#99d7f1&#39;</span><span class="p">,</span> <span class="s1">&#39;#009DDC&#39;</span><span class="p">,</span> <span class="s1">&#39;xkcd:twilight blue&#39;</span><span class="p">,</span>
+                                    <span class="s1">&#39;xkcd:rich purple&#39;</span><span class="p">,</span> <span class="s1">&#39;xkcd:sunflower&#39;</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plot the predicted probability for each sleep stage for each 30-sec</span>
+<span class="sd">        epoch of data.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        proba : self or DataFrame</span>
+<span class="sd">            A dataframe with the probability of each sleep stage for each</span>
+<span class="sd">            30-sec epoch of data.</span>
+<span class="sd">        majority_only : boolean</span>
+<span class="sd">            If True, probabilities of the non-majority classes will be set</span>
+<span class="sd">            to 0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">proba</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_features&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must call .predict_proba before this function&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">proba</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">proba</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proba</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">proba</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">),</span> <span class="s1">&#39;proba must be a dataframe&#39;</span>
+        <span class="k">if</span> <span class="n">majority_only</span><span class="p">:</span>
+            <span class="n">cond</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">==</span> <span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">proba</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">other</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;area&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">8</span><span class="p">,</span>
+                        <span class="n">stacked</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># Add confidence</span>
+        <span class="c1"># confidence = proba.max(1)</span>
+        <span class="c1"># ax.plot(confidence, lw=1, color=&#39;k&#39;, ls=&#39;-&#39;, alpha=0.5,</span>
+        <span class="c1">#         label=&#39;Confidence&#39;)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">proba</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Probability&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time (30-sec epoch)&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">frameon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">ax</span></div></div>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+      
+    </p>
+    <p>
+        &copy; Copyright 2018-2020, Raphael Vallat.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

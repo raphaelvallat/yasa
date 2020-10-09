@@ -5,6 +5,16 @@
 API reference
 =============
 
+Automatic staging
+-----------------
+
+.. _staging:
+
+.. autosummary::
+   :toctree: generated/
+
+    SleepStaging
+
 Detection
 ---------
 

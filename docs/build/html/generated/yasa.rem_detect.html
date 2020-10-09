@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
     <title>yasa.rem_detect &#8212; yasa 0.3.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
-    <script type="text/javascript" src="../_static/copybutton.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -87,9 +87,9 @@
       
   <div class="section" id="yasa-rem-detect">
 <h1>yasa.rem_detect</h1>
-<dl class="function">
+<dl class="py function">
 <dt id="yasa.rem_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">rem_detect</code><span class="sig-paren">(</span><em class="sig-param">loc</em>, <em class="sig-param">roc</em>, <em class="sig-param">sf</em>, <em class="sig-param">hypno=None</em>, <em class="sig-param">include=4</em>, <em class="sig-param">amplitude=(50</em>, <em class="sig-param">325)</em>, <em class="sig-param">duration=(0.3</em>, <em class="sig-param">1.2)</em>, <em class="sig-param">freq_rem=(0.5</em>, <em class="sig-param">5)</em>, <em class="sig-param">remove_outliers=False</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#rem_detect"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">rem_detect</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">loc</span></em>, <em class="sig-param"><span class="n">roc</span></em>, <em class="sig-param"><span class="n">sf</span></em>, <em class="sig-param"><span class="n">hypno</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">amplitude</span><span class="o">=</span><span class="default_value">50, 325</span></em>, <em class="sig-param"><span class="n">duration</span><span class="o">=</span><span class="default_value">0.3, 1.2</span></em>, <em class="sig-param"><span class="n">freq_rem</span><span class="o">=</span><span class="default_value">0.5, 5</span></em>, <em class="sig-param"><span class="n">remove_outliers</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#rem_detect"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Rapid eye movements (REMs) detection.</p>
 <p>This detection requires both the left EOG (LOC) and right EOG (LOC).
 The units of the data must be uV. The algorithm is based on an amplitude
@@ -105,8 +105,8 @@ filtered signal.</p>
 Unit must be uV.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The default unit of <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> is Volts.
-Therefore, if passing data from a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.20.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
+<p>The default unit of <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.21.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> is Volts.
+Therefore, if passing data from a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.21.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
 you need to multiply the data by 1e6 to convert to micro-Volts
 (1 V = 1,000,000 uV), e.g.:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span> <span class="o">*</span> <span class="mf">1e6</span>  <span class="c1"># Make sure that data is in uV</span>
@@ -150,7 +150,7 @@ Default is 0.3 to 1.2 seconds.</p>
 <dt><strong>freq_rem</strong><span class="classifier">tuple or list</span></dt><dd><p>Frequency range of REMs. Default is 0.5 to 5 Hz.</p>
 </dd>
 <dt><strong>remove_outliers</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will automatically detect and remove outliers REMs
-using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
+using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.23)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
 YASA uses a random seed (42) to ensure reproducible results.
 Note that this step will only be applied if there are more than
 50 detected REMs in the first place. Default to False.</p>
@@ -172,7 +172,7 @@ and ‘critical’. For most users the choice is between ‘info’
 <span class="gp">&gt;&gt;&gt; </span><span class="n">rem</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>This will give a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.0.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> where each row is a
+<p>This will give a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.1.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> where each row is a
 detected REM and each column is a parameter (= property).
 To get the average parameters sleep stage:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rem</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="n">grp_stage</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -235,7 +235,7 @@ Journal of Neuroscience Methods, 259, 72–82.</p></li>
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>
 </footer>

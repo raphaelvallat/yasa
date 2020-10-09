@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
     <title>yasa.get_centered_indices &#8212; yasa 0.3.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/language_data.js"></script>
-    <script type="text/javascript" src="../_static/copybutton.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -87,9 +87,9 @@
       
   <div class="section" id="yasa-get-centered-indices">
 <h1>yasa.get_centered_indices</h1>
-<dl class="function">
+<dl class="py function">
 <dt id="yasa.get_centered_indices">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">get_centered_indices</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">idx</em>, <em class="sig-param">npts_before</em>, <em class="sig-param">npts_after</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/others.html#get_centered_indices"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">get_centered_indices</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">idx</span></em>, <em class="sig-param"><span class="n">npts_before</span></em>, <em class="sig-param"><span class="n">npts_after</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/others.html#get_centered_indices"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Get a 2D array of indices in data centered around specific time points,
 automatically excluding indices that are outside the bounds of data.</p>
 <dl class="field-list simple">
@@ -117,7 +117,7 @@ npts_after + 1). Indices outside the bounds of data are removed.</p>
 </dl>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">yasa</span> <span class="k">import</span> <span class="n">get_centered_indices</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">yasa</span> <span class="kn">import</span> <span class="n">get_centered_indices</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">idx</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">10.</span><span class="p">,</span> <span class="mf">20.</span><span class="p">,</span> <span class="mf">30.</span><span class="p">,</span> <span class="mf">50.</span><span class="p">,</span> <span class="mi">102</span><span class="p">]</span>
@@ -161,7 +161,7 @@ npts_after + 1). Indices outside the bounds of data are removed.</p>
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>
 </footer>

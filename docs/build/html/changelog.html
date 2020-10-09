@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
     <title>What’s new &#8212; yasa 0.3.0 documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    <script type="text/javascript" src="_static/copybutton.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -87,6 +87,24 @@
       
   <div class="section" id="what-s-new">
 <span id="changelog"></span><h1>What’s new</h1>
+<div class="section" id="v0-4-0-dev">
+<h2>v0.4.0 (dev)</h2>
+<p>This is a major release with several new functions.</p>
+<p><strong>New features</strong></p>
+<ol class="loweralpha simple">
+<li><p>YASA now has an automatic sleep staging module: <a class="reference internal" href="generated/yasa.SleepStaging.html#yasa.SleepStaging" title="yasa.SleepStaging"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.SleepStaging</span></code></a>.</p></li>
+</ol>
+<p><strong>Enhancements</strong></p>
+<ol class="loweralpha simple">
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">hue</span></code> input parameter to <a class="reference internal" href="generated/yasa.SpindlesResults.html#yasa.SpindlesResults.plot_average" title="yasa.SpindlesResults.plot_average"><code class="xref py py-meth docutils literal notranslate"><span class="pre">yasa.SpindlesResults.plot_average()</span></code></a>, <a class="reference internal" href="generated/yasa.SWResults.html#yasa.SWResults.plot_average" title="yasa.SWResults.plot_average"><code class="xref py py-meth docutils literal notranslate"><span class="pre">yasa.SWResults.plot_average()</span></code></a> to allow plotting by stage.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">get_sync_events()</span></code> method now also returns the sleep stage when available.</p></li>
+<li><p>The <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> now also returns the timestamp of the sigma peak in the SW-through-locked 4-seconds epochs. The timestamp is expressed in seconds from the beginning of the recording and can be found in the <code class="docutils literal notranslate"><span class="pre">SigmaPeak</span></code> column.</p></li>
+</ol>
+<p><strong>Dependencies</strong></p>
+<ol class="loweralpha simple">
+<li><p>Switch to latest version of <a class="reference external" href="https://etiennecmb.github.io/tensorpac/index.html">TensorPAC</a>.</p></li>
+</ol>
+</div>
 <div class="section" id="v0-3-0-may-2020">
 <h2>v0.3.0 (May 2020)</h2>
 <p>This is a major release with several API-breaking changes in the spindles, slow-waves and REMs detection.</p>
@@ -116,7 +134,7 @@
 <p><strong>Other changes</strong></p>
 <ol class="loweralpha simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">coupling</span></code> argument has been removed from the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> function. Instead, slow-oscillations / sigma coupling can only be calculated from the slow-waves detection, which is 1) the most standard way, 2) better because PAC assumptions require a strong oscillatory component in the lower frequency range (slow-oscillations). This also avoids unecessary confusion between spindles-derived coupling and slow-waves-derived coupling. For more details, refer to the Jupyter notebooks.</p></li>
-<li><p>Downsampling of data in detection functions has been removed. In other words, YASA will no longer downsample the data to 100 / 128 Hz before applying the events detection. If the detection is too slow, we recommend that you manually downsample your data before applying the detection. See for example <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.resample.html#mne.filter.resample" title="(in MNE v0.20.3)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.resample()</span></code></a>.</p></li>
+<li><p>Downsampling of data in detection functions has been removed. In other words, YASA will no longer downsample the data to 100 / 128 Hz before applying the events detection. If the detection is too slow, we recommend that you manually downsample your data before applying the detection. See for example <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.resample.html#mne.filter.resample" title="(in MNE v0.21.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.resample()</span></code></a>.</p></li>
 <li><p><a class="reference internal" href="generated/yasa.trimbothstd.html#yasa.trimbothstd" title="yasa.trimbothstd"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.trimbothstd()</span></code></a> can now work with multi-dimensional arrays. The trimmed standard deviation will always be calculated on the last axis of the array.</p></li>
 <li><p>Filtering and Hilbert transform are now applied at once on all channels (instead of looping across individual channels) in the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> and <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> functions. This should lead to some improvements in computation time.</p></li>
 </ol>
@@ -127,7 +145,7 @@
 <p><strong>Bugfixes</strong></p>
 <ol class="loweralpha simple">
 <li><p>Sleep efficiency in the <a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sleep_statistics()</span></code></a> is now calculated using time in bed (TIB) as the denominator instead of sleep period time (SPT), in agreement with the AASM guidelines. The old way of computing the efficiency (TST / SPT) has now been renamed Sleep Maintenance Efficiency (SME).</p></li>
-<li><p>The <a class="reference internal" href="generated/yasa.sliding_window.html#yasa.sliding_window" title="yasa.sliding_window"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sliding_window()</span></code></a> now always return an array of shape (n_epochs, …, n_samples), i.e. the epochs are now always the first dimension of the epoched array. This is consistent with MNE default shape of <a class="reference external" href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="(in MNE v0.20.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Epochs</span></code></a> objects.</p></li>
+<li><p>The <a class="reference internal" href="generated/yasa.sliding_window.html#yasa.sliding_window" title="yasa.sliding_window"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sliding_window()</span></code></a> now always return an array of shape (n_epochs, …, n_samples), i.e. the epochs are now always the first dimension of the epoched array. This is consistent with MNE default shape of <a class="reference external" href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="(in MNE v0.21.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Epochs</span></code></a> objects.</p></li>
 </ol>
 <p><strong>New functions</strong></p>
 <ol class="loweralpha simple">
@@ -145,14 +163,14 @@
 <li><p>Added the <code class="docutils literal notranslate"><span class="pre">coupling</span></code> and <code class="docutils literal notranslate"><span class="pre">freq_sp</span></code> keyword-arguments to the <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> function. If <code class="docutils literal notranslate"><span class="pre">coupling=True</span></code>, the function will return the phase of the slow-waves (in radians) at the most prominent peak of sigma-filtered band (<code class="docutils literal notranslate"><span class="pre">PhaseAtSigmaPeak</span></code>), as well as the normalized mean vector length (<code class="docutils literal notranslate"><span class="pre">ndPAC</span></code>).</p></li>
 <li><p>Added an section in the <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb">06_sw_detection.ipynb</a> notebooks on how to use relative amplitude thresholds (e.g. z-scores or percentiles) instead of absolute thresholds in slow-waves detection.</p></li>
 <li><p>The upper frequency band for <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> has been changed from <code class="docutils literal notranslate"><span class="pre">freq_sw=(0.3,</span> <span class="pre">3.5)</span></code> to <code class="docutils literal notranslate"><span class="pre">freq_sw=(0.3,</span> <span class="pre">2)</span></code> Hz to comply with AASM guidelines.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Stage</span></code> is no longer taken into account when finding outliers with <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a> in <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Stage</span></code> is no longer taken into account when finding outliers with <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.23)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a> in <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>.</p></li>
 <li><p>To be consistent with <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>, automatic outlier removal now requires at least 50 (instead of 100) detected events in <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> and <a class="reference internal" href="generated/yasa.rem_detect.html#yasa.rem_detect" title="yasa.rem_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.rem_detect()</span></code></a>.</p></li>
 <li><p>Added the <code class="docutils literal notranslate"><span class="pre">verbose</span></code> parameter to all detection functions.</p></li>
 <li><p>Added -2 to the default hypnogram format to denote unscored data.</p></li>
 </ol>
 <p><strong>Dependencies</strong></p>
 <ol class="loweralpha simple">
-<li><p>Removed deprecated <code class="docutils literal notranslate"><span class="pre">behavior</span></code> argument to avoid warning when calling <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.</p></li>
+<li><p>Removed deprecated <code class="docutils literal notranslate"><span class="pre">behavior</span></code> argument to avoid warning when calling <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.23)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.</p></li>
 <li><p>Added <a class="reference external" href="https://etiennecmb.github.io/tensorpac/index.html">TensorPAC</a> and <a class="reference external" href="https://pyriemann.readthedocs.io/en/latest/api.html">pyRiemann</a> to dependencies.</p></li>
 <li><p>Updated dependencies version for MNE and scikit-learn.</p></li>
 </ol>
@@ -264,7 +282,7 @@
     </p>
     <p>
         &copy; Copyright 2018-2020, Raphael Vallat.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>
 </footer>
