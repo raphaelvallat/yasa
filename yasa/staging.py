@@ -201,14 +201,11 @@ class SleepStaging:
             times, epochs = sliding_window(dt_filt, sf=sf, window=30)
 
             # Calculate standard descriptive statistics
-            perc = np.percentile(epochs, q=[10, 90], axis=1)
             hmob = mobility(epochs)
 
             feat = {
                 'std': np.std(epochs, ddof=1, axis=1),
                 'iqr': sp_stats.iqr(epochs, rng=(25, 75), axis=1),
-                '10p': perc[0],
-                '90p': perc[1],
                 'skew': sp_stats.skew(epochs, axis=1),
                 'kurt': sp_stats.kurtosis(epochs, axis=1),
                 'nzc': nzc(epochs),
@@ -237,13 +234,9 @@ class SleepStaging:
             dx = freqs[1] - freqs[0]
             feat['abspow'] = np.trapz(psd[:, idx_broad], dx=dx)
 
-            # Calculate entropy features
+            # Calculate entropy and fractal dimension features
             feat['perm'] = np.apply_along_axis(
                 ent.perm_entropy, axis=1, arr=epochs, normalize=True)
-            feat['svd'] = np.apply_along_axis(
-                ent.svd_entropy, axis=1, arr=epochs, normalize=True)
-
-            # Calculate fractal dimension features
             feat['higuchi'] = np.apply_along_axis(
                 ent.higuchi_fd, axis=1, arr=epochs)
             feat['petrosian'] = petrosian(epochs)
@@ -267,20 +260,13 @@ class SleepStaging:
         rollc[rollc.columns] = robust_scale(rollc, quantile_range=(5, 95))
         rollc = rollc.add_suffix('_c5min_norm')
 
-        # Now look at the past 10 minutes
-        rollp = features.rolling(window=20, min_periods=1).mean()
+        # Now look at the past 5 minutes
+        rollp = features.rolling(window=10, min_periods=1).mean()
         rollp[rollp.columns] = robust_scale(rollp, quantile_range=(5, 95))
-        rollp = rollp.add_suffix('_p10min_norm')
+        rollp = rollp.add_suffix('_p5min_norm')
 
         # Add to current set of features
         features = features.join(rollc).join(rollp)
-
-        # Remove the absolute percentile features (10p and 90p)
-        # because they are dependent on the polarity of the signal.
-        cols_10p = features.columns[features.columns.str.endswith("_10p")]
-        cols_90p = features.columns[features.columns.str.endswith("_90p")]
-        features.drop(columns=cols_10p.tolist() + cols_90p.tolist(),
-                      inplace=True)
 
         #######################################################################
         # TEMPORAL + METADATA FEATURES AND EXPORT
