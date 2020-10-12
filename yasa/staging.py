@@ -86,6 +86,10 @@ class SleepStaging:
     ...                         metadata=dict(age=29, male=True))
     >>> # Get the predicted sleep stages
     >>> sls.predict("mytrainedclassifier.joblib")
+    >>> # Get the predicted probabilities
+    >>> sls.predict_proba("mytrainedclassifier.joblib")
+    >>> # Plot the predicted probabilities
+    >>> sls.plot_predict_proba("mytrainedclassifier.joblib")
     """
 
     def __init__(self, raw, *, eeg_name, eog_name=None, emg_name=None,
