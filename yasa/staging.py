@@ -324,7 +324,7 @@ class SleepStaging:
                              "current feature set but not in the classifier:",
                              f_diff)
 
-    def predict(self, path_to_model, smooth=False):
+    def predict(self, path_to_model):
         """
         Return the predicted sleep stage for each 30-sec epoch of data.
 
@@ -337,9 +337,6 @@ class SleepStaging:
         path_to_model : str
             Full path to a trained LightGBMClassifier, exported as a
             joblib file.
-        smooth : boolean
-            If True, smooth the probability using a 2 min 30 centered rolling
-            average.
 
         Returns
         -------
@@ -354,16 +351,10 @@ class SleepStaging:
         self._validate_predict(clf)
         # Now we make sure that the features are aligned
         X = self._features.copy()[clf.feature_name_]
-        if not smooth:
-            # Case 1: raw predictions
-            self._predicted = clf.predict(X)
-        else:
-            # Case 2: smoothed predictions
-            proba = self.predict_proba(path_to_model, smooth=True)
-            self._predicted = proba.idxmax(axis=1).to_numpy()
+        self._predicted = clf.predict(X)
         return self._predicted.copy()
 
-    def predict_proba(self, path_to_model, smooth=False):
+    def predict_proba(self, path_to_model):
         """
         Return the predicted probability for each sleep stage for each 30-sec
         epoch of data.
@@ -377,9 +368,6 @@ class SleepStaging:
         path_to_model : str
             Full path to a trained LightGBMClassifier, exported as a
             joblib file.
-        smooth : boolean
-            If True, smooth the probability using a 2 min 30 centered rolling
-            average.
 
         Returns
         -------
@@ -398,13 +386,6 @@ class SleepStaging:
         # Finally, we return the predicted sleep stages
         proba = pd.DataFrame(clf.predict_proba(X), columns=clf.classes_)
         proba.index.name = 'epoch'
-        # Optional: smooth the predictions
-        if smooth:
-            # 5 * 30-sec epochs = 2 minutes 30
-            # w = [1/3, 2/3, 1, 2/3, 1/3]
-            proba = proba.rolling(
-                window=5, center=True, min_periods=1, win_type="triang"
-            ).mean()
         self._proba = proba
         return proba.copy()
 
