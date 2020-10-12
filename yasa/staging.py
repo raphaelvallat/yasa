@@ -167,7 +167,7 @@ class SleepStaging:
         ]
 
         #######################################################################
-        # FUNCTIONS
+        # HELPER FUNCTIONS
         #######################################################################
 
         def nzc(x):
@@ -279,20 +279,21 @@ class SleepStaging:
         # Add metadata if present
         if self.metadata is not None:
             for c in self.metadata.keys():
-                if c in ['age', 'male']:
-                    features[c] = self.metadata[c]
+                features[c] = self.metadata[c]
 
-        # Downcast numeric
+        # Downcast float64 to float32 (to reduce size of training datasets)
         cols_float = features.select_dtypes(np.float64).columns.tolist()
         features[cols_float] = features[cols_float].astype(np.float32)
+        # Make sure that age and sex are encoded as int
         if 'age' in features.columns:
-            features['age'] = features['age'].astype('int8')
+            features['age'] = features['age'].astype(int)
         if 'male' in features.columns:
-            features['male'] = features['male'].astype('category')
+            features['male'] = features['male'].astype(int)
+
+        # Sort the column names here (same behavior as lightGBM)
+        features.sort_index(axis=1, inplace=True)
 
         # Add to self
-        # Note that we sort the column names here (same behavior as lightGBM)
-        features.sort_index(axis=1, inplace=True)
         self._features = features
         self.feature_name_ = self._features.columns.tolist()
 
