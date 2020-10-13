@@ -27,7 +27,8 @@ INSTALL_REQUIRES = [
     'tensorpac>=0.6.4',
     'pyriemann',
     'lspopt',
-    'ipywidgets>=7.5.1'
+    'ipywidgets',
+    'joblib'
 ]
 
 PACKAGES = [

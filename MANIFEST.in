@@ -1,0 +1,7 @@
+# Add README, LICENSE and requirements :
+include README.rst
+include LICENSE
+include requirements.txt
+
+# Add trained classifiers
+include yasa/classifiers/*

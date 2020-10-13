@@ -4,10 +4,11 @@ pandas
 mne>=0.20
 numba
 matplotlib
-ipywidgets>=7.5.1
+ipywidgets
 seaborn
 lspopt
 tensorpac>=0.6.5
 scikit-learn>=0.22
 pyriemann
+joblib
 git+git://github.com/raphaelvallat/entropy@master#egg=entropy
