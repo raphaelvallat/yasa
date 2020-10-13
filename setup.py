@@ -26,7 +26,8 @@ INSTALL_REQUIRES = [
     'scikit-learn>=0.21',
     'tensorpac>=0.6.4',
     'pyriemann',
-    'lspopt'
+    'lspopt',
+    'ipywidgets>=7.5.1'
 ]
 
 PACKAGES = [
