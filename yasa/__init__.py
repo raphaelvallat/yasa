@@ -14,4 +14,4 @@ logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s',
                     datefmt='%d-%b-%y %H:%M:%S')
 
 __author__  = "Raphael Vallat <raphaelvallat9@gmail.com>"
-__version__ = "0.3.0"
+__version__ = "0.4.0"

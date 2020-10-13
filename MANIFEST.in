@@ -4,4 +4,7 @@ include LICENSE
 include requirements.txt
 
 # Add trained classifiers
-include yasa/classifiers/*
+include yasa/classifiers/clf_eeg_lgb.joblib
+include yasa/classifiers/clf_eeg+eog_lgb.joblib
+include yasa/classifiers/clf_eeg+eog+emg_lgb.joblib
+include yasa/classifiers/clf_eeg+eog+emg+demo_lgb.joblib

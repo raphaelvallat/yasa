@@ -85,11 +85,13 @@ class SleepStaging:
     ...                         emg_name="EMG1-EMG2",
     ...                         metadata=dict(age=29, male=True))
     >>> # Get the predicted sleep stages
-    >>> sls.predict("mytrainedclassifier.joblib")
+    >>> hypno = sls.predict()
     >>> # Get the predicted probabilities
-    >>> sls.predict_proba("mytrainedclassifier.joblib")
+    >>> proba = sls.predict_proba()
+    >>> # Get the confidence
+    >>> confidence = proba.max(axis=1)
     >>> # Plot the predicted probabilities
-    >>> sls.plot_predict_proba("mytrainedclassifier.joblib")
+    >>> sls.plot_predict_proba()
     """
 
     def __init__(self, raw, *, eeg_name, eog_name=None, emg_name=None,
@@ -328,7 +330,27 @@ class SleepStaging:
                              "current feature set but not in the classifier:",
                              f_diff)
 
-    def predict(self, path_to_model):
+    def _load_model(self, path_to_model):
+        """Load the relevant trained classifier."""
+        if path_to_model == "auto":
+            from pathlib import Path
+            from yasa import __version__ as yv
+            clf_dir = os.path.join(str(Path(__file__).parent), 'classifiers/')
+            name = 'clf_eeg'
+            name = name + '+eog' if 'eog' in self.ch_types else name
+            name = name + '+emg' if 'emg' in self.ch_types else name
+            name = name + '+demo' if self.metadata is not None else name
+            # e.g. clf_eeg+eog+emg+demo_lgb_0.4.0.joblib
+            path_to_model = clf_dir + name + '_lgb_' + yv + '.joblib'
+        # Check that file exists
+        assert os.path.isfile(path_to_model), "File does not exist."
+        # Load using Joblib
+        clf = joblib.load(path_to_model)
+        # Validate features
+        self._validate_predict(clf)
+        return clf
+
+    def predict(self, path_to_model="auto"):
         """
         Return the predicted sleep stage for each 30-sec epoch of data.
 
@@ -338,9 +360,9 @@ class SleepStaging:
 
         Parameters
         ----------
-        path_to_model : str
-            Full path to a trained LightGBMClassifier, exported as a
-            joblib file.
+        path_to_model : str or "auto"
+            Full path to a trained LGBMClassifier, exported as a
+            joblib file. Can be "auto" to use YASA's default classifier.
 
         Returns
         -------
@@ -350,15 +372,17 @@ class SleepStaging:
         if not hasattr(self, '_features'):
             self.fit()
         # Load and validate pre-trained classifier
-        assert os.path.isfile(path_to_model), "File does not exist."
-        clf = joblib.load(path_to_model)
-        self._validate_predict(clf)
+        clf = self._load_model(path_to_model)
         # Now we make sure that the features are aligned
         X = self._features.copy()[clf.feature_name_]
+        # Predict the sleep stages and probabilities
         self._predicted = clf.predict(X)
+        proba = pd.DataFrame(clf.predict_proba(X), columns=clf.classes_)
+        proba.index.name = 'epoch'
+        self._proba = proba
         return self._predicted.copy()
 
-    def predict_proba(self, path_to_model):
+    def predict_proba(self, path_to_model="auto"):
         """
         Return the predicted probability for each sleep stage for each 30-sec
         epoch of data.
@@ -369,9 +393,9 @@ class SleepStaging:
 
         Parameters
         ----------
-        path_to_model : str
-            Full path to a trained LightGBMClassifier, exported as a
-            joblib file.
+        path_to_model : str or "auto"
+            Full path to a trained LGBMClassifier, exported as a
+            joblib file. Can be "auto" to use YASA's default classifier.
 
         Returns
         -------
@@ -379,19 +403,9 @@ class SleepStaging:
             The predicted probability for each sleep stage for each 30-sec
             epoch of data.
         """
-        if not hasattr(self, '_features'):
-            self.fit()
-        # Load and validate pre-trained classifier
-        assert os.path.isfile(path_to_model), "File does not exist."
-        clf = joblib.load(path_to_model)
-        self._validate_predict(clf)
-        # Now we make sure that the features are aligned
-        X = self._features.copy()[clf.feature_name_]
-        # Finally, we return the predicted sleep stages
-        proba = pd.DataFrame(clf.predict_proba(X), columns=clf.classes_)
-        proba.index.name = 'epoch'
-        self._proba = proba
-        return proba.copy()
+        if not hasattr(self, '_proba'):
+            self.predict(path_to_model)
+        return self._proba.copy()
 
     def plot_predict_proba(self, proba=None, majority_only=False,
                            palette=['#99d7f1', '#009DDC', 'xkcd:twilight blue',
