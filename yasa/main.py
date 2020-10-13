@@ -292,6 +292,98 @@ class _DetectionResults(object):
         ax.set_ylabel('Amplitude (uV)')
         return ax
 
+    def plot_detection(self):
+        """Plot an overlay of the detected events on the signal."""
+        import matplotlib.pyplot as plt
+        import ipywidgets as ipy
+
+        # Define mask
+        sf = self._sf
+        win_size = 10
+        mask = self.get_mask()
+        highlight = self._data * mask
+        highlight = np.where(highlight == 0, np.nan, highlight)
+        highlight_filt = self._data_filt * mask
+        highlight_filt = np.where(highlight_filt == 0, np.nan, highlight_filt)
+
+        n_epochs = int((self._data.shape[-1] / sf) / win_size)
+        times = np.arange(self._data.shape[-1]) / sf
+
+        # Define xlim and xrange
+        xlim = [0, win_size]
+        xrng = np.arange(xlim[0] * sf, (xlim[1] * sf + 1), dtype=int)
+
+        # Plot
+        fig, ax = plt.subplots(figsize=(12, 4))
+        plt.plot(times[xrng], self._data[0, xrng], 'k', lw=1)
+        plt.plot(times[xrng], highlight[0, xrng], 'indianred')
+        plt.xlabel('Time (seconds)')
+        plt.ylabel('Amplitude (uV)')
+        fig.canvas.header_visible = False
+        fig.tight_layout()
+
+        # WIDGETS
+        layout = ipy.Layout(
+            width="50%",
+            justify_content='center',
+            align_items='center'
+        )
+
+        sl_ep = ipy.IntSlider(
+            min=0,
+            max=n_epochs,
+            step=1,
+            value=0,
+            layout=layout,
+            description="Epoch:",
+        )
+
+        sl_amp = ipy.IntSlider(
+            min=25,
+            max=500,
+            step=25,
+            value=150,
+            layout=layout,
+            orientation='horizontal',
+            description="Amplitude:"
+        )
+
+        dd_ch = ipy.Dropdown(
+            options=self._ch_names, value=self._ch_names[0],
+            description='Channel:'
+        )
+
+        dd_win = ipy.Dropdown(
+            options=[1, 5, 10, 30, 60],
+            value=win_size,
+            description='Window size:',
+        )
+
+        dd_check = ipy.Checkbox(
+            value=False,
+            description='Filtered',
+        )
+
+        def update(epoch, amplitude, channel, win_size, filt):
+            """Update plot."""
+            n_epochs = int((self._data.shape[-1] / sf) / win_size)
+            sl_ep.max = n_epochs
+            xlim = [epoch * win_size, (epoch + 1) * win_size]
+            xrng = np.arange(xlim[0] * sf, (xlim[1] * sf), dtype=int)
+            # Check if filtered
+            data = self._data if not filt else self._data_filt
+            overlay = highlight if not filt else highlight_filt
+            try:
+                ax.lines[0].set_data(times[xrng], data[dd_ch.index, xrng])
+                ax.lines[1].set_data(times[xrng], overlay[dd_ch.index, xrng])
+                ax.set_xlim(xlim)
+            except IndexError:
+                pass
+            ax.set_ylim([-amplitude, amplitude])
+
+        return ipy.interact(update, epoch=sl_ep, amplitude=sl_amp,
+                            channel=dd_ch, win_size=dd_win, filt=dd_check)
+
 
 #############################################################################
 # SPINDLES DETECTION
@@ -863,6 +955,12 @@ class SpindlesResults(_DetectionResults):
                                     hue=hue, time_before=time_before,
                                     time_after=time_after, filt=filt,
                                     figsize=figsize, **kwargs)
+
+    def plot_detection(self):
+        """Plot an overlay of the detected spindles on the EEG signal.
+        """
+        return super().plot_detection()
+
 
 #############################################################################
 # SLOW-WAVES DETECTION
@@ -1464,6 +1562,11 @@ class SWResults(_DetectionResults):
                                     hue=hue, time_before=time_before,
                                     time_after=time_after, filt=filt,
                                     figsize=figsize, **kwargs)
+
+    def plot_detection(self):
+        """Plot an overlay of the detected slow-waves on the EEG signal.
+        """
+        return super().plot_detection()
 
 
 #############################################################################
