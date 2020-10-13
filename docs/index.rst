@@ -14,17 +14,11 @@
 .. image:: https://travis-ci.org/raphaelvallat/yasa.svg?branch=master
     :target: https://travis-ci.org/raphaelvallat/yasa
 
-.. .. image:: https://ci.appveyor.com/api/projects/status/4ua0pwy62jhpd9mx?svg=true
-..     :target: https://ci.appveyor.com/project/raphaelvallat/yasa
-
 .. image:: https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/raphaelvallat/yasa
 
 .. image:: https://pepy.tech/badge/yasa
     :target: https://pepy.tech/badge/yasa
-
-.. .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg
-..    :target: https://doi.org/10.5281/zenodo.2370600
 
 ----------------
 
