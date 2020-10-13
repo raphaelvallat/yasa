@@ -30,15 +30,7 @@ jobs:
         pip install -r requirements.txt
         pip install -r requirements-test.txt
         pip install .
-        export NUMBA_DISABLE_JIT=1
 
     - name: Test with pytest
       run: |
         pytest --cov --verbose
-
-    - name: Upload coverage report
-      if: "matrix.platform == 'ubuntu-latest'"
-      uses: codecov/codecov-action@v1
-      with:
-        token: c6ed6ca6-a040-4f23-9ebf-8c474c998097
-        file: ./coverage.xml
