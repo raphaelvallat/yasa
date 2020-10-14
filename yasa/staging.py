@@ -22,9 +22,11 @@ class SleepStaging:
     """
     Automatic sleep staging of polysomnography data.
 
-    To run the automatic sleep staging, you must install the lightGBM
-    (https://lightgbm.readthedocs.io/) and entropy
-    (https://github.com/raphaelvallat/entropy) packages.
+    To run the automatic sleep staging, you must install the
+    `LightGBM <https://lightgbm.readthedocs.io/>`_ and
+    `entropy <https://github.com/raphaelvallat/entropy>`_ packages.
+
+    .. versionadded:: 0.4.0
 
     Parameters
     ----------
@@ -51,34 +53,81 @@ class SleepStaging:
 
     Notes
     -----
+
+    **Features extraction**
+
     For each 30-seconds epoch and each channel, the following features are
     calculated:
 
     * Standard deviation
     * Interquartile range
-    * 10 and 90 percentiles
     * Skewness and kurtosis
     * Number of zero crossings
     * Hjorth mobility and complexity
     * Absolute total power in the 0.4-30 Hz band.
     * Relative power in the main frequency bands (for EEG and EOG only)
     * Power ratios (e.g. delta / beta)
-    * Permutation entropy and singular value decomposition entropy
+    * Permutation entropy
     * Higuchi and Petrosian fractal dimension
 
-    In addition with the raw estimates, the algorithm also calculates a
-    smoothed and normalized version of these features. Specifically, a 5-min
-    centered weighted rolling average and a 10 min past rolling average are
-    applied. The resulting smoothed features are then normalized using a robust
-    z-score.
+    In addition, the algorithm also calculates a smoothed and normalized
+    version of these features. Specifically, a 5-min centered weighted rolling
+    average and a 10 min past rolling average are applied. The resulting
+    smoothed features are then normalized using a robust z-score.
 
-    Note that the data are automatically downsampled to 100 Hz for faster
+    The data are automatically downsampled to 100 Hz for faster
     computation.
+
+    **Sleep stages prediction**
+
+    YASA comes with a default set of pre-trained classifiers, which
+    were trained and validated on ~3000 nights from the
+    `National Sleep Research Resource <https://sleepdata.org/>`_. These nights
+    involved participants from a wide age range, of different ethnicities,
+    gender, and health status. The default classifiers should therefore works
+    reasonably well on most data.
+
+    In addition with the predicted sleep stages, YASA can also return the
+    predicted probabilities of each sleep stage at each epoch. This can in turn
+    be used to derive a confidence score at each epoch.
+
+    .. important:: The predictions should ALWAYS be double-check by a trained
+        visual scorer, especially for epochs with low confidence. A full
+        inspection should be performed in the following cases:
+
+        * Nap data, because the classifiers were exclusively trained on
+          full-night recordings.
+        * Participants with sleep disorders.
+        * Sub-optimal PSG system and/or referencing
+
+    .. warning:: validation results of the sleep staging algorithm have shown
+        that N1 sleep is the sleep stage with the lowest detection accuracy.
+        This is expected because N1 is also the stage with the lowest human
+        inter-rater agreement. Be extract careful for potential
+        misclassification of N1 sleep (e.g. scored as Wake or N2) when
+        inspecting the predicted sleep stages.
+
+    References
+    ----------
+    If you use YASA's default classifiers, these are the main references for
+    the `National Sleep Research Resource <https://sleepdata.org/>`_:
+
+    * Dean, D. A., 2nd, Goldberger, A. L., Mueller, R., Kim, M., Rueschman, M.,
+      Mobley, D., Sahoo, S. S., Jayapandian, C. P., Cui, L., Morrical, M. G.,
+      Surovec, S., Zhang, G.-Q., & Redline, S. (2016). Scaling Up Scientific
+      Discovery in Sleep Medicine: The National Sleep Research Resource.
+      Sleep, 39(5), 1151–1164.
+
+    * Zhang, G.-Q., Cui, L., Mueller, R., Tao, S., Kim, M., Rueschman, M.,
+      Mariani, S., Mobley, D., & Redline, S. (2018). The National Sleep
+      Research Resource: towards a sleep data commons. Journal of the American
+      Medical Informatics Association: JAMIA, 25(10), 1351–1358.
 
     Examples
     --------
     >>> import mne
     >>> import yasa
+    >>> # Load an EDF file using MNE
     >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
     >>> # Initialize the sleep staging instance
     >>> sls = yasa.SleepStaging(raw, eeg_name="C4-M1", eog_name="LOC-M2",
@@ -354,8 +403,8 @@ class SleepStaging:
         """
         Return the predicted sleep stage for each 30-sec epoch of data.
 
-        Currently, only classifiers that were trained using a LGBMClassifier
-        (https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html)
+        Currently, only classifiers that were trained using a
+        `LGBMClassifier <https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html>`_
         are supported.
 
         Parameters
@@ -387,8 +436,8 @@ class SleepStaging:
         Return the predicted probability for each sleep stage for each 30-sec
         epoch of data.
 
-        Currently, only classifiers that were trained using a LGBMClassifier
-        (https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html)
+        Currently, only classifiers that were trained using a
+        `LGBMClassifier <https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html>`_
         are supported.
 
         Parameters

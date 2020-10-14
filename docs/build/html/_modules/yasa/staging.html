@@ -3,7 +3,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.staging &#8212; yasa 0.3.0 documentation</title>
+    <title>yasa.staging &#8212; yasa 0.4.0 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.3.0</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.4.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -110,9 +110,11 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Automatic sleep staging of polysomnography data.</span>
 
-<span class="sd">    To run the automatic sleep staging, you must install the lightGBM</span>
-<span class="sd">    (https://lightgbm.readthedocs.io/) and entropy</span>
-<span class="sd">    (https://github.com/raphaelvallat/entropy) packages.</span>
+<span class="sd">    To run the automatic sleep staging, you must install the</span>
+<span class="sd">    `LightGBM &lt;https://lightgbm.readthedocs.io/&gt;`_ and</span>
+<span class="sd">    `entropy &lt;https://github.com/raphaelvallat/entropy&gt;`_ packages.</span>
+
+<span class="sd">    .. versionadded:: 0.4.0</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -126,54 +128,107 @@
 <span class="sd">    eog_name : str or None</span>
 <span class="sd">        The name of the EOG channel in ``raw``. Preferentially,</span>
 <span class="sd">        the left LOC channel referenced either to the mastoid (e.g. E1-M2)</span>
-<span class="sd">        or Fpz.</span>
+<span class="sd">        or Fpz. Can also be None.</span>
 <span class="sd">    emg_name : str or None</span>
 <span class="sd">        The name of the EMG channel in ``raw``. Preferentially a chin</span>
-<span class="sd">        electrode.</span>
+<span class="sd">        electrode. Can also be None.</span>
 <span class="sd">    metadata : dict or None</span>
-<span class="sd">        A dictionary of metadata. Currently supported keys are:</span>
+<span class="sd">        A dictionary of metadata (optional). Currently supported keys are:</span>
 
-<span class="sd">        * ``&#39;age&#39;``: Age of the participant, in years.</span>
-<span class="sd">        * ``&#39;male&#39;``: Sex of the participant (1 or True = male, 0 or</span>
+<span class="sd">        * ``&#39;age&#39;``: age of the participant, in years.</span>
+<span class="sd">        * ``&#39;male&#39;``: sex of the participant (1 or True = male, 0 or</span>
 <span class="sd">          False = female)</span>
 
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
+
+<span class="sd">    **Features extraction**</span>
+
 <span class="sd">    For each 30-seconds epoch and each channel, the following features are</span>
 <span class="sd">    calculated:</span>
 
 <span class="sd">    * Standard deviation</span>
 <span class="sd">    * Interquartile range</span>
-<span class="sd">    * 10 and 90 percentiles</span>
 <span class="sd">    * Skewness and kurtosis</span>
 <span class="sd">    * Number of zero crossings</span>
 <span class="sd">    * Hjorth mobility and complexity</span>
 <span class="sd">    * Absolute total power in the 0.4-30 Hz band.</span>
 <span class="sd">    * Relative power in the main frequency bands (for EEG and EOG only)</span>
 <span class="sd">    * Power ratios (e.g. delta / beta)</span>
-<span class="sd">    * Permutation entropy and singular value decomposition entropy</span>
+<span class="sd">    * Permutation entropy</span>
 <span class="sd">    * Higuchi and Petrosian fractal dimension</span>
 
-<span class="sd">    In addition with the raw estimates, the algorithm also calculates a</span>
-<span class="sd">    smoothed and normalized version of these features. Specifically, a 5-min</span>
-<span class="sd">    centered weighted rolling average and a 10 min past rolling average are</span>
-<span class="sd">    applied. The resulting smoothed features are then normalized using a robust</span>
-<span class="sd">    z-score.</span>
+<span class="sd">    In addition, the algorithm also calculates a smoothed and normalized</span>
+<span class="sd">    version of these features. Specifically, a 5-min centered weighted rolling</span>
+<span class="sd">    average and a 10 min past rolling average are applied. The resulting</span>
+<span class="sd">    smoothed features are then normalized using a robust z-score.</span>
 
-<span class="sd">    Note that the data are automatically downsampled to 100 Hz for faster</span>
+<span class="sd">    The data are automatically downsampled to 100 Hz for faster</span>
 <span class="sd">    computation.</span>
+
+<span class="sd">    **Sleep stages prediction**</span>
+
+<span class="sd">    YASA comes with a default set of pre-trained classifiers, which</span>
+<span class="sd">    were trained and validated on ~3000 nights from the</span>
+<span class="sd">    `National Sleep Research Resource &lt;https://sleepdata.org/&gt;`_. These nights</span>
+<span class="sd">    involved participants from a wide age range, of different ethnicities,</span>
+<span class="sd">    gender, and health status. The default classifiers should therefore works</span>
+<span class="sd">    reasonably well on most data.</span>
+
+<span class="sd">    In addition with the predicted sleep stages, YASA can also return the</span>
+<span class="sd">    predicted probabilities of each sleep stage at each epoch. This can in turn</span>
+<span class="sd">    be used to derive a confidence score at each epoch.</span>
+
+<span class="sd">    .. important:: The predictions should ALWAYS be double-check by a trained</span>
+<span class="sd">        visual scorer, especially for epochs with low confidence. A full</span>
+<span class="sd">        inspection should be performed in the following cases:</span>
+
+<span class="sd">        * Nap data, because the classifiers were exclusively trained on</span>
+<span class="sd">          full-night recordings.</span>
+<span class="sd">        * Participants with sleep disorders.</span>
+<span class="sd">        * Sub-optimal PSG system and/or referencing</span>
+
+<span class="sd">    .. warning:: validation results of the sleep staging algorithm have shown</span>
+<span class="sd">        that N1 sleep is the sleep stage with the lowest detection accuracy.</span>
+<span class="sd">        This is expected because N1 is also the stage with the lowest human</span>
+<span class="sd">        inter-rater agreement. Be extract careful for potential</span>
+<span class="sd">        misclassification of N1 sleep (e.g. scored as Wake or N2) when</span>
+<span class="sd">        inspecting the predicted sleep stages.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    If you use YASA&#39;s default classifiers, these are the main references for</span>
+<span class="sd">    the `National Sleep Research Resource &lt;https://sleepdata.org/&gt;`_:</span>
+
+<span class="sd">    * Dean, D. A., 2nd, Goldberger, A. L., Mueller, R., Kim, M., Rueschman, M.,</span>
+<span class="sd">      Mobley, D., Sahoo, S. S., Jayapandian, C. P., Cui, L., Morrical, M. G.,</span>
+<span class="sd">      Surovec, S., Zhang, G.-Q., &amp; Redline, S. (2016). Scaling Up Scientific</span>
+<span class="sd">      Discovery in Sleep Medicine: The National Sleep Research Resource.</span>
+<span class="sd">      Sleep, 39(5), 1151–1164.</span>
+
+<span class="sd">    * Zhang, G.-Q., Cui, L., Mueller, R., Tao, S., Kim, M., Rueschman, M.,</span>
+<span class="sd">      Mariani, S., Mobley, D., &amp; Redline, S. (2018). The National Sleep</span>
+<span class="sd">      Research Resource: towards a sleep data commons. Journal of the American</span>
+<span class="sd">      Medical Informatics Association: JAMIA, 25(10), 1351–1358.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
 <span class="sd">    &gt;&gt;&gt; import mne</span>
 <span class="sd">    &gt;&gt;&gt; import yasa</span>
+<span class="sd">    &gt;&gt;&gt; # Load an EDF file using MNE</span>
 <span class="sd">    &gt;&gt;&gt; raw = mne.io.read_raw_edf(&quot;myfile.edf&quot;, preload=True)</span>
 <span class="sd">    &gt;&gt;&gt; # Initialize the sleep staging instance</span>
 <span class="sd">    &gt;&gt;&gt; sls = yasa.SleepStaging(raw, eeg_name=&quot;C4-M1&quot;, eog_name=&quot;LOC-M2&quot;,</span>
 <span class="sd">    ...                         emg_name=&quot;EMG1-EMG2&quot;,</span>
 <span class="sd">    ...                         metadata=dict(age=29, male=True))</span>
 <span class="sd">    &gt;&gt;&gt; # Get the predicted sleep stages</span>
-<span class="sd">    &gt;&gt;&gt; sls.predict(&quot;mytrainedclassifier.joblib&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; hypno = sls.predict()</span>
+<span class="sd">    &gt;&gt;&gt; # Get the predicted probabilities</span>
+<span class="sd">    &gt;&gt;&gt; proba = sls.predict_proba()</span>
+<span class="sd">    &gt;&gt;&gt; # Get the confidence</span>
+<span class="sd">    &gt;&gt;&gt; confidence = proba.max(axis=1)</span>
+<span class="sd">    &gt;&gt;&gt; # Plot the predicted probabilities</span>
+<span class="sd">    &gt;&gt;&gt; sls.plot_predict_proba()</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="SleepStaging.__init__"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">eeg_name</span><span class="p">,</span> <span class="n">eog_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">emg_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -255,7 +310,7 @@
         <span class="p">]</span>
 
         <span class="c1">#######################################################################</span>
-        <span class="c1"># FUNCTIONS</span>
+        <span class="c1"># HELPER FUNCTIONS</span>
         <span class="c1">#######################################################################</span>
 
         <span class="k">def</span> <span class="nf">nzc</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
@@ -289,14 +344,11 @@
             <span class="n">times</span><span class="p">,</span> <span class="n">epochs</span> <span class="o">=</span> <span class="n">sliding_window</span><span class="p">(</span><span class="n">dt_filt</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 
             <span class="c1"># Calculate standard descriptive statistics</span>
-            <span class="n">perc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">90</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="n">hmob</span> <span class="o">=</span> <span class="n">mobility</span><span class="p">(</span><span class="n">epochs</span><span class="p">)</span>
 
             <span class="n">feat</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s1">&#39;std&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
                 <span class="s1">&#39;iqr&#39;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">iqr</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="mi">75</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
-                <span class="s1">&#39;10p&#39;</span><span class="p">:</span> <span class="n">perc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                <span class="s1">&#39;90p&#39;</span><span class="p">:</span> <span class="n">perc</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
                 <span class="s1">&#39;skew&#39;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">skew</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
                 <span class="s1">&#39;kurt&#39;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">kurtosis</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
                 <span class="s1">&#39;nzc&#39;</span><span class="p">:</span> <span class="n">nzc</span><span class="p">(</span><span class="n">epochs</span><span class="p">),</span>
@@ -325,13 +377,9 @@
             <span class="n">dx</span> <span class="o">=</span> <span class="n">freqs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">freqs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;abspow&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">psd</span><span class="p">[:,</span> <span class="n">idx_broad</span><span class="p">],</span> <span class="n">dx</span><span class="o">=</span><span class="n">dx</span><span class="p">)</span>
 
-            <span class="c1"># Calculate entropy features</span>
+            <span class="c1"># Calculate entropy and fractal dimension features</span>
             <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;perm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span>
                 <span class="n">ent</span><span class="o">.</span><span class="n">perm_entropy</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;svd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span>
-                <span class="n">ent</span><span class="o">.</span><span class="n">svd_entropy</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-            <span class="c1"># Calculate fractal dimension features</span>
             <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;higuchi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span>
                 <span class="n">ent</span><span class="o">.</span><span class="n">higuchi_fd</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">)</span>
             <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;petrosian&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">petrosian</span><span class="p">(</span><span class="n">epochs</span><span class="p">)</span>
@@ -355,20 +403,13 @@
         <span class="n">rollc</span><span class="p">[</span><span class="n">rollc</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span> <span class="o">=</span> <span class="n">robust_scale</span><span class="p">(</span><span class="n">rollc</span><span class="p">,</span> <span class="n">quantile_range</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">95</span><span class="p">))</span>
         <span class="n">rollc</span> <span class="o">=</span> <span class="n">rollc</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s1">&#39;_c5min_norm&#39;</span><span class="p">)</span>
 
-        <span class="c1"># Now look at the past 10 minutes</span>
-        <span class="n">rollp</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="c1"># Now look at the past 5 minutes</span>
+        <span class="n">rollp</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
         <span class="n">rollp</span><span class="p">[</span><span class="n">rollp</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span> <span class="o">=</span> <span class="n">robust_scale</span><span class="p">(</span><span class="n">rollp</span><span class="p">,</span> <span class="n">quantile_range</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">95</span><span class="p">))</span>
-        <span class="n">rollp</span> <span class="o">=</span> <span class="n">rollp</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s1">&#39;_p10min_norm&#39;</span><span class="p">)</span>
+        <span class="n">rollp</span> <span class="o">=</span> <span class="n">rollp</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s1">&#39;_p5min_norm&#39;</span><span class="p">)</span>
 
         <span class="c1"># Add to current set of features</span>
         <span class="n">features</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rollc</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rollp</span><span class="p">)</span>
-
-        <span class="c1"># Remove the absolute percentile features (10p and 90p)</span>
-        <span class="c1"># because they are dependent on the polarity of the signal.</span>
-        <span class="n">cols_10p</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_10p&quot;</span><span class="p">)]</span>
-        <span class="n">cols_90p</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_90p&quot;</span><span class="p">)]</span>
-        <span class="n">features</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">cols_10p</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="o">+</span> <span class="n">cols_90p</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
-                      <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="c1">#######################################################################</span>
         <span class="c1"># TEMPORAL + METADATA FEATURES AND EXPORT</span>
@@ -381,12 +422,21 @@
         <span class="c1"># Add metadata if present</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">,</span> <span class="s1">&#39;male&#39;</span><span class="p">]:</span>
-                    <span class="n">features</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
+                <span class="n">features</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
+
+        <span class="c1"># Downcast float64 to float32 (to reduce size of training datasets)</span>
+        <span class="n">cols_float</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">features</span><span class="p">[</span><span class="n">cols_float</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="n">cols_float</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="c1"># Make sure that age and sex are encoded as int</span>
+        <span class="k">if</span> <span class="s1">&#39;age&#39;</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">features</span><span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;male&#39;</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">features</span><span class="p">[</span><span class="s1">&#39;male&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s1">&#39;male&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="c1"># Sort the column names here (same behavior as lightGBM)</span>
+        <span class="n">features</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="c1"># Add to self</span>
-        <span class="c1"># Note that we sort the column names here (same behavior as lightGBM)</span>
-        <span class="n">features</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_features</span> <span class="o">=</span> <span class="n">features</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">feature_name_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span></div>
 
@@ -417,22 +467,39 @@
                              <span class="s2">&quot;current feature set but not in the classifier:&quot;</span><span class="p">,</span>
                              <span class="n">f_diff</span><span class="p">)</span>
 
-<div class="viewcode-block" id="SleepStaging.predict"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_model</span><span class="p">,</span> <span class="n">smooth</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_load_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_model</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load the relevant trained classifier.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">path_to_model</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+            <span class="kn">from</span> <span class="nn">yasa</span> <span class="kn">import</span> <span class="n">__version__</span> <span class="k">as</span> <span class="n">yv</span>
+            <span class="n">clf_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="p">),</span> <span class="s1">&#39;classifiers/&#39;</span><span class="p">)</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;clf_eeg&#39;</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;+eog&#39;</span> <span class="k">if</span> <span class="s1">&#39;eog&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_types</span> <span class="k">else</span> <span class="n">name</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;+emg&#39;</span> <span class="k">if</span> <span class="s1">&#39;emg&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_types</span> <span class="k">else</span> <span class="n">name</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;+demo&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">name</span>
+            <span class="c1"># e.g. clf_eeg+eog+emg+demo_lgb_0.4.0.joblib</span>
+            <span class="n">path_to_model</span> <span class="o">=</span> <span class="n">clf_dir</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_lgb_&#39;</span> <span class="o">+</span> <span class="n">yv</span> <span class="o">+</span> <span class="s1">&#39;.joblib&#39;</span>
+        <span class="c1"># Check that file exists</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">),</span> <span class="s2">&quot;File does not exist.&quot;</span>
+        <span class="c1"># Load using Joblib</span>
+        <span class="n">clf</span> <span class="o">=</span> <span class="n">joblib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">)</span>
+        <span class="c1"># Validate features</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_predict</span><span class="p">(</span><span class="n">clf</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">clf</span>
+
+<div class="viewcode-block" id="SleepStaging.predict"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_model</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the predicted sleep stage for each 30-sec epoch of data.</span>
 
-<span class="sd">        Currently, only classifiers that were trained using a LGBMClassifier</span>
-<span class="sd">        (https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html)</span>
+<span class="sd">        Currently, only classifiers that were trained using a</span>
+<span class="sd">        `LGBMClassifier &lt;https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html&gt;`_</span>
 <span class="sd">        are supported.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        path_to_model : str</span>
-<span class="sd">            Full path to a trained LightGBMClassifier, exported as a</span>
-<span class="sd">            joblib file.</span>
-<span class="sd">        smooth : boolean</span>
-<span class="sd">            If True, smooth the probability using a 2 min 30 centered rolling</span>
-<span class="sd">            average.</span>
+<span class="sd">        path_to_model : str or &quot;auto&quot;</span>
+<span class="sd">            Full path to a trained LGBMClassifier, exported as a</span>
+<span class="sd">            joblib file. Can be &quot;auto&quot; to use YASA&#39;s default classifier.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -442,37 +509,30 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_features&#39;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
         <span class="c1"># Load and validate pre-trained classifier</span>
-        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">),</span> <span class="s2">&quot;File does not exist.&quot;</span>
-        <span class="n">clf</span> <span class="o">=</span> <span class="n">joblib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_predict</span><span class="p">(</span><span class="n">clf</span><span class="p">)</span>
+        <span class="n">clf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_model</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">)</span>
         <span class="c1"># Now we make sure that the features are aligned</span>
         <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">copy</span><span class="p">()[</span><span class="n">clf</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">smooth</span><span class="p">:</span>
-            <span class="c1"># Case 1: raw predictions</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_predicted</span> <span class="o">=</span> <span class="n">clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Case 2: smoothed predictions</span>
-            <span class="n">proba</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">,</span> <span class="n">smooth</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_predicted</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">idxmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+        <span class="c1"># Predict the sleep stages and probabilities</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_predicted</span> <span class="o">=</span> <span class="n">clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">proba</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">clf</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">columns</span><span class="o">=</span><span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">)</span>
+        <span class="n">proba</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;epoch&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_proba</span> <span class="o">=</span> <span class="n">proba</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predicted</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="SleepStaging.predict_proba"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.predict_proba">[docs]</a>    <span class="k">def</span> <span class="nf">predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_model</span><span class="p">,</span> <span class="n">smooth</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="SleepStaging.predict_proba"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.predict_proba">[docs]</a>    <span class="k">def</span> <span class="nf">predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_model</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the predicted probability for each sleep stage for each 30-sec</span>
 <span class="sd">        epoch of data.</span>
 
-<span class="sd">        Currently, only classifiers that were trained using a LGBMClassifier</span>
-<span class="sd">        (https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html)</span>
+<span class="sd">        Currently, only classifiers that were trained using a</span>
+<span class="sd">        `LGBMClassifier &lt;https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html&gt;`_</span>
 <span class="sd">        are supported.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        path_to_model : str</span>
-<span class="sd">            Full path to a trained LightGBMClassifier, exported as a</span>
-<span class="sd">            joblib file.</span>
-<span class="sd">        smooth : boolean</span>
-<span class="sd">            If True, smooth the probability using a 2 min 30 centered rolling</span>
-<span class="sd">            average.</span>
+<span class="sd">        path_to_model : str or &quot;auto&quot;</span>
+<span class="sd">            Full path to a trained LGBMClassifier, exported as a</span>
+<span class="sd">            joblib file. Can be &quot;auto&quot; to use YASA&#39;s default classifier.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -480,26 +540,9 @@
 <span class="sd">            The predicted probability for each sleep stage for each 30-sec</span>
 <span class="sd">            epoch of data.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_features&#39;</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-        <span class="c1"># Load and validate pre-trained classifier</span>
-        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">),</span> <span class="s2">&quot;File does not exist.&quot;</span>
-        <span class="n">clf</span> <span class="o">=</span> <span class="n">joblib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_predict</span><span class="p">(</span><span class="n">clf</span><span class="p">)</span>
-        <span class="c1"># Now we make sure that the features are aligned</span>
-        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">copy</span><span class="p">()[</span><span class="n">clf</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">]</span>
-        <span class="c1"># Finally, we return the predicted sleep stages</span>
-        <span class="n">proba</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">clf</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">columns</span><span class="o">=</span><span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">)</span>
-        <span class="n">proba</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;epoch&#39;</span>
-        <span class="c1"># Optional: smooth the predictions</span>
-        <span class="k">if</span> <span class="n">smooth</span><span class="p">:</span>
-            <span class="c1"># 5 * 30-sec epochs = 2 minutes 30</span>
-            <span class="c1"># w = [1/3, 2/3, 1, 2/3, 1/3]</span>
-            <span class="n">proba</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span>
-                <span class="n">window</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">win_type</span><span class="o">=</span><span class="s2">&quot;triang&quot;</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_proba</span> <span class="o">=</span> <span class="n">proba</span>
-        <span class="k">return</span> <span class="n">proba</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_proba&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proba</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="SleepStaging.plot_predict_proba"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.plot_predict_proba">[docs]</a>    <span class="k">def</span> <span class="nf">plot_predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proba</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">majority_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                            <span class="n">palette</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;#99d7f1&#39;</span><span class="p">,</span> <span class="s1">&#39;#009DDC&#39;</span><span class="p">,</span> <span class="s1">&#39;xkcd:twilight blue&#39;</span><span class="p">,</span>

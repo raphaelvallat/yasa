@@ -30,10 +30,11 @@
 
 **YASA** (*Yet Another Spindle Algorithm*) is a sleep analysis toolbox in Python. YASA includes several fast and convenient command-line functions to:
 
-* Automatically detect sleep spindles, slow-waves, and rapid eye movements on single and multi-channel EEG data
-* Automatically reject major artifacts on single or multi-channel EEG data
+* Perform automatic sleep staging.
+* Detect sleep spindles, slow-waves, and rapid eye movements on single and multi-channel EEG data.
+* Reject major artifacts on single or multi-channel EEG data.
 * Perform advanced spectral analyses: spectral bandpower, phase-amplitude coupling, event-locked analyses, 1/f, and more!
-* Manipulate hypnogram and calculate sleep statistics
+* Manipulate hypnogram and calculate sleep statistics.
 
 For more details, check out the `API documentation <https://raphaelvallat.com/yasa/build/html/index.html>`_ or try the
 `tutorial (Jupyter notebooks) <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_.
@@ -57,7 +58,7 @@ To use YASA, all you need is:
 
 **I have sleep EEG data in European Data Format (.edf), how do I load the data in Python?**
 
-If you have sleep EEG data in standard formats (e.g. EDF or BrainVision), you can use the excellent `MNE package <https://mne.tools/stable/index.html>`_ to load and preprocess your data in Python. A simple preprocessing pipeline using MNE is shown below:
+If you have sleep EEG data in standard formats (e.g. EDF or BrainVision), you can use the `MNE package <https://mne.tools/stable/index.html>`_ to load and preprocess your data in Python. A simple preprocessing pipeline using MNE is shown below:
 
 .. code-block:: python
 
@@ -118,6 +119,8 @@ Typical use: spindles detection
   # To plot an average template of all the detected spindles,
   # centered around the most prominent peak (+/- 1 second)
   sp.plot_average(center='Peak', time_before=1, time_after=1)
+  # To interactively inspect the detected spindles
+  sp.plot_detection()
 
   # 2) Multi-channels spindles detection limited to N2/N3 sleep, with automatic outlier rejection
   sp = yasa.spindles_detect(data, sf, ch_names, hypno=hypno, include=(2, 3), remove_outliers=True)
@@ -141,52 +144,6 @@ In turn, the detection dataframe can be easily used to plot the events.
 .. figure::  /docs/pictures/detection.png
    :align:   center
 
-Interactive visualization with Visbrain
----------------------------------------
-
-YASA can also be used in combination with the `Sleep <http://visbrain.org/sleep.html>`_ module of the `Visbrain visualization package <http://visbrain.org/index.html>`_. The result of the detection can then easily be displayed and checked in an interactive graphical user interface. To do so, load Visbrain using the following python file (make sure to update *'PATH/TO/EEGFILE'*).
-
-.. code-block:: python
-
-  from visbrain.gui import Sleep
-  from yasa import spindles_detect
-
-  sl = Sleep(data='PATH/TO/EEGFILE')
-
-  def fcn_spindle(data, sf, time, hypno):
-      """Replace Visbrain built-in spindles detection by YASA algorithm.
-      See http://visbrain.org/sleep.html#use-your-own-detections-in-sleep
-      """
-      # Apply on the full recording...
-      # sp = spindles_detect(data, sf).summary()
-      # ...or on NREM sleep only
-      sp = spindles_detect(data, sf, hypno=hypno).summary()
-      return (sp[['Start', 'End']].values * sf).astype(int)
-
-  sl.replace_detections('spindle', fcn_spindle)
-  sl.show()
-
-Then navigate to the *Detection* tab and click on *Apply* to run the YASA algorithm on the specified channel.
-
-.. figure::  /docs/pictures/visbrain.PNG
-   :align:   center
-
-
-Outlier rejection
------------------
-
-YASA incorporates an optional post-processing step to identify and remove pseudo (fake) events.
-The method is based on a machine-learning algorithm (the `Isolation Forest <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html>`_, implemented in the `scikit-learn <https://scikit-learn.org/stable/index.html>`_ package),
-which uses the events parameters (e.g. amplitude, duration, frequency, etc) as input features to identify *aberrant* spindles / slow-waves / REMs.
-
-To activate this post-processing step, simply use:
-
-.. code-block:: python
-
-  import yasa
-  yasa.spindles_detect(data, sf, remove_outliers=True)  # Spindles
-  yasa.sw_detect(data, sf, remove_outliers=True)        # Slow-waves
-  yasa.rem_detect(loc, roc, sf, remove_outliers=True)   # REMs
 
 Gallery
 ~~~~~~~

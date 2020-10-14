@@ -6,21 +6,21 @@ What's new
 v0.4.0 (dev)
 ------------
 
-This is a major release with several new functions.
+This is a major release with several new functions, the biggest of which is the addition of an **automatic sleep staging module** (:py:class:`yasa.SleepStaging`). This means that YASA can now automatically detect the sleep stages of your raw EEG data. The classifier was trained and validated on more than 3000 nights from the `National Sleep Research Resource (NSRR) <https://sleepdata.org/>`_ website.
 
-**New features**
+Briefly, the algorithm works by calculating a set of features for each 30-sec epochs from a central EEG channel (required), as well as an EOG channel (optional) and an EMG channel (optional). For best performance, users can also specify metadata such as the age and the sex of the participants. For simplicity, pre-trained classifiers are already included in YASA. The automatic sleep staging algorithm requires the `LightGBM <https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html>`_ and `entropy <https://raphaelvallat.com/entropy/build/html/index.html>`_ package.
 
-a. YASA now has an automatic sleep staging module: :py:class:`yasa.SleepStaging`.
+**Other changes**
 
-**Enhancements**
-
-a. Added ``hue`` input parameter to :py:meth:`yasa.SpindlesResults.plot_average`, :py:meth:`yasa.SWResults.plot_average` to allow plotting by stage.
-b. The ``get_sync_events()`` method now also returns the sleep stage when available.
-c. The :py:func:`yasa.sw_detect` now also returns the timestamp of the sigma peak in the SW-through-locked 4-seconds epochs. The timestamp is expressed in seconds from the beginning of the recording and can be found in the ``SigmaPeak`` column.
+a. :py:meth:`yasa.SpindlesResults` and :py:meth:`yasa.SWResults` now have a ``plot_detection`` method which allows to interactively display the raw data with an overlay of the detected spindles. For now, this only works with Jupyter and it requires the `ipywidgets <https://ipywidgets.readthedocs.io/en/latest/user_install.html>`_ package.
+b. Added ``hue`` input parameter to :py:meth:`yasa.SpindlesResults.plot_average`, :py:meth:`yasa.SWResults.plot_average` to allow plotting by stage.
+c. The ``get_sync_events()`` method now also returns the sleep stage when available.
+d. The :py:func:`yasa.sw_detect` now also returns the timestamp of the sigma peak in the SW-through-locked 4-seconds epochs. The timestamp is expressed in seconds from the beginning of the recording and can be found in the ``SigmaPeak`` column.
 
 **Dependencies**
 
 a. Switch to latest version of `TensorPAC <https://etiennecmb.github.io/tensorpac/index.html>`_.
+b. Added `ipywidgets <https://ipywidgets.readthedocs.io/en/latest/user_install.html>`_, `LightGBM <https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html>`_ and `entropy <https://raphaelvallat.com/entropy/build/html/index.html>`_ to dependencies.
 
 v0.3.0 (May 2020)
 -----------------

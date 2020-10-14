@@ -958,6 +958,15 @@ class SpindlesResults(_DetectionResults):
 
     def plot_detection(self):
         """Plot an overlay of the detected spindles on the EEG signal.
+
+        This only works in Jupyter and it requires the ipywidgets
+        (https://ipywidgets.readthedocs.io/en/latest/) package.
+
+        To activate the interactive mode, make sure to run:
+
+        >>> %matplotlib widget
+
+        .. versionadded:: 0.4.0
         """
         return super().plot_detection()
 
@@ -1565,6 +1574,15 @@ class SWResults(_DetectionResults):
 
     def plot_detection(self):
         """Plot an overlay of the detected slow-waves on the EEG signal.
+
+        This only works in Jupyter and it requires the ipywidgets
+        (https://ipywidgets.readthedocs.io/en/latest/) package.
+
+        To activate the interactive mode, make sure to run:
+
+        >>> %matplotlib widget
+
+        .. versionadded:: 0.4.0
         """
         return super().plot_detection()
 

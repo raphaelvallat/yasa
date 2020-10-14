@@ -3,7 +3,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.SWResults &#8212; yasa 0.3.0 documentation</title>
+    <title>yasa.SWResults &#8212; yasa 0.4.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.3.0</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.4.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -134,7 +134,10 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#yasa.SWResults.plot_average" title="yasa.SWResults.plot_average"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_average</span></code></a>(self[, center, hue, …])</p></td>
 <td><p>Plot the average slow-wave.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SWResults.summary" title="yasa.SWResults.summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary</span></code></a>(self[, grp_chan, grp_stage, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SWResults.plot_detection" title="yasa.SWResults.plot_detection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_detection</span></code></a>(self)</p></td>
+<td><p>Plot an overlay of the detected slow-waves on the EEG signal.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SWResults.summary" title="yasa.SWResults.summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary</span></code></a>(self[, grp_chan, grp_stage, …])</p></td>
 <td><p>Return a summary of the SW detection, optionally grouped across channels and/or stage.</p></td>
 </tr>
 </tbody>
@@ -214,6 +217,21 @@ parameters in the <a class="reference external" href="https://mne.tools/stable/g
 </dl>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="yasa.SWResults.plot_detection">
+<code class="sig-name descname">plot_detection</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#SWResults.plot_detection"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Plot an overlay of the detected slow-waves on the EEG signal.</p>
+<p>This only works in Jupyter and it requires the ipywidgets
+(<a class="reference external" href="https://ipywidgets.readthedocs.io/en/latest/">https://ipywidgets.readthedocs.io/en/latest/</a>) package.</p>
+<p>To activate the interactive mode, make sure to run:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="o">%</span><span class="n">matplotlib</span> <span class="n">widget</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.4.0.</span></p>
+</div>
 </dd></dl>
 
 <dl class="py method">

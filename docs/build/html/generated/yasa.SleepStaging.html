@@ -3,7 +3,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.SleepStaging &#8212; yasa 0.3.0 documentation</title>
+    <title>yasa.SleepStaging &#8212; yasa 0.4.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.3.0</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.4.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -91,9 +91,12 @@
 <dt id="yasa.SleepStaging">
 <em class="property">class </em><code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">SleepStaging</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">raw</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">eeg_name</span></em>, <em class="sig-param"><span class="n">eog_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">emg_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Automatic sleep staging of polysomnography data.</p>
-<p>To run the automatic sleep staging, you must install the lightGBM
-(<a class="reference external" href="https://lightgbm.readthedocs.io/">https://lightgbm.readthedocs.io/</a>) and entropy
-(<a class="reference external" href="https://github.com/raphaelvallat/entropy">https://github.com/raphaelvallat/entropy</a>) packages.</p>
+<p>To run the automatic sleep staging, you must install the
+<a class="reference external" href="https://lightgbm.readthedocs.io/">LightGBM</a> and
+<a class="reference external" href="https://github.com/raphaelvallat/entropy">entropy</a> packages.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.4.0.</span></p>
+</div>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
@@ -106,15 +109,15 @@ and will be converted to uV.</p>
 </dd>
 <dt><strong>eog_name</strong><span class="classifier">str or None</span></dt><dd><p>The name of the EOG channel in <code class="docutils literal notranslate"><span class="pre">raw</span></code>. Preferentially,
 the left LOC channel referenced either to the mastoid (e.g. E1-M2)
-or Fpz.</p>
+or Fpz. Can also be None.</p>
 </dd>
 <dt><strong>emg_name</strong><span class="classifier">str or None</span></dt><dd><p>The name of the EMG channel in <code class="docutils literal notranslate"><span class="pre">raw</span></code>. Preferentially a chin
-electrode.</p>
+electrode. Can also be None.</p>
 </dd>
-<dt><strong>metadata</strong><span class="classifier">dict or None</span></dt><dd><p>A dictionary of metadata. Currently supported keys are:</p>
+<dt><strong>metadata</strong><span class="classifier">dict or None</span></dt><dd><p>A dictionary of metadata (optional). Currently supported keys are:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">'age'</span></code>: Age of the participant, in years.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">'male'</span></code>: Sex of the participant (1 or True = male, 0 or
+<li><p><code class="docutils literal notranslate"><span class="pre">'age'</span></code>: age of the participant, in years.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'male'</span></code>: sex of the participant (1 or True = male, 0 or
 False = female)</p></li>
 </ul>
 </dd>
@@ -122,38 +125,89 @@ False = female)</p></li>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
+<p><strong>Features extraction</strong></p>
 <p>For each 30-seconds epoch and each channel, the following features are
 calculated:</p>
 <ul class="simple">
 <li><p>Standard deviation</p></li>
 <li><p>Interquartile range</p></li>
-<li><p>10 and 90 percentiles</p></li>
 <li><p>Skewness and kurtosis</p></li>
 <li><p>Number of zero crossings</p></li>
 <li><p>Hjorth mobility and complexity</p></li>
 <li><p>Absolute total power in the 0.4-30 Hz band.</p></li>
 <li><p>Relative power in the main frequency bands (for EEG and EOG only)</p></li>
 <li><p>Power ratios (e.g. delta / beta)</p></li>
-<li><p>Permutation entropy and singular value decomposition entropy</p></li>
+<li><p>Permutation entropy</p></li>
 <li><p>Higuchi and Petrosian fractal dimension</p></li>
 </ul>
-<p>In addition with the raw estimates, the algorithm also calculates a
-smoothed and normalized version of these features. Specifically, a 5-min
-centered weighted rolling average and a 10 min past rolling average are
-applied. The resulting smoothed features are then normalized using a robust
-z-score.</p>
-<p>Note that the data are automatically downsampled to 100 Hz for faster
+<p>In addition, the algorithm also calculates a smoothed and normalized
+version of these features. Specifically, a 5-min centered weighted rolling
+average and a 10 min past rolling average are applied. The resulting
+smoothed features are then normalized using a robust z-score.</p>
+<p>The data are automatically downsampled to 100 Hz for faster
 computation.</p>
+<p><strong>Sleep stages prediction</strong></p>
+<p>YASA comes with a default set of pre-trained classifiers, which
+were trained and validated on ~3000 nights from the
+<a class="reference external" href="https://sleepdata.org/">National Sleep Research Resource</a>. These nights
+involved participants from a wide age range, of different ethnicities,
+gender, and health status. The default classifiers should therefore works
+reasonably well on most data.</p>
+<p>In addition with the predicted sleep stages, YASA can also return the
+predicted probabilities of each sleep stage at each epoch. This can in turn
+be used to derive a confidence score at each epoch.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The predictions should ALWAYS be double-check by a trained
+visual scorer, especially for epochs with low confidence. A full
+inspection should be performed in the following cases:</p>
+<ul class="simple">
+<li><p>Nap data, because the classifiers were exclusively trained on
+full-night recordings.</p></li>
+<li><p>Participants with sleep disorders.</p></li>
+<li><p>Sub-optimal PSG system and/or referencing</p></li>
+</ul>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>validation results of the sleep staging algorithm have shown
+that N1 sleep is the sleep stage with the lowest detection accuracy.
+This is expected because N1 is also the stage with the lowest human
+inter-rater agreement. Be extract careful for potential
+misclassification of N1 sleep (e.g. scored as Wake or N2) when
+inspecting the predicted sleep stages.</p>
+</div>
+<p class="rubric">References</p>
+<p>If you use YASA’s default classifiers, these are the main references for
+the <a class="reference external" href="https://sleepdata.org/">National Sleep Research Resource</a>:</p>
+<ul class="simple">
+<li><p>Dean, D. A., 2nd, Goldberger, A. L., Mueller, R., Kim, M., Rueschman, M.,
+Mobley, D., Sahoo, S. S., Jayapandian, C. P., Cui, L., Morrical, M. G.,
+Surovec, S., Zhang, G.-Q., &amp; Redline, S. (2016). Scaling Up Scientific
+Discovery in Sleep Medicine: The National Sleep Research Resource.
+Sleep, 39(5), 1151–1164.</p></li>
+<li><p>Zhang, G.-Q., Cui, L., Mueller, R., Tao, S., Kim, M., Rueschman, M.,
+Mariani, S., Mobley, D., &amp; Redline, S. (2018). The National Sleep
+Research Resource: towards a sleep data commons. Journal of the American
+Medical Informatics Association: JAMIA, 25(10), 1351–1358.</p></li>
+</ul>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">mne</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">yasa</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Load an EDF file using MNE</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">raw</span> <span class="o">=</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">read_raw_edf</span><span class="p">(</span><span class="s2">&quot;myfile.edf&quot;</span><span class="p">,</span> <span class="n">preload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Initialize the sleep staging instance</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sls</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">SleepStaging</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">eeg_name</span><span class="o">=</span><span class="s2">&quot;C4-M1&quot;</span><span class="p">,</span> <span class="n">eog_name</span><span class="o">=</span><span class="s2">&quot;LOC-M2&quot;</span><span class="p">,</span>
 <span class="gp">... </span>                        <span class="n">emg_name</span><span class="o">=</span><span class="s2">&quot;EMG1-EMG2&quot;</span><span class="p">,</span>
 <span class="gp">... </span>                        <span class="n">metadata</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">age</span><span class="o">=</span><span class="mi">29</span><span class="p">,</span> <span class="n">male</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Get the predicted sleep stages</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">sls</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;mytrainedclassifier.joblib&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hypno</span> <span class="o">=</span> <span class="n">sls</span><span class="o">.</span><span class="n">predict</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Get the predicted probabilities</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proba</span> <span class="o">=</span> <span class="n">sls</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Get the confidence</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">confidence</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Plot the predicted probabilities</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sls</span><span class="o">.</span><span class="n">plot_predict_proba</span><span class="p">()</span>
 </pre></div>
 </div>
 <dl class="py method">
@@ -181,10 +235,10 @@ computation.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#yasa.SleepStaging.plot_predict_proba" title="yasa.SleepStaging.plot_predict_proba"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_predict_proba</span></code></a>(self[, proba, …])</p></td>
 <td><p>Plot the predicted probability for each sleep stage for each 30-sec epoch of data.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SleepStaging.predict" title="yasa.SleepStaging.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(self, path_to_model[, smooth])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SleepStaging.predict" title="yasa.SleepStaging.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(self[, path_to_model])</p></td>
 <td><p>Return the predicted sleep stage for each 30-sec epoch of data.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SleepStaging.predict_proba" title="yasa.SleepStaging.predict_proba"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_proba</span></code></a>(self, path_to_model[, smooth])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SleepStaging.predict_proba" title="yasa.SleepStaging.predict_proba"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_proba</span></code></a>(self[, path_to_model])</p></td>
 <td><p>Return the predicted probability for each sleep stage for each 30-sec epoch of data.</p></td>
 </tr>
 </tbody>
@@ -237,19 +291,16 @@ to 0.</p>
 
 <dl class="py method">
 <dt id="yasa.SleepStaging.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">path_to_model</span></em>, <em class="sig-param"><span class="n">smooth</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.predict"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">path_to_model</span><span class="o">=</span><span class="default_value">'auto'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.predict"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Return the predicted sleep stage for each 30-sec epoch of data.</p>
-<p>Currently, only classifiers that were trained using a LGBMClassifier
-(<a class="reference external" href="https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html">https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html</a>)
+<p>Currently, only classifiers that were trained using a
+<a class="reference external" href="https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html">LGBMClassifier</a>
 are supported.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>path_to_model</strong><span class="classifier">str</span></dt><dd><p>Full path to a trained LightGBMClassifier, exported as a
-joblib file.</p>
-</dd>
-<dt><strong>smooth</strong><span class="classifier">boolean</span></dt><dd><p>If True, smooth the probability using a 2 min 30 centered rolling
-average.</p>
+<dt><strong>path_to_model</strong><span class="classifier">str or “auto”</span></dt><dd><p>Full path to a trained LGBMClassifier, exported as a
+joblib file. Can be “auto” to use YASA’s default classifier.</p>
 </dd>
 </dl>
 </dd>
@@ -264,20 +315,17 @@ average.</p>
 
 <dl class="py method">
 <dt id="yasa.SleepStaging.predict_proba">
-<code class="sig-name descname">predict_proba</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">path_to_model</span></em>, <em class="sig-param"><span class="n">smooth</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.predict_proba"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-name descname">predict_proba</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">path_to_model</span><span class="o">=</span><span class="default_value">'auto'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.predict_proba"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Return the predicted probability for each sleep stage for each 30-sec
 epoch of data.</p>
-<p>Currently, only classifiers that were trained using a LGBMClassifier
-(<a class="reference external" href="https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html">https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html</a>)
+<p>Currently, only classifiers that were trained using a
+<a class="reference external" href="https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html">LGBMClassifier</a>
 are supported.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>path_to_model</strong><span class="classifier">str</span></dt><dd><p>Full path to a trained LightGBMClassifier, exported as a
-joblib file.</p>
-</dd>
-<dt><strong>smooth</strong><span class="classifier">boolean</span></dt><dd><p>If True, smooth the probability using a 2 min 30 centered rolling
-average.</p>
+<dt><strong>path_to_model</strong><span class="classifier">str or “auto”</span></dt><dd><p>Full path to a trained LGBMClassifier, exported as a
+joblib file. Can be “auto” to use YASA’s default classifier.</p>
 </dd>
 </dl>
 </dd>
