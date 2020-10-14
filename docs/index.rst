@@ -72,7 +72,7 @@ How do I get started with YASA?
 
 If you want to dive right in, you can simply go to the main documentation (:ref:`api_ref`) and try to apply YASA's functions on your own EEG data. However, for most users, we strongly recommend that you first try running the examples Jupyter notebooks to get a sense of how YASA works and what it can do! The advantage is that the notebooks also come with example datasets so they should work right out of the box as long as you've installed YASA first. The notebooks and datasets can be found on `GitHub <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_ (make sure that you download the whole *notebooks/* folder). A short description of all notebooks is provided below:
 
-**Spindles**
+**Spindles detection**
 
 * `01_spindles_detection <https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb>`_: single-channel spindles detection and step-by-step description of the spindles detection algorithm.
 * `02_spindles_detection_multi <https://github.com/raphaelvallat/yasa/blob/master/notebooks/02_spindles_detection_multi.ipynb>`_: multi-channel spindles detection.
@@ -80,12 +80,12 @@ If you want to dive right in, you can simply go to the main documentation (:ref:
 * `04_spindles_slow_fast <https://github.com/raphaelvallat/yasa/blob/master/notebooks/04_spindles_slow_fast.ipynb>`_: slow versus fast spindles.
 * `run_visbrain <https://github.com/raphaelvallat/yasa/blob/master/notebooks/run_visbrain.py>`_: interactive display of the detected spindles using the Visbrain visualization software in Python.
 
-**Slow-waves**
+**Slow-waves detection**
 
 * `05_sw_detection <https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb>`_: single-channel slow-waves detection and step-by-step description of the slow-waves detection algorithm.
 * `06_sw_detection_multi <https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection.
 
-**Rapid Eye Movements (REMs)**
+**Rapid Eye Movements (REMs) detection**
 
 * `07_REMs_detection <https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb>`_: REMs detection.
 
@@ -100,6 +100,11 @@ If you want to dive right in, you can simply go to the main documentation (:ref:
 **Artifact rejection**
 
 * `13_artifact_rejection <https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb>`_: automatic artifact rejection on single and multi-channel EEG data.
+
+** Automatic sleep staging**
+
+* `14_automatic_sleep_staging <https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_automatic_sleep_staging.ipynb>`_: automatic sleep staging of polysomnography data.
+
 
 Typical use: spindles detection
 -------------------------------

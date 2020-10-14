@@ -74,7 +74,7 @@ How do I get started with YASA?
 
 If you want to dive right in, you can simply go to the `documentation <https://raphaelvallat.com/yasa/build/html/api.html>`_ and try to apply YASA's functions on your own EEG data. However, for most users, we strongly recommend that you first try running the examples Jupyter notebooks to get a sense of how YASA works and what it can do! The advantage is that the notebooks also come with example datasets so they should work right out of the box as long as you've installed YASA first. The notebooks and datasets can be found on `GitHub <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_ (make sure that you download the whole *notebooks/* folder). A short description of all notebooks is provided below:
 
-**Spindles**
+**Spindles detection**
 
 * `01_spindles_detection <notebooks/01_spindles_detection.ipynb>`_: single-channel spindles detection and step-by-step description of the spindles detection algorithm.
 * `02_spindles_detection_multi <notebooks/02_spindles_detection_multi.ipynb>`_: multi-channel spindles detection.
@@ -82,12 +82,12 @@ If you want to dive right in, you can simply go to the `documentation <https://r
 * `04_spindles_slow_fast <notebooks/04_spindles_slow_fast.ipynb>`_: slow versus fast spindles.
 * `run_visbrain.py <notebooks/run_visbrain.py>`_: interactive display of the detected spindles using the Visbrain visualization software in Python.
 
-**Slow-waves**
+**Slow-waves detection**
 
 * `05_sw_detection <notebooks/05_sw_detection.ipynb>`_: single-channel slow-waves detection and step-by-step description of the slow-waves detection algorithm.
 * `06_sw_detection_multi <notebooks/06_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection.
 
-**Rapid Eye Movements (REMs)**
+**Rapid Eye Movements (REMs) detection**
 
 * `07_REMs_detection <notebooks/07_REMs_detection.ipynb>`_: REMs detection.
 
@@ -102,6 +102,11 @@ If you want to dive right in, you can simply go to the `documentation <https://r
 **Artifact rejection**
 
 * `13_artifact_rejection <notebooks/13_artifact_rejection.ipynb>`_: automatic artifact rejection on single and multi-channel EEG data.
+
+** Automatic sleep staging**
+
+* `14_automatic_sleep_staging <notebooks/14_automatic_sleep_staging.ipynb>`_: automatic sleep staging of polysomnography data.
+
 
 Typical use: spindles detection
 -------------------------------
@@ -132,12 +137,12 @@ The output of ``sp.summary()`` is a `pandas DataFrame <https://pandas.pydata.org
 .. table::
    :widths: auto
 
-=======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
-  Start    End    Duration    Amplitude    RMS    AbsPower    RelPower    Frequency    Oscillations    Symmetry
-=======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
-   3.32   4.06        0.74        81.80  19.65        2.72        0.49        12.85              10        0.67
-  13.26  13.85        0.59        99.30  24.49        2.82        0.24        12.15               7        0.25
-=======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
+  =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
+    Start    End    Duration    Amplitude    RMS    AbsPower    RelPower    Frequency    Oscillations    Symmetry
+  =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
+     3.32   4.06        0.74        81.80  19.65        2.72        0.49        12.85              10        0.67
+    13.26  13.85        0.59        99.30  24.49        2.82        0.24        12.15               7        0.25
+  =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
 
 In turn, the detection dataframe can be easily used to plot the events.
 

@@ -125,6 +125,9 @@ class SleepStaging:
 
     Examples
     --------
+    For a concrete example, please refer to the example Jupyter notebook:
+    https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_automatic_sleep_staging.ipynb
+
     >>> import mne
     >>> import yasa
     >>> # Load an EDF file using MNE
@@ -143,7 +146,7 @@ class SleepStaging:
     >>> sls.plot_predict_proba()
     """
 
-    def __init__(self, raw, *, eeg_name, eog_name=None, emg_name=None,
+    def __init__(self, raw, eeg_name, *, eog_name=None, emg_name=None,
                  metadata=None):
         # Type check
         assert isinstance(eeg_name, str)
