@@ -141,6 +141,7 @@ class TestMain(unittest.TestCase):
         sp.summary()
         sp.summary(grp_chan=True)
         sp.plot_average(ci=None)
+        sp.plot_detection()
         assert sp._data.shape == sp._data_filt.shape
         np.testing.assert_array_equal(sp._data, data_full)
         assert sp._sf == sf
@@ -159,6 +160,7 @@ class TestMain(unittest.TestCase):
         sp.summary(grp_chan=True, grp_stage=True, sort=False)
         sp.plot_average(ci=None)
         sp.plot_average(hue="Stage", ci=None)
+        sp.plot_detection()
 
         # Using a MNE raw object (and disabling one threshold)
         spindles_detect(data_mne, thresh={'corr': None, 'rms': 3})
@@ -192,6 +194,7 @@ class TestMain(unittest.TestCase):
         sw.get_mask()
         sw.get_sync_events()
         sw.plot_average(ci=None)
+        sw.plot_detection()
         np.testing.assert_array_equal(np.squeeze(sw._data), data_sw)
         np.testing.assert_array_equal(sw._hypno, hypno_sw)
         assert sw._sf == sf
@@ -217,6 +220,7 @@ class TestMain(unittest.TestCase):
         sw.get_mask()
         sw.get_sync_events()
         sw.plot_average(ci=None)
+        sw.plot_detection()
 
         sw_no_out = sw_detect(data_full, sf, chan_full,
                               remove_outliers=True)
@@ -230,6 +234,7 @@ class TestMain(unittest.TestCase):
         sw.summary(grp_chan=True, grp_stage=True, sort=False)
         sw.plot_average(ci=None)
         sw.plot_average(hue="Stage", ci=None)
+        sw.plot_detection()
 
         # Using a MNE raw object
         sw_detect(data_mne)
