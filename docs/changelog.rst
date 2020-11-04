@@ -6,9 +6,9 @@ What's new
 v0.4.0 (dev)
 ------------
 
-This is a major release with several new functions, the biggest of which is the addition of an **automatic sleep staging module** (:py:class:`yasa.SleepStaging`). This means that YASA can now automatically detect the sleep stages of your raw EEG data. The classifier was trained and validated on more than 3000 nights from the `National Sleep Research Resource (NSRR) <https://sleepdata.org/>`_ website.
+This is a major release with several new functions, the biggest of which is the addition of an **automatic sleep staging module** (:py:class:`yasa.SleepStaging`). This means that YASA can now automatically score the sleep stages of your raw EEG data. The classifier was trained and validated on more than 3000 nights from the `National Sleep Research Resource (NSRR) <https://sleepdata.org/>`_ website.
 
-Briefly, the algorithm works by calculating a set of features for each 30-sec epochs from a central EEG channel (required), as well as an EOG channel (optional) and an EMG channel (optional). For best performance, users can also specify metadata such as the age and the sex of the participants. For simplicity, pre-trained classifiers are already included in YASA. The automatic sleep staging algorithm requires the `LightGBM <https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html>`_ and `entropy <https://raphaelvallat.com/entropy/build/html/index.html>`_ package.
+Briefly, the algorithm works by calculating a set of features for each 30-sec epochs from a central EEG channel (required), as well as an EOG channel (optional) and an EMG channel (optional). For best performance, users can also specify the age and the sex of the participants. Pre-trained classifiers are already included in YASA. The automatic sleep staging algorithm requires the `LightGBM <https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html>`_ and `entropy <https://raphaelvallat.com/entropy/build/html/index.html>`_ package.
 
 **Other changes**
 

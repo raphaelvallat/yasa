@@ -89,7 +89,7 @@
 <h1>yasa.SleepStaging</h1>
 <dl class="py class">
 <dt id="yasa.SleepStaging">
-<em class="property">class </em><code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">SleepStaging</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">raw</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">eeg_name</span></em>, <em class="sig-param"><span class="n">eog_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">emg_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging"><span class="viewcode-link">[source]</span></a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">SleepStaging</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">raw</span></em>, <em class="sig-param"><span class="n">eeg_name</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">eog_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">emg_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Automatic sleep staging of polysomnography data.</p>
 <p>To run the automatic sleep staging, you must install the
 <a class="reference external" href="https://lightgbm.readthedocs.io/">LightGBM</a> and
@@ -192,6 +192,8 @@ Research Resource: towards a sleep data commons. Journal of the American
 Medical Informatics Association: JAMIA, 25(10), 1351–1358.</p></li>
 </ul>
 <p class="rubric">Examples</p>
+<p>For a concrete example, please refer to the example Jupyter notebook:
+<a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_automatic_sleep_staging.ipynb">https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_automatic_sleep_staging.ipynb</a></p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">mne</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">yasa</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># Load an EDF file using MNE</span>
@@ -212,7 +214,7 @@ Medical Informatics Association: JAMIA, 25(10), 1351–1358.</p></li>
 </div>
 <dl class="py method">
 <dt id="yasa.SleepStaging.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">raw</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">eeg_name</span></em>, <em class="sig-param"><span class="n">eog_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">emg_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.__init__"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">raw</span></em>, <em class="sig-param"><span class="n">eeg_name</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">eog_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">emg_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.__init__"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
 </dd></dl>
 
@@ -223,7 +225,7 @@ Medical Informatics Association: JAMIA, 25(10), 1351–1358.</p></li>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SleepStaging.__init__" title="yasa.SleepStaging.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(self, raw, *, eeg_name[, eog_name, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SleepStaging.__init__" title="yasa.SleepStaging.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(self, raw, eeg_name, *[, eog_name, …])</p></td>
 <td><p>Initialize self.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#yasa.SleepStaging.fit" title="yasa.SleepStaging.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(self)</p></td>
@@ -263,7 +265,7 @@ Medical Informatics Association: JAMIA, 25(10), 1351–1358.</p></li>
 <dl class="field-list">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><dl>
-<dt><strong>features</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.1.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Feature dataframe.</p>
+<dt><strong>features</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Feature dataframe.</p>
 </dd>
 </dl>
 </dd>
@@ -331,7 +333,7 @@ joblib file. Can be “auto” to use YASA’s default classifier.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>proba</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.1.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>The predicted probability for each sleep stage for each 30-sec
+<dt><strong>proba</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>The predicted probability for each sleep stage for each 30-sec
 epoch of data.</p>
 </dd>
 </dl>

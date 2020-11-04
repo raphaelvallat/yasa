@@ -213,6 +213,9 @@
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
+<span class="sd">    For a concrete example, please refer to the example Jupyter notebook:</span>
+<span class="sd">    https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_automatic_sleep_staging.ipynb</span>
+
 <span class="sd">    &gt;&gt;&gt; import mne</span>
 <span class="sd">    &gt;&gt;&gt; import yasa</span>
 <span class="sd">    &gt;&gt;&gt; # Load an EDF file using MNE</span>
@@ -231,7 +234,7 @@
 <span class="sd">    &gt;&gt;&gt; sls.plot_predict_proba()</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="SleepStaging.__init__"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">eeg_name</span><span class="p">,</span> <span class="n">eog_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">emg_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="SleepStaging.__init__"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">eeg_name</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">eog_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">emg_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="c1"># Type check</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eeg_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
