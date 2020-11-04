@@ -12,3 +12,4 @@ scikit-learn>=0.22
 pyriemann
 joblib
 git+git://github.com/raphaelvallat/entropy@master#egg=entropy
+lightgbm
