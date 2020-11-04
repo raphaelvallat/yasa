@@ -100,7 +100,7 @@ class SleepStaging:
         * Participants with sleep disorders.
         * Sub-optimal PSG system and/or referencing
 
-    .. warning:: validation results of the sleep staging algorithm have shown
+    .. warning:: Validation results of the sleep staging algorithm have shown
         that N1 sleep is the sleep stage with the lowest detection accuracy.
         This is expected because N1 is also the stage with the lowest human
         inter-rater agreement. Be extract careful for potential
