@@ -103,7 +103,7 @@ If you want to dive right in, you can simply go to the `documentation <https://r
 
 * `13_artifact_rejection <notebooks/13_artifact_rejection.ipynb>`_: automatic artifact rejection on single and multi-channel EEG data.
 
-** Automatic sleep staging**
+**Automatic sleep staging**
 
 * `14_automatic_sleep_staging <notebooks/14_automatic_sleep_staging.ipynb>`_: automatic sleep staging of polysomnography data.
 

@@ -101,7 +101,7 @@ If you want to dive right in, you can simply go to the main documentation (:ref:
 
 * `13_artifact_rejection <https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb>`_: automatic artifact rejection on single and multi-channel EEG data.
 
-** Automatic sleep staging**
+**Automatic sleep staging**
 
 * `14_automatic_sleep_staging <https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_automatic_sleep_staging.ipynb>`_: automatic sleep staging of polysomnography data.
 
