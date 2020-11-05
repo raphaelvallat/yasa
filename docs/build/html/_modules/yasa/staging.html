@@ -142,7 +142,7 @@
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
 
-<span class="sd">    **Features extraction**</span>
+<span class="sd">    **1. Features extraction**</span>
 
 <span class="sd">    For each 30-seconds epoch and each channel, the following features are</span>
 <span class="sd">    calculated:</span>
@@ -166,7 +166,7 @@
 <span class="sd">    The data are automatically downsampled to 100 Hz for faster</span>
 <span class="sd">    computation.</span>
 
-<span class="sd">    **Sleep stages prediction**</span>
+<span class="sd">    **2. Sleep stages prediction**</span>
 
 <span class="sd">    YASA comes with a default set of pre-trained classifiers, which</span>
 <span class="sd">    were trained and validated on ~3000 nights from the</span>
@@ -188,10 +188,9 @@
 <span class="sd">        * Participants with sleep disorders.</span>
 <span class="sd">        * Sub-optimal PSG system and/or referencing</span>
 
-<span class="sd">    .. warning:: Validation results of the sleep staging algorithm have shown</span>
-<span class="sd">        that N1 sleep is the sleep stage with the lowest detection accuracy.</span>
-<span class="sd">        This is expected because N1 is also the stage with the lowest human</span>
-<span class="sd">        inter-rater agreement. Be extract careful for potential</span>
+<span class="sd">    .. warning:: N1 sleep is the sleep stage with the lowest detection</span>
+<span class="sd">        accuracy. This is expected because N1 is also the stage with the lowest</span>
+<span class="sd">        human inter-rater agreement. Be very careful for potential</span>
 <span class="sd">        misclassification of N1 sleep (e.g. scored as Wake or N2) when</span>
 <span class="sd">        inspecting the predicted sleep stages.</span>
 
@@ -200,16 +199,13 @@
 <span class="sd">    If you use YASA&#39;s default classifiers, these are the main references for</span>
 <span class="sd">    the `National Sleep Research Resource &lt;https://sleepdata.org/&gt;`_:</span>
 
-<span class="sd">    * Dean, D. A., 2nd, Goldberger, A. L., Mueller, R., Kim, M., Rueschman, M.,</span>
-<span class="sd">      Mobley, D., Sahoo, S. S., Jayapandian, C. P., Cui, L., Morrical, M. G.,</span>
-<span class="sd">      Surovec, S., Zhang, G.-Q., &amp; Redline, S. (2016). Scaling Up Scientific</span>
-<span class="sd">      Discovery in Sleep Medicine: The National Sleep Research Resource.</span>
-<span class="sd">      Sleep, 39(5), 1151–1164.</span>
+<span class="sd">    * Dean, Dennis A., et al. &quot;Scaling up scientific discovery in sleep</span>
+<span class="sd">      medicine: the National Sleep Research Resource.&quot; Sleep 39.5 (2016):</span>
+<span class="sd">      1151-1164.</span>
 
-<span class="sd">    * Zhang, G.-Q., Cui, L., Mueller, R., Tao, S., Kim, M., Rueschman, M.,</span>
-<span class="sd">      Mariani, S., Mobley, D., &amp; Redline, S. (2018). The National Sleep</span>
-<span class="sd">      Research Resource: towards a sleep data commons. Journal of the American</span>
-<span class="sd">      Medical Informatics Association: JAMIA, 25(10), 1351–1358.</span>
+<span class="sd">    * Zhang, Guo-Qiang, et al. &quot;The National Sleep Research Resource: towards</span>
+<span class="sd">      a sleep data commons.&quot; Journal of the American Medical Informatics</span>
+<span class="sd">      Association 25.10 (2018): 1351-1358.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>

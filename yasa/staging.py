@@ -54,7 +54,7 @@ class SleepStaging:
     Notes
     -----
 
-    **Features extraction**
+    **1. Features extraction**
 
     For each 30-seconds epoch and each channel, the following features are
     calculated:
@@ -78,7 +78,7 @@ class SleepStaging:
     The data are automatically downsampled to 100 Hz for faster
     computation.
 
-    **Sleep stages prediction**
+    **2. Sleep stages prediction**
 
     YASA comes with a default set of pre-trained classifiers, which
     were trained and validated on ~3000 nights from the
@@ -100,10 +100,9 @@ class SleepStaging:
         * Participants with sleep disorders.
         * Sub-optimal PSG system and/or referencing
 
-    .. warning:: Validation results of the sleep staging algorithm have shown
-        that N1 sleep is the sleep stage with the lowest detection accuracy.
-        This is expected because N1 is also the stage with the lowest human
-        inter-rater agreement. Be extract careful for potential
+    .. warning:: N1 sleep is the sleep stage with the lowest detection
+        accuracy. This is expected because N1 is also the stage with the lowest
+        human inter-rater agreement. Be very careful for potential
         misclassification of N1 sleep (e.g. scored as Wake or N2) when
         inspecting the predicted sleep stages.
 
@@ -112,16 +111,13 @@ class SleepStaging:
     If you use YASA's default classifiers, these are the main references for
     the `National Sleep Research Resource <https://sleepdata.org/>`_:
 
-    * Dean, D. A., 2nd, Goldberger, A. L., Mueller, R., Kim, M., Rueschman, M.,
-      Mobley, D., Sahoo, S. S., Jayapandian, C. P., Cui, L., Morrical, M. G.,
-      Surovec, S., Zhang, G.-Q., & Redline, S. (2016). Scaling Up Scientific
-      Discovery in Sleep Medicine: The National Sleep Research Resource.
-      Sleep, 39(5), 1151–1164.
+    * Dean, Dennis A., et al. "Scaling up scientific discovery in sleep
+      medicine: the National Sleep Research Resource." Sleep 39.5 (2016):
+      1151-1164.
 
-    * Zhang, G.-Q., Cui, L., Mueller, R., Tao, S., Kim, M., Rueschman, M.,
-      Mariani, S., Mobley, D., & Redline, S. (2018). The National Sleep
-      Research Resource: towards a sleep data commons. Journal of the American
-      Medical Informatics Association: JAMIA, 25(10), 1351–1358.
+    * Zhang, Guo-Qiang, et al. "The National Sleep Research Resource: towards
+      a sleep data commons." Journal of the American Medical Informatics
+      Association 25.10 (2018): 1351-1358.
 
     Examples
     --------

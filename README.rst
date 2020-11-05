@@ -5,7 +5,7 @@
 .. image:: https://badge.fury.io/py/yasa.svg
     :target: https://badge.fury.io/py/yasa
 
-.. image:: https://img.shields.io/badge/python-3.6%20%7C%203.7-blue.svg
+.. image:: https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue
     :target: https://www.python.org/downloads/
 
 .. image:: https://img.shields.io/github/license/raphaelvallat/yasa.svg
@@ -20,8 +20,8 @@
 .. image:: https://pepy.tech/badge/yasa
     :target: https://pepy.tech/badge/yasa
 
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg
-   :target: https://doi.org/10.5281/zenodo.2370600
+.. .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg
+..    :target: https://doi.org/10.5281/zenodo.2370600
 
 ----------------
 
@@ -38,6 +38,8 @@
 
 For more details, check out the `API documentation <https://raphaelvallat.com/yasa/build/html/index.html>`_ or try the
 `tutorial (Jupyter notebooks) <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_.
+
+----------------
 
 Installation
 ~~~~~~~~~~~~
@@ -108,47 +110,41 @@ If you want to dive right in, you can simply go to the `documentation <https://r
 * `14_automatic_sleep_staging <notebooks/14_automatic_sleep_staging.ipynb>`_: automatic sleep staging of polysomnography data.
 
 
-Typical use: spindles detection
--------------------------------
+.. Typical use: spindles detection
+.. -------------------------------
 
-.. code-block:: python
+.. .. code-block:: python
 
-  import yasa
+..   import yasa
 
-  # 1) Single-channel spindles detection, in its simplest form.
-  # There are many optional arguments that you can change to customize the detection.
-  sp = yasa.spindles_detect(data, sf)
-  # The output of the the detection (`sp`) is a class that has several attributes and methods.
-  # For instance, to get the full detection dataframe, one can simply use:
-  sp.summary()
-  # To plot an average template of all the detected spindles,
-  # centered around the most prominent peak (+/- 1 second)
-  sp.plot_average(center='Peak', time_before=1, time_after=1)
-  # To interactively inspect the detected spindles
-  sp.plot_detection()
+..   # 1) Single-channel spindles detection, in its simplest form.
+..   # There are many optional arguments that you can change to customize the detection.
+..   sp = yasa.spindles_detect(data, sf)
+..   # The output of the the detection (`sp`) is a class that has several attributes and methods.
+..   # For instance, to get the full detection dataframe, one can simply use:
+..   sp.summary()
+..   # To plot an average template of all the detected spindles,
+..   # centered around the most prominent peak (+/- 1 second)
+..   sp.plot_average(center='Peak', time_before=1, time_after=1)
+..   # To interactively inspect the detected spindles
+..   sp.plot_detection()
 
-  # 2) Multi-channels spindles detection limited to N2/N3 sleep, with automatic outlier rejection
-  sp = yasa.spindles_detect(data, sf, ch_names, hypno=hypno, include=(2, 3), remove_outliers=True)
-  # Return spindles count / density and parameters averaged across channels and sleep stages
-  sp.summary(grp_stage=True, grp_chan=True)
+..   # 2) Multi-channels spindles detection limited to N2/N3 sleep, with automatic outlier rejection
+..   sp = yasa.spindles_detect(data, sf, ch_names, hypno=hypno, include=(2, 3), remove_outliers=True)
+..   # Return spindles count / density and parameters averaged across channels and sleep stages
+..   sp.summary(grp_stage=True, grp_chan=True)
 
-The output of ``sp.summary()`` is a `pandas DataFrame <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>`_ where each row is a  detected spindle and each column a parameter of this event, including the start and end timestamps (in seconds from the beginning of the data), duration, amplitude, etc.
+.. The output of ``sp.summary()`` is a `pandas DataFrame <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html>`_ where each row is a  detected spindle and each column a parameter of this event, including the start and end timestamps (in seconds from the beginning of the data), duration, amplitude, etc.
 
-.. table::
-   :widths: auto
+.. .. table::
+..   :widths: auto
 
-  =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
-    Start    End    Duration    Amplitude    RMS    AbsPower    RelPower    Frequency    Oscillations    Symmetry
-  =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
-     3.32   4.06        0.74        81.80  19.65        2.72        0.49        12.85              10        0.67
-    13.26  13.85        0.59        99.30  24.49        2.82        0.24        12.15               7        0.25
-  =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
-
-In turn, the detection dataframe can be easily used to plot the events.
-
-.. figure::  /docs/pictures/detection.png
-   :align:   center
-
+..   =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
+..     Start    End    Duration    Amplitude    RMS    AbsPower    RelPower    Frequency    Oscillations    Symmetry
+..   =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
+..      3.32   4.06        0.74        81.80  19.65        2.72        0.49        12.85              10        0.67
+..     13.26  13.85        0.59        99.30  24.49        2.82        0.24        12.15               7        0.25
+..   =======  =====  ==========  ===========  =====  ==========  ==========  ===========  ==============  ==========
 
 Gallery
 ~~~~~~~

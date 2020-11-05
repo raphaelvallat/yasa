@@ -89,7 +89,7 @@
 <div class="line"><br /></div>
 </div>
 <a class="reference external image-reference" href="https://badge.fury.io/py/yasa"><img alt="https://badge.fury.io/py/yasa.svg" src="https://badge.fury.io/py/yasa.svg" /></a>
-<a class="reference external image-reference" href="https://www.python.org/downloads/"><img alt="https://img.shields.io/badge/python-3.6%20%7C%203.7-blue.svg" src="https://img.shields.io/badge/python-3.6%20%7C%203.7-blue.svg" /></a>
+<a class="reference external image-reference" href="https://www.python.org/downloads/"><img alt="https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue" src="https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue" /></a>
 <a class="reference external image-reference" href="https://github.com/raphaelvallat/yasa/blob/master/LICENSE"><img alt="https://img.shields.io/github/license/raphaelvallat/yasa.svg" src="https://img.shields.io/github/license/raphaelvallat/yasa.svg" /></a>
 <a class="reference external image-reference" href="https://travis-ci.org/raphaelvallat/yasa"><img alt="https://travis-ci.org/raphaelvallat/yasa.svg?branch=master" src="https://travis-ci.org/raphaelvallat/yasa.svg?branch=master" /></a>
 <a class="reference external image-reference" href="https://codecov.io/gh/raphaelvallat/yasa"><img alt="https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg" src="https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg" /></a>
@@ -108,6 +108,7 @@
 </ul>
 <p>For more details, check out the <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/index.html">API documentation</a> or try the
 <a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">tutorial (Jupyter notebooks)</a>.</p>
+<hr class="docutils" />
 <div class="section" id="installation">
 <h1>Installation</h1>
 <p>To install YASA, simply open a terminal or Anaconda command prompt and enter:</p>
@@ -132,6 +133,7 @@
 </pre></div>
 </div>
 </div>
+<hr class="docutils" />
 <div class="section" id="how-do-i-get-started-with-yasa">
 <h1>How do I get started with YASA?</h1>
 <p>If you want to dive right in, you can simply go to the main documentation (<a class="reference internal" href="api.html#api-ref"><span class="std std-ref">API reference</span></a>) and try to apply YASA’s functions on your own EEG data. However, for most users, we strongly recommend that you first try running the examples Jupyter notebooks to get a sense of how YASA works and what it can do! The advantage is that the notebooks also come with example datasets so they should work right out of the box as long as you’ve installed YASA first. The notebooks and datasets can be found on <a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">GitHub</a> (make sure that you download the whole <em>notebooks/</em> folder). A short description of all notebooks is provided below:</p>
@@ -168,74 +170,8 @@
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_automatic_sleep_staging.ipynb">14_automatic_sleep_staging</a>: automatic sleep staging of polysomnography data.</p></li>
 </ul>
-<div class="section" id="typical-use-spindles-detection">
-<h2>Typical use: spindles detection</h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">yasa</span>
-
-<span class="c1"># 1) Single-channel spindles detection, in its simplest form.</span>
-<span class="c1"># There are many optional arguments that you can change to customize the detection.</span>
-<span class="n">sp</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">)</span>
-<span class="c1"># The output of the the detection (`sp`) is a class that has several attributes and methods.</span>
-<span class="c1"># For instance, to get the full detection dataframe, one can simply use:</span>
-<span class="n">sp</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-<span class="c1"># To plot an average template of all the detected spindles,</span>
-<span class="c1"># centered around the most prominent peak (+/- 1 second)</span>
-<span class="n">sp</span><span class="o">.</span><span class="n">plot_average</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="s1">&#39;Peak&#39;</span><span class="p">,</span> <span class="n">time_before</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">time_after</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="c1"># To interactively inspect the detected spindles</span>
-<span class="n">sp</span><span class="o">.</span><span class="n">plot_detection</span><span class="p">()</span>
-
-<span class="c1"># 2) Multi-channels spindles detection limited to N2/N3 sleep, with automatic outlier rejection</span>
-<span class="n">sp</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="c1"># Return spindles count / density and parameters averaged across channels and sleep stages</span>
-<span class="n">sp</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="n">grp_stage</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">grp_chan</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
 </div>
-<p>The output of <code class="docutils literal notranslate"><span class="pre">sp.summary()</span></code> is a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">pandas DataFrame</a> where each row is a  detected spindle and each column a parameter of this event, including the start and end timestamps (in seconds from the beginning of the data), duration, amplitude, etc.</p>
-<table class="colwidths-auto docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Start</p></th>
-<th class="head"><p>End</p></th>
-<th class="head"><p>Duration</p></th>
-<th class="head"><p>Amplitude</p></th>
-<th class="head"><p>RMS</p></th>
-<th class="head"><p>AbsPower</p></th>
-<th class="head"><p>RelPower</p></th>
-<th class="head"><p>Frequency</p></th>
-<th class="head"><p>Oscillations</p></th>
-<th class="head"><p>Symmetry</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>3.32</p></td>
-<td><p>4.06</p></td>
-<td><p>0.74</p></td>
-<td><p>81.80</p></td>
-<td><p>19.65</p></td>
-<td><p>2.72</p></td>
-<td><p>0.49</p></td>
-<td><p>12.85</p></td>
-<td><p>10</p></td>
-<td><p>0.67</p></td>
-</tr>
-<tr class="row-odd"><td><p>13.26</p></td>
-<td><p>13.85</p></td>
-<td><p>0.59</p></td>
-<td><p>99.30</p></td>
-<td><p>24.49</p></td>
-<td><p>2.82</p></td>
-<td><p>0.24</p></td>
-<td><p>12.15</p></td>
-<td><p>7</p></td>
-<td><p>0.25</p></td>
-</tr>
-</tbody>
-</table>
-<p>In turn, the detection dataframe can be used to plot the events.</p>
-<div class="figure align-center">
-<img alt="_images/detection.png" src="_images/detection.png" />
-</div>
-</div>
-</div>
+<hr class="docutils" />
 <div class="section" id="gallery">
 <h1>Gallery</h1>
 <p>Below some plots demonstrating the functionalities of YASA. To reproduce these, check out the <a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">tutorial (Jupyter notebooks)</a>.</p>
@@ -244,12 +180,14 @@
 <p class="caption"><span class="caption-text"><em>The two top plots show an overlay of the detected spindles (blue) and slow-waves (red) on real EEG data. The middle right panel shows a time-frequency representation of the whole-night recording (spectrogram), plotted with the hypnogram (sleep stages) on top. The middle right panel shows the sleep stage probability transition matrix, calculated across the entire night. The left and right plots of the bottom row show the average template of all detected slow-waves and spindles across the entire night, stratified by channels. The middle bottom plot shows a phase-amplitude coupling comodulogram between slower (0.2-4Hz) and faster (7.5-25Hz) frequency ranges.</em></span></p>
 </div>
 </div>
+<hr class="docutils" />
 <div class="section" id="development">
 <h1>Development</h1>
 <p>YASA was created and is maintained by <a class="reference external" href="https://raphaelvallat.com">Raphael Vallat</a>. Contributions are more than welcome so feel free to contact me, open an issue or submit a pull request!</p>
 <p>To see the code or report a bug, please visit the <a class="reference external" href="https://github.com/raphaelvallat/yasa">GitHub repository</a>.</p>
 <p>Note that this program is provided with NO WARRANTY OF ANY KIND.</p>
 </div>
+<hr class="docutils" />
 <div class="section" id="citation">
 <h1>Citation</h1>
 <p>To cite YASA, please use the Zenodo DOI:</p>

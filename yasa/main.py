@@ -2025,9 +2025,6 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     r"""
     Automatic artifact rejection.
 
-    This is still an experimental feature. Expect API-breaking changes in
-    future releases.
-
     .. versionadded:: 0.2.0
 
     Parameters
@@ -2087,12 +2084,12 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     n_chan_reject : int
         The number of channels that must be below or above ``threshold`` on any
         given epochs to consider this epoch as an artefact when
-        ``method='covar'``. The default is 1, which means that the epoch will
+        ``method='std'``. The default is 1, which means that the epoch will
         be marked as artifact as soon as one channel is above or below the
         threshold. This may be too conservative when working with a large
         number of channels (e.g.hdEEG) in which case users can increase
         ``n_chan_reject``. Note that this parameter only has an effect
-        when ``method='covar'``.
+        when ``method='std'``.
     verbose : bool or str
         Verbose level. Default (False) will only print warning and error
         messages. The logging levels are 'debug', 'info', 'warning', 'error',

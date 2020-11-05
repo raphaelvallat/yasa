@@ -2113,9 +2113,6 @@
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Automatic artifact rejection.</span>
 
-<span class="sd">    This is still an experimental feature. Expect API-breaking changes in</span>
-<span class="sd">    future releases.</span>
-
 <span class="sd">    .. versionadded:: 0.2.0</span>
 
 <span class="sd">    Parameters</span>
@@ -2175,12 +2172,12 @@
 <span class="sd">    n_chan_reject : int</span>
 <span class="sd">        The number of channels that must be below or above ``threshold`` on any</span>
 <span class="sd">        given epochs to consider this epoch as an artefact when</span>
-<span class="sd">        ``method=&#39;covar&#39;``. The default is 1, which means that the epoch will</span>
+<span class="sd">        ``method=&#39;std&#39;``. The default is 1, which means that the epoch will</span>
 <span class="sd">        be marked as artifact as soon as one channel is above or below the</span>
 <span class="sd">        threshold. This may be too conservative when working with a large</span>
 <span class="sd">        number of channels (e.g.hdEEG) in which case users can increase</span>
 <span class="sd">        ``n_chan_reject``. Note that this parameter only has an effect</span>
-<span class="sd">        when ``method=&#39;covar&#39;``.</span>
+<span class="sd">        when ``method=&#39;std&#39;``.</span>
 <span class="sd">    verbose : bool or str</span>
 <span class="sd">        Verbose level. Default (False) will only print warning and error</span>
 <span class="sd">        messages. The logging levels are &#39;debug&#39;, &#39;info&#39;, &#39;warning&#39;, &#39;error&#39;,</span>
