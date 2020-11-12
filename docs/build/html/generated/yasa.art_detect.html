@@ -99,7 +99,7 @@
 <dd class="field-odd"><dl>
 <dt><strong>data</strong><span class="classifier">array_like</span></dt><dd><p>Single or multi-channel EEG data.
 Unit must be uV and shape <em>(n_chan, n_samples)</em>.
-Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.21.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>
+Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.21.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>
 and <code class="docutils literal notranslate"><span class="pre">sf</span></code> will be automatically extracted,
 and <code class="docutils literal notranslate"><span class="pre">data</span></code> will also be automatically converted from Volts (MNE)
 to micro-Volts (YASA).</p>
@@ -110,7 +110,7 @@ exclude any EOG, EKG or EMG channels.</p>
 </div>
 </dd>
 <dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>Sampling frequency of the data in Hz.
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.21.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> object.</p>
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.21.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> object.</p>
 </dd>
 <dt><strong>window</strong><span class="classifier">float</span></dt><dd><p>The window length (= resolution) for artifact rejection, in seconds.
 Default to 5 seconds. Shorter windows (e.g. 1 or 2-seconds) will

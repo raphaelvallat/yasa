@@ -3,8 +3,8 @@
 What's new
 ##########
 
-v0.4.0 (dev)
-------------
+v0.4.0 (November 2020)
+----------------------
 
 This is a major release with several new functions, the biggest of which is the addition of an **automatic sleep staging module** (:py:class:`yasa.SleepStaging`). This means that YASA can now automatically score the sleep stages of your raw EEG data. The classifier was trained and validated on more than 3000 nights from the `National Sleep Research Resource (NSRR) <https://sleepdata.org/>`_ website.
 
