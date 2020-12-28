@@ -136,7 +136,7 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
         im = ax.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True)
         ax.set_xlim(0, t.max())
         ax.set_ylabel('Frequency [Hz]')
-        ax.set_xlabel('Time [sec]')
+        ax.set_xlabel('Time [hrs]')
 
         # Add colorbar
         cbar = fig.colorbar(im, ax=ax, shrink=0.95, fraction=0.1, aspect=25)
