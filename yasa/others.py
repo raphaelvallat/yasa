@@ -74,114 +74,6 @@ def _index_to_events(x):
     return index.astype(int)
 
 
-# def get_sync_events(data=None, sf=None, detection=None, center='NegPeak',
-#                     time_before=0.4, time_after=0.8):
-#     """
-#     Return the raw data of each detected slow-waves / spindles, after
-#     centering to a specific timepoint.
-#
-#     This function can be used to plot an average template of the
-#     detected slow-waves / spindles.
-#
-#     For more details, please refer to the `Jupyter notebook
-#     <https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection_multi.ipynb>`_
-#
-#     Parameters
-#     ----------
-#     data : array_like or :py:class:`mne.io.BaseRaw`
-#         1D or 2D EEG data. Can also be :py:class:`mne.io.BaseRaw`,
-#         in which case ``data`` and ``sf`` will be automatically extracted.
-#     sf : float
-#         The sampling frequency of ``data``.
-#         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
-#     detection : :py:class:`pandas.DataFrame`
-#         YASA's detection dataframe returned by the
-#         :py:func:`yasa.sw_detect` and
-#         :py:func:`yasa.spindles_detect` functions.
-#     center : str
-#         Landmark of the slow-waves / spindles to synchronize the timing on.
-#         Default is to use the negative peak.
-#     time_before : float
-#         Time (in seconds) before ``center``.
-#     time_after : float
-#         Time (in seconds) after ``center``.
-#
-#     Returns
-#     -------
-#     df_sync : :py:class:`pandas.DataFrame`
-#         Ouput long-format dataframe::
-#
-#         'Event' : Event number
-#         'Time' : Timing of the events (in seconds)
-#         'Amplitude' : Raw data for event
-#         'Chan' : Channel (only in multi-channel detection)
-#     """
-#     # Check if input data is a MNE Raw object
-#     if isinstance(data, mne.io.BaseRaw):
-#         sf = data.info['sfreq']  # Extract sampling frequency
-#         data = data.get_data() * 1e6  # Convert from V to uV
-#
-#     # Safety checks
-#     assert isinstance(data, np.ndarray), 'data must be a numpy array'
-#     assert isinstance(detection, pd.DataFrame), 'detection must be a dataframe'  # noqa
-#     assert isinstance(sf, (int, float)), 'sf must be a float or an int'
-#     assert center in ['PosPeak', 'NegPeak', 'Peak', 'MidCrossing', 'Start',
-#                       'End'], 'center timepoint not recognized'
-#
-#     multi = False
-#     if 'Channel' in detection.keys():
-#         chan = detection['Channel'].unique()
-#         n_chan = chan.size
-#         multi = True if n_chan > 1 else False
-#
-#     if multi:
-#         # Multi-channel (recursive call)
-#         assert data.ndim > 1, 'Data must be 2D for multi-channel detection.'
-#         df_sync = pd.DataFrame()
-#         for c, k in detection.groupby('Channel'):
-#             idx_chan = k.iloc[0, -1]
-#             df_tmp = get_sync_events(data[idx_chan, :], sf, k.iloc[:, :-2],
-#                                      center=center, time_before=time_before,
-#                                      time_after=time_after)
-#             if df_tmp is None:
-#                 continue
-#
-#             df_tmp['Channel'] = c
-#             df_tmp['IdxChannel'] = idx_chan
-#             df_sync = df_sync.append(df_tmp, ignore_index=True)
-#     else:
-#         # Single-channel
-#         data = np.squeeze(data)
-#         assert data.ndim == 1, 'Data must be 1D for single-channel detection.'  # noqa
-#         # Define number of samples before and after the peak
-#         assert time_before >= 0
-#         assert time_after >= 0
-#         bef = int(sf * time_before)
-#         aft = int(sf * time_after)
-#         # Convert to integer sample indices in data
-#         peaks = (detection[center] * sf).astype(int).to_numpy()
-#         # Get centered indices
-#         idx, idx_nomask = get_centered_indices(data, peaks, bef, aft)
-#         # If no good epochs are returned, raise an error and return None
-#         if len(idx_nomask) == 0:
-#             logger.warning(
-#                 'Time before and/or time after exceed data bounds, please '
-#                 'lower the temporal window around center; returning None.'
-#             )
-#             return None
-#
-#         # Get data at indices and time vector
-#         amps = data[idx]
-#         time = np.arange(-bef, aft + 1, dtype='int') / sf
-#
-#         # Convert to dataframe
-#         df_sync = pd.DataFrame(amps.T)
-#         df_sync['Time'] = time
-#         df_sync = df_sync.melt(id_vars='Time', var_name='Event',
-#                                value_name='Amplitude')
-#     return df_sync
-
-
 def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
                      interp=False):
     """Moving transformation of one or two time-series.
@@ -329,12 +221,11 @@ def _zerocrossings(x):
 
     Examples
     --------
-
-        >>> import numpy as np
-        >>> from yasa.main import _zerocrossings
-        >>> a = np.array([4, 2, -1, -3, 1, 2, 3, -2, -5])
-        >>> _zerocrossings(a)
-            array([1, 3, 6], dtype=int64)
+    >>> import numpy as np
+    >>> from yasa.main import _zerocrossings
+    >>> a = np.array([4, 2, -1, -3, 1, 2, 3, -2, -5])
+    >>> _zerocrossings(a)
+        array([1, 3, 6], dtype=int64)
     """
     pos = x > 0
     npos = ~pos
@@ -411,7 +302,6 @@ def sliding_window(data, sf, window, step=None, axis=-1):
 
     Examples
     --------
-
     With a 1-D array
 
     >>> import numpy as np
