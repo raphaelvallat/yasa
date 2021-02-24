@@ -187,7 +187,8 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
         ax0.spines['top'].set_visible(False)
 
         # Spectrogram (bottom axis)
-        im = ax1.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True)
+        im = ax1.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True,
+                            shading="auto")
         ax1.set_xlim(0, t.max())
         ax1.set_ylabel('Frequency [Hz]')
         ax1.set_xlabel('Time [hrs]')

@@ -47,5 +47,5 @@ def is_pyriemann_installed():
     try:
         import pyriemann  # noqa
     except IOError:  # pragma: no cover
-        raise IOError("tensorpac needs to be installed. Please use `pip "
-                      "install tensorpac -U`.")
+        raise IOError("pyRiemann needs to be installed. Please use `pip "
+                      "install pyriemann -U`.")
