@@ -87,6 +87,9 @@ class SleepStaging:
     gender, and health status. The default classifiers should therefore works
     reasonably well on most data.
 
+    The code that was used to train the classifiers can be found on GitHub at:
+    https://github.com/raphaelvallat/yasa_classifier
+
     In addition with the predicted sleep stages, YASA can also return the
     predicted probabilities of each sleep stage at each epoch. This can in turn
     be used to derive a confidence score at each epoch.
