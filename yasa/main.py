@@ -977,7 +977,7 @@ class SpindlesResults(_DetectionResults):
 
 
 def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
-              freq_sw=(0.3, 2), dur_neg=(0.3, 1.5), dur_pos=(0.1, 1),
+              freq_sw=(0.3, 1.5), dur_neg=(0.3, 1.5), dur_pos=(0.1, 1),
               amp_neg=(40, 300), amp_pos=(10, 200), amp_ptp=(75, 500),
               coupling=False, freq_sp=(12, 16), remove_outliers=False,
               verbose=False):
@@ -1026,9 +1026,9 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         (2, 3), meaning that the detection is applied on N2 and N3
         sleep. This has no effect when ``hypno`` is None.
     freq_sw : tuple or list
-        Slow wave frequency range. Default is 0.3 to 2 Hz. Please note that
+        Slow wave frequency range. Default is 0.3 to 1.5 Hz. Please note that
         YASA uses a FIR filter (implemented in MNE) with a 0.2 Hz transition
-        band, which means that the -6 dB points are located at 0.2 and 2.1 Hz.
+        band, which means that the -6 dB points are located at 0.2 and 1.6 Hz.
     dur_neg : tuple or list
         The minimum and maximum duration of the negative deflection of the
         slow wave. Default is 0.3 to 1.5 second.

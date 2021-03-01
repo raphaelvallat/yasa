@@ -3,10 +3,11 @@
 What's new
 ##########
 
-v0.4.0 (dev)
+v0.4.1 (dev)
 ------------
 
-a. :py:func:`yasa.trimbothstd` now handles missing values in input array.
+a. The default frequency range for slow-waves in :py:func:`yasa.sw_detect` is now 0.3-1.5 Hz instead of 0.3-2 Hz. Indeed, most slow-waves have a frequency below 1Hz. This may result in slightly different coupling values when ``coupling=True`` so make sure to homogenize your slow-waves detection pipeline across all nights in your dataset.
+b. :py:func:`yasa.trimbothstd` now handles missing values in input array.
 
 v0.4.0 (November 2020)
 ----------------------
