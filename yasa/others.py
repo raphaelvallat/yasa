@@ -263,7 +263,7 @@ def trimbothstd(x, cut=0.10):
     uppercut = n - lowercut
     atmp = np.partition(x, (lowercut, uppercut - 1), axis=-1)
     sl = slice(lowercut, uppercut)
-    return atmp[..., sl].std(ddof=1, axis=-1)
+    return np.nanstd(atmp[..., sl], ddof=1, axis=-1)
 
 
 def sliding_window(data, sf, window, step=None, axis=-1):

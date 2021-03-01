@@ -3,6 +3,11 @@
 What's new
 ##########
 
+v0.4.0 (dev)
+------------
+
+a. :py:func:`yasa.trimbothstd` now handles missing values in input array.
+
 v0.4.0 (November 2020)
 ----------------------
 
