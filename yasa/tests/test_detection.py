@@ -1,5 +1,5 @@
 """
-Test the functions in yasa/main.py.
+Test the functions in yasa/spectral.py.
 """
 import mne
 import pytest
@@ -9,7 +9,7 @@ from itertools import product
 import matplotlib.pyplot as plt
 from mne.filter import filter_data
 from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
-from yasa.main import spindles_detect, sw_detect, rem_detect, art_detect
+from yasa.detection import spindles_detect, sw_detect, rem_detect, art_detect
 
 ##############################################################################
 # DATA LOADING
@@ -50,7 +50,7 @@ hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30),
                                    data=data_mne)
 
 
-class TestMain(unittest.TestCase):
+class TestDetection(unittest.TestCase):
 
     def test_check_data_hypno(self):
         """Test preprocessing of data and hypno."""

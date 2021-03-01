@@ -1,7 +1,7 @@
 import logging
 
+from .detection import *
 from .hypno import *
-from .main import *
 from .numba import *
 from .others import *
 from .plotting import *

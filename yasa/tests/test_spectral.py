@@ -1,5 +1,5 @@
 """
-Test the functions in the yasa/main.py file.
+Test the functions in the yasa/spectral.py file.
 """
 import mne
 import unittest
