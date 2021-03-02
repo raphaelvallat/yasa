@@ -133,7 +133,8 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
 
     if hypno is None:
         fig, ax = plt.subplots(nrows=1, figsize=(12, 4))
-        im = ax.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True)
+        im = ax.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True,
+                           shading="auto")
         ax.set_xlim(0, t.max())
         ax.set_ylabel('Frequency [Hz]')
         ax.set_xlabel('Time [hrs]')

@@ -105,6 +105,14 @@ class TestSpectral(unittest.TestCase):
                                            bands=[(0.5, 4, 'Delta')],
                                            relative=True) == 1).all()
 
+        # With negative values: we should get a logger warning
+        freqs = np.arange(0, 50.5, 0.5)
+        psd = np.random.normal(size=(6, freqs.size))
+        with self.assertLogs('yasa', level='WARNING'):
+            bandpower_from_psd(psd, freqs)
+        with self.assertLogs('yasa', level='WARNING'):
+            bandpower_from_psd_ndarray(psd, freqs)
+
     def test_irasa(self):
         """Test function IRASA.
         """

@@ -3,12 +3,14 @@ This file contains several helper functions to calculate spectral power from
 1D and 2D EEG data.
 """
 import mne
+import logging
 import numpy as np
 import pandas as pd
 from scipy import signal
 from scipy.integrate import simps
 from scipy.interpolate import RectBivariateSpline
 
+logger = logging.getLogger('yasa')
 
 __all__ = ['bandpower', 'bandpower_from_psd', 'bandpower_from_psd_ndarray',
            'irasa', 'stft_power']
@@ -224,6 +226,15 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
     total_power = simps(psd, dx=res)
     total_power = total_power[..., np.newaxis]
 
+    # Check if there are negative values in PSD
+    if (psd < 0).any():
+        msg = (
+            "There are negative values in PSD. This will result in incorrect "
+            "bandpower values. We highly recommend working with an "
+            "all-positive PSD. For more details, please refer to: "
+            "https://github.com/raphaelvallat/yasa/issues/29")
+        logger.warning(msg)
+
     # Enumerate over the frequency bands
     labels = []
     for i, band in enumerate(bands):
@@ -302,6 +313,15 @@ def bandpower_from_psd_ndarray(psd, freqs, bands=[(0.5, 4, 'Delta'),
 
     # Trim PSD to frequencies of interest
     psd = psd[..., idx_good_freq]
+
+    # Check if there are negative values in PSD
+    if (psd < 0).any():
+        msg = (
+            "There are negative values in PSD. This will result in incorrect "
+            "bandpower values. We highly recommend working with an "
+            "all-positive PSD. For more details, please refer to: "
+            "https://github.com/raphaelvallat/yasa/issues/29")
+        logger.warning(msg)
 
     # Calculate total power
     total_power = simps(psd, dx=res, axis=-1)
