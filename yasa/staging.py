@@ -1,6 +1,7 @@
 """Automatic sleep staging of polysomnography data."""
 import os
 import mne
+import glob
 import joblib
 import logging
 import numpy as np
@@ -385,16 +386,18 @@ class SleepStaging:
         """Load the relevant trained classifier."""
         if path_to_model == "auto":
             from pathlib import Path
-            from yasa import __version__ as yv
             clf_dir = os.path.join(str(Path(__file__).parent), 'classifiers/')
             name = 'clf_eeg'
             name = name + '+eog' if 'eog' in self.ch_types else name
             name = name + '+emg' if 'emg' in self.ch_types else name
             name = name + '+demo' if self.metadata is not None else name
             # e.g. clf_eeg+eog+emg+demo_lgb_0.4.0.joblib
-            path_to_model = clf_dir + name + '_lgb_' + yv + '.joblib'
+            all_matching_files = glob.glob(clf_dir + name + "*.joblib")
+            # Find the latest file
+            path_to_model = np.sort(all_matching_files)[-1]
         # Check that file exists
         assert os.path.isfile(path_to_model), "File does not exist."
+        logger.info("Using pre-trained classifier: %s" % path_to_model)
         # Load using Joblib
         clf = joblib.load(path_to_model)
         # Validate features
