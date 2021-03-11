@@ -5,6 +5,7 @@ include = yasa/*
 omit =
     */__init__.py
     */setup.py
+    */features.py
     */examples/*
     */notebooks/*
     */tests/*
