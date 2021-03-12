@@ -361,6 +361,8 @@
     <span class="c1"># Increase font size while preserving original</span>
     <span class="n">old_fontsize</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;font.size&#39;</span><span class="p">]</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;font.size&#39;</span><span class="p">:</span> <span class="n">fontsize</span><span class="p">})</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;savefig.bbox&#39;</span><span class="p">:</span> <span class="s1">&#39;tight&#39;</span><span class="p">})</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;savefig.transparent&#39;</span><span class="p">:</span> <span class="s1">&#39;True&#39;</span><span class="p">})</span>
 
     <span class="c1"># Make sure we don&#39;t do any in-place modification</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">),</span> <span class="s1">&#39;Data must be a Pandas Series&#39;</span>

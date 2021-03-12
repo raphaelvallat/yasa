@@ -274,6 +274,8 @@ def topoplot(data, montage="standard_1020", vmin=None, vmax=None, title=None,
     # Increase font size while preserving original
     old_fontsize = plt.rcParams['font.size']
     plt.rcParams.update({'font.size': fontsize})
+    plt.rcParams.update({'savefig.bbox': 'tight'})
+    plt.rcParams.update({'savefig.transparent': 'True'})
 
     # Make sure we don't do any in-place modification
     assert isinstance(data, pd.Series), 'Data must be a Pandas Series'
