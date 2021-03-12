@@ -130,7 +130,6 @@ html_favicon = 'pictures/favicon.ico'
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'yasadoc'
-html_static_path = ['_static']
 html_show_sourcelink = False
 html_add_permalinks = ""
 
@@ -186,13 +185,6 @@ texinfo_documents = [
 ]
 
 
-# Add the 'copybutton' javascript, to hide/show the prompt in code
-# examples, originally taken from scikit-learn's doc/conf.py
-def setup(app):
-    app.add_js_file('copybutton.js')
-    # app.add_css_file('style.css')
-
-
 # -- Intersphinx ------------------------------------------------
 
 intersphinx_mapping = {
@@ -200,6 +192,7 @@ intersphinx_mapping = {
     'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'sklearn': ('https://scikit-learn.org/stable/', None),
+    'matplotlib': ('https://matplotlib.org/', None),
     'mne': ('https://martinos.org/mne/stable/', None),
     'seaborn': ('https://seaborn.pydata.org/', None),
     'pyriemann': ('https://pyriemann.readthedocs.io/en/latest/', None),

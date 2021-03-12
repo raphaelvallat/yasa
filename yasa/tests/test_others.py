@@ -44,35 +44,6 @@ class TestOthers(unittest.TestCase):
         out = _index_to_events(a)
         np.testing.assert_equal(good, out)
 
-    # def test_get_sync_events(self):
-    #     """Test functions get_sync_events"""
-    #     sw = sw_detect(data_full, sf_full, chan_full)
-    #     df_sync = sw.get_sync_events(time_before=0.2, center='PosPeak')
-    #     df_sync2 = get_sync_events(data_full, sf_full, sw.summary(),
-    #                                time_before=0.2, center='PosPeak')
-    #     pd.testing.assert_frame_equal(df_sync, df_sync2, check_dtype=False)
-    #     assert df_sync['Channel'].nunique() == 3
-    #     # MNE single-channel
-    #     sw = sw.summary()
-    #     sw_c = sw[sw['Channel'] == sw.at[0, 'Channel']].iloc[:, :-2]
-    #     df_sync = get_sync_events(data_full[0, :], sf_full, sw_c,
-    #                               center='PosPeak', time_before=0,
-    #                               time_after=2)
-    #     assert df_sync.shape[1] == 3
-    #     # MNE single channel
-    #     sw = sw_detect(data_mne_single, amp_neg=(20, 300),
-    #                    amp_ptp=(60, 500))
-    #     df_sync = sw.get_sync_events()
-    #     df_sync2 = get_sync_events(data_mne_single, detection=sw.summary())
-    #     pd.testing.assert_frame_equal(df_sync, df_sync2, check_dtype=False)
-    #
-    #     # MNE multi channel
-    #     sw = sw_detect(data_mne, amp_neg=(20, 300), amp_ptp=(60, 500))
-    #     df_sync = sw.get_sync_events()
-    #     df_sync2 = get_sync_events(data_mne, detection=sw.summary())
-    #     pd.testing.assert_frame_equal(df_sync, df_sync2, check_dtype=False)
-    #     assert df_sync['Channel'].nunique() == 6
-
     def test_merge_close(self):
         """Test functions _merge_close"""
         a = np.array([4, 5, 6, 7, 10, 11, 12, 13, 20, 21, 22, 100, 102])

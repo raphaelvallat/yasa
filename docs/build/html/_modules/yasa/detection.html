@@ -3,7 +3,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.main &#8212; yasa 0.4.0 documentation</title>
+    <title>yasa.detection &#8212; yasa 0.4.0 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -11,7 +11,6 @@
     <script src="../../_static/underscore.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/language_data.js"></script>
-    <script src="../../_static/copybutton.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -85,7 +84,7 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <h1>Source code for yasa.main</h1><div class="highlight"><pre>
+  <h1>Source code for yasa.detection</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">YASA (Yet Another Spindle Algorithm): fast and robust detection of spindles,</span>
 <span class="sd">slow-waves, and rapid eye movements from sleep EEG recordings.</span>
@@ -1065,7 +1064,7 @@
 
 
 <div class="viewcode-block" id="sw_detect"><a class="viewcode-back" href="../../generated/yasa.sw_detect.html#yasa.sw_detect">[docs]</a><span class="k">def</span> <span class="nf">sw_detect</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ch_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
-              <span class="n">freq_sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dur_neg</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">dur_pos</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+              <span class="n">freq_sw</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">dur_neg</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">dur_pos</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
               <span class="n">amp_neg</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">300</span><span class="p">),</span> <span class="n">amp_pos</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span> <span class="n">amp_ptp</span><span class="o">=</span><span class="p">(</span><span class="mi">75</span><span class="p">,</span> <span class="mi">500</span><span class="p">),</span>
               <span class="n">coupling</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">freq_sp</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="n">remove_outliers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
               <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -1114,9 +1113,9 @@
 <span class="sd">        (2, 3), meaning that the detection is applied on N2 and N3</span>
 <span class="sd">        sleep. This has no effect when ``hypno`` is None.</span>
 <span class="sd">    freq_sw : tuple or list</span>
-<span class="sd">        Slow wave frequency range. Default is 0.3 to 2 Hz. Please note that</span>
+<span class="sd">        Slow wave frequency range. Default is 0.3 to 1.5 Hz. Please note that</span>
 <span class="sd">        YASA uses a FIR filter (implemented in MNE) with a 0.2 Hz transition</span>
-<span class="sd">        band, which means that the -6 dB points are located at 0.2 and 2.1 Hz.</span>
+<span class="sd">        band, which means that the -6 dB points are located at 0.2 and 1.6 Hz.</span>
 <span class="sd">    dur_neg : tuple or list</span>
 <span class="sd">        The minimum and maximum duration of the negative deflection of the</span>
 <span class="sd">        slow wave. Default is 0.3 to 1.5 second.</span>
@@ -2484,7 +2483,7 @@
       
     </p>
     <p>
-        &copy; Copyright 2018-2020, Raphael Vallat.<br/>
+        &copy; Copyright 2018-2021, Raphael Vallat.<br/>
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>

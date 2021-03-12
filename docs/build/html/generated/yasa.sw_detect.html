@@ -11,7 +11,6 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
-    <script src="../_static/copybutton.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -89,28 +88,28 @@
 <h1>yasa.sw_detect</h1>
 <dl class="py function">
 <dt id="yasa.sw_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sw_detect</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ch_names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hypno</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include</span><span class="o">=</span><span class="default_value">2, 3</span></em>, <em class="sig-param"><span class="n">freq_sw</span><span class="o">=</span><span class="default_value">0.3, 2</span></em>, <em class="sig-param"><span class="n">dur_neg</span><span class="o">=</span><span class="default_value">0.3, 1.5</span></em>, <em class="sig-param"><span class="n">dur_pos</span><span class="o">=</span><span class="default_value">0.1, 1</span></em>, <em class="sig-param"><span class="n">amp_neg</span><span class="o">=</span><span class="default_value">40, 300</span></em>, <em class="sig-param"><span class="n">amp_pos</span><span class="o">=</span><span class="default_value">10, 200</span></em>, <em class="sig-param"><span class="n">amp_ptp</span><span class="o">=</span><span class="default_value">75, 500</span></em>, <em class="sig-param"><span class="n">coupling</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">freq_sp</span><span class="o">=</span><span class="default_value">12, 16</span></em>, <em class="sig-param"><span class="n">remove_outliers</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/main.html#sw_detect"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">sw_detect</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ch_names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hypno</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include</span><span class="o">=</span><span class="default_value">2, 3</span></em>, <em class="sig-param"><span class="n">freq_sw</span><span class="o">=</span><span class="default_value">0.3, 1.5</span></em>, <em class="sig-param"><span class="n">dur_neg</span><span class="o">=</span><span class="default_value">0.3, 1.5</span></em>, <em class="sig-param"><span class="n">dur_pos</span><span class="o">=</span><span class="default_value">0.1, 1</span></em>, <em class="sig-param"><span class="n">amp_neg</span><span class="o">=</span><span class="default_value">40, 300</span></em>, <em class="sig-param"><span class="n">amp_pos</span><span class="o">=</span><span class="default_value">10, 200</span></em>, <em class="sig-param"><span class="n">amp_ptp</span><span class="o">=</span><span class="default_value">75, 500</span></em>, <em class="sig-param"><span class="n">coupling</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">freq_sp</span><span class="o">=</span><span class="default_value">12, 16</span></em>, <em class="sig-param"><span class="n">remove_outliers</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#sw_detect"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Slow-waves detection.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
 <dt><strong>data</strong><span class="classifier">array_like</span></dt><dd><p>Single or multi-channel data. Unit must be uV and shape (n_samples) or
-(n_chan, n_samples). Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.21.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
+(n_chan, n_samples). Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.22.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
 in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>, <code class="docutils literal notranslate"><span class="pre">sf</span></code>, and <code class="docutils literal notranslate"><span class="pre">ch_names</span></code> will be automatically
 extracted, and <code class="docutils literal notranslate"><span class="pre">data</span></code> will also be automatically converted from
 Volts (MNE) to micro-Volts (YASA).</p>
 </dd>
 <dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>Sampling frequency of the data in Hz.
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.21.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.22.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>If the detection is taking too long, make sure to downsample
 your data to 100 Hz (or 128 Hz). For more details, please refer to
-<a class="reference external" href="https://mne.tools/stable/generated/mne.filter.resample.html#mne.filter.resample" title="(in MNE v0.21.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.resample()</span></code></a>.</p>
+<a class="reference external" href="https://mne.tools/stable/generated/mne.filter.resample.html#mne.filter.resample" title="(in MNE v0.22.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.resample()</span></code></a>.</p>
 </div>
 </dd>
 <dt><strong>ch_names</strong><span class="classifier">list of str</span></dt><dd><p>Channel names. Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a
-<a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.21.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+<a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.22.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
 <dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Sleep stage (hypnogram). If the hypnogram is loaded, the
 detection will only be applied to the value defined in
@@ -137,9 +136,9 @@ vector where:</p>
 (2, 3), meaning that the detection is applied on N2 and N3
 sleep. This has no effect when <code class="docutils literal notranslate"><span class="pre">hypno</span></code> is None.</p>
 </dd>
-<dt><strong>freq_sw</strong><span class="classifier">tuple or list</span></dt><dd><p>Slow wave frequency range. Default is 0.3 to 2 Hz. Please note that
+<dt><strong>freq_sw</strong><span class="classifier">tuple or list</span></dt><dd><p>Slow wave frequency range. Default is 0.3 to 1.5 Hz. Please note that
 YASA uses a FIR filter (implemented in MNE) with a 0.2 Hz transition
-band, which means that the -6 dB points are located at 0.2 and 2.1 Hz.</p>
+band, which means that the -6 dB points are located at 0.2 and 1.6 Hz.</p>
 </dd>
 <dt><strong>dur_neg</strong><span class="classifier">tuple or list</span></dt><dd><p>The minimum and maximum duration of the negative deflection of the
 slow wave. Default is 0.3 to 1.5 second.</p>
@@ -206,7 +205,7 @@ bandwidth of 1.5 Hz.</p>
 </div>
 </dd>
 <dt><strong>remove_outliers</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will automatically detect and remove outliers slow-waves
-using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.23)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
+using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
 The outliers detection is performed on the frequency, amplitude and
 duration parameters of the detected slow-waves. YASA uses a random seed
 (42) to ensure reproducible results. Note that this step will only be
@@ -230,7 +229,7 @@ and ‘critical’. For most users the choice is between ‘info’
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sw</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>This will give a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> where each row is a
+<p>This will give a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> where each row is a
 detected slow-wave and each column is a parameter (= property).
 To get the average SW parameters per channel and sleep stage:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sw</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="n">grp_chan</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">grp_stage</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -306,7 +305,7 @@ The European Journal of Neuroscience, 33(4), 758–766.</p></li>
       
     </p>
     <p>
-        &copy; Copyright 2018-2020, Raphael Vallat.<br/>
+        &copy; Copyright 2018-2021, Raphael Vallat.<br/>
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>

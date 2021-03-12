@@ -11,7 +11,6 @@
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/language_data.js"></script>
-    <script src="_static/copybutton.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
@@ -87,8 +86,8 @@
       
   <div class="section" id="api-reference">
 <span id="api-ref"></span><h1>API reference</h1>
-<div class="section" id="automatic-staging">
-<h2>Automatic staging</h2>
+<div class="section" id="automatic-sleep-staging-events-detection">
+<h2>Automatic sleep staging &amp; events detection</h2>
 <table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
@@ -98,43 +97,32 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.SleepStaging.html#yasa.SleepStaging" title="yasa.SleepStaging"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SleepStaging</span></code></a>(raw, eeg_name, *[, eog_name, …])</p></td>
 <td><p>Automatic sleep staging of polysomnography data.</p></td>
 </tr>
-</tbody>
-</table>
-</div>
-<div class="section" id="detection">
-<h2>Detection</h2>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.art_detect.html#yasa.art_detect" title="yasa.art_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">art_detect</span></code></a>(data[, sf, window, hypno, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.art_detect.html#yasa.art_detect" title="yasa.art_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">art_detect</span></code></a>(data[, sf, window, hypno, …])</p></td>
 <td><p>Automatic artifact rejection.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.rem_detect.html#yasa.rem_detect" title="yasa.rem_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rem_detect</span></code></a>(loc, roc, sf[, hypno, include, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.rem_detect.html#yasa.rem_detect" title="yasa.rem_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rem_detect</span></code></a>(loc, roc, sf[, hypno, include, …])</p></td>
 <td><p>Rapid eye movements (REMs) detection.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.REMResults.html#yasa.REMResults" title="yasa.REMResults"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REMResults</span></code></a>(events, data, sf, ch_names, …)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.REMResults.html#yasa.REMResults" title="yasa.REMResults"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REMResults</span></code></a>(events, data, sf, ch_names, …)</p></td>
 <td><p>Output class for REMs detection.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spindles_detect</span></code></a>(data[, sf, ch_names, hypno, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spindles_detect</span></code></a>(data[, sf, ch_names, hypno, …])</p></td>
 <td><p>Spindles detection.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.SpindlesResults.html#yasa.SpindlesResults" title="yasa.SpindlesResults"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpindlesResults</span></code></a>(events, data, sf, ch_names, …)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.SpindlesResults.html#yasa.SpindlesResults" title="yasa.SpindlesResults"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpindlesResults</span></code></a>(events, data, sf, ch_names, …)</p></td>
 <td><p>Output class for spindles detection.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sw_detect</span></code></a>(data[, sf, ch_names, hypno, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sw_detect</span></code></a>(data[, sf, ch_names, hypno, …])</p></td>
 <td><p>Slow-waves detection.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.SWResults.html#yasa.SWResults" title="yasa.SWResults"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SWResults</span></code></a>(events, data, sf, ch_names, hypno, …)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.SWResults.html#yasa.SWResults" title="yasa.SWResults"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SWResults</span></code></a>(events, data, sf, ch_names, hypno, …)</p></td>
 <td><p>Output class for slow-waves detection.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<div class="section" id="hypnogram">
-<h2>Hypnogram</h2>
+<div class="section" id="hypnogram-tools-sleep-statistics">
+<h2>Hypnogram tools &amp; sleep statistics</h2>
 <table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
@@ -165,31 +153,8 @@
 </tbody>
 </table>
 </div>
-<div class="section" id="signal-processing">
-<h2>Signal processing</h2>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.moving_transform.html#yasa.moving_transform" title="yasa.moving_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">moving_transform</span></code></a>(x[, y, sf, window, step, …])</p></td>
-<td><p>Moving transformation of one or two time-series.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.sliding_window.html#yasa.sliding_window" title="yasa.sliding_window"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sliding_window</span></code></a>(data, sf, window[, step, axis])</p></td>
-<td><p>Calculate a sliding window of a 1D or 2D EEG signal.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.trimbothstd.html#yasa.trimbothstd" title="yasa.trimbothstd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trimbothstd</span></code></a>(x[, cut])</p></td>
-<td><p>Slices off a proportion of items from both ends of an array and then compute the sample standard deviation.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.get_centered_indices.html#yasa.get_centered_indices" title="yasa.get_centered_indices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_centered_indices</span></code></a>(data, idx, npts_before, …)</p></td>
-<td><p>Get a 2D array of indices in data centered around specific time points, automatically excluding indices that are outside the bounds of data.</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section" id="spectral-analyses">
-<h2>Spectral analyses</h2>
+<div class="section" id="spectral-analyses-plotting-tools">
+<h2>Spectral analyses &amp; plotting tools</h2>
 <table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
@@ -208,11 +173,20 @@
 <tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.irasa.html#yasa.irasa" title="yasa.irasa"><code class="xref py py-obj docutils literal notranslate"><span class="pre">irasa</span></code></a>(data[, sf, ch_names, band, hset, …])</p></td>
 <td><p>Separate the aperiodic (= fractal, or 1/f) and oscillatory component of the power spectra of EEG data using the IRASA method.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_spectrogram</span></code></a>(data, sf[, hypno, win_sec, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.moving_transform.html#yasa.moving_transform" title="yasa.moving_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">moving_transform</span></code></a>(x[, y, sf, window, step, …])</p></td>
+<td><p>Moving transformation of one or two time-series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_spectrogram</span></code></a>(data, sf[, hypno, win_sec, …])</p></td>
 <td><p>Plot a full-night multi-taper spectrogram, optionally with the hypnogram on top.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.sliding_window.html#yasa.sliding_window" title="yasa.sliding_window"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sliding_window</span></code></a>(data, sf, window[, step, axis])</p></td>
+<td><p>Calculate a sliding window of a 1D or 2D EEG signal.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.stft_power.html#yasa.stft_power" title="yasa.stft_power"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stft_power</span></code></a>(data, sf[, window, step, band, …])</p></td>
 <td><p>Compute the pointwise power via STFT and interpolation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.topoplot.html#yasa.topoplot" title="yasa.topoplot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">topoplot</span></code></a>(data[, montage, vmin, vmax, title, …])</p></td>
+<td><p>Topoplot.</p></td>
 </tr>
 </tbody>
 </table>
@@ -234,7 +208,7 @@
       
     </p>
     <p>
-        &copy; Copyright 2018-2020, Raphael Vallat.<br/>
+        &copy; Copyright 2018-2021, Raphael Vallat.<br/>
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>

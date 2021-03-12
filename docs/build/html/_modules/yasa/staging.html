@@ -11,7 +11,6 @@
     <script src="../../_static/underscore.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/language_data.js"></script>
-    <script src="../../_static/copybutton.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -89,6 +88,7 @@
 <span></span><span class="sd">&quot;&quot;&quot;Automatic sleep staging of polysomnography data.&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">mne</span>
+<span class="kn">import</span> <span class="nn">glob</span>
 <span class="kn">import</span> <span class="nn">joblib</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -174,6 +174,9 @@
 <span class="sd">    involved participants from a wide age range, of different ethnicities,</span>
 <span class="sd">    gender, and health status. The default classifiers should therefore works</span>
 <span class="sd">    reasonably well on most data.</span>
+
+<span class="sd">    The code that was used to train the classifiers can be found on GitHub at:</span>
+<span class="sd">    https://github.com/raphaelvallat/yasa_classifier</span>
 
 <span class="sd">    In addition with the predicted sleep stages, YASA can also return the</span>
 <span class="sd">    predicted probabilities of each sleep stage at each epoch. This can in turn</span>
@@ -470,16 +473,18 @@
         <span class="sd">&quot;&quot;&quot;Load the relevant trained classifier.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">path_to_model</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
             <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-            <span class="kn">from</span> <span class="nn">yasa</span> <span class="kn">import</span> <span class="n">__version__</span> <span class="k">as</span> <span class="n">yv</span>
             <span class="n">clf_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="p">),</span> <span class="s1">&#39;classifiers/&#39;</span><span class="p">)</span>
             <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;clf_eeg&#39;</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;+eog&#39;</span> <span class="k">if</span> <span class="s1">&#39;eog&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_types</span> <span class="k">else</span> <span class="n">name</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;+emg&#39;</span> <span class="k">if</span> <span class="s1">&#39;emg&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_types</span> <span class="k">else</span> <span class="n">name</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;+demo&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">name</span>
             <span class="c1"># e.g. clf_eeg+eog+emg+demo_lgb_0.4.0.joblib</span>
-            <span class="n">path_to_model</span> <span class="o">=</span> <span class="n">clf_dir</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_lgb_&#39;</span> <span class="o">+</span> <span class="n">yv</span> <span class="o">+</span> <span class="s1">&#39;.joblib&#39;</span>
+            <span class="n">all_matching_files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">clf_dir</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;*.joblib&quot;</span><span class="p">)</span>
+            <span class="c1"># Find the latest file</span>
+            <span class="n">path_to_model</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">all_matching_files</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="c1"># Check that file exists</span>
         <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">),</span> <span class="s2">&quot;File does not exist.&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using pre-trained classifier: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">path_to_model</span><span class="p">)</span>
         <span class="c1"># Load using Joblib</span>
         <span class="n">clf</span> <span class="o">=</span> <span class="n">joblib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">)</span>
         <span class="c1"># Validate features</span>
@@ -596,7 +601,7 @@
       
     </p>
     <p>
-        &copy; Copyright 2018-2020, Raphael Vallat.<br/>
+        &copy; Copyright 2018-2021, Raphael Vallat.<br/>
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>

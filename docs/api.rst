@@ -5,8 +5,8 @@
 API reference
 =============
 
-Automatic staging
------------------
+Automatic sleep staging & events detection
+------------------------------------------
 
 .. _staging:
 
@@ -14,15 +14,6 @@ Automatic staging
    :toctree: generated/
 
     SleepStaging
-
-Detection
----------
-
-.. _detect:
-
-.. autosummary::
-   :toctree: generated/
-
     art_detect
     rem_detect
     REMResults
@@ -31,8 +22,8 @@ Detection
     sw_detect
     SWResults
 
-Hypnogram
----------
+Hypnogram tools & sleep statistics
+----------------------------------
 
 .. _hgram:
 
@@ -47,23 +38,10 @@ Hypnogram
     transition_matrix
     sleep_statistics
 
-Signal processing
------------------
+Spectral analyses & plotting tools
+----------------------------------
 
 .. _others:
-
-.. autosummary::
-   :toctree: generated/
-
-    moving_transform
-    sliding_window
-    trimbothstd
-    get_centered_indices
-
-Spectral analyses
------------------
-
-.. _bpower:
 
 .. autosummary::
    :toctree: generated/
@@ -72,5 +50,8 @@ Spectral analyses
     bandpower_from_psd
     bandpower_from_psd_ndarray
     irasa
+    moving_transform
     plot_spectrogram
+    sliding_window
     stft_power
+    topoplot
