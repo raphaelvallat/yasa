@@ -32,6 +32,8 @@ def compute_features_stage(raw, hypno, max_freq=35,
                            spindles_params=dict(), sw_params=dict()):
     """Calculate a set of features for each sleep stage from PSG data.
 
+    Features are calculated for N2, N3, NREM (= N2 + N3) and REM sleep.
+
     Parameters
     ----------
     raw : :py:class:`mne.io.BaseRaw`
@@ -53,14 +55,19 @@ def compute_features_stage(raw, hypno, max_freq=35,
             - 3 = N3 sleep
             - 4 = REM sleep
 
-    freq_broad : tuple or list
-        Broad band frequency range. Default is 0.5 to 35 Hz.
+    max_freq : int
+        Maximum frequency. This will be used to bandpass-filter the data and
+        to calculate 1 Hz bins bandpower.
     kwargs_sp : dict
         Optional keywords arguments that are passed to the
-        :py:func:`yasa.spindles_detect` function.
+        :py:func:`yasa.spindles_detect` function. We strongly recommend
+        adapting the thresholds to your population (e.g. more liberal for
+        older adults).
     kwargs_sw : dict
         Optional keywords arguments that are passed to the
-        :py:func:`yasa.sw_detect` function.
+        :py:func:`yasa.sw_detect` function. We strongly recommend
+        adapting the thresholds to your population (e.g. more liberal for
+        older adults).
     """
     # #########################################################################
     # 2) PREPROCESSING
@@ -78,6 +85,13 @@ def compute_features_stage(raw, hypno, max_freq=35,
     freqs = [0.5] + list(range(1, max_freq + 1))
     for i, b in enumerate(freqs[:-1]):
         bands.append(tuple((b, freqs[i + 1], "%s-%s" % (b, freqs[i + 1]))))
+    # Append traditional bands
+    bands_classic = [
+        (0.5, 1, 'slowdelta'), (1, 4, 'fastdelta'), (0.5, 4, 'delta'),
+        (4, 8, 'theta'), (8, 12, 'alpha'), (12, 16, 'sigma'), (16, 30, 'beta'),
+        (30, max_freq, 'gamma')]
+    bands = bands_classic + bands
+
     # Find min and maximum frequencies. These will be used for bandpass-filter
     # and 1/f adjustement of bandpower. l_freq = 0.5 / h_freq = 35 Hz.
     all_freqs_sorted = np.sort(np.unique(
@@ -108,7 +122,6 @@ def compute_features_stage(raw, hypno, max_freq=35,
     chan_noslash = [c.split('/')[0] for c in raw_eeg.ch_names]
     raw_eeg.rename_channels(dict(zip(raw_eeg.ch_names, chan_noslash)))
     chan = raw_eeg.ch_names
-    print(raw_eeg)
 
     # Resample to 100 Hz and bandpass-filter
     raw_eeg.resample(100, verbose=False)
@@ -124,7 +137,7 @@ def compute_features_stage(raw, hypno, max_freq=35,
     # 2) SPECTRAL POWER
     # #########################################################################
 
-    print("  ..calculating spectral powers in 1Hz bins")
+    print("  ..calculating spectral powers")
 
     # 2.1) 1Hz bins, N2 / N3 / REM
     # win_sec = 4 sec = 0.25 Hz freq resolution
