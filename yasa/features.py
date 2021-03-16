@@ -100,7 +100,15 @@ def compute_features_stage(raw, hypno, max_freq=35,
     h_freq = all_freqs_sorted[-1]
 
     # Mapping dictionnary integer to string for sleep stages (2 --> N2)
-    stage_mapping = {2: 'N2', 3: 'N3', 4: 'REM', 6: 'NREM'}
+    stage_mapping = {
+        -2: 'Unscored',
+        -1: 'Artefact',
+        0: 'Wake',
+        1: 'N1',
+        2: 'N2',
+        3: 'N3',
+        4: 'REM',
+        6: 'NREM'}
 
     # Hypnogram check + calculate NREM hypnogram
     hypno = np.asarray(hypno, dtype=int)
