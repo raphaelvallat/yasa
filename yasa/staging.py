@@ -6,7 +6,7 @@ import joblib
 import logging
 import numpy as np
 import pandas as pd
-import entropy as ent
+import antropy as ant
 import scipy.signal as sp_sig
 import scipy.stats as sp_stats
 import matplotlib.pyplot as plt
@@ -25,7 +25,7 @@ class SleepStaging:
 
     To run the automatic sleep staging, you must install the
     `LightGBM <https://lightgbm.readthedocs.io/>`_ and
-    `entropy <https://github.com/raphaelvallat/entropy>`_ packages.
+    `antropy <https://github.com/raphaelvallat/antropy>`_ packages.
 
     .. versionadded:: 0.4.0
 
@@ -294,9 +294,9 @@ class SleepStaging:
 
             # Calculate entropy and fractal dimension features
             feat['perm'] = np.apply_along_axis(
-                ent.perm_entropy, axis=1, arr=epochs, normalize=True)
+                ant.perm_entropy, axis=1, arr=epochs, normalize=True)
             feat['higuchi'] = np.apply_along_axis(
-                ent.higuchi_fd, axis=1, arr=epochs)
+                ant.higuchi_fd, axis=1, arr=epochs)
             feat['petrosian'] = petrosian(epochs)
 
             # Convert to dataframe

@@ -18,7 +18,7 @@ import yasa
 import logging
 import numpy as np
 import pandas as pd
-import entropy as ent
+import antropy as ant
 import scipy.signal as sp_sig
 import scipy.stats as sp_stats
 
@@ -325,11 +325,11 @@ def compute_features_stage(raw, hypno, max_freq=35,
         #   calculate.
         from numpy import apply_along_axis as aal
         df_ent.loc[stage, 'ent_svd'] = aal(
-            ent.svd_entropy, axis=1, arr=data_stage, normalize=True)
+            ant.svd_entropy, axis=1, arr=data_stage, normalize=True)
         df_ent.loc[stage, 'ent_perm'] = aal(
-            ent.perm_entropy, axis=1, arr=data_stage, normalize=True)
+            ant.perm_entropy, axis=1, arr=data_stage, normalize=True)
         df_ent.loc[stage, 'ent_higuchi'] = aal(
-            ent.higuchi_fd, axis=1, arr=data_stage)
+            ant.higuchi_fd, axis=1, arr=data_stage)
 
         # We also add the coefficient of variation of the delta envelope
         # (CVE), a measure of "slow-wave stability".
