@@ -205,36 +205,36 @@ def compute_features_stage(raw, hypno, max_freq=35,
     # 3) SPINDLES DETECTION // WORK IN PROGRESS
     # #########################################################################
 
-    print("  ..detecting sleep spindles")
+    # print("  ..detecting sleep spindles")
 
-    spindles_params.update(include=(2, 3))
+    # spindles_params.update(include=(2, 3))
 
-    # Detect spindles in N2 and N3
-    # Thresholds have to be tuned with visual scoring of a subset of data
-    # https://raphaelvallat.com/yasa/build/html/generated/yasa.spindles_detect.html
-    sp = yasa.spindles_detect(raw_eeg, hypno=hypno, **spindles_params)
+    # # Detect spindles in N2 and N3
+    # # Thresholds have to be tuned with visual scoring of a subset of data
+    # # https://raphaelvallat.com/yasa/build/html/generated/yasa.spindles_detect.html
+    # sp = yasa.spindles_detect(raw_eeg, hypno=hypno, **spindles_params)
 
-    df_sp = sp.summary(grp_chan=True, grp_stage=True).reset_index()
-    df_sp['Stage'] = df_sp['Stage'].map(stage_mapping)
+    # df_sp = sp.summary(grp_chan=True, grp_stage=True).reset_index()
+    # df_sp['Stage'] = df_sp['Stage'].map(stage_mapping)
 
-    # Aggregate using the mean (adding NREM = N2 + N3)
-    df_sp = sp.summary(grp_chan=True, grp_stage=True)
-    df_sp_NREM = sp.summary(grp_chan=True).reset_index()
-    df_sp_NREM['Stage'] = 6
-    df_sp_NREM.set_index(['Stage', 'Channel'], inplace=True)
-    density_NREM = df_sp_NREM['Count'] / minutes_of_NREM
-    df_sp_NREM.insert(loc=1, column='Density',
-                      value=density_NREM.to_numpy())
+    # # Aggregate using the mean (adding NREM = N2 + N3)
+    # df_sp = sp.summary(grp_chan=True, grp_stage=True)
+    # df_sp_NREM = sp.summary(grp_chan=True).reset_index()
+    # df_sp_NREM['Stage'] = 6
+    # df_sp_NREM.set_index(['Stage', 'Channel'], inplace=True)
+    # density_NREM = df_sp_NREM['Count'] / minutes_of_NREM
+    # df_sp_NREM.insert(loc=1, column='Density',
+    #                   value=density_NREM.to_numpy())
 
-    df_sp = df_sp.append(df_sp_NREM)
-    df_sp.columns = ['sp_' + c if c in ['Count', 'Density'] else
-                     'sp_mean_' + c for c in df_sp.columns]
+    # df_sp = df_sp.append(df_sp_NREM)
+    # df_sp.columns = ['sp_' + c if c in ['Count', 'Density'] else
+    #                  'sp_mean_' + c for c in df_sp.columns]
 
-    # Prepare to export
-    df_sp.reset_index(inplace=True)
-    df_sp['Stage'] = df_sp['Stage'].map(stage_mapping)
-    df_sp.columns = df_sp.columns.str.lower()
-    df_sp.rename(columns={'channel': 'chan'}, inplace=True)
+    # # Prepare to export
+    # df_sp.reset_index(inplace=True)
+    # df_sp['Stage'] = df_sp['Stage'].map(stage_mapping)
+    # df_sp.columns = df_sp.columns.str.lower()
+    # df_sp.rename(columns={'channel': 'chan'}, inplace=True)
 
     # #########################################################################
     # 4) SLOW-WAVES DETECTION & SW-Sigma COUPLING
@@ -243,9 +243,9 @@ def compute_features_stage(raw, hypno, max_freq=35,
     print("  ..detecting slow-waves")
 
     # Make sure we calculate coupling
-    sw_params.update(coupling=True, include=(2, 3))
+    sw_params.update(coupling=True)
 
-    # Detect slow-waves in NREM sleep (N2 + N3)
+    # Detect slow-waves
     # Option 1: Using absolute thresholds
     # IMPORTANT: THRESHOLDS MUST BE ADJUSTED ACCORDING TO AGE!
     sw = yasa.sw_detect(raw_eeg, hypno=hypno, **sw_params)
@@ -348,7 +348,7 @@ def compute_features_stage(raw, hypno, max_freq=35,
 
     df = (df_bp
           .merge(df_bp_1f, how='outer')
-          .merge(df_sp, how='outer')
+          # .merge(df_sp, how='outer')
           .merge(df_sw, how='outer')
           .merge(df_ent, how='outer'))
 
