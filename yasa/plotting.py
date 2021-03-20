@@ -201,13 +201,16 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
         return fig
 
 
-def topoplot(data, montage="standard_1020", vmin=None, vmax=None, title=None,
-             cmap=None, n_colors=100, cbar_title=None,
+def topoplot(data, montage="standard_1020", vmin=None, vmax=None, mask=None,
+             title=None, cmap=None, n_colors=100, cbar_title=None,
              cbar_ticks=None, figsize=(4, 4), dpi=80, fontsize=14, **kwargs):
     """
     Topoplot.
 
     This is a wrapper around :py:func:`mne.viz.plot_topomap`.
+
+    For more details, please refer to the `Jupyter notebook
+    <https://github.com/raphaelvallat/yasa/blob/master/notebooks/15_topoplot.ipynb>`_
 
     .. versionadded:: 0.4.1
 
@@ -222,6 +225,9 @@ def topoplot(data, montage="standard_1020", vmin=None, vmax=None, title=None,
     vmin, vmax : float
         The minimum and maximum values of the colormap. If None, these will be
         defined based on the min / max values of ``data``.
+    mask : :py:class:`pandas.Series`
+        A pandas Series indicating the significant electrodes. The index MUST
+        be the channel names (e.g. ['C4', 'F4'] or ['C4-M1', 'C3-M2']).
     title : str
         The plot title.
     cmap : str
@@ -281,6 +287,16 @@ def topoplot(data, montage="standard_1020", vmin=None, vmax=None, title=None,
     assert isinstance(data, pd.Series), 'Data must be a Pandas Series'
     data = data.copy()
 
+    # Add mask, if present
+    if mask is not None:
+        assert isinstance(mask, pd.Series), 'mask must be a Pandas Series'
+        assert mask.dtype.kind in 'bi', "mask must be True/False or 0/1."
+    else:
+        mask = pd.Series(1, index=data.index, name="mask")
+
+    # Convert to a dataframe (col1 = values, col2 = mask)
+    data = data.to_frame().join(mask, how="left")
+
     # Preprocess channel names: C4-M1 --> C4
     data.index = data.index.str.split('-').str.get(0)
 
@@ -291,9 +307,9 @@ def topoplot(data, montage="standard_1020", vmin=None, vmax=None, title=None,
 
     # Define vmin and vmax
     if vmin is None:
-        vmin = data.min()
+        vmin = data.iloc[:, 0].min()
     if vmax is None:
-        vmax = data.max()
+        vmax = data.iloc[:, 0].max()
 
     # Choose and discretize colormap
     if cmap is None:
@@ -314,24 +330,27 @@ def topoplot(data, montage="standard_1020", vmin=None, vmax=None, title=None,
         kwargs['names'] = chan
     if 'show_names' not in kwargs:
         kwargs['show_names'] = True
+    if 'mask_params' not in kwargs:
+        kwargs['mask_params'] = dict(marker=None)
 
     # Hidden feature: if names='values', show the actual values.
     if kwargs['names'] == 'values':
-        kwargs['names'] = data[chan].round(2).to_numpy()
+        kwargs['names'] = data.iloc[:, 0][chan].round(2).to_numpy()
 
     # Start the plot
     with sns.axes_style("white"):
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
         im, _ = mne.viz.plot_topomap(
-            data=data[chan], pos=Info, vmin=vmin, vmax=vmax,
-            cmap=cmap, show=False, axes=ax, **kwargs)
+            data=data.iloc[:, 0][chan], pos=Info, vmin=vmin, vmax=vmax,
+            mask=data.iloc[:, 1][chan], cmap=cmap, show=False, axes=ax,
+            **kwargs)
 
         if title is not None:
             ax.set_title(title)
 
         # Add colorbar
         if cbar_title is None:
-            cbar_title = data.name
+            cbar_title = data.iloc[:, 0].name
 
         cax = fig.add_axes([0.95, 0.3, 0.02, 0.5])
         cbar = fig.colorbar(im, cax=cax, ticks=cbar_ticks, fraction=0.5)

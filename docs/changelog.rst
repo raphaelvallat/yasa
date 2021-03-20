@@ -8,7 +8,7 @@ v0.4.1 (dev)
 
 **New functions**
 
-a. Added :py:func:`yasa.topoplot`, a wrapper around :py:func:`mne.viz.plot_topomap`.
+a. Added :py:func:`yasa.topoplot`, a wrapper around :py:func:`mne.viz.plot_topomap`. See `15_topoplot.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/15_topoplot.ipynb>`_
 
 **Enhancements**
 

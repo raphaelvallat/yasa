@@ -100,6 +100,7 @@ If you want to dive right in, you can simply go to the `documentation <https://r
 * `10_spectrogram <notebooks/10_spectrogram.ipynb>`_: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.
 * `11_nonlinear_features <notebooks/11_nonlinear_features.ipynb>`_: calculate non-linear EEG features on 30-seconds epochs and perform sleep stage classification.
 * `12_spindles-SO_coupling <notebooks/12_spindles-SO_coupling.ipynb>`_: slow-oscillations/spindles phase-amplitude coupling and data-driven comodulogram.
+* `15_topoplot <notebooks/15_topoplot.ipynb>`_: topoplot.
 
 **Artifact rejection**
 
