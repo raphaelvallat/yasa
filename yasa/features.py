@@ -108,7 +108,9 @@ def compute_features_stage(raw, hypno, max_freq=35,
         2: 'N2',
         3: 'N3',
         4: 'REM',
-        6: 'NREM'}
+        6: 'NREM',
+        7: 'WN'  # Whole night = N2 + N3 + REM
+    }
 
     # Hypnogram check + calculate NREM hypnogram
     hypno = np.asarray(hypno, dtype=int)
@@ -119,6 +121,10 @@ def compute_features_stage(raw, hypno, max_freq=35,
     # IMPORTANT: NREM is defined as N2 + N3, excluding N1 sleep.
     hypno_NREM = pd.Series(hypno).replace({2: 6, 3: 6}).to_numpy()
     minutes_of_NREM = (hypno_NREM == 6).sum() / (60 * raw.info['sfreq'])
+
+    # WN = Whole night = N2 + N3 + REM (excluding N1)
+    hypno_WN = pd.Series(hypno).replace({2: 7, 3: 7, 4: 7}).to_numpy()
+    # minutes_of_WN = (hypno_WN == 7).sum() / (60 * raw.info['sfreq'])
 
     # Keep only EEG channels
     raw_eeg = raw.pick_types(eeg=True)
@@ -151,10 +157,12 @@ def compute_features_stage(raw, hypno, max_freq=35,
     # win_sec = 4 sec = 0.25 Hz freq resolution
     df_bp = yasa.bandpower(raw_eeg, hypno=hypno, bands=bands, win_sec=4,
                            include=(2, 3, 4))
-    # Same for NREM
+    # Same for NREM / WN
     df_bp_NREM = yasa.bandpower(raw_eeg, hypno=hypno_NREM, bands=bands,
                                 include=6)
-    df_bp = df_bp.append(df_bp_NREM)
+    df_bp_WN = yasa.bandpower(raw_eeg, hypno=hypno_WN, bands=bands,
+                              include=7)
+    df_bp = df_bp.append(df_bp_NREM).append(df_bp_WN)
     df_bp.drop(columns=['TotalAbsPow', 'FreqRes', 'Relative'], inplace=True)
     df_bp = df_bp.add_prefix('bp_').reset_index()
     # Replace 2 --> N2
@@ -167,10 +175,13 @@ def compute_features_stage(raw, hypno, max_freq=35,
     # This is based on the IRASA method described in Wen & Liu 2016.
     df_bp_1f = []
 
-    for stage in [2, 3, 4, 6]:
+    for stage in [2, 3, 4, 6, 7]:
         if stage == 6:
             # Use hypno_NREM
             data_stage = data[:, hypno_NREM == stage]
+        elif stage == 7:
+            # Use hypno_WN
+            data_stage = data[:, hypno_WN == stage]
         else:
             data_stage = data[:, hypno == stage]
         # Skip if stage is not present in data
@@ -294,23 +305,29 @@ def compute_features_stage(raw, hypno, max_freq=35,
 
     print("  ..calculating entropy measures")
 
-    # Filter data in the delta band for CVE
+    # Filter data in the delta band and calculate envelope for CVE
     data_delta = mne.filter.filter_data(
-        data, sfreq=sf, l_freq=0.5, h_freq=4,
-        l_trans_bandwidth=0.2, h_trans_bandwidth=0.2, verbose=False)
+        data, sfreq=sf, l_freq=0.5, h_freq=4, l_trans_bandwidth=0.2,
+        h_trans_bandwidth=0.2, verbose=False)
+    env_delta = np.abs(sp_sig.hilbert(data_delta))
 
-    idx_ent = pd.MultiIndex.from_product([[2, 3, 4, 6], chan],
-                                         names=['stage', 'chan'])
+    # Initialize dataframe
+    idx_ent = pd.MultiIndex.from_product(
+        [[2, 3, 4, 6, 7], chan], names=['stage', 'chan'])
     df_ent = pd.DataFrame(index=idx_ent)
 
-    for stage in [2, 3, 4, 6]:
+    for stage in [2, 3, 4, 6, 7]:
         if stage == 6:
             # Use hypno_NREM
             data_stage = data[:, hypno_NREM == stage]
-            data_stage_delta = data_delta[:, hypno_NREM == stage]
+            env_stage_delta = env_delta[:, hypno_NREM == stage]
+        elif stage == 7:
+            # Use hypno_WN
+            data_stage = data[:, hypno_WN == stage]
+            env_stage_delta = env_delta[:, hypno_WN == stage]
         else:
             data_stage = data[:, hypno == stage]
-            data_stage_delta = data_delta[:, hypno == stage]
+            env_stage_delta = env_delta[:, hypno == stage]
         # Skip if stage is not present in data
         if data_stage.shape[-1] == 0:
             continue
@@ -335,8 +352,8 @@ def compute_features_stage(raw, hypno, max_freq=35,
         # (CVE), a measure of "slow-wave stability".
         # See Diaz et al 2018, NeuroImage / Park et al 2021, Sci. Rep.
         # Lower values = more stable slow-waves (= more sinusoidal)
-        env = np.abs(sp_sig.hilbert(data_stage_delta))
-        cve = sp_stats.variation(env, axis=1) / np.sqrt(4 / np.pi - 1)
+        denom = np.sqrt(4 / np.pi - 1)  # approx 0.5227
+        cve = sp_stats.variation(env_stage_delta, axis=1) / denom
         df_ent.loc[stage, 'ent_cve_delta'] = cve
 
     df_ent = df_ent.dropna(how="all").reset_index()
