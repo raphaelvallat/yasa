@@ -209,8 +209,8 @@ def topoplot(data, montage="standard_1020", vmin=None, vmax=None, mask=None,
 
     This is a wrapper around :py:func:`mne.viz.plot_topomap`.
 
-    For more details, please refer to the `Jupyter notebook
-    <https://github.com/raphaelvallat/yasa/blob/master/notebooks/15_topoplot.ipynb>`_
+    For more details, please refer to this `example notebook
+    <https://github.com/raphaelvallat/yasa/blob/master/notebooks/15_topoplot.ipynb>`_.
 
     .. versionadded:: 0.4.1
 
@@ -275,7 +275,8 @@ def topoplot(data, montage="standard_1020", vmin=None, vmax=None, mask=None,
         >>> import pandas as pd
         >>> data = pd.Series([-0.5, -0.7, -0.3, 0.1, 0.15, 0.3, 0.55],
         ...                  index=['F3', 'Fz', 'F4', 'C3', 'Cz', 'C4', 'Pz'])
-        >>> fig = yasa.topoplot(data, vmin=-1, vmax=1, n_colors=8)
+        >>> fig = yasa.topoplot(data, vmin=-1, vmax=1, n_colors=8,
+        ...                     cbar_title="Pearson correlation")
     """
     # Increase font size while preserving original
     old_fontsize = plt.rcParams['font.size']

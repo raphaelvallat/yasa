@@ -3,8 +3,8 @@
 What's new
 ##########
 
-v0.4.1 (dev)
-------------
+v0.4.1 (March 2021)
+-------------------
 
 **New functions**
 
@@ -16,6 +16,7 @@ a. The default frequency range for slow-waves in :py:func:`yasa.sw_detect` is no
 b. :py:func:`yasa.trimbothstd` now handles missing values in input array.
 c. :py:func:`yasa.bandpower_from_psd` and :py:func:`yasa.bandpower_from_psd_ndarray` now print a warning if the PSD contains negative values. See `issue 29 <https://github.com/raphaelvallat/yasa/issues/29>`_.
 d. Upon loading, YASA will now use the `outdated <https://github.com/alexmojaki/outdated>`_ package to check and warn the user if a newer stable version is available.
+e. YASA now uses the `antropy <https://github.com/raphaelvallat/antropy>`_ package to calculate non-linear features in the automatic sleep staging module. Previously, YASA was using `EntroPy <https://github.com/raphaelvallat/entropy>`_, which could not be installed using pip.
 
 v0.4.0 (November 2020)
 ----------------------

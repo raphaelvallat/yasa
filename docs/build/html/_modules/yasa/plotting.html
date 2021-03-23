@@ -3,7 +3,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.plotting &#8212; yasa 0.4.0 documentation</title>
+    <title>yasa.plotting &#8212; yasa 0.4.1 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -37,7 +37,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.4.0</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.4.1</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -288,13 +288,16 @@
         <span class="k">return</span> <span class="n">fig</span></div>
 
 
-<div class="viewcode-block" id="topoplot"><a class="viewcode-back" href="../../generated/yasa.topoplot.html#yasa.topoplot">[docs]</a><span class="k">def</span> <span class="nf">topoplot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">montage</span><span class="o">=</span><span class="s2">&quot;standard_1020&quot;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-             <span class="n">cmap</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_colors</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">cbar_title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="topoplot"><a class="viewcode-back" href="../../generated/yasa.topoplot.html#yasa.topoplot">[docs]</a><span class="k">def</span> <span class="nf">topoplot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">montage</span><span class="o">=</span><span class="s2">&quot;standard_1020&quot;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+             <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_colors</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">cbar_title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
              <span class="n">cbar_ticks</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Topoplot.</span>
 
 <span class="sd">    This is a wrapper around :py:func:`mne.viz.plot_topomap`.</span>
+
+<span class="sd">    For more details, please refer to this `example notebook</span>
+<span class="sd">    &lt;https://github.com/raphaelvallat/yasa/blob/master/notebooks/15_topoplot.ipynb&gt;`_.</span>
 
 <span class="sd">    .. versionadded:: 0.4.1</span>
 
@@ -309,6 +312,9 @@
 <span class="sd">    vmin, vmax : float</span>
 <span class="sd">        The minimum and maximum values of the colormap. If None, these will be</span>
 <span class="sd">        defined based on the min / max values of ``data``.</span>
+<span class="sd">    mask : :py:class:`pandas.Series`</span>
+<span class="sd">        A pandas Series indicating the significant electrodes. The index MUST</span>
+<span class="sd">        be the channel names (e.g. [&#39;C4&#39;, &#39;F4&#39;] or [&#39;C4-M1&#39;, &#39;C3-M2&#39;]).</span>
 <span class="sd">    title : str</span>
 <span class="sd">        The plot title.</span>
 <span class="sd">    cmap : str</span>
@@ -356,7 +362,8 @@
 <span class="sd">        &gt;&gt;&gt; import pandas as pd</span>
 <span class="sd">        &gt;&gt;&gt; data = pd.Series([-0.5, -0.7, -0.3, 0.1, 0.15, 0.3, 0.55],</span>
 <span class="sd">        ...                  index=[&#39;F3&#39;, &#39;Fz&#39;, &#39;F4&#39;, &#39;C3&#39;, &#39;Cz&#39;, &#39;C4&#39;, &#39;Pz&#39;])</span>
-<span class="sd">        &gt;&gt;&gt; fig = yasa.topoplot(data, vmin=-1, vmax=1, n_colors=8)</span>
+<span class="sd">        &gt;&gt;&gt; fig = yasa.topoplot(data, vmin=-1, vmax=1, n_colors=8,</span>
+<span class="sd">        ...                     cbar_title=&quot;Pearson correlation&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Increase font size while preserving original</span>
     <span class="n">old_fontsize</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;font.size&#39;</span><span class="p">]</span>
@@ -368,6 +375,16 @@
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">),</span> <span class="s1">&#39;Data must be a Pandas Series&#39;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
+    <span class="c1"># Add mask, if present</span>
+    <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">),</span> <span class="s1">&#39;mask must be a Pandas Series&#39;</span>
+        <span class="k">assert</span> <span class="n">mask</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="s1">&#39;bi&#39;</span><span class="p">,</span> <span class="s2">&quot;mask must be True/False or 0/1.&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mask&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Convert to a dataframe (col1 = values, col2 = mask)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">to_frame</span><span class="p">()</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">)</span>
+
     <span class="c1"># Preprocess channel names: C4-M1 --&gt; C4</span>
     <span class="n">data</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
@@ -378,9 +395,9 @@
 
     <span class="c1"># Define vmin and vmax</span>
     <span class="k">if</span> <span class="n">vmin</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">vmin</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+        <span class="n">vmin</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">vmax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">vmax</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="n">vmax</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
 
     <span class="c1"># Choose and discretize colormap</span>
     <span class="k">if</span> <span class="n">cmap</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -401,24 +418,27 @@
         <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">chan</span>
     <span class="k">if</span> <span class="s1">&#39;show_names&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;show_names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="s1">&#39;mask_params&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;mask_params&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">marker</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
     <span class="c1"># Hidden feature: if names=&#39;values&#39;, show the actual values.</span>
     <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;values&#39;</span><span class="p">:</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">chan</span><span class="p">]</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">][</span><span class="n">chan</span><span class="p">]</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
 
     <span class="c1"># Start the plot</span>
     <span class="k">with</span> <span class="n">sns</span><span class="o">.</span><span class="n">axes_style</span><span class="p">(</span><span class="s2">&quot;white&quot;</span><span class="p">):</span>
         <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">)</span>
         <span class="n">im</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">mne</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">plot_topomap</span><span class="p">(</span>
-            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">chan</span><span class="p">],</span> <span class="n">pos</span><span class="o">=</span><span class="n">Info</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span>
-            <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">][</span><span class="n">chan</span><span class="p">],</span> <span class="n">pos</span><span class="o">=</span><span class="n">Info</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span>
+            <span class="n">mask</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">][</span><span class="n">chan</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
 
         <span class="c1"># Add colorbar</span>
         <span class="k">if</span> <span class="n">cbar_title</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">cbar_title</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">cbar_title</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
 
         <span class="n">cax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">])</span>
         <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">,</span> <span class="n">ticks</span><span class="o">=</span><span class="n">cbar_ticks</span><span class="p">,</span> <span class="n">fraction</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>

@@ -156,7 +156,7 @@ Below some plots demonstrating the functionalities of YASA. To reproduce these, 
 .. figure::  /pictures/gallery.png
   :align:   center
 
-  *The two top plots show an overlay of the detected spindles (blue) and slow-waves (red) on real EEG data. The middle right panel shows a time-frequency representation of the whole-night recording (spectrogram), plotted with the hypnogram (sleep stages) on top. The middle right panel shows the sleep stage probability transition matrix, calculated across the entire night. The left and right plots of the bottom row show the average template of all detected slow-waves and spindles across the entire night, stratified by channels. The middle bottom plot shows a phase-amplitude coupling comodulogram between slower (0.2-4Hz) and faster (7.5-25Hz) frequency ranges.*
+  *The top plot show an overlay of the detected spindles on real EEG data. The middle left panel shows a time-frequency representation of the whole-night recording (spectrogram), plotted with the hypnogram (sleep stages) on top. The middle right panel shows the sleep stage probability transition matrix, calculated across the entire night. The bottom row shows, from left to right: a topographic plot, the average template of all detected slow-waves across the entire night stratified by channels, and a phase-amplitude coupling comodulogram.*
 
 **********
 

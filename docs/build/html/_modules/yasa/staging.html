@@ -3,7 +3,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.staging &#8212; yasa 0.4.0 documentation</title>
+    <title>yasa.staging &#8212; yasa 0.4.1 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -37,7 +37,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.4.0</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.4.1</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -93,7 +93,7 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">entropy</span> <span class="k">as</span> <span class="nn">ent</span>
+<span class="kn">import</span> <span class="nn">antropy</span> <span class="k">as</span> <span class="nn">ant</span>
 <span class="kn">import</span> <span class="nn">scipy.signal</span> <span class="k">as</span> <span class="nn">sp_sig</span>
 <span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">sp_stats</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -112,7 +112,7 @@
 
 <span class="sd">    To run the automatic sleep staging, you must install the</span>
 <span class="sd">    `LightGBM &lt;https://lightgbm.readthedocs.io/&gt;`_ and</span>
-<span class="sd">    `entropy &lt;https://github.com/raphaelvallat/entropy&gt;`_ packages.</span>
+<span class="sd">    `antropy &lt;https://github.com/raphaelvallat/antropy&gt;`_ packages.</span>
 
 <span class="sd">    .. versionadded:: 0.4.0</span>
 
@@ -381,9 +381,9 @@
 
             <span class="c1"># Calculate entropy and fractal dimension features</span>
             <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;perm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span>
-                <span class="n">ent</span><span class="o">.</span><span class="n">perm_entropy</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">ant</span><span class="o">.</span><span class="n">perm_entropy</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;higuchi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span>
-                <span class="n">ent</span><span class="o">.</span><span class="n">higuchi_fd</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">)</span>
+                <span class="n">ant</span><span class="o">.</span><span class="n">higuchi_fd</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">)</span>
             <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;petrosian&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">petrosian</span><span class="p">(</span><span class="n">epochs</span><span class="p">)</span>
 
             <span class="c1"># Convert to dataframe</span>
