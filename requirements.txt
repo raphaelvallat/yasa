@@ -3,6 +3,7 @@ scipy
 pandas
 mne>=0.20
 numba
+outdated
 matplotlib
 ipywidgets
 seaborn
