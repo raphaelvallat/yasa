@@ -213,39 +213,39 @@ def compute_features_stage(raw, hypno, max_freq=35,
     df_bp_1f.columns = df_bp_1f.columns.str.lower()
 
     # #########################################################################
-    # 3) SPINDLES DETECTION // WORK IN PROGRESS
+    # 3) SPINDLES DETECTION
     # #########################################################################
 
-    # print("  ..detecting sleep spindles")
+    print("  ..detecting sleep spindles")
 
-    # spindles_params.update(include=(2, 3))
+    spindles_params.update(include=(2, 3))
 
-    # # Detect spindles in N2 and N3
-    # # Thresholds have to be tuned with visual scoring of a subset of data
-    # # https://raphaelvallat.com/yasa/build/html/generated/yasa.spindles_detect.html
-    # sp = yasa.spindles_detect(raw_eeg, hypno=hypno, **spindles_params)
+    # Detect spindles in N2 and N3
+    # Thresholds have to be tuned with visual scoring of a subset of data
+    # https://raphaelvallat.com/yasa/build/html/generated/yasa.spindles_detect.html
+    sp = yasa.spindles_detect(raw_eeg, hypno=hypno, **spindles_params)
 
-    # df_sp = sp.summary(grp_chan=True, grp_stage=True).reset_index()
-    # df_sp['Stage'] = df_sp['Stage'].map(stage_mapping)
+    df_sp = sp.summary(grp_chan=True, grp_stage=True).reset_index()
+    df_sp['Stage'] = df_sp['Stage'].map(stage_mapping)
 
-    # # Aggregate using the mean (adding NREM = N2 + N3)
-    # df_sp = sp.summary(grp_chan=True, grp_stage=True)
-    # df_sp_NREM = sp.summary(grp_chan=True).reset_index()
-    # df_sp_NREM['Stage'] = 6
-    # df_sp_NREM.set_index(['Stage', 'Channel'], inplace=True)
-    # density_NREM = df_sp_NREM['Count'] / minutes_of_NREM
-    # df_sp_NREM.insert(loc=1, column='Density',
-    #                   value=density_NREM.to_numpy())
+    # Aggregate using the mean (adding NREM = N2 + N3)
+    df_sp = sp.summary(grp_chan=True, grp_stage=True)
+    df_sp_NREM = sp.summary(grp_chan=True).reset_index()
+    df_sp_NREM['Stage'] = 6
+    df_sp_NREM.set_index(['Stage', 'Channel'], inplace=True)
+    density_NREM = df_sp_NREM['Count'] / minutes_of_NREM
+    df_sp_NREM.insert(loc=1, column='Density',
+                      value=density_NREM.to_numpy())
 
-    # df_sp = df_sp.append(df_sp_NREM)
-    # df_sp.columns = ['sp_' + c if c in ['Count', 'Density'] else
-    #                  'sp_mean_' + c for c in df_sp.columns]
+    df_sp = df_sp.append(df_sp_NREM)
+    df_sp.columns = ['sp_' + c if c in ['Count', 'Density'] else
+                     'sp_mean_' + c for c in df_sp.columns]
 
-    # # Prepare to export
-    # df_sp.reset_index(inplace=True)
-    # df_sp['Stage'] = df_sp['Stage'].map(stage_mapping)
-    # df_sp.columns = df_sp.columns.str.lower()
-    # df_sp.rename(columns={'channel': 'chan'}, inplace=True)
+    # Prepare to export
+    df_sp.reset_index(inplace=True)
+    df_sp['Stage'] = df_sp['Stage'].map(stage_mapping)
+    df_sp.columns = df_sp.columns.str.lower()
+    df_sp.rename(columns={'channel': 'chan'}, inplace=True)
 
     # #########################################################################
     # 4) SLOW-WAVES DETECTION & SW-Sigma COUPLING
@@ -320,13 +320,16 @@ def compute_features_stage(raw, hypno, max_freq=35,
         if stage == 6:
             # Use hypno_NREM
             data_stage = data[:, hypno_NREM == stage]
+            data_stage_delta = data_delta[:, hypno_NREM == stage]
             env_stage_delta = env_delta[:, hypno_NREM == stage]
         elif stage == 7:
             # Use hypno_WN
             data_stage = data[:, hypno_WN == stage]
+            data_stage_delta = data_delta[:, hypno_WN == stage]
             env_stage_delta = env_delta[:, hypno_WN == stage]
         else:
             data_stage = data[:, hypno == stage]
+            data_stage_delta = data_delta[:, hypno == stage]
             env_stage_delta = env_delta[:, hypno == stage]
         # Skip if stage is not present in data
         if data_stage.shape[-1] == 0:
@@ -336,8 +339,6 @@ def compute_features_stage(raw, hypno, max_freq=35,
         # See review here: https://pubmed.ncbi.nlm.nih.gov/33286013/
         # These are calculated on the broadband signal.
         # - DFA not implemented because it is dependent on data length.
-        # - Spectral entropy not implemented because the data is not
-        #   continuous (segmented by stage).
         # - Sample / app entropy not implemented because it is too slow to
         #   calculate.
         from numpy import apply_along_axis as aal
@@ -345,6 +346,9 @@ def compute_features_stage(raw, hypno, max_freq=35,
             ant.svd_entropy, axis=1, arr=data_stage, normalize=True)
         df_ent.loc[stage, 'ent_perm'] = aal(
             ant.perm_entropy, axis=1, arr=data_stage, normalize=True)
+        df_ent.loc[stage, 'ent_spec'] = ant.spectral_entropy(
+            data_stage, sf, method="welch", nperseg=(5 * int(sf)),
+            normalize=True, axis=1)
         df_ent.loc[stage, 'ent_higuchi'] = aal(
             ant.higuchi_fd, axis=1, arr=data_stage)
 
@@ -355,6 +359,10 @@ def compute_features_stage(raw, hypno, max_freq=35,
         denom = np.sqrt(4 / np.pi - 1)  # approx 0.5227
         cve = sp_stats.variation(env_stage_delta, axis=1) / denom
         df_ent.loc[stage, 'ent_cve_delta'] = cve
+
+        # Other metrics of slow-wave (= delta) stability
+        df_ent.loc[stage, 'ent_higuchi_delta'] = aal(
+            ant.higuchi_fd, axis=1, arr=data_stage_delta)
 
     df_ent = df_ent.dropna(how="all").reset_index()
     df_ent['stage'] = df_ent['stage'].map(stage_mapping)
