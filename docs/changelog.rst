@@ -3,6 +3,13 @@
 What's new
 ##########
 
+v0.4.2 (dev)
+------------
+
+**Enhancements**
+
+a. Artefact and Unscored epochs are now excluded from the calculation of the total sleep time (TST) in :py:func:`yasa.sleep_statistics`. Previously, YASA calculated TST as SPT - WASO, thus including Art and Uns. TST is now calculated as the sum of all REM and NREM sleep in SPT.
+
 v0.4.1 (March 2021)
 -------------------
 

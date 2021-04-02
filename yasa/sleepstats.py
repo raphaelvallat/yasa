@@ -209,7 +209,9 @@ def sleep_statistics(hypno, sf_hyp):
     hypno_s = hypno[first_sleep:(last_sleep + 1)]
     stats['SPT'] = hypno_s.size
     stats['WASO'] = hypno_s[hypno_s == 0].size
-    stats['TST'] = stats['SPT'] - stats['WASO']
+    # Before YASA v0.4.2, TST was calculated as SPT - WASO, meaning that Art
+    # and Unscored epochs were included. TST is now restrained to sleep stages.
+    stats['TST'] = hypno_s[hypno_s > 0].size
 
     # Duration of each sleep stages
     stats['N1'] = hypno[hypno == 1].size
@@ -218,7 +220,7 @@ def sleep_statistics(hypno, sf_hyp):
     stats['REM'] = hypno[hypno == 4].size
     stats['NREM'] = stats['N1'] + stats['N2'] + stats['N3']
 
-    # Sleep stage latencies
+    # Sleep stage latencies -- only relevant if hypno is cropped to TIB
     stats['SOL'] = first_sleep
     stats['Lat_N1'] = np.where(hypno == 1)[0].min() if 1 in hypno else np.nan
     stats['Lat_N2'] = np.where(hypno == 2)[0].min() if 2 in hypno else np.nan
