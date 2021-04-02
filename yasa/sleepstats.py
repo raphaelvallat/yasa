@@ -26,41 +26,54 @@ def transition_matrix(hypno):
         30 seconds epochs. Using an upsampled hypnogram will result in an
         incorrect transition matrix.
         For best results, we recommend using an hypnogram cropped to
-        either the time in bed (TIB) or the sleep period time (SPT).
+        either the time in bed (TIB) or the sleep period time (SPT), without
+        any artefact / unscored epochs.
 
     Returns
     -------
-    counts : array
-        Counts transition matrix (number of transitions from stage X to
-        stage Y).
-    probs : array
+    counts : :py:class:`pandas.DataFrame`
+        Counts transition matrix (number of transitions from stage A to
+        stage B). The pre-transition states are the rows and the
+        post-transition states are the columns.
+    probs : :py:class:`pandas.DataFrame`
         Conditional probability transition matrix, i.e.
-        given that current state is X, what is the probability that
-        the next state is Y.
+        given that current state is A, what is the probability that
+        the next state is B.
         ``probs`` is a `right stochastic matrix
         <https://en.wikipedia.org/wiki/Stochastic_matrix>`_,
         i.e. each row sums to 1.
 
     Examples
     --------
+    >>> import numpy as np
     >>> from yasa import transition_matrix
-    >>> a = [1, 1, 1, 0, 0, 2, 2, 0, 2, 0, 1, 1, 0, 0]
+    >>> a = [0, 0, 0, 1, 1, 0, 1, 2, 2, 3, 3, 2, 3, 3, 0, 2, 2, 1, 2, 2, 3, 3]
     >>> counts, probs = transition_matrix(a)
     >>> counts
-           0  1  2
+           0  1  2  3
     Stage
-    0      2  1  2
-    1      2  3  0
-    2      2  0  1
+    0      2  2  1  0
+    1      1  1  2  0
+    2      0  1  3  3
+    3      1  0  1  3
 
-    >>> probs
-                  0    1         2
+    >>> probs.round(2)
+              0     1     2     3
     Stage
-    0      0.400000  0.2  0.400000
-    1      0.400000  0.6  0.000000
-    2      0.666667  0.0  0.333333
+    0      0.40  0.40  0.20  0.00
+    1      0.25  0.25  0.50  0.00
+    2      0.00  0.14  0.43  0.43
+    3      0.20  0.00  0.20  0.60
 
-    We can plot the transition matrix using :py:func:`seaborn.heatmap`:
+    Several metrics of sleep fragmentation can be calculated from the
+    probability matrix. For example, the stability of sleep stages can be
+    calculated by taking the average of the diagonal values (excluding Wake
+    and N1 sleep):
+
+    >>> np.diag(probs.loc[2:, 2:]).mean().round(3)
+    0.514
+
+    Finally, we can plot the transition matrix using :py:func:`seaborn.heatmap`
 
     .. plot::
 
@@ -85,14 +98,14 @@ def transition_matrix(hypno):
         >>> ax.xaxis.set_label_position('top')
     """
     x = np.asarray(hypno, dtype=int)
-    unique, inverse = np.unique(x, return_inverse=True)
+    unique, inverse = np.unique(x, return_inverse=True)  # unique is sorted
     n = unique.size
     # Integer transition counts
     counts = np.zeros((n, n), dtype=int)
     np.add.at(counts, (inverse[:-1], inverse[1:]), 1)
     # Conditional probabilities
     probs = counts / counts.sum(axis=-1, keepdims=True)
-    # Optional, convert to Pandas
+    # Convert to a Pandas DataFrame
     counts = pd.DataFrame(counts, index=unique, columns=unique)
     probs = pd.DataFrame(probs, index=unique, columns=unique)
     counts.index.name = 'Stage'
