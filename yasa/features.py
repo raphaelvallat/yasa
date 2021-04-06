@@ -373,7 +373,7 @@ def compute_features_stage(raw, hypno, max_freq=35,
 
     df = (df_bp
           .merge(df_bp_1f, how='outer')
-          # .merge(df_sp, how='outer')
+          .merge(df_sp, how='outer')
           .merge(df_sw, how='outer')
           .merge(df_ent, how='outer'))
 
