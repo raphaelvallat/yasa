@@ -225,25 +225,6 @@ class SleepStaging:
         ]
 
         #######################################################################
-        # HELPER FUNCTIONS
-        #######################################################################
-
-        def nzc(x):
-            """Calculate the number of zero-crossings along the last axis."""
-            return ((x[..., :-1] * x[..., 1:]) < 0).sum(axis=1)
-
-        def mobility(x):
-            """Calculate Hjorth mobility on the last axis."""
-            return np.sqrt(np.diff(x, axis=1).var(axis=1) / x.var(axis=1))
-
-        def petrosian(x):
-            """Calculate the Petrosian fractal dimension on the last axis."""
-            n = x.shape[1]
-            ln10 = np.log10(n)
-            diff = np.diff(x, axis=1)
-            return ln10 / (ln10 + np.log10(n / (n + 0.4 * nzc(diff))))
-
-        #######################################################################
         # CALCULATE FEATURES
         #######################################################################
 
@@ -259,16 +240,16 @@ class SleepStaging:
             times, epochs = sliding_window(dt_filt, sf=sf, window=30)
 
             # Calculate standard descriptive statistics
-            hmob = mobility(epochs)
+            hmob, hcomp = ant.hjorth_params(epochs, axis=1)
 
             feat = {
                 'std': np.std(epochs, ddof=1, axis=1),
                 'iqr': sp_stats.iqr(epochs, rng=(25, 75), axis=1),
                 'skew': sp_stats.skew(epochs, axis=1),
                 'kurt': sp_stats.kurtosis(epochs, axis=1),
-                'nzc': nzc(epochs),
+                'nzc': ant.num_zerocross(epochs, axis=1),
                 'hmob': hmob,
-                'hcomp': mobility(np.diff(epochs, axis=1)) / hmob
+                'hcomp': hcomp
             }
 
             # Calculate spectral power features (for EEG + EOG)
@@ -297,7 +278,7 @@ class SleepStaging:
                 ant.perm_entropy, axis=1, arr=epochs, normalize=True)
             feat['higuchi'] = np.apply_along_axis(
                 ant.higuchi_fd, axis=1, arr=epochs)
-            feat['petrosian'] = petrosian(epochs)
+            feat['petrosian'] = ant.petrosian_fd(epochs, axis=1)
 
             # Convert to dataframe
             feat = pd.DataFrame(feat).add_prefix(c + '_')
