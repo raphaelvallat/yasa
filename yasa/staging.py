@@ -185,7 +185,7 @@ class SleepStaging:
         assert sf > 80, 'Sampling frequency must be at least 80 Hz.'
         if sf != 100:
             raw_pick.resample(100, npad="auto")
-            sf = 100
+            sf = raw_pick.info['sfreq']
 
         # Get data and convert to microVolts
         data = raw_pick.get_data() * 1e6
