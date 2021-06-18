@@ -1,6 +1,4 @@
-"""
-Test the functions in yasa/staging.py.
-"""
+"""Test the functions in yasa/staging.py."""
 import mne
 import unittest
 import numpy as np

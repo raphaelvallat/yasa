@@ -1,6 +1,4 @@
-"""
-Test the functions in the yasa/hypno.py file.
-"""
+"""Test the functions in the yasa/hypno.py file."""
 import mne
 import unittest
 import numpy as np

@@ -1,6 +1,4 @@
-"""
-Test the functions in the yasa/plotting.py file.
-"""
+"""Test the functions in the yasa/plotting.py file."""
 import unittest
 import pandas as pd
 import matplotlib.pyplot as plt

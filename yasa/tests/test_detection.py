@@ -1,6 +1,4 @@
-"""
-Test the functions in yasa/spectral.py.
-"""
+"""Test the functions in yasa/spectral.py."""
 import mne
 import pytest
 import unittest
@@ -101,6 +99,10 @@ class TestDetection(unittest.TestCase):
         sp = spindles_detect(data_full[1, :], sf, hypno=hypno_full,
                              remove_outliers=True)
 
+        # Calculate the coincidence matrix with only one channel
+        with pytest.raises(ValueError):
+            sp.get_coincidence_matrix()
+
         with self.assertLogs('yasa', level='WARNING'):
             spindles_detect(data_n3, sf)
         # assert sp is None --> Fails?
@@ -141,6 +143,8 @@ class TestDetection(unittest.TestCase):
         sp.summary()
         sp.summary(grp_chan=True)
         sp.plot_average(ci=None)
+        sp.get_coincidence_matrix()
+        sp.get_coincidence_matrix(scaled=False)
         sp.plot_detection()
         assert sp._data.shape == sp._data_filt.shape
         np.testing.assert_array_equal(sp._data, data_full)
@@ -221,6 +225,8 @@ class TestDetection(unittest.TestCase):
         sw.get_sync_events()
         sw.plot_average(ci=None)
         sw.plot_detection()
+        sw.get_coincidence_matrix()
+        sw.get_coincidence_matrix(scaled=False)
 
         sw_no_out = sw_detect(data_full, sf, chan_full,
                               remove_outliers=True)

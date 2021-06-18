@@ -118,17 +118,6 @@ class _DetectionResults(object):
         self._ch_names = ch_names
         self._data_filt = data_filt
 
-    def get_mask(self):
-        """get_mask"""
-        from yasa.others import _index_to_events
-        mask = np.zeros(self._data.shape, dtype=int)
-        for i in self._events['IdxChannel'].unique():
-            ev_chan = self._events[self._events['IdxChannel'] == i]
-            idx_ev = _index_to_events(
-                ev_chan[['Start', 'End']].to_numpy() * self._sf)
-            mask[i, idx_ev] = 1
-        return np.squeeze(mask)
-
     def summary(self, event_type, grp_chan=False, grp_stage=False,
                 aggfunc='mean', sort=True):
         """Summary"""
@@ -202,6 +191,17 @@ class _DetectionResults(object):
 
         return df_grp.set_index(grouper)
 
+    def get_mask(self):
+        """get_mask"""
+        from yasa.others import _index_to_events
+        mask = np.zeros(self._data.shape, dtype=int)
+        for i in self._events['IdxChannel'].unique():
+            ev_chan = self._events[self._events['IdxChannel'] == i]
+            idx_ev = _index_to_events(
+                ev_chan[['Start', 'End']].to_numpy() * self._sf)
+            mask[i, idx_ev] = 1
+        return np.squeeze(mask)
+
     def get_sync_events(self, center, time_before, time_after,
                         filt=(None, None)):
         """Get_sync_events
@@ -260,6 +260,36 @@ class _DetectionResults(object):
             df_sync = df_sync.append(df_chan, ignore_index=True)
 
         return df_sync
+
+    def get_coincidence_matrix(self, scaled=True):
+        """get_coincidence_matrix"""
+        if len(self._ch_names) < 2:
+            raise ValueError(
+                "At least 2 channels are required to calculate coincidence.")
+        mask = self.get_mask()
+        mask = pd.DataFrame(mask.T, columns=self._ch_names)
+        mask.columns.name = "Channel"
+
+        def _coincidence(x, y):
+            """Calculate the (scaled) coincidence."""
+            coincidence = (x * y).sum()
+            if scaled:
+                # Handle division by zero error
+                denom = (x.sum() * y.sum())
+                if denom == 0:
+                    coincidence = np.nan
+                else:
+                    coincidence /= denom
+            return coincidence
+
+        coinc_mat = mask.corr(method=_coincidence)
+
+        if not scaled:
+            # Otherwise diagonal values are set to 1
+            np.fill_diagonal(coinc_mat.values, mask.sum())
+            coinc_mat = coinc_mat.astype(int)
+
+        return coinc_mat
 
     def plot_average(self, event_type, center='Peak', hue='Channel',
                      time_before=1, time_after=1, filt=(None, None),
@@ -880,6 +910,55 @@ class SpindlesResults(_DetectionResults):
                                grp_chan=grp_chan, grp_stage=grp_stage,
                                aggfunc=aggfunc, sort=sort)
 
+    def get_coincidence_matrix(self, scaled=True):
+        """Return the (scaled) coincidence matrix.
+
+        Parameters
+        ----------
+        scaled : bool
+            If True (default), the coincidence matrix is scaled (see Notes).
+
+        Returns
+        -------
+        coincidence : pd.DataFrame
+            A symmetric matrix with the (scaled) coincidence values.
+
+        Notes
+        -----
+        Do spindles occur at the same time? One way to measure this is to
+        calculate the coincidence matrix, which gives, for each pair of
+        channel, the number of samples that were marked as a spindle in both
+        channels. The output is a symmetric matrix, in which the diagonal is
+        simply the number of data points that were marked as a spindle in the
+        channel.
+
+        The coincidence matrix can be scaled (default) by dividing the output
+        by the product of the sum of each individual binary mask, as shown in
+        the example below. It can then be used to define functional
+        networks or quickly find outlier channels.
+
+        Examples
+        --------
+        Calculate the coincidence of two binary mask:
+
+        >>> import numpy as np
+        >>> x = np.array([0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1])
+        >>> y = np.array([0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1])
+        >>> x * y
+        array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])
+
+        >>> (x * y).sum()  # Unscaled coincidence
+        3
+
+        >>> (x * y).sum() / (x.sum() * y.sum())  # Scaled coincidence
+        0.12
+
+        References
+        ----------
+        - https://github.com/Mark-Kramer/Sleep-Networks-2021
+        """
+        return super().get_coincidence_matrix(scaled=scaled)
+
     def get_mask(self):
         """Return a boolean array indicating for each sample in data if this
         sample is part of a detected event (True) or not (False).
@@ -1323,6 +1402,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
                                         previous_pos_zc != 0,
                                         following_pos_zc != 0,
                                         # Duration criteria
+                                        sw_dur < dur_neg[1] + dur_pos[1],
                                         neg_phase_dur > dur_neg[0],
                                         neg_phase_dur < dur_neg[1],
                                         pos_phase_dur > dur_pos[0],
@@ -1495,6 +1575,55 @@ class SWResults(_DetectionResults):
         return super().summary(event_type='sw',
                                grp_chan=grp_chan, grp_stage=grp_stage,
                                aggfunc=aggfunc, sort=sort)
+
+    def get_coincidence_matrix(self, scaled=True):
+        """Return the (scaled) coincidence matrix.
+
+        Parameters
+        ----------
+        scaled : bool
+            If True (default), the coincidence matrix is scaled (see Notes).
+
+        Returns
+        -------
+        coincidence : pd.DataFrame
+            A symmetric matrix with the (scaled) coincidence values.
+
+        Notes
+        -----
+        Do slow-waves occur at the same time? One way to measure this is to
+        calculate the coincidence matrix, which gives, for each pair of
+        channel, the number of samples that were marked as a slow-waves in both
+        channels. The output is a symmetric matrix, in which the diagonal is
+        simply the number of data points that were marked as a slow-waves in
+        the channel.
+
+        The coincidence matrix can be scaled (default) by dividing the output
+        by the product of the sum of each individual binary mask, as shown in
+        the example below. It can then be used to define functional
+        networks or quickly find outlier channels.
+
+        Examples
+        --------
+        Calculate the coincidence of two binary mask:
+
+        >>> import numpy as np
+        >>> x = np.array([0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1])
+        >>> y = np.array([0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1])
+        >>> x * y
+        array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])
+
+        >>> (x * y).sum()  # Coincidence
+        3
+
+        >>> (x * y).sum() / (x.sum() * y.sum())  # Scaled coincidence
+        0.12
+
+        References
+        ----------
+        - https://github.com/Mark-Kramer/Sleep-Networks-2021
+        """
+        return super().get_coincidence_matrix(scaled=scaled)
 
     def get_mask(self):
         """Return a boolean array indicating for each sample in data if this

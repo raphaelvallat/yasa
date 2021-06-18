@@ -14,8 +14,8 @@ class TestIO(unittest.TestCase):
 
     def test_log_level(self):
         """Test setting the log level."""
-        for l in levels:
-            set_log_level(l)
+        for lev in levels:
+            set_log_level(lev)
         set_log_level(False)
         set_log_level(True)
         set_log_level(None)

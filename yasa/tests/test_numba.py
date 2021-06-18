@@ -1,6 +1,4 @@
-"""
-Test the functions in the yasa/numba.py file.
-"""
+"""Test the functions in the yasa/numba.py file."""
 import unittest
 import numpy as np
 from scipy.signal import detrend

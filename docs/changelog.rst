@@ -6,6 +6,11 @@ What's new
 v0.4.2 (dev)
 ------------
 
+**New functions**
+
+a. Added the :py:meth:`yasa.SpindlesResults.get_coincidence_matrix` and :py:meth:`yasa.SWResults.get_coincidence_matrix` methods to calculate the (scaled) coincidence matrix.
+The coincidence matrix gives, for each pair of channel, the number of samples that were marked as an event (spindles or slow-waves) in both channels. In other words, it gives an indication of whether events (spindles or slow-waves) are co-occuring for any pair of channel. The scaled version of the coincidence matrix can then be used to define functional networks or quickly find outlier channels.
+
 **Enhancements**
 
 a. Artefact and Unscored epochs are now excluded from the calculation of the total sleep time (TST) in :py:func:`yasa.sleep_statistics`. Previously, YASA calculated TST as SPT - WASO, thus including Art and Uns. TST is now calculated as the sum of all REM and NREM sleep in SPT.

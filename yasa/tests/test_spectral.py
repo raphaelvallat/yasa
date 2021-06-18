@@ -1,6 +1,4 @@
-"""
-Test the functions in the yasa/spectral.py file.
-"""
+"""Test the functions in the yasa/spectral.py file."""
 import mne
 import unittest
 import numpy as np
