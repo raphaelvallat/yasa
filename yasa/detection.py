@@ -1163,7 +1163,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         spindles-related sigma signals are defined in ``freq_sw`` and
         ``freq_sp``, respectively.
         For more details, please refer to the `Jupyter notebook
-        <https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb>`_
+        <https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_SO-sigma_coupling.ipynb>`_
 
         Note that setting ``coupling=True`` may significantly increase
         computation time.
@@ -1318,7 +1318,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         # Negative peaks with value comprised between -40 to -300 uV
         idx_neg_peaks, _ = signal.find_peaks(-1 * data_filt[i, :],
                                              height=amp_neg)
-        # Positive peaks with values comprised between 10 to 150 uV
+        # Positive peaks with values comprised between 10 to 200 uV
         idx_pos_peaks, _ = signal.find_peaks(data_filt[i, :], height=amp_pos)
         # Intersect with sleep stage vector
         idx_neg_peaks = np.intersect1d(idx_neg_peaks, idx_mask,
@@ -1370,19 +1370,24 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         neg_sorted = np.searchsorted(zero_crossings, idx_neg_peaks)
         previous_neg_zc = zero_crossings[neg_sorted - 1] - idx_neg_peaks
         following_neg_zc = zero_crossings[neg_sorted] - idx_neg_peaks
-        neg_phase_dur = (np.abs(previous_neg_zc) + following_neg_zc) / sf
 
-        # Distance (in samples) between the positive peaks and the previous and
+        # Distance between the positive peaks and the previous and
         # following zero-crossings
         pos_sorted = np.searchsorted(zero_crossings, idx_pos_peaks)
         previous_pos_zc = zero_crossings[pos_sorted - 1] - idx_pos_peaks
         following_pos_zc = zero_crossings[pos_sorted] - idx_pos_peaks
+
+        # Duration of the negative and positive phases, in seconds
+        neg_phase_dur = (np.abs(previous_neg_zc) + following_neg_zc) / sf
         pos_phase_dur = (np.abs(previous_pos_zc) + following_pos_zc) / sf
 
         # We now compute a set of metrics
         sw_start = times[idx_neg_peaks + previous_neg_zc]
         sw_end = times[idx_pos_peaks + following_pos_zc]
-        sw_dur = sw_end - sw_start  # Same as pos_phase_dur + neg_phase_dur
+        # This should be the same as `sw_dur = pos_phase_dur + neg_phase_dur`
+        # We round to avoid floating point errr (e.g. 1.9000000002)
+        sw_dur = (sw_end - sw_start).round(4)
+        sw_dur_both_phase = (pos_phase_dur + neg_phase_dur).round(4)
         sw_midcrossing = times[idx_neg_peaks + following_neg_zc]
         sw_idx_neg = times[idx_neg_peaks]  # Location of negative peak
         sw_idx_pos = times[idx_pos_peaks]  # Location of positive peak
@@ -1396,22 +1401,24 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
 
         # And we apply a set of thresholds to remove bad slow waves
         good_sw = np.logical_and.reduce((
-                                        # Data edges
-                                        previous_neg_zc != 0,
-                                        following_neg_zc != 0,
-                                        previous_pos_zc != 0,
-                                        following_pos_zc != 0,
-                                        # Duration criteria
-                                        sw_dur < dur_neg[1] + dur_pos[1],
-                                        neg_phase_dur > dur_neg[0],
-                                        neg_phase_dur < dur_neg[1],
-                                        pos_phase_dur > dur_pos[0],
-                                        pos_phase_dur < dur_pos[1],
-                                        # Sanity checks
-                                        sw_midcrossing > sw_start,
-                                        sw_midcrossing < sw_end,
-                                        sw_slope > 0,
-                                        ))
+            # Data edges
+            previous_neg_zc != 0,
+            following_neg_zc != 0,
+            previous_pos_zc != 0,
+            following_pos_zc != 0,
+            # Duration criteria
+            sw_dur == sw_dur_both_phase,  # dur = negative + positive
+            sw_dur <= dur_neg[1] + dur_pos[1],  # dur < max(neg) + max(pos)
+            sw_dur >= dur_neg[0] + dur_pos[0],  # dur > min(neg) + min(pos)
+            neg_phase_dur > dur_neg[0],
+            neg_phase_dur < dur_neg[1],
+            pos_phase_dur > dur_pos[0],
+            pos_phase_dur < dur_pos[1],
+            # Sanity checks
+            sw_midcrossing > sw_start,
+            sw_midcrossing < sw_end,
+            sw_slope > 0,
+        ))
 
         if all(~good_sw):
             logger.warning('No SW were found in channel %s.', ch_names[i])

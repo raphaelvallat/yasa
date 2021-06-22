@@ -6,6 +6,10 @@ What's new
 v0.4.2 (dev)
 ------------
 
+**Bugfix**
+
+a. Fixed a bug in :py:func:`yasa.sw_detect` in which the detection could return event with very long duration (e.g. several tens of seconds). We have now added extra safety checks to make sure that the duration of slow-waves duration does not exceed the maximum duration allowed by the ``dur_neg`` and ``dur_pos`` parameters (e.g. 2.5 seconds). Please make sure to update your results, and always use the latest version of YASA.
+
 **New functions**
 
 a. Added the :py:meth:`yasa.SpindlesResults.get_coincidence_matrix` and :py:meth:`yasa.SWResults.get_coincidence_matrix` methods to calculate the (scaled) coincidence matrix.
