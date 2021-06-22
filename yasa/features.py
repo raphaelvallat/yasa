@@ -12,6 +12,9 @@ These include:
 
 Author: Dr Raphael Vallat <raphaelvallat@berkeley.edu>, UC Berkeley.
 Date: March 2021
+
+DANGER: This function has not been extensively debugged and validated.
+Use at your own risk.
 """
 import mne
 import yasa
@@ -28,8 +31,8 @@ logger = logging.getLogger('yasa')
 __all__ = ['compute_features_stage']
 
 
-def compute_features_stage(raw, hypno, max_freq=35,
-                           spindles_params=dict(), sw_params=dict()):
+def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
+                           sw_params=dict(), do_1f=True):
     """Calculate a set of features for each sleep stage from PSG data.
 
     Features are calculated for N2, N3, NREM (= N2 + N3) and REM sleep.
@@ -68,9 +71,15 @@ def compute_features_stage(raw, hypno, max_freq=35,
         :py:func:`yasa.sw_detect` function. We strongly recommend
         adapting the thresholds to your population (e.g. more liberal for
         older adults).
+
+    Returns
+    -------
+    feature : pd.DataFrame
+        A long-format dataframe with stage and channel as index and
+        all the calculated metrics as columns.
     """
     # #########################################################################
-    # 2) PREPROCESSING
+    # 1) PREPROCESSING
     # #########################################################################
 
     # Safety checks
@@ -126,8 +135,15 @@ def compute_features_stage(raw, hypno, max_freq=35,
     hypno_WN = pd.Series(hypno).replace({2: 7, 3: 7, 4: 7}).to_numpy()
     # minutes_of_WN = (hypno_WN == 7).sum() / (60 * raw.info['sfreq'])
 
-    # Keep only EEG channels
-    raw_eeg = raw.pick_types(eeg=True)
+    # Keep only EEG channels and copy to avoid in-place modification
+    raw_eeg = raw.copy().pick_types(eeg=True)
+
+    # Remove flat channels
+    bool_flat = raw_eeg.get_data().std(axis=1) == 0
+    chan_flat = np.array(raw_eeg.ch_names)[bool_flat].tolist()
+    if len(chan_flat):
+        logger.warning("Removing flat channel(s): %s" % chan_flat)
+    raw_eeg.drop_channels(chan_flat)
 
     # Remove suffix from channels: C4-M1 --> C4
     chan_nosuffix = [c.split('-')[0] for c in raw_eeg.ch_names]
@@ -173,44 +189,48 @@ def compute_features_stage(raw, hypno, max_freq=35,
 
     # 2.2) Same but after adjusting for 1/F (VERY SLOW!)
     # This is based on the IRASA method described in Wen & Liu 2016.
-    df_bp_1f = []
+    if do_1f:
+        df_bp_1f = []
 
-    for stage in [2, 3, 4, 6, 7]:
-        if stage == 6:
-            # Use hypno_NREM
-            data_stage = data[:, hypno_NREM == stage]
-        elif stage == 7:
-            # Use hypno_WN
-            data_stage = data[:, hypno_WN == stage]
-        else:
-            data_stage = data[:, hypno == stage]
-        # Skip if stage is not present in data
-        if data_stage.shape[-1] == 0:
-            continue
-        # Calculate aperiodic / oscillatory PSD + slope
-        freqs, _, psd_osc, fit_params = yasa.irasa(
-            data_stage, sf, ch_names=chan, band=(l_freq, h_freq),
-            win_sec=4)
-        # Make sure that we don't have any negative values in PSD
-        # See https://github.com/raphaelvallat/yasa/issues/29
-        psd_osc = psd_osc - psd_osc.min(axis=-1, keepdims=True)
-        # Calculate bandpower
-        bp = yasa.bandpower_from_psd(psd_osc, freqs, ch_names=chan,
-                                     bands=bands)
-        # Add 1/f slope to dataframe and sleep stage
-        bp['1f_slope'] = np.abs(fit_params['Slope'].to_numpy())
-        bp.insert(loc=0, column="Stage", value=stage_mapping[stage])
-        df_bp_1f.append(bp)
+        for stage in [2, 3, 4, 6, 7]:
+            if stage == 6:
+                # Use hypno_NREM
+                data_stage = data[:, hypno_NREM == stage]
+            elif stage == 7:
+                # Use hypno_WN
+                data_stage = data[:, hypno_WN == stage]
+            else:
+                data_stage = data[:, hypno == stage]
+            # Skip if stage is not present in data
+            if data_stage.shape[-1] == 0:
+                continue
+            # Calculate aperiodic / oscillatory PSD + slope
+            freqs, _, psd_osc, fit_params = yasa.irasa(
+                data_stage, sf, ch_names=chan, band=(l_freq, h_freq),
+                win_sec=4)
+            # Make sure that we don't have any negative values in PSD
+            # See https://github.com/raphaelvallat/yasa/issues/29
+            psd_osc = psd_osc - psd_osc.min(axis=-1, keepdims=True)
+            # Calculate bandpower
+            bp = yasa.bandpower_from_psd(psd_osc, freqs, ch_names=chan,
+                                         bands=bands)
+            # Add 1/f slope to dataframe and sleep stage
+            bp['1f_slope'] = np.abs(fit_params['Slope'].to_numpy())
+            bp.insert(loc=0, column="Stage", value=stage_mapping[stage])
+            df_bp_1f.append(bp)
 
-    # Convert to a dataframe
-    df_bp_1f = pd.concat(df_bp_1f)
-    # Remove the TotalAbsPower column, incorrect because of negative values
-    df_bp_1f.drop(columns=['TotalAbsPow', 'FreqRes', 'Relative'],
-                  inplace=True)
-    df_bp_1f.columns = [c if c in ['Stage', 'Chan', '1f_slope']
-                        else 'bp_adj_' + c for c in df_bp_1f.columns]
-    assert not (df_bp_1f._get_numeric_data() < 0).any().any()
-    df_bp_1f.columns = df_bp_1f.columns.str.lower()
+        # Convert to a dataframe
+        df_bp_1f = pd.concat(df_bp_1f)
+        # Remove the TotalAbsPower column, incorrect because of negative values
+        df_bp_1f.drop(columns=['TotalAbsPow', 'FreqRes', 'Relative'],
+                      inplace=True)
+        df_bp_1f.columns = [c if c in ['Stage', 'Chan', '1f_slope']
+                            else 'bp_adj_' + c for c in df_bp_1f.columns]
+        assert not (df_bp_1f._get_numeric_data() < 0).any().any()
+        df_bp_1f.columns = df_bp_1f.columns.str.lower()
+
+        # Merge with the main bandpower dataframe
+        df_bp = df_bp.merge(df_bp_1f, how="outer")
 
     # #########################################################################
     # 3) SPINDLES DETECTION
@@ -372,7 +392,6 @@ def compute_features_stage(raw, hypno, max_freq=35,
     # #########################################################################
 
     df = (df_bp
-          .merge(df_bp_1f, how='outer')
           .merge(df_sp, how='outer')
           .merge(df_sw, how='outer')
           .merge(df_ent, how='outer'))
