@@ -72,9 +72,10 @@ class SleepStaging:
     * Higuchi and Petrosian fractal dimension
 
     In addition, the algorithm also calculates a smoothed and normalized
-    version of these features. Specifically, a 5-min centered weighted rolling
-    average and a 10 min past rolling average are applied. The resulting
-    smoothed features are then normalized using a robust z-score.
+    version of these features. Specifically, a 5.5 min centered
+    triangular-weighted rolling average and a 5 min past rolling average
+    are applied. The resulting smoothed features are then normalized using a
+    robust z-score.
 
     The data are automatically downsampled to 100 Hz for faster
     computation.
