@@ -222,7 +222,7 @@ def sleep_statistics(hypno, sf_hyp):
     hypno_s = hypno[first_sleep:(last_sleep + 1)]
     stats['SPT'] = hypno_s.size
     stats['WASO'] = hypno_s[hypno_s == 0].size
-    # Before YASA v0.4.2, TST was calculated as SPT - WASO, meaning that Art
+    # Before YASA v0.5.0, TST was calculated as SPT - WASO, meaning that Art
     # and Unscored epochs were included. TST is now restrained to sleep stages.
     stats['TST'] = hypno_s[hypno_s > 0].size
 
