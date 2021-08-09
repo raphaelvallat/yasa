@@ -72,8 +72,8 @@ class SleepStaging:
     * Higuchi and Petrosian fractal dimension
 
     In addition, the algorithm also calculates a smoothed and normalized
-    version of these features. Specifically, a 5.5 min centered
-    triangular-weighted rolling average and a 5 min past rolling average
+    version of these features. Specifically, a 7.5 min centered
+    triangular-weighted rolling average and a 2 min past rolling average
     are applied. The resulting smoothed features are then normalized using a
     robust z-score.
 
@@ -293,17 +293,18 @@ class SleepStaging:
         features = pd.concat(features, axis=1)
         features.index.name = 'epoch'
 
-        # Apply centered rolling average (11 epochs = 5 min 30)
-        # Triang: [1/6, 2/6, 3/6, 4/6, 5/6, 6/6 (X), 5/6, 4/6, 3/6, 2/6, 1/6]
+        # Apply centered rolling average (15 epochs = 7 min 30)
+        # Triang: [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.,
+        #          0.875, 0.75, 0.625, 0.5, 0.375, 0.25, 0.125]
         rollc = features.rolling(
-            window=11, center=True, min_periods=1, win_type='triang').mean()
+            window=15, center=True, min_periods=1, win_type='triang').mean()
         rollc[rollc.columns] = robust_scale(rollc, quantile_range=(5, 95))
-        rollc = rollc.add_suffix('_c5min_norm')
+        rollc = rollc.add_suffix('_c7min_norm')
 
-        # Now look at the past 5 minutes
-        rollp = features.rolling(window=10, min_periods=1).mean()
+        # Now look at the past 2 minutes
+        rollp = features.rolling(window=4, min_periods=1).mean()
         rollp[rollp.columns] = robust_scale(rollp, quantile_range=(5, 95))
-        rollp = rollp.add_suffix('_p5min_norm')
+        rollp = rollp.add_suffix('_p2min_norm')
 
         # Add to current set of features
         features = features.join(rollc).join(rollp)
