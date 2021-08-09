@@ -5,7 +5,7 @@
 .. image:: https://badge.fury.io/py/yasa.svg
     :target: https://badge.fury.io/py/yasa
 
-.. image:: https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue
+.. image:: https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue
     :target: https://www.python.org/downloads/
 
 .. image:: https://img.shields.io/github/license/raphaelvallat/yasa.svg
@@ -178,5 +178,9 @@ To cite YASA, please use the Zenodo DOI:
 
 .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg
    :target: https://doi.org/10.5281/zenodo.2370600
+
+If you use the automatic sleep staging module, please cite the preprint article:
+
+* A universal, open-source, high-performance tool for automated sleep staging. Raphael Vallat, Matthew P. Walker. bioRxiv 2021.05.28.446165; doi: https://doi.org/10.1101/2021.05.28.446165
 
 |

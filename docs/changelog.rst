@@ -6,9 +6,12 @@ What's new
 v0.5.0 (August 2021)
 --------------------
 
+This is a major release with an important bugfix for the slow-waves detection as well as API-breaking changes in the SleepStaging module. We recommend all users to upgrade to this version with `pip install --upgrade yasa`.
+
 **Bugfix**
 
-a. Fixed a bug in :py:func:`yasa.sw_detect` in which the detection could return event with very long duration (e.g. several tens of seconds). We have now added extra safety checks to make sure that the duration of slow-waves duration does not exceed the maximum duration allowed by the ``dur_neg`` and ``dur_pos`` parameters (e.g. 2.5 seconds). Please make sure to update your results, and always use the latest version of YASA.
+a. Fixed a bug in :py:func:`yasa.sw_detect` in which the detection could return event with very long duration (e.g. several tens of seconds). We have now added extra safety checks to make sure that the duration of slow-waves duration does not exceed the maximum duration allowed by the ``dur_neg`` and ``dur_pos`` parameters (e.g. 2.5 seconds). Please make sure to double check your results.
+b. Artefact and Unscored epochs are now excluded from the calculation of the total sleep time (TST) in :py:func:`yasa.sleep_statistics`. Previously, YASA calculated TST as SPT - WASO, thus including Art and Uns. TST is now calculated as the sum of all REM and NREM sleep in SPT.
 
 **New functions**
 
@@ -17,9 +20,11 @@ The coincidence matrix gives, for each pair of channel, the number of samples th
 
 **Enhancements**
 
-a. Artefact and Unscored epochs are now excluded from the calculation of the total sleep time (TST) in :py:func:`yasa.sleep_statistics`. Previously, YASA calculated TST as SPT - WASO, thus including Art and Uns. TST is now calculated as the sum of all REM and NREM sleep in SPT.
-b. Minor speed improvements in :py:class:`yasa.SleepStaging`.
-c. Updated dependency to pyRiemann>=0.2.7, which solves the version conflict with scikit-learn (see `issue 33 <https://github.com/raphaelvallat/yasa/issues/33>`_).
+a. Minor speed improvements in :py:class:`yasa.SleepStaging`.
+b. Updated dependency to pyRiemann>=0.2.7, which solves the version conflict with scikit-learn (see `issue 33 <https://github.com/raphaelvallat/yasa/issues/33>`_).
+c. flake8 requirements for max line length has been changed from 80 to 100 characters.
+
+----------------------------------------------------------------------------------------
 
 v0.4.1 (March 2021)
 -------------------
@@ -35,6 +40,8 @@ b. :py:func:`yasa.trimbothstd` now handles missing values in input array.
 c. :py:func:`yasa.bandpower_from_psd` and :py:func:`yasa.bandpower_from_psd_ndarray` now print a warning if the PSD contains negative values. See `issue 29 <https://github.com/raphaelvallat/yasa/issues/29>`_.
 d. Upon loading, YASA will now use the `outdated <https://github.com/alexmojaki/outdated>`_ package to check and warn the user if a newer stable version is available.
 e. YASA now uses the `antropy <https://github.com/raphaelvallat/antropy>`_ package to calculate non-linear features in the automatic sleep staging module. Previously, YASA was using `EntroPy <https://github.com/raphaelvallat/entropy>`_, which could not be installed using pip.
+
+----------------------------------------------------------------------------------------
 
 v0.4.0 (November 2020)
 ----------------------
@@ -54,6 +61,8 @@ d. The :py:func:`yasa.sw_detect` now also returns the timestamp of the sigma pea
 
 a. Switch to latest version of `TensorPAC <https://etiennecmb.github.io/tensorpac/index.html>`_.
 b. Added `ipywidgets <https://ipywidgets.readthedocs.io/en/latest/user_install.html>`_, `LightGBM <https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html>`_ and `entropy <https://raphaelvallat.com/entropy/build/html/index.html>`_ to dependencies.
+
+----------------------------------------------------------------------------------------
 
 v0.3.0 (May 2020)
 -----------------
@@ -90,6 +99,8 @@ a. The ``coupling`` argument has been removed from the :py:func:`yasa.spindles_d
 b. Downsampling of data in detection functions has been removed. In other words, YASA will no longer downsample the data to 100 / 128 Hz before applying the events detection. If the detection is too slow, we recommend that you manually downsample your data before applying the detection. See for example :py:func:`mne.filter.resample`.
 c. :py:func:`yasa.trimbothstd` can now work with multi-dimensional arrays. The trimmed standard deviation will always be calculated on the last axis of the array.
 d. Filtering and Hilbert transform are now applied at once on all channels (instead of looping across individual channels) in the :py:func:`yasa.spindles_detect` and :py:func:`yasa.sw_detect` functions. This should lead to some improvements in computation time.
+
+----------------------------------------------------------------------------------------
 
 v0.2.0 (April 2020)
 -------------------
@@ -128,6 +139,8 @@ a. Removed deprecated ``behavior`` argument to avoid warning when calling :py:cl
 b. Added `TensorPAC <https://etiennecmb.github.io/tensorpac/index.html>`_ and `pyRiemann <https://pyriemann.readthedocs.io/en/latest/api.html>`_ to dependencies.
 c. Updated dependencies version for MNE and scikit-learn.
 
+----------------------------------------------------------------------------------------
+
 v0.1.9 (February 2020)
 ----------------------
 
@@ -147,6 +160,8 @@ c. The yasa.get_sync_sw has been renamed to :py:func:`yasa.get_sync_events` and 
 
 a. Removed Travis and AppVeyor testing for Python 3.5.
 
+----------------------------------------------------------------------------------------
+
 v0.1.8 (October 2019)
 ---------------------
 
@@ -155,6 +170,8 @@ b. Added `lspopt <https://github.com/hbldh/lspopt>`_ in the dependencies.
 c. YASA now requires `MNE <https://mne.tools/stable/index.html>`_>0.19.
 d. Added a notebook on non-linear features.
 
+----------------------------------------------------------------------------------------
+
 v0.1.7 (August 2019)
 --------------------
 
@@ -162,11 +179,15 @@ a. Added :py:func:`yasa.sliding_window` function.
 b. Added :py:func:`yasa.irasa` function.
 c. Reorganized code into several sub-files for readability (internal changes with no effect on user experience).
 
+----------------------------------------------------------------------------------------
+
 v0.1.6 (August 2019)
 --------------------
 
 a. Added bandpower function
 b. One can now directly pass a raw MNE object in several multi-channel functions of YASA, instead of manually passing data, sf, and ch_names. YASA will automatically convert MNE data from Volts to uV, and extract the sampling frequency and channel names. Examples of this can be found in the Jupyter notebooks examples.
+
+----------------------------------------------------------------------------------------
 
 v0.1.5 (August 2019)
 --------------------
@@ -175,10 +196,14 @@ a. Added REM detection (rem_detect) on LOC and ROC EOG channels + example notebo
 b. Added yasa/hypno.py file, with several functions to load and upsample sleep stage vector (hypnogram).
 c. Added yasa/spectral.py file, which includes the bandpower_from_psd function to calculate the single or multi-channel spectral power in specified bands from a pre-computed PSD (see example notebook at notebooks/10_bandpower.ipynb)
 
+----------------------------------------------------------------------------------------
+
 v0.1.4 (May 2019)
 -----------------
 
 a. Added get_sync_sw function to get the synchronized timings of landmarks timepoints in slow-wave sleep. This can be used in combination with seaborn.lineplot to plot an average template of the detected slow-wave, per channel.
+
+----------------------------------------------------------------------------------------
 
 v0.1.3 (March 2019)
 -------------------
@@ -190,6 +215,7 @@ d. Minor improvements in performance (e.g. faster detrending)
 e. Added html API (/html)
 f. Travis and AppVeyor test for Python 3.5, 3.6 and 3.7
 
+----------------------------------------------------------------------------------------
 
 v0.1.2 (February 2019)
 ----------------------
@@ -199,12 +225,16 @@ b. Added support for hypnogram mask
 c. Added several notebook examples
 d. Changed some default parameters to optimize behavior
 
+----------------------------------------------------------------------------------------
+
 v0.1.1 (January 2019)
 ----------------------
 
 a. Added post-processing Isolation Forest
 b. Updated Readme and added support with Visbrain
 c. Added Cz full night in notebooks/
+
+----------------------------------------------------------------------------------------
 
 v0.1 (December 2018)
 --------------------
