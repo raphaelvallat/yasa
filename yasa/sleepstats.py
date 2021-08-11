@@ -158,13 +158,18 @@ def sleep_statistics(hypno, sf_hyp):
     * Time in Bed (TIB): total duration of the hypnogram.
     * Sleep Period Time (SPT): duration from first to last period of sleep.
     * Wake After Sleep Onset (WASO): duration of wake periods within SPT.
-    * Total Sleep Time (TST): SPT - WASO.
+    * Total Sleep Time (TST): total duration of N1 + N2 + N3 + REM sleep in SPT.
     * Sleep Efficiency (SE): TST / TIB * 100 (%).
     * Sleep Maintenance Efficiency (SME): TST / SPT * 100 (%).
     * W, N1, N2, N3 and REM: sleep stages duration. NREM = N1 + N2 + N3.
     * % (W, ... REM): sleep stages duration expressed in percentages of TST.
     * Latencies: latencies of sleep stages from the beginning of the record.
     * Sleep Onset Latency (SOL): Latency to first epoch of any sleep.
+
+    .. warning::
+        Since YASA 0.5.0, Artefact and Unscored epochs are now excluded from the calculation of the
+        total sleep time (TST). Previously, YASA calculated TST as SPT - WASO, thus including
+        Art and Uns. TST is now calculated as the sum of all REM and NREM sleep in SPT.
 
     References
     ----------

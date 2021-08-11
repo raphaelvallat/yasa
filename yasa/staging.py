@@ -55,6 +55,17 @@ class SleepStaging:
     Notes
     -----
 
+    If you use the SleepStaging module in a publication, please cite the following preprint:
+
+    * A universal, open-source, high-performance tool for automated sleep staging. Raphael Vallat,
+      Matthew P. Walker. bioRxiv 2021.05.28.446165; doi: https://doi.org/10.1101/2021.05.28.446165
+
+    We provide below some key points on the algorithm and its validation. For more details,
+    we refer the reader to the preprint article. If you have any questions,
+    make sure to first check the
+    `FAQ section <https://raphaelvallat.com/yasa/build/html/faq.html>`_ of the documentation.
+    If you did not find the answer to your question, please feel free to open an issue on GitHub.
+
     **1. Features extraction**
 
     For each 30-seconds epoch and each channel, the following features are
@@ -145,6 +156,10 @@ class SleepStaging:
     >>> confidence = proba.max(axis=1)
     >>> # Plot the predicted probabilities
     >>> sls.plot_predict_proba()
+
+    The sleep scores can then be manually edited in an external graphical user interface
+    (e.g. EDFBrowser), as described in the
+    `FAQ <https://raphaelvallat.com/yasa/build/html/faq.html>`_.
     """
 
     def __init__(self, raw, eeg_name, *, eog_name=None, emg_name=None,
