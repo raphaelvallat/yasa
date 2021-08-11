@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>FAQ &#8212; yasa 0.5.0 documentation</title>
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html"><span><img src="_static/yasa_128x128.png"></span>
+          yasa</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.5.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="api.html">Functions</a></li>
+                <li><a href="#">FAQ</a></li>
+                <li><a href="changelog.html">What's new</a></li>
+                <li><a href="contributing.html">Contribute</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="faq">
+<span id="id1"></span><h1>FAQ</h1>
+<div class="section" id="loading-and-visualizing-polysomnography-data">
+<h2>Loading and visualizing polysomnography data</h2>
+<div class="panel-group">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h5 class="panel-title">
+        <a data-toggle="collapse" href="#load_edf">How can I load an EDF file in Python?</a>
+      </h5>
+    </div>
+    <div id="load_edf" class="panel-collapse collapse">
+      <div class="panel-body"><p>If you have polysomnography data in European Data Format (.edf), you can use the <a class="reference external" href="https://mne.tools/stable/index.html">MNE package</a> to load and preprocess your data in Python. MNE also supports several other standard formats (e.g. BrainVision, BDF, EEGLab). A simple preprocessing pipeline using MNE is shown below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">mne</span>
+<span class="c1"># Load the EDF file</span>
+<span class="n">raw</span> <span class="o">=</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">read_raw_edf</span><span class="p">(</span><span class="s1">&#39;MYEDFFILE.edf&#39;</span><span class="p">,</span> <span class="n">preload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># Downsample the data to 100 Hz</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="c1"># Apply a bandpass filter from 0.1 to 40 Hz</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">40</span><span class="p">)</span>
+<span class="c1"># Select a subset of EEG channels</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">pick_channels</span><span class="p">([</span><span class="s1">&#39;C4-A1&#39;</span><span class="p">,</span> <span class="s1">&#39;C3-A2&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+      </div>
+    </div>
+  </div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h5 class="panel-title">
+      <a data-toggle="collapse" href="#visualize">Can I visualize my polysomnography data in YASA?</a>
+    </h5>
+  </div>
+  <div id="visualize" class="panel-collapse collapse">
+    <div class="panel-body"><p>YASA is a command-line software and does not support data visualization. To scroll through your data, we recommend the free software EDFBrowser (<a class="reference external" href="https://www.teuniz.net/edfbrowser/">https://www.teuniz.net/edfbrowser/</a>):</p>
+<div class="figure align-center">
+<img alt="_images/edfbrowser_with_hypnogram.png" src="_images/edfbrowser_with_hypnogram.png" />
+</div>
+  </div>
+</div></div>
+<div class="section" id="event-detection">
+<h2>Event detection</h2>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h5 class="panel-title">
+      <a data-toggle="collapse" href="#detection_algo">How do the spindle detection and slow-waves detection algorithms work?</a>
+    </h5>
+  </div>
+  <div id="detection_algo" class="panel-collapse collapse">
+    <div class="panel-body"><p>The <strong>spindles</strong> detection is a custom adaptation of the <a class="reference external" href="https://doi.org/10.1016/j.jneumeth.2018.08.014">Lacourse et al 2018</a> method. A step-by-step description of the algorithm can be found in <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/develop/notebooks/01_spindles_detection.ipynb">this notebook</a>.</p>
+<p>The <strong>slow-waves detection</strong> combines the methods proposed in <a class="reference external" href="https://www.jneurosci.org/content/24/31/6862">Massimini et al 2004</a> and <a class="reference external" href="https://doi.org/10.1111/j.1460-9568.2010.07543.x">Carrier et al 2011</a>. A step-by-step description of the algorithm can be found <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/develop/notebooks/05_sw_detection.ipynb">here</a>.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Both algorithms have parameters that can (and should) be fine-tuned to your data, as explained in the next question.</p>
+</div>
+      </div>
+    </div>
+  </div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h5 class="panel-title">
+      <a data-toggle="collapse" href="#best_params">How do I find the optimal parameters for my data?</a>
+    </h5>
+  </div>
+  <div id="best_params" class="panel-collapse collapse">
+    <div class="panel-body"><p>There are several parameters that can be adjusted in the spindles / slow-waves / artefact detection. While the default parameters should work reasonably well on most data, they might not be adequate for your data, especially if you’re working with specific populations (e.g. older adults, kids, patients with certain disorders, etc).</p>
+<p>For the sake of example, let’s say that you have 100 recordings and you want to apply YASA to automatically detect the spindles. However, you’d like to fine-tune the parameters to your data. <strong>We recommend the following approach:</strong></p>
+<ol class="arabic simple">
+<li><p>Grab a few representative recordings (e.g. 5 or 10 out of 100) and manually annotate the sleep spindles. You can use <a class="reference external" href="https://www.teuniz.net/edfbrowser/">EDFBrowser</a> to manually score the sleep spindles. Ideally, the manual scoring should be high-quality, so you may also ask a few other trained individuals to score the same data until you reach a consensus.</p></li>
+<li><p>Apply YASA on the same recordings, first with the default parameters and then by slightly varying each parameter. For example, you may want to use a different detection threshold each time you run the algorithm, or a different frequency band for the filtering. In other words, you loop across several possible combinations of parameters. Save the resulting detection dataframe.</p></li>
+<li><p>Finally, find the combination of parameters that give you the results that are the most similar to your own scoring. For example, you can use the combination of parameters that maximize the <a class="reference external" href="https://en.wikipedia.org/wiki/F-score">F1-score</a> of the detected spindles against your own visual detection.</p></li>
+<li><p>Use the “winning” combination to score the remaining recordings in your database.</p></li>
+</ol>
+      </div>
+    </div>
+  </div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h5 class="panel-title">
+      <a data-toggle="collapse" href="#edit_detection">Can I manually add or remove detected events?</a>
+    </h5>
+  </div>
+  <div id="edit_detection" class="panel-collapse collapse">
+    <div class="panel-body"><p>YASA does not currently support visual editing of the detected events. However, you can import the events as annotations in <a class="reference external" href="https://www.teuniz.net/edfbrowser/">EDFBrowser</a> and edit the events from there. If you simply want to visualize the detected events (no editing), you can also use the <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/generated/yasa.SpindlesResults.html#yasa.SpindlesResults.plot_detection">plot_detection</a> method.</p>
+  </div>
+</div></div>
+<div class="section" id="sleep-staging">
+<h2>Sleep staging</h2>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h5 class="panel-title">
+      <a data-toggle="collapse" href="#accuracy_yasa">How accurate is YASA for automatic sleep staging?</a>
+    </h5>
+  </div>
+  <div id="accuracy_yasa" class="panel-collapse collapse">
+    <div class="panel-body"><p>YASA was trained and evaluated on a large and heterogeneous database of thousands of polysomnography recordings, including healthy individuals and patients with sleep disorders. Overall, the results show that <strong>YASA matches human inter-rater agreement, with an accuracy of ~85% against expert consensus scoring</strong>. The full validation of YASA can be found in the preprint article:</p>
+<ul class="simple">
+<li><p>Raphael Vallat and Matthew P. Walker (2021). <em>A universal, open-source, high-performance tool for automated sleep staging</em>. bioRxiv 2021.05.28.446165; doi: <a class="reference external" href="https://doi.org/10.1101/2021.05.28.446165">https://doi.org/10.1101/2021.05.28.446165</a></p></li>
+</ul>
+<p>However, our recommendation is that <strong>YASA should not replace human scoring, but rather serve as a starting point to speed up sleep staging</strong>. If possible, you should always have a trained sleep scorer visually check the predictions of YASA, with a particular emphasis on low-confidence epochs and/or N1 sleep epochs, as these are the epochs most often misclassified by the algorithm.
+Finally, users can also leverage the <a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.plot_spectrogram()</span></code></a> function to plot the predicted hypnogram on top of the full-night spectrogram. Such plots are very useful to quickly identify blatant errors in the hypnogram.</p>
+<div class="figure align-center">
+<img alt="_images/spectrogram.png" src="_images/spectrogram.png" />
+</div>
+    </div>
+  </div>
+</div><div class="panel panel-default">
+  <div class="panel-heading">
+    <h5 class="panel-title">
+      <a data-toggle="collapse" href="#yasa_editing">How do I edit the predicted hypnogram?</a>
+    </h5>
+  </div>
+  <div id="yasa_editing" class="panel-collapse collapse">
+    <div class="panel-body"><p>YASA does not come with a graphical user interface (GUI) and therefore editing the predicted hypnogram is not currently possible. The simplest way is therefore to export the hypnogram in CSV format and then open the file — together with the corresponding polysomnography data — in an external GUI, as shown below.</p>
+<hr class="docutils" />
+<p><strong>EDFBrowser</strong></p>
+<p><a class="reference external" href="https://www.teuniz.net/edfbrowser/">EDFBrowser</a> is a free software for visualizing polysomnography data in European Data Format (.edf), which also provides a module for visualizing and editing hypnograms.</p>
+<p>The code below show hows to export the hypnogram in an EDFBrowser-compatible format. It assumes that you have already run the algorithm and stored the predicted hypnogram in an array named <code class="docutils literal notranslate"><span class="pre">hypno</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Export to a CSV file compatible with EDFBrowser</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="n">hypno_export</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+  <span class="s2">&quot;onset&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hypno</span><span class="p">))</span> <span class="o">*</span> <span class="mi">30</span><span class="p">,</span>
+  <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="n">hypno</span><span class="p">,</span>
+  <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">})</span>
+<span class="n">hypno_export</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;my_hypno_EDFBrowser.csv&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can then import the hypnogram in EDFBrowser by clicking on the “Import annotations/events” in the “Tools” menu. Then, select the “ASCII/CSV” tab and change the parameters as follow:</p>
+<div class="figure align-center">
+<img alt="_images/edfbrowser_import_annotations.png" src="_images/edfbrowser_import_annotations.png" />
+</div>
+<p>Click “Import”. Once it’s done, the hypnogram can be enabled via the “Window” menu. A dialog will appear where you can setup the labels for the different sleep stages and the mapping to the annotations in the file. The default parameters should work.
+When using the Annotation editor, the hypnogram will be updated realtime when adding, moving or deleting annotations. Once you’re done editing, you can export the edited hypnogram with “Export anotations/events” in the “Tools” menu.</p>
+<div class="figure align-center">
+<img alt="_images/edfbrowser_with_hypnogram.png" src="_images/edfbrowser_with_hypnogram.png" />
+</div>
+<hr class="docutils" />
+<p><strong>SpiSOP</strong></p>
+<p><a class="reference external" href="https://www.spisop.org/">SpiSOP</a> is an open-source Matlab toolbox for the analysis and visualization of polysomnography sleep data. It comes with a sleep scoring GUI.
+As explained in <a class="reference external" href="https://www.spisop.org/faq/#What_is_needed_to_run_SpiSOP_and_in_what_format">the documentation</a>, the hypnogram should be a tab-separated text file with two columns (no headers). The first column has the sleep stages (0: Wake, 1: N1, 2: N2, 3: N3, 5: REM) and the second column indicates whether the current epoch should be marked as artefact (1) or valid (0).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">hypno_int</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">({</span><span class="s2">&quot;W&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;N1&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;N2&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;N3&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+<span class="n">hypno_export</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="n">hypno_int</span><span class="p">,</span> <span class="s2">&quot;artefact&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+<span class="n">hypno_export</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;my_hypno_SpiSOP.txt&quot;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<p><strong>Visbrain</strong></p>
+<p><a class="reference external" href="https://visbrain.org/sleep.html">Visbrain</a> is an open-source Python toolbox that includes a module for visualizing polysomnography sleep data and scoring sleep (see screenshot below).</p>
+<div class="figure align-center">
+<img alt="_images/visbrain.PNG" src="_images/visbrain.PNG" />
+</div>
+<p>Visbrain accepts several <a class="reference external" href="https://visbrain.org/sleep.html#hypnogram">formats for the hypnogram</a>. The code below show how to export the hypnogram in the <a class="reference external" href="https://pubmed.ncbi.nlm.nih.gov/21687568/">Elan software format</a> (i.e. a text file with the <em>.hyp</em> extension):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">hypno_int</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">({</span><span class="s2">&quot;W&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;N1&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;N2&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;N3&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+<span class="n">header</span> <span class="o">=</span> <span class="s2">&quot;time_base 30</span><span class="se">\n</span><span class="s2">sampling_period 1/30</span><span class="se">\n</span><span class="s2">epoch_nb </span><span class="si">%i</span><span class="se">\n</span><span class="s2">epoch_list&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">hypno_int</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="s2">&quot;my_hypno_Visbrain.txt&quot;</span><span class="p">,</span> <span class="n">hypno_int</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span>
+           <span class="n">header</span><span class="o">=</span><span class="n">header</span><span class="p">,</span> <span class="n">comments</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+    </div>
+  </div>
+</div><div class="panel panel-default">
+  <div class="panel-heading">
+    <h5 class="panel-title">
+      <a data-toggle="collapse" href="#animal_data">Can I use YASA to score animal data and/or human intracranial data?</a>
+    </h5>
+  </div>
+  <div id="animal_data" class="panel-collapse collapse">
+    <div class="panel-body"><p>YASA was only designed for human scalp data and as such will not work with animal data or intracranial data. Adding support for such data would require the two following steps:</p>
+<ol class="arabic simple">
+<li><p>Modifying (some of) the features. For example, rodent sleep does not have the same temporal dynamics as human sleep, and therefore one could modify the length of the smoothing window to better capture these dynamics.</p></li>
+<li><p>Re-training the classifier using a large database of previously-scored data.</p></li>
+</ol>
+<p>Despite these required changes, one advantage of YASA is that it provides a useful framework for implementing such sleep staging algorithms. For example, one can save a huge amount of time by simply re-using and adapting the built-in <a class="reference internal" href="generated/yasa.SleepStaging.html#yasa.SleepStaging" title="yasa.SleepStaging"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.SleepStaging</span></code></a> class.
+In addition, all the code used to train YASA is freely available at <a class="reference external" href="https://github.com/raphaelvallat/yasa_classifier">https://github.com/raphaelvallat/yasa_classifier</a> and can be re-used to re-train the classifier on non-human data.</p>
+  </div>
+</div></div>
+<div class="section" id="others">
+<h2>Others</h2>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h5 class="panel-title">
+      <a data-toggle="collapse" href="#collapse_release">How can I be notified of new releases?</a>
+    </h5>
+  </div>
+  <div id="collapse_release" class="panel-collapse collapse">
+    <div class="panel-body"><p>Pingouin uses <a class="reference external" href="https://github.com/alexmojaki/outdated">outdated</a>, a Python package that automatically checks if a newer version of YASA is available upon loading. Alternatively, you can click “Watch” on the <a class="reference external" href="https://github.com/raphaelvallat/yasa">GitHub</a> of YASA.
+Whenever a new release is out there, you can upgrade your version by typing the following line in a terminal window:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip install --upgrade yasa
+</pre></div>
+</div>
+      </div>
+    </div>
+  </div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h5 class="panel-title">
+      <a data-toggle="collapse" href="#collapse_donate">I am not a programmer, how can I contribute to YASA?</a>
+    </h5>
+  </div>
+  <div id="collapse_donate" class="panel-collapse collapse">
+    <div class="panel-body"><p>There are many ways to contribute to YASA, even if you are not a programmer, for example, reporting bugs or results that are inconsistent with other softwares, improving the documentation and examples, or, even <a class="reference external" href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&amp;business=K2FZVJGCKYPAG&amp;currency_code=USD&amp;source=url">buying the developpers a coffee</a>!</p>
+      </div>
+    </div>
+  </div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h5 class="panel-title">
+      <a data-toggle="collapse" href="#collapse_cite">How can I cite YASA?</a>
+    </h5>
+  </div>
+  <div id="collapse_cite" class="panel-collapse collapse">
+    <div class="panel-body"><p>To cite YASA, please use the preprint publication:</p>
+<ul class="simple">
+<li><p>Raphael Vallat and Matthew P. Walker (2021). <em>A universal, open-source, high-performance tool for automated sleep staging</em>. bioRxiv 2021.05.28.446165; doi: <a class="reference external" href="https://doi.org/10.1101/2021.05.28.446165">https://doi.org/10.1101/2021.05.28.446165</a></p></li>
+</ul>
+<p>BibTeX:</p>
+<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span>@article <span class="nb">{</span>Vallat2021.05.28.446165,
+  author = <span class="nb">{</span>Vallat, Raphael and Walker, Matthew P.<span class="nb">}</span>,
+  title = <span class="nb">{</span>A universal, open-source, high-performance tool for automated sleep staging<span class="nb">}</span>,
+  elocation-id = <span class="nb">{</span>2021.05.28.446165<span class="nb">}</span>,
+  year = <span class="nb">{</span>2021<span class="nb">}</span>,
+  doi = <span class="nb">{</span>10.1101/2021.05.28.446165<span class="nb">}</span>,
+  publisher = <span class="nb">{</span>Cold Spring Harbor Laboratory<span class="nb">}</span>,
+  abstract = <span class="nb">{</span>The creation of a completely automated sleep-scoring system that is highly accurate, flexible, well validated, free and simple to use by anyone has yet to be accomplished. In part, this is due to the difficulty of use of existing algorithms, algorithms having been trained on too small samples, and paywall demotivation. Here we describe a novel algorithm trained and validated on +27,000 hours of polysomnographic sleep recordings across heterogeneous populations around the world. This tool offers high sleep-staging accuracy matching or exceeding human accuracy and interscorer agreement no matter the population kind. The software is easy to use, computationally low-demanding, open source, and free. Such software has the potential to facilitate broad adoption of automated sleep staging with the hope of becoming an industry standard.Competing Interest StatementThe authors have declared no competing interest.AbbreviationsAHIapnea-hypopnea indexBMIbody mass indexEEGelectroencephalogramEOGelectrooculogramEMGelectromyogramOSAobstructive sleep apneaPSGpolysomnographyMCCMatthews correlation coefficientNREMnon rapid eye movement (sleep)REMrapid eye movement (sleep)<span class="nb">}</span>,
+  URL = <span class="nb">{</span>https://www.biorxiv.org/content/early/2021/05/28/2021.05.28.446165<span class="nb">}</span>,
+  eprint = <span class="nb">{</span>https://www.biorxiv.org/content/early/2021/05/28/2021.05.28.446165.full.pdf<span class="nb">}</span>,
+  journal = <span class="nb">{</span>bioRxiv<span class="nb">}</span>
+<span class="nb">}</span>
+</pre></div>
+</div>
+    </div>
+  </div>
+</div></div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+      
+    </p>
+    <p>
+        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

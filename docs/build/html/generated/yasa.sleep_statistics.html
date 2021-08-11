@@ -3,9 +3,10 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.sleep_statistics &#8212; yasa 0.4.1 documentation</title>
+    <title>yasa.sleep_statistics &#8212; yasa 0.5.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -37,13 +38,14 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.4.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.5.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
                 <li><a href="../api.html">Functions</a></li>
+                <li><a href="../faq.html">FAQ</a></li>
                 <li><a href="../changelog.html">What's new</a></li>
                 <li><a href="../contributing.html">Contribute</a></li>
             
@@ -134,7 +136,7 @@ minutes. YASA follows the AASM guidelines to calculate these parameters:</p>
 <li><p>Time in Bed (TIB): total duration of the hypnogram.</p></li>
 <li><p>Sleep Period Time (SPT): duration from first to last period of sleep.</p></li>
 <li><p>Wake After Sleep Onset (WASO): duration of wake periods within SPT.</p></li>
-<li><p>Total Sleep Time (TST): SPT - WASO.</p></li>
+<li><p>Total Sleep Time (TST): total duration of N1 + N2 + N3 + REM sleep in SPT.</p></li>
 <li><p>Sleep Efficiency (SE): TST / TIB * 100 (%).</p></li>
 <li><p>Sleep Maintenance Efficiency (SME): TST / SPT * 100 (%).</p></li>
 <li><p>W, N1, N2, N3 and REM: sleep stages duration. NREM = N1 + N2 + N3.</p></li>
@@ -142,6 +144,12 @@ minutes. YASA follows the AASM guidelines to calculate these parameters:</p>
 <li><p>Latencies: latencies of sleep stages from the beginning of the record.</p></li>
 <li><p>Sleep Onset Latency (SOL): Latency to first epoch of any sleep.</p></li>
 </ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Since YASA 0.5.0, Artefact and Unscored epochs are now excluded from the calculation of the
+total sleep time (TST). Previously, YASA calculated TST as SPT - WASO, thus including
+Art and Uns. TST is now calculated as the sum of all REM and NREM sleep in SPT.</p>
+</div>
 <p class="rubric">References</p>
 <ul class="simple">
 <li><p>Iber, C. (2007). The AASM manual for the scoring of sleep and
@@ -201,7 +209,7 @@ Sleep Medicine, 3(2), 121–131.</p></li>
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Raphael Vallat.<br/>
+        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>

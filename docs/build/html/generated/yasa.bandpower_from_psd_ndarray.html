@@ -3,9 +3,10 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.bandpower_from_psd_ndarray &#8212; yasa 0.4.1 documentation</title>
+    <title>yasa.bandpower_from_psd_ndarray &#8212; yasa 0.5.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -37,13 +38,14 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.4.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.5.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
                 <li><a href="../api.html">Functions</a></li>
+                <li><a href="../faq.html">FAQ</a></li>
                 <li><a href="../changelog.html">What's new</a></li>
                 <li><a href="../contributing.html">Contribute</a></li>
             
@@ -101,11 +103,11 @@ or N-dimensional arays
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>psd</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.20)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Power spectral density of data, in uV^2/Hz.
+<dt><strong>psd</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.21)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Power spectral density of data, in uV^2/Hz.
 Must be a N-D array of shape (…, n_freqs).
-See <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.welch.html#scipy.signal.welch" title="(in SciPy v1.6.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.signal.welch()</span></code></a> for more details.</p>
+See <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/reference/generated/scipy.signal.welch.html#scipy.signal.welch" title="(in SciPy v1.7.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.signal.welch()</span></code></a> for more details.</p>
 </dd>
-<dt><strong>freqs</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.20)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Array of frequencies. Must be a 1-D array of shape (n_freqs,)</p>
+<dt><strong>freqs</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.21)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Array of frequencies. Must be a 1-D array of shape (n_freqs,)</p>
 </dd>
 <dt><strong>bands</strong><span class="classifier">list of tuples</span></dt><dd><p>List of frequency bands of interests. Each tuple must contain the
 lower and upper frequencies, as well as the band name
@@ -118,7 +120,7 @@ max frequencies defined in <code class="docutils literal notranslate"><span clas
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.20)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Bandpower array of shape <em>(n_bands, …)</em>.</p>
+<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.21)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Bandpower array of shape <em>(n_bands, …)</em>.</p>
 </dd>
 </dl>
 </dd>
@@ -142,7 +144,7 @@ max frequencies defined in <code class="docutils literal notranslate"><span clas
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Raphael Vallat.<br/>
+        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>

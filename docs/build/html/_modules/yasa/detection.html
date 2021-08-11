@@ -3,9 +3,10 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.detection &#8212; yasa 0.4.1 documentation</title>
+    <title>yasa.detection &#8212; yasa 0.5.0 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
     <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
@@ -37,13 +38,14 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.4.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.5.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
                 <li><a href="../../api.html">Functions</a></li>
+                <li><a href="../../faq.html">FAQ</a></li>
                 <li><a href="../../changelog.html">What's new</a></li>
                 <li><a href="../../contributing.html">Contribute</a></li>
             
@@ -205,17 +207,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_ch_names</span> <span class="o">=</span> <span class="n">ch_names</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_data_filt</span> <span class="o">=</span> <span class="n">data_filt</span>
 
-    <span class="k">def</span> <span class="nf">get_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;get_mask&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">yasa.others</span> <span class="kn">import</span> <span class="n">_index_to_events</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">[</span><span class="s1">&#39;IdxChannel&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
-            <span class="n">ev_chan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">[</span><span class="s1">&#39;IdxChannel&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">i</span><span class="p">]</span>
-            <span class="n">idx_ev</span> <span class="o">=</span> <span class="n">_index_to_events</span><span class="p">(</span>
-                <span class="n">ev_chan</span><span class="p">[[</span><span class="s1">&#39;Start&#39;</span><span class="p">,</span> <span class="s1">&#39;End&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sf</span><span class="p">)</span>
-            <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">idx_ev</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
-
     <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">,</span> <span class="n">grp_chan</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">grp_stage</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">aggfunc</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Summary&quot;&quot;&quot;</span>
@@ -289,6 +280,17 @@
 
         <span class="k">return</span> <span class="n">df_grp</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">grouper</span><span class="p">)</span>
 
+    <span class="k">def</span> <span class="nf">get_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get_mask&quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">yasa.others</span> <span class="kn">import</span> <span class="n">_index_to_events</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">[</span><span class="s1">&#39;IdxChannel&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+            <span class="n">ev_chan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">[</span><span class="s1">&#39;IdxChannel&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">i</span><span class="p">]</span>
+            <span class="n">idx_ev</span> <span class="o">=</span> <span class="n">_index_to_events</span><span class="p">(</span>
+                <span class="n">ev_chan</span><span class="p">[[</span><span class="s1">&#39;Start&#39;</span><span class="p">,</span> <span class="s1">&#39;End&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sf</span><span class="p">)</span>
+            <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">idx_ev</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+
     <span class="k">def</span> <span class="nf">get_sync_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">time_before</span><span class="p">,</span> <span class="n">time_after</span><span class="p">,</span>
                         <span class="n">filt</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
         <span class="sd">&quot;&quot;&quot;Get_sync_events</span>
@@ -347,6 +349,36 @@
             <span class="n">df_sync</span> <span class="o">=</span> <span class="n">df_sync</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df_chan</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">df_sync</span>
+
+    <span class="k">def</span> <span class="nf">get_coincidence_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scaled</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get_coincidence_matrix&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ch_names</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;At least 2 channels are required to calculate coincidence.&quot;</span><span class="p">)</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_mask</span><span class="p">()</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ch_names</span><span class="p">)</span>
+        <span class="n">mask</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Channel&quot;</span>
+
+        <span class="k">def</span> <span class="nf">_coincidence</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Calculate the (scaled) coincidence.&quot;&quot;&quot;</span>
+            <span class="n">coincidence</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">scaled</span><span class="p">:</span>
+                <span class="c1"># Handle division by zero error</span>
+                <span class="n">denom</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">*</span> <span class="n">y</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+                <span class="k">if</span> <span class="n">denom</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">coincidence</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">coincidence</span> <span class="o">/=</span> <span class="n">denom</span>
+            <span class="k">return</span> <span class="n">coincidence</span>
+
+        <span class="n">coinc_mat</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">corr</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="n">_coincidence</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">scaled</span><span class="p">:</span>
+            <span class="c1"># Otherwise diagonal values are set to 1</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">fill_diagonal</span><span class="p">(</span><span class="n">coinc_mat</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+            <span class="n">coinc_mat</span> <span class="o">=</span> <span class="n">coinc_mat</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">coinc_mat</span>
 
     <span class="k">def</span> <span class="nf">plot_average</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="s1">&#39;Peak&#39;</span><span class="p">,</span> <span class="n">hue</span><span class="o">=</span><span class="s1">&#39;Channel&#39;</span><span class="p">,</span>
                      <span class="n">time_before</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">time_after</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">filt</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
@@ -967,6 +999,55 @@
                                <span class="n">grp_chan</span><span class="o">=</span><span class="n">grp_chan</span><span class="p">,</span> <span class="n">grp_stage</span><span class="o">=</span><span class="n">grp_stage</span><span class="p">,</span>
                                <span class="n">aggfunc</span><span class="o">=</span><span class="n">aggfunc</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="n">sort</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="SpindlesResults.get_coincidence_matrix"><a class="viewcode-back" href="../../generated/yasa.SpindlesResults.html#yasa.SpindlesResults.get_coincidence_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">get_coincidence_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scaled</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the (scaled) coincidence matrix.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scaled : bool</span>
+<span class="sd">            If True (default), the coincidence matrix is scaled (see Notes).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        coincidence : pd.DataFrame</span>
+<span class="sd">            A symmetric matrix with the (scaled) coincidence values.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Do spindles occur at the same time? One way to measure this is to</span>
+<span class="sd">        calculate the coincidence matrix, which gives, for each pair of</span>
+<span class="sd">        channel, the number of samples that were marked as a spindle in both</span>
+<span class="sd">        channels. The output is a symmetric matrix, in which the diagonal is</span>
+<span class="sd">        simply the number of data points that were marked as a spindle in the</span>
+<span class="sd">        channel.</span>
+
+<span class="sd">        The coincidence matrix can be scaled (default) by dividing the output</span>
+<span class="sd">        by the product of the sum of each individual binary mask, as shown in</span>
+<span class="sd">        the example below. It can then be used to define functional</span>
+<span class="sd">        networks or quickly find outlier channels.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Calculate the coincidence of two binary mask:</span>
+
+<span class="sd">        &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">        &gt;&gt;&gt; x = np.array([0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1])</span>
+<span class="sd">        &gt;&gt;&gt; y = np.array([0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1])</span>
+<span class="sd">        &gt;&gt;&gt; x * y</span>
+<span class="sd">        array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])</span>
+
+<span class="sd">        &gt;&gt;&gt; (x * y).sum()  # Unscaled coincidence</span>
+<span class="sd">        3</span>
+
+<span class="sd">        &gt;&gt;&gt; (x * y).sum() / (x.sum() * y.sum())  # Scaled coincidence</span>
+<span class="sd">        0.12</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        - https://github.com/Mark-Kramer/Sleep-Networks-2021</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_coincidence_matrix</span><span class="p">(</span><span class="n">scaled</span><span class="o">=</span><span class="n">scaled</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="SpindlesResults.get_mask"><a class="viewcode-back" href="../../generated/yasa.SpindlesResults.html#yasa.SpindlesResults.get_mask">[docs]</a>    <span class="k">def</span> <span class="nf">get_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return a boolean array indicating for each sample in data if this</span>
 <span class="sd">        sample is part of a detected event (True) or not (False).</span>
@@ -1171,7 +1252,7 @@
 <span class="sd">        spindles-related sigma signals are defined in ``freq_sw`` and</span>
 <span class="sd">        ``freq_sp``, respectively.</span>
 <span class="sd">        For more details, please refer to the `Jupyter notebook</span>
-<span class="sd">        &lt;https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb&gt;`_</span>
+<span class="sd">        &lt;https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_SO-sigma_coupling.ipynb&gt;`_</span>
 
 <span class="sd">        Note that setting ``coupling=True`` may significantly increase</span>
 <span class="sd">        computation time.</span>
@@ -1326,7 +1407,7 @@
         <span class="c1"># Negative peaks with value comprised between -40 to -300 uV</span>
         <span class="n">idx_neg_peaks</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">find_peaks</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">data_filt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span>
                                              <span class="n">height</span><span class="o">=</span><span class="n">amp_neg</span><span class="p">)</span>
-        <span class="c1"># Positive peaks with values comprised between 10 to 150 uV</span>
+        <span class="c1"># Positive peaks with values comprised between 10 to 200 uV</span>
         <span class="n">idx_pos_peaks</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">find_peaks</span><span class="p">(</span><span class="n">data_filt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">height</span><span class="o">=</span><span class="n">amp_pos</span><span class="p">)</span>
         <span class="c1"># Intersect with sleep stage vector</span>
         <span class="n">idx_neg_peaks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">idx_neg_peaks</span><span class="p">,</span> <span class="n">idx_mask</span><span class="p">,</span>
@@ -1378,19 +1459,24 @@
         <span class="n">neg_sorted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">zero_crossings</span><span class="p">,</span> <span class="n">idx_neg_peaks</span><span class="p">)</span>
         <span class="n">previous_neg_zc</span> <span class="o">=</span> <span class="n">zero_crossings</span><span class="p">[</span><span class="n">neg_sorted</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">idx_neg_peaks</span>
         <span class="n">following_neg_zc</span> <span class="o">=</span> <span class="n">zero_crossings</span><span class="p">[</span><span class="n">neg_sorted</span><span class="p">]</span> <span class="o">-</span> <span class="n">idx_neg_peaks</span>
-        <span class="n">neg_phase_dur</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">previous_neg_zc</span><span class="p">)</span> <span class="o">+</span> <span class="n">following_neg_zc</span><span class="p">)</span> <span class="o">/</span> <span class="n">sf</span>
 
-        <span class="c1"># Distance (in samples) between the positive peaks and the previous and</span>
+        <span class="c1"># Distance between the positive peaks and the previous and</span>
         <span class="c1"># following zero-crossings</span>
         <span class="n">pos_sorted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">zero_crossings</span><span class="p">,</span> <span class="n">idx_pos_peaks</span><span class="p">)</span>
         <span class="n">previous_pos_zc</span> <span class="o">=</span> <span class="n">zero_crossings</span><span class="p">[</span><span class="n">pos_sorted</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">idx_pos_peaks</span>
         <span class="n">following_pos_zc</span> <span class="o">=</span> <span class="n">zero_crossings</span><span class="p">[</span><span class="n">pos_sorted</span><span class="p">]</span> <span class="o">-</span> <span class="n">idx_pos_peaks</span>
+
+        <span class="c1"># Duration of the negative and positive phases, in seconds</span>
+        <span class="n">neg_phase_dur</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">previous_neg_zc</span><span class="p">)</span> <span class="o">+</span> <span class="n">following_neg_zc</span><span class="p">)</span> <span class="o">/</span> <span class="n">sf</span>
         <span class="n">pos_phase_dur</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">previous_pos_zc</span><span class="p">)</span> <span class="o">+</span> <span class="n">following_pos_zc</span><span class="p">)</span> <span class="o">/</span> <span class="n">sf</span>
 
         <span class="c1"># We now compute a set of metrics</span>
         <span class="n">sw_start</span> <span class="o">=</span> <span class="n">times</span><span class="p">[</span><span class="n">idx_neg_peaks</span> <span class="o">+</span> <span class="n">previous_neg_zc</span><span class="p">]</span>
         <span class="n">sw_end</span> <span class="o">=</span> <span class="n">times</span><span class="p">[</span><span class="n">idx_pos_peaks</span> <span class="o">+</span> <span class="n">following_pos_zc</span><span class="p">]</span>
-        <span class="n">sw_dur</span> <span class="o">=</span> <span class="n">sw_end</span> <span class="o">-</span> <span class="n">sw_start</span>  <span class="c1"># Same as pos_phase_dur + neg_phase_dur</span>
+        <span class="c1"># This should be the same as `sw_dur = pos_phase_dur + neg_phase_dur`</span>
+        <span class="c1"># We round to avoid floating point errr (e.g. 1.9000000002)</span>
+        <span class="n">sw_dur</span> <span class="o">=</span> <span class="p">(</span><span class="n">sw_end</span> <span class="o">-</span> <span class="n">sw_start</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+        <span class="n">sw_dur_both_phase</span> <span class="o">=</span> <span class="p">(</span><span class="n">pos_phase_dur</span> <span class="o">+</span> <span class="n">neg_phase_dur</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
         <span class="n">sw_midcrossing</span> <span class="o">=</span> <span class="n">times</span><span class="p">[</span><span class="n">idx_neg_peaks</span> <span class="o">+</span> <span class="n">following_neg_zc</span><span class="p">]</span>
         <span class="n">sw_idx_neg</span> <span class="o">=</span> <span class="n">times</span><span class="p">[</span><span class="n">idx_neg_peaks</span><span class="p">]</span>  <span class="c1"># Location of negative peak</span>
         <span class="n">sw_idx_pos</span> <span class="o">=</span> <span class="n">times</span><span class="p">[</span><span class="n">idx_pos_peaks</span><span class="p">]</span>  <span class="c1"># Location of positive peak</span>
@@ -1404,21 +1490,24 @@
 
         <span class="c1"># And we apply a set of thresholds to remove bad slow waves</span>
         <span class="n">good_sw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="o">.</span><span class="n">reduce</span><span class="p">((</span>
-                                        <span class="c1"># Data edges</span>
-                                        <span class="n">previous_neg_zc</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span>
-                                        <span class="n">following_neg_zc</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span>
-                                        <span class="n">previous_pos_zc</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span>
-                                        <span class="n">following_pos_zc</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span>
-                                        <span class="c1"># Duration criteria</span>
-                                        <span class="n">neg_phase_dur</span> <span class="o">&gt;</span> <span class="n">dur_neg</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                                        <span class="n">neg_phase_dur</span> <span class="o">&lt;</span> <span class="n">dur_neg</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-                                        <span class="n">pos_phase_dur</span> <span class="o">&gt;</span> <span class="n">dur_pos</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                                        <span class="n">pos_phase_dur</span> <span class="o">&lt;</span> <span class="n">dur_pos</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-                                        <span class="c1"># Sanity checks</span>
-                                        <span class="n">sw_midcrossing</span> <span class="o">&gt;</span> <span class="n">sw_start</span><span class="p">,</span>
-                                        <span class="n">sw_midcrossing</span> <span class="o">&lt;</span> <span class="n">sw_end</span><span class="p">,</span>
-                                        <span class="n">sw_slope</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
-                                        <span class="p">))</span>
+            <span class="c1"># Data edges</span>
+            <span class="n">previous_neg_zc</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="n">following_neg_zc</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="n">previous_pos_zc</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="n">following_pos_zc</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="c1"># Duration criteria</span>
+            <span class="n">sw_dur</span> <span class="o">==</span> <span class="n">sw_dur_both_phase</span><span class="p">,</span>  <span class="c1"># dur = negative + positive</span>
+            <span class="n">sw_dur</span> <span class="o">&lt;=</span> <span class="n">dur_neg</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">dur_pos</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>  <span class="c1"># dur &lt; max(neg) + max(pos)</span>
+            <span class="n">sw_dur</span> <span class="o">&gt;=</span> <span class="n">dur_neg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">dur_pos</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>  <span class="c1"># dur &gt; min(neg) + min(pos)</span>
+            <span class="n">neg_phase_dur</span> <span class="o">&gt;</span> <span class="n">dur_neg</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">neg_phase_dur</span> <span class="o">&lt;</span> <span class="n">dur_neg</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">pos_phase_dur</span> <span class="o">&gt;</span> <span class="n">dur_pos</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">pos_phase_dur</span> <span class="o">&lt;</span> <span class="n">dur_pos</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="c1"># Sanity checks</span>
+            <span class="n">sw_midcrossing</span> <span class="o">&gt;</span> <span class="n">sw_start</span><span class="p">,</span>
+            <span class="n">sw_midcrossing</span> <span class="o">&lt;</span> <span class="n">sw_end</span><span class="p">,</span>
+            <span class="n">sw_slope</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="p">))</span>
 
         <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="o">~</span><span class="n">good_sw</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;No SW were found in channel </span><span class="si">%s</span><span class="s1">.&#39;</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
@@ -1582,6 +1671,55 @@
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="n">event_type</span><span class="o">=</span><span class="s1">&#39;sw&#39;</span><span class="p">,</span>
                                <span class="n">grp_chan</span><span class="o">=</span><span class="n">grp_chan</span><span class="p">,</span> <span class="n">grp_stage</span><span class="o">=</span><span class="n">grp_stage</span><span class="p">,</span>
                                <span class="n">aggfunc</span><span class="o">=</span><span class="n">aggfunc</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="n">sort</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SWResults.get_coincidence_matrix"><a class="viewcode-back" href="../../generated/yasa.SWResults.html#yasa.SWResults.get_coincidence_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">get_coincidence_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scaled</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the (scaled) coincidence matrix.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        scaled : bool</span>
+<span class="sd">            If True (default), the coincidence matrix is scaled (see Notes).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        coincidence : pd.DataFrame</span>
+<span class="sd">            A symmetric matrix with the (scaled) coincidence values.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Do slow-waves occur at the same time? One way to measure this is to</span>
+<span class="sd">        calculate the coincidence matrix, which gives, for each pair of</span>
+<span class="sd">        channel, the number of samples that were marked as a slow-waves in both</span>
+<span class="sd">        channels. The output is a symmetric matrix, in which the diagonal is</span>
+<span class="sd">        simply the number of data points that were marked as a slow-waves in</span>
+<span class="sd">        the channel.</span>
+
+<span class="sd">        The coincidence matrix can be scaled (default) by dividing the output</span>
+<span class="sd">        by the product of the sum of each individual binary mask, as shown in</span>
+<span class="sd">        the example below. It can then be used to define functional</span>
+<span class="sd">        networks or quickly find outlier channels.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Calculate the coincidence of two binary mask:</span>
+
+<span class="sd">        &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">        &gt;&gt;&gt; x = np.array([0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1])</span>
+<span class="sd">        &gt;&gt;&gt; y = np.array([0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1])</span>
+<span class="sd">        &gt;&gt;&gt; x * y</span>
+<span class="sd">        array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])</span>
+
+<span class="sd">        &gt;&gt;&gt; (x * y).sum()  # Coincidence</span>
+<span class="sd">        3</span>
+
+<span class="sd">        &gt;&gt;&gt; (x * y).sum() / (x.sum() * y.sum())  # Scaled coincidence</span>
+<span class="sd">        0.12</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        - https://github.com/Mark-Kramer/Sleep-Networks-2021</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_coincidence_matrix</span><span class="p">(</span><span class="n">scaled</span><span class="o">=</span><span class="n">scaled</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SWResults.get_mask"><a class="viewcode-back" href="../../generated/yasa.SWResults.html#yasa.SWResults.get_mask">[docs]</a>    <span class="k">def</span> <span class="nf">get_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return a boolean array indicating for each sample in data if this</span>
@@ -2483,7 +2621,7 @@
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Raphael Vallat.<br/>
+        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>

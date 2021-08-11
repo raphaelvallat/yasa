@@ -3,9 +3,10 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.transition_matrix &#8212; yasa 0.4.1 documentation</title>
+    <title>yasa.transition_matrix &#8212; yasa 0.5.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -37,13 +38,14 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.4.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.5.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
                 <li><a href="../api.html">Functions</a></li>
+                <li><a href="../faq.html">FAQ</a></li>
                 <li><a href="../changelog.html">What's new</a></li>
                 <li><a href="../contributing.html">Contribute</a></li>
             
@@ -93,7 +95,7 @@
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 0.1.9.</span></p>
 </div>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Hypnogram. The dtype of <code class="docutils literal notranslate"><span class="pre">hypno</span></code> must be integer
@@ -102,18 +104,20 @@ original one, i.e. 1 value per 30 seconds if the staging was done in
 30 seconds epochs. Using an upsampled hypnogram will result in an
 incorrect transition matrix.
 For best results, we recommend using an hypnogram cropped to
-either the time in bed (TIB) or the sleep period time (SPT).</p>
+either the time in bed (TIB) or the sleep period time (SPT), without
+any artefact / unscored epochs.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>counts</strong><span class="classifier">array</span></dt><dd><p>Counts transition matrix (number of transitions from stage X to
-stage Y).</p>
+<dd class="field-even"><dl>
+<dt><strong>counts</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.3.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Counts transition matrix (number of transitions from stage A to
+stage B). The pre-transition states are the rows and the
+post-transition states are the columns.</p>
 </dd>
-<dt><strong>probs</strong><span class="classifier">array</span></dt><dd><p>Conditional probability transition matrix, i.e.
-given that current state is X, what is the probability that
-the next state is Y.
+<dt><strong>probs</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.3.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Conditional probability transition matrix, i.e.
+given that current state is A, what is the probability that
+the next state is B.
 <code class="docutils literal notranslate"><span class="pre">probs</span></code> is a <a class="reference external" href="https://en.wikipedia.org/wiki/Stochastic_matrix">right stochastic matrix</a>,
 i.e. each row sums to 1.</p>
 </dd>
@@ -121,26 +125,37 @@ i.e. each row sums to 1.</p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">yasa</span> <span class="kn">import</span> <span class="n">transition_matrix</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">yasa</span> <span class="kn">import</span> <span class="n">transition_matrix</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">counts</span><span class="p">,</span> <span class="n">probs</span> <span class="o">=</span> <span class="n">transition_matrix</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">counts</span>
-<span class="go">       0  1  2</span>
+<span class="go">       0  1  2  3</span>
 <span class="go">Stage</span>
-<span class="go">0      2  1  2</span>
-<span class="go">1      2  3  0</span>
-<span class="go">2      2  0  1</span>
+<span class="go">0      2  2  1  0</span>
+<span class="go">1      1  1  2  0</span>
+<span class="go">2      0  1  3  3</span>
+<span class="go">3      1  0  1  3</span>
 </pre></div>
 </div>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">probs</span>
-<span class="go">              0    1         2</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">probs</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="go">          0     1     2     3</span>
 <span class="go">Stage</span>
-<span class="go">0      0.400000  0.2  0.400000</span>
-<span class="go">1      0.400000  0.6  0.000000</span>
-<span class="go">2      0.666667  0.0  0.333333</span>
+<span class="go">0      0.40  0.40  0.20  0.00</span>
+<span class="go">1      0.25  0.25  0.50  0.00</span>
+<span class="go">2      0.00  0.14  0.43  0.43</span>
+<span class="go">3      0.20  0.00  0.20  0.60</span>
 </pre></div>
 </div>
-<p>We can plot the transition matrix using <a class="reference external" href="https://seaborn.pydata.org/generated/seaborn.heatmap.html#seaborn.heatmap" title="(in seaborn v0.11.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">seaborn.heatmap()</span></code></a>:</p>
+<p>Several metrics of sleep fragmentation can be calculated from the
+probability matrix. For example, the stability of sleep stages can be
+calculated by taking the average of the diagonal values (excluding Wake
+and N1 sleep):</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">probs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="mi">2</span><span class="p">:,</span> <span class="mi">2</span><span class="p">:])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">0.514</span>
+</pre></div>
+</div>
+<p>Finally, we can plot the transition matrix using <a class="reference external" href="https://seaborn.pydata.org/generated/seaborn.heatmap.html#seaborn.heatmap" title="(in seaborn v0.11.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">seaborn.heatmap()</span></code></a></p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -163,7 +178,7 @@ i.e. each row sums to 1.</p>
 </pre></div>
 </div>
 <div class="figure align-default">
-<img alt="../_images/yasa-transition_matrix-1.png" src="../_images/yasa-transition_matrix-1.png" />
+<img alt="../_images/yasa-transition_matrix-1.png" class="plot-directive" src="../_images/yasa-transition_matrix-1.png" />
 </div>
 </dd></dl>
 
@@ -184,7 +199,7 @@ i.e. each row sums to 1.</p>
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Raphael Vallat.<br/>
+        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>

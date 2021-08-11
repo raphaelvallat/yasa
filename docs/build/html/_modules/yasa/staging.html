@@ -3,9 +3,10 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.staging &#8212; yasa 0.4.1 documentation</title>
+    <title>yasa.staging &#8212; yasa 0.5.0 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
     <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
@@ -37,13 +38,14 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.4.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.5.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
                 <li><a href="../../api.html">Functions</a></li>
+                <li><a href="../../faq.html">FAQ</a></li>
                 <li><a href="../../changelog.html">What's new</a></li>
                 <li><a href="../../contributing.html">Contribute</a></li>
             
@@ -142,6 +144,17 @@
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
 
+<span class="sd">    If you use the SleepStaging module in a publication, please cite the following preprint:</span>
+
+<span class="sd">    * A universal, open-source, high-performance tool for automated sleep staging. Raphael Vallat,</span>
+<span class="sd">      Matthew P. Walker. bioRxiv 2021.05.28.446165; doi: https://doi.org/10.1101/2021.05.28.446165</span>
+
+<span class="sd">    We provide below some key points on the algorithm and its validation. For more details,</span>
+<span class="sd">    we refer the reader to the preprint article. If you have any questions,</span>
+<span class="sd">    make sure to first check the</span>
+<span class="sd">    `FAQ section &lt;https://raphaelvallat.com/yasa/build/html/faq.html&gt;`_ of the documentation.</span>
+<span class="sd">    If you did not find the answer to your question, please feel free to open an issue on GitHub.</span>
+
 <span class="sd">    **1. Features extraction**</span>
 
 <span class="sd">    For each 30-seconds epoch and each channel, the following features are</span>
@@ -159,9 +172,10 @@
 <span class="sd">    * Higuchi and Petrosian fractal dimension</span>
 
 <span class="sd">    In addition, the algorithm also calculates a smoothed and normalized</span>
-<span class="sd">    version of these features. Specifically, a 5-min centered weighted rolling</span>
-<span class="sd">    average and a 10 min past rolling average are applied. The resulting</span>
-<span class="sd">    smoothed features are then normalized using a robust z-score.</span>
+<span class="sd">    version of these features. Specifically, a 7.5 min centered</span>
+<span class="sd">    triangular-weighted rolling average and a 2 min past rolling average</span>
+<span class="sd">    are applied. The resulting smoothed features are then normalized using a</span>
+<span class="sd">    robust z-score.</span>
 
 <span class="sd">    The data are automatically downsampled to 100 Hz for faster</span>
 <span class="sd">    computation.</span>
@@ -231,6 +245,10 @@
 <span class="sd">    &gt;&gt;&gt; confidence = proba.max(axis=1)</span>
 <span class="sd">    &gt;&gt;&gt; # Plot the predicted probabilities</span>
 <span class="sd">    &gt;&gt;&gt; sls.plot_predict_proba()</span>
+
+<span class="sd">    The sleep scores can then be manually edited in an external graphical user interface</span>
+<span class="sd">    (e.g. EDFBrowser), as described in the</span>
+<span class="sd">    `FAQ &lt;https://raphaelvallat.com/yasa/build/html/faq.html&gt;`_.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="SleepStaging.__init__"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">eeg_name</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">eog_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">emg_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -272,7 +290,7 @@
         <span class="k">assert</span> <span class="n">sf</span> <span class="o">&gt;</span> <span class="mi">80</span><span class="p">,</span> <span class="s1">&#39;Sampling frequency must be at least 80 Hz.&#39;</span>
         <span class="k">if</span> <span class="n">sf</span> <span class="o">!=</span> <span class="mi">100</span><span class="p">:</span>
             <span class="n">raw_pick</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">npad</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
-            <span class="n">sf</span> <span class="o">=</span> <span class="mi">100</span>
+            <span class="n">sf</span> <span class="o">=</span> <span class="n">raw_pick</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;sfreq&#39;</span><span class="p">]</span>
 
         <span class="c1"># Get data and convert to microVolts</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">raw_pick</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span> <span class="o">*</span> <span class="mf">1e6</span>
@@ -312,25 +330,6 @@
         <span class="p">]</span>
 
         <span class="c1">#######################################################################</span>
-        <span class="c1"># HELPER FUNCTIONS</span>
-        <span class="c1">#######################################################################</span>
-
-        <span class="k">def</span> <span class="nf">nzc</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="sd">&quot;&quot;&quot;Calculate the number of zero-crossings along the last axis.&quot;&quot;&quot;</span>
-            <span class="k">return</span> <span class="p">((</span><span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">:])</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="k">def</span> <span class="nf">mobility</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="sd">&quot;&quot;&quot;Calculate Hjorth mobility on the last axis.&quot;&quot;&quot;</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">x</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
-
-        <span class="k">def</span> <span class="nf">petrosian</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="sd">&quot;&quot;&quot;Calculate the Petrosian fractal dimension on the last axis.&quot;&quot;&quot;</span>
-            <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-            <span class="n">ln10</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
-            <span class="n">diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">ln10</span> <span class="o">/</span> <span class="p">(</span><span class="n">ln10</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mf">0.4</span> <span class="o">*</span> <span class="n">nzc</span><span class="p">(</span><span class="n">diff</span><span class="p">))))</span>
-
-        <span class="c1">#######################################################################</span>
         <span class="c1"># CALCULATE FEATURES</span>
         <span class="c1">#######################################################################</span>
 
@@ -346,16 +345,16 @@
             <span class="n">times</span><span class="p">,</span> <span class="n">epochs</span> <span class="o">=</span> <span class="n">sliding_window</span><span class="p">(</span><span class="n">dt_filt</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 
             <span class="c1"># Calculate standard descriptive statistics</span>
-            <span class="n">hmob</span> <span class="o">=</span> <span class="n">mobility</span><span class="p">(</span><span class="n">epochs</span><span class="p">)</span>
+            <span class="n">hmob</span><span class="p">,</span> <span class="n">hcomp</span> <span class="o">=</span> <span class="n">ant</span><span class="o">.</span><span class="n">hjorth_params</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
             <span class="n">feat</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s1">&#39;std&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
                 <span class="s1">&#39;iqr&#39;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">iqr</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="mi">75</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
                 <span class="s1">&#39;skew&#39;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">skew</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
                 <span class="s1">&#39;kurt&#39;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">kurtosis</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
-                <span class="s1">&#39;nzc&#39;</span><span class="p">:</span> <span class="n">nzc</span><span class="p">(</span><span class="n">epochs</span><span class="p">),</span>
+                <span class="s1">&#39;nzc&#39;</span><span class="p">:</span> <span class="n">ant</span><span class="o">.</span><span class="n">num_zerocross</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
                 <span class="s1">&#39;hmob&#39;</span><span class="p">:</span> <span class="n">hmob</span><span class="p">,</span>
-                <span class="s1">&#39;hcomp&#39;</span><span class="p">:</span> <span class="n">mobility</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">hmob</span>
+                <span class="s1">&#39;hcomp&#39;</span><span class="p">:</span> <span class="n">hcomp</span>
             <span class="p">}</span>
 
             <span class="c1"># Calculate spectral power features (for EEG + EOG)</span>
@@ -384,7 +383,7 @@
                 <span class="n">ant</span><span class="o">.</span><span class="n">perm_entropy</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;higuchi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span>
                 <span class="n">ant</span><span class="o">.</span><span class="n">higuchi_fd</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">)</span>
-            <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;petrosian&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">petrosian</span><span class="p">(</span><span class="n">epochs</span><span class="p">)</span>
+            <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;petrosian&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ant</span><span class="o">.</span><span class="n">petrosian_fd</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
             <span class="c1"># Convert to dataframe</span>
             <span class="n">feat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span><span class="o">.</span><span class="n">add_prefix</span><span class="p">(</span><span class="n">c</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span>
@@ -398,17 +397,18 @@
         <span class="n">features</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">features</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;epoch&#39;</span>
 
-        <span class="c1"># Apply centered rolling average (11 epochs = 5 min 30)</span>
-        <span class="c1"># Triang: [1/6, 2/6, 3/6, 4/6, 5/6, 6/6 (X), 5/6, 4/6, 3/6, 2/6, 1/6]</span>
+        <span class="c1"># Apply centered rolling average (15 epochs = 7 min 30)</span>
+        <span class="c1"># Triang: [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.,</span>
+        <span class="c1">#          0.875, 0.75, 0.625, 0.5, 0.375, 0.25, 0.125]</span>
         <span class="n">rollc</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span>
-            <span class="n">window</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">win_type</span><span class="o">=</span><span class="s1">&#39;triang&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="n">window</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">win_type</span><span class="o">=</span><span class="s1">&#39;triang&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
         <span class="n">rollc</span><span class="p">[</span><span class="n">rollc</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span> <span class="o">=</span> <span class="n">robust_scale</span><span class="p">(</span><span class="n">rollc</span><span class="p">,</span> <span class="n">quantile_range</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">95</span><span class="p">))</span>
-        <span class="n">rollc</span> <span class="o">=</span> <span class="n">rollc</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s1">&#39;_c5min_norm&#39;</span><span class="p">)</span>
+        <span class="n">rollc</span> <span class="o">=</span> <span class="n">rollc</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s1">&#39;_c7min_norm&#39;</span><span class="p">)</span>
 
-        <span class="c1"># Now look at the past 5 minutes</span>
-        <span class="n">rollp</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="c1"># Now look at the past 2 minutes</span>
+        <span class="n">rollp</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
         <span class="n">rollp</span><span class="p">[</span><span class="n">rollp</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span> <span class="o">=</span> <span class="n">robust_scale</span><span class="p">(</span><span class="n">rollp</span><span class="p">,</span> <span class="n">quantile_range</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">95</span><span class="p">))</span>
-        <span class="n">rollp</span> <span class="o">=</span> <span class="n">rollp</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s1">&#39;_p5min_norm&#39;</span><span class="p">)</span>
+        <span class="n">rollp</span> <span class="o">=</span> <span class="n">rollp</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s1">&#39;_p2min_norm&#39;</span><span class="p">)</span>
 
         <span class="c1"># Add to current set of features</span>
         <span class="n">features</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rollc</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rollp</span><span class="p">)</span>
@@ -601,7 +601,7 @@
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Raphael Vallat.<br/>
+        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>

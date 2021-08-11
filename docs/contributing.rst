@@ -5,12 +5,12 @@ Contribute to YASA
 
 There are many ways to contribute to YASA: reporting bugs, adding new functions, improving the documentation, etc...
 
-If you like YASA, you can also consider `buying me a coffee <https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=K2FZVJGCKYPAG&currency_code=USD&source=url>`_!
+If you like YASA, you can also consider `buying the developers a coffee <https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=K2FZVJGCKYPAG&currency_code=USD&source=url>`_!
 
 Code guidelines
 ---------------
 
-*Before starting new code*, we highly recommend opening an issue on `GitHub <https://github.com/raphaelvallat/yasa>`_ to discuss potential changes.
+Before starting new code, we highly recommend opening an issue on `GitHub <https://github.com/raphaelvallat/yasa>`_ to discuss potential changes.
 
 * Please use standard `pep8 <https://pypi.python.org/pypi/pep8>`_ and `flake8 <http://flake8.pycqa.org/>`_ Python style guidelines. To test that your code complies with those, you can run:
 

@@ -3,9 +3,10 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.SpindlesResults &#8212; yasa 0.4.1 documentation</title>
+    <title>yasa.SpindlesResults &#8212; yasa 0.5.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -37,13 +38,14 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.4.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.5.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
                 <li><a href="../api.html">Functions</a></li>
+                <li><a href="../faq.html">FAQ</a></li>
                 <li><a href="../changelog.html">What's new</a></li>
                 <li><a href="../contributing.html">Contribute</a></li>
             
@@ -93,7 +95,7 @@
 <dl class="field-list">
 <dt class="field-odd">Attributes</dt>
 <dd class="field-odd"><dl>
-<dt><strong>_events</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output detection dataframe</p>
+<dt><strong>_events</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.3.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output detection dataframe</p>
 </dd>
 <dt><strong>_data</strong><span class="classifier">array_like</span></dt><dd><p>Original EEG data of shape <em>(n_chan, n_samples)</em>.</p>
 </dd>
@@ -124,23 +126,78 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SpindlesResults.__init__" title="yasa.SpindlesResults.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(self, events, data, sf, ch_names, …)</p></td>
 <td><p>Initialize self.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SpindlesResults.get_mask" title="yasa.SpindlesResults.get_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_mask</span></code></a>(self)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SpindlesResults.get_coincidence_matrix" title="yasa.SpindlesResults.get_coincidence_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_coincidence_matrix</span></code></a>(self[, scaled])</p></td>
+<td><p>Return the (scaled) coincidence matrix.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SpindlesResults.get_mask" title="yasa.SpindlesResults.get_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_mask</span></code></a>(self)</p></td>
 <td><p>Return a boolean array indicating for each sample in data if this sample is part of a detected event (True) or not (False).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SpindlesResults.get_sync_events" title="yasa.SpindlesResults.get_sync_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sync_events</span></code></a>(self[, center, time_before, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SpindlesResults.get_sync_events" title="yasa.SpindlesResults.get_sync_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sync_events</span></code></a>(self[, center, time_before, …])</p></td>
 <td><p>Return the raw or filtered data of each detected event after centering to a specific timepoint.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SpindlesResults.plot_average" title="yasa.SpindlesResults.plot_average"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_average</span></code></a>(self[, center, hue, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SpindlesResults.plot_average" title="yasa.SpindlesResults.plot_average"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_average</span></code></a>(self[, center, hue, …])</p></td>
 <td><p>Plot the average spindle.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SpindlesResults.plot_detection" title="yasa.SpindlesResults.plot_detection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_detection</span></code></a>(self)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SpindlesResults.plot_detection" title="yasa.SpindlesResults.plot_detection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_detection</span></code></a>(self)</p></td>
 <td><p>Plot an overlay of the detected spindles on the EEG signal.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SpindlesResults.summary" title="yasa.SpindlesResults.summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary</span></code></a>(self[, grp_chan, grp_stage, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SpindlesResults.summary" title="yasa.SpindlesResults.summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary</span></code></a>(self[, grp_chan, grp_stage, …])</p></td>
 <td><p>Return a summary of the spindles detection, optionally grouped across channels and/or stage.</p></td>
 </tr>
 </tbody>
 </table>
+<dl class="py method">
+<dt id="yasa.SpindlesResults.get_coincidence_matrix">
+<code class="sig-name descname">get_coincidence_matrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">scaled</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SpindlesResults.get_coincidence_matrix"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Return the (scaled) coincidence matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>scaled</strong><span class="classifier">bool</span></dt><dd><p>If True (default), the coincidence matrix is scaled (see Notes).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>coincidence</strong><span class="classifier">pd.DataFrame</span></dt><dd><p>A symmetric matrix with the (scaled) coincidence values.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Do spindles occur at the same time? One way to measure this is to
+calculate the coincidence matrix, which gives, for each pair of
+channel, the number of samples that were marked as a spindle in both
+channels. The output is a symmetric matrix, in which the diagonal is
+simply the number of data points that were marked as a spindle in the
+channel.</p>
+<p>The coincidence matrix can be scaled (default) by dividing the output
+by the product of the sum of each individual binary mask, as shown in
+the example below. It can then be used to define functional
+networks or quickly find outlier channels.</p>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/Mark-Kramer/Sleep-Networks-2021">https://github.com/Mark-Kramer/Sleep-Networks-2021</a></p></li>
+</ul>
+<p class="rubric">Examples</p>
+<p>Calculate the coincidence of two binary mask:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">*</span> <span class="n">y</span>
+<span class="go">array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>  <span class="c1"># Unscaled coincidence</span>
+<span class="go">3</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">*</span> <span class="n">y</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>  <span class="c1"># Scaled coincidence</span>
+<span class="go">0.12</span>
+</pre></div>
+</div>
+</dd></dl>
+
 <dl class="py method">
 <dt id="yasa.SpindlesResults.get_mask">
 <code class="sig-name descname">get_mask</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SpindlesResults.get_mask"><span class="viewcode-link">[source]</span></a></dt>
@@ -166,13 +223,13 @@ Default is to use the center peak of the spindles.</p>
 <dt><strong>filt</strong><span class="classifier">tuple</span></dt><dd><p>Optional filtering to apply to data. For instance, <code class="docutils literal notranslate"><span class="pre">filt=(1,</span> <span class="pre">30)</span></code>
 will apply a 1 to 30 Hz bandpass filter, and <code class="docutils literal notranslate"><span class="pre">filt=(None,</span> <span class="pre">40)</span></code>
 will apply a 40 Hz lowpass filter. Filtering is done using default
-parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v0.22.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
+parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v0.23.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>df_sync</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Long-format dataframe:</p>
+<dt><strong>df_sync</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.3.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Long-format dataframe:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Event&#39;</span> <span class="p">:</span> <span class="n">Event</span> <span class="n">number</span>
 <span class="s1">&#39;Time&#39;</span> <span class="p">:</span> <span class="n">Timing</span> <span class="n">of</span> <span class="n">the</span> <span class="n">events</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;Amplitude&#39;</span> <span class="p">:</span> <span class="n">Raw</span> <span class="ow">or</span> <span class="n">filtered</span> <span class="n">data</span> <span class="k">for</span> <span class="n">event</span>
@@ -207,7 +264,7 @@ Can be either ‘Channel’ or ‘Stage’.</p>
 <dt><strong>filt</strong><span class="classifier">tuple</span></dt><dd><p>Optional filtering to apply to data. For instance, <code class="docutils literal notranslate"><span class="pre">filt=(1,</span> <span class="pre">30)</span></code>
 will apply a 1 to 30 Hz bandpass filter, and <code class="docutils literal notranslate"><span class="pre">filt=(None,</span> <span class="pre">40)</span></code>
 will apply a 40 Hz lowpass filter. Filtering is done using default
-parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v0.22.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
+parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v0.23.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
 </dd>
 <dt><strong>figsize</strong><span class="classifier">tuple</span></dt><dd><p>Figure size in inches.</p>
 </dd>
@@ -274,7 +331,7 @@ used).</p>
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Raphael Vallat.<br/>
+        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>

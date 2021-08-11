@@ -6,19 +6,36 @@ What's new
 v0.5.0 (August 2021)
 --------------------
 
-This is a major release with an important bugfix for the slow-waves detection as well as API-breaking changes in the SleepStaging module. We recommend all users to upgrade to this version with `pip install --upgrade yasa`.
+This is a major release with an important bugfix for the slow-waves detection as well as API-breaking changes in the automatic sleep staging module. We recommend all users to upgrade to this version with `pip install --upgrade yasa`.
 
-**Bugfix**
+**Slow-waves detection**
 
-a. Fixed a bug in :py:func:`yasa.sw_detect` in which the detection could return event with very long duration (e.g. several tens of seconds). We have now added extra safety checks to make sure that the duration of slow-waves duration does not exceed the maximum duration allowed by the ``dur_neg`` and ``dur_pos`` parameters (e.g. 2.5 seconds). Please make sure to double check your results.
-b. Artefact and Unscored epochs are now excluded from the calculation of the total sleep time (TST) in :py:func:`yasa.sleep_statistics`. Previously, YASA calculated TST as SPT - WASO, thus including Art and Uns. TST is now calculated as the sum of all REM and NREM sleep in SPT.
+We have fixed a critical bug in :py:func:`yasa.sw_detect` in which the detection could keep slow-waves with invalid duration (e.g. several tens of seconds). We have now added extra safety checks to make sure that the total duration of the slow-waves does not exceed the maximum duration allowed by the ``dur_neg`` and ``dur_pos`` parameters (default = 2.5 seconds).
 
-**New functions**
+.. warning::
+  Please make sure to double-check any results obtained with :py:func:`yasa.sw_detect`.
 
-a. Added the :py:meth:`yasa.SpindlesResults.get_coincidence_matrix` and :py:meth:`yasa.SWResults.get_coincidence_matrix` methods to calculate the (scaled) coincidence matrix.
-The coincidence matrix gives, for each pair of channel, the number of samples that were marked as an event (spindles or slow-waves) in both channels. In other words, it gives an indication of whether events (spindles or slow-waves) are co-occuring for any pair of channel. The scaled version of the coincidence matrix can then be used to define functional networks or quickly find outlier channels.
+**Sleep staging**
 
-**Enhancements**
+Recently, we have published a `preprint article <https://www.biorxiv.org/content/10.1101/2021.05.28.446165v1>`_ describing YASA's sleep staging algorithm and its validation across hundreds of polysomnography recordings. In July 2021, we have received comments from three reviewers, which have led us to implement several changes to the sleep staging algorithm.
+The most significant change is that the time lengths of the rolling windows have been updated from 5.5 minutes centered / 5 minutes past to 7.5 minutes centered / 2 min past, leading to slight improvements in accuracy. Furthermore, we have also updated the training database and the parameters of the LightGBM classifier.
+Unfortunately, these changes mean that the new version of the algorithm is no longer compatible with the previous version (0.4.0 or 0.4.1). Therefore, if you're running a longitudinal study with YASA's sleep staging, we either recommend to keep the previous version of YASA, or to update to the new version and reprocess all your nights with the new algorithm for consistency.
+
+**Sleep statistics**
+
+Artefact and Unscored epochs are now excluded from the calculation of the total sleep time (TST) in :py:func:`yasa.sleep_statistics`. Previously, YASA calculated TST as SPT - WASO, thus including Art and Uns. TST is now calculated as the sum of all REM and NREM sleep in SPT.
+
+**New FAQ**
+
+The online documentation now has a brand new FAQ section! Make sure to check it out at https://raphaelvallat.com/yasa/build/html/faq.html
+
+**New function: coincidence matrix**
+
+We have added the :py:meth:`yasa.SpindlesResults.get_coincidence_matrix` and :py:meth:`yasa.SWResults.get_coincidence_matrix` methods to calculate the (scaled) coincidence matrix.
+The coincidence matrix gives, for each pair of channel, the number of samples that were marked as an event (spindles or slow-waves) in both channels. In other words, it gives an indication of whether events (spindles or slow-waves) are co-occuring for any pair of channel.
+The scaled version of the coincidence matrix can then be used to define functional networks or quickly find outlier channels.
+
+**Minor enhancements**
 
 a. Minor speed improvements in :py:class:`yasa.SleepStaging`.
 b. Updated dependency to pyRiemann>=0.2.7, which solves the version conflict with scikit-learn (see `issue 33 <https://github.com/raphaelvallat/yasa/issues/33>`_).
@@ -48,7 +65,7 @@ v0.4.0 (November 2020)
 
 This is a major release with several new functions, the biggest of which is the addition of an **automatic sleep staging module** (:py:class:`yasa.SleepStaging`). This means that YASA can now automatically score the sleep stages of your raw EEG data. The classifier was trained and validated on more than 3000 nights from the `National Sleep Research Resource (NSRR) <https://sleepdata.org/>`_ website.
 
-Briefly, the algorithm works by calculating a set of features for each 30-sec epochs from a central EEG channel (required), as well as an EOG channel (optional) and an EMG channel (optional). For best performance, users can also specify the age and the sex of the participants. Pre-trained classifiers are already included in YASA. The automatic sleep staging algorithm requires the `LightGBM <https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html>`_ and `antropy <https://raphaelvallat.com/antropy/build/html/index.html>`_ package.
+Briefly, the algorithm works by calculating a set of features for each 30-sec epochs from a central EEG channel (required), as well as an EOG channel (optional) and an EMG channel (optional). For best performance, users can also specify the age and the sex of the participants. Pre-trained classifiers are already included in YASA. The automatic sleep staging algorithm requires the `LightGBM <https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html>`_ and `antropy <https://github.com/raphaelvallat/antropy>`_ package.
 
 **Other changes**
 
@@ -60,7 +77,7 @@ d. The :py:func:`yasa.sw_detect` now also returns the timestamp of the sigma pea
 **Dependencies**
 
 a. Switch to latest version of `TensorPAC <https://etiennecmb.github.io/tensorpac/index.html>`_.
-b. Added `ipywidgets <https://ipywidgets.readthedocs.io/en/latest/user_install.html>`_, `LightGBM <https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html>`_ and `entropy <https://raphaelvallat.com/entropy/build/html/index.html>`_ to dependencies.
+b. Added `ipywidgets <https://ipywidgets.readthedocs.io/en/latest/user_install.html>`_, `LightGBM <https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html>`_ and `entropy <https://github.com/raphaelvallat/entropy>`_ to dependencies.
 
 ----------------------------------------------------------------------------------------
 

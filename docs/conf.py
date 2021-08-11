@@ -72,7 +72,7 @@ master_doc = 'index'
 # General information about the project.
 project = 'yasa'
 author = 'Raphael Vallat'
-copyright = u'2018-{}, Raphael Vallat'.format(time.strftime("%Y"))
+copyright = u'2018-{}, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley'.format(time.strftime("%Y"))
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -119,6 +119,7 @@ html_theme_options = {
     'navbar_class': "navbar",
     'navbar_links': [
         ("Functions", "api"),
+        ("FAQ", "faq"),
         ("What's new", "changelog"),
         ("Contribute", "contributing")],
 }
@@ -180,7 +181,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'yasa', 'yasa Documentation',
-     author, 'yasa', 'Sleep microstructure analysis.',
+     author, 'yasa', 'Sleep analysis.',
      'Miscellaneous'),
 ]
 

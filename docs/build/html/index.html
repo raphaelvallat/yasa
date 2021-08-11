@@ -3,9 +3,10 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Installation &#8212; yasa 0.4.1 documentation</title>
+    <title>Installation &#8212; yasa 0.5.0 documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
@@ -37,13 +38,14 @@
         </button>
         <a class="navbar-brand" href="#"><span><img src="_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.4.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.5.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
                 <li><a href="api.html">Functions</a></li>
+                <li><a href="faq.html">FAQ</a></li>
                 <li><a href="changelog.html">What's new</a></li>
                 <li><a href="contributing.html">Contribute</a></li>
             
@@ -88,7 +90,7 @@
 <div class="line"><br /></div>
 </div>
 <a class="reference external image-reference" href="https://badge.fury.io/py/yasa"><img alt="https://badge.fury.io/py/yasa.svg" src="https://badge.fury.io/py/yasa.svg" /></a>
-<a class="reference external image-reference" href="https://www.python.org/downloads/"><img alt="https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue" src="https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue" /></a>
+<a class="reference external image-reference" href="https://www.python.org/downloads/"><img alt="https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue" src="https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue" /></a>
 <a class="reference external image-reference" href="https://github.com/raphaelvallat/yasa/blob/master/LICENSE"><img alt="https://img.shields.io/github/license/raphaelvallat/yasa.svg" src="https://img.shields.io/github/license/raphaelvallat/yasa.svg" /></a>
 <a class="reference external image-reference" href="https://travis-ci.org/raphaelvallat/yasa"><img alt="https://travis-ci.org/raphaelvallat/yasa.svg?branch=master" src="https://travis-ci.org/raphaelvallat/yasa.svg?branch=master" /></a>
 <a class="reference external image-reference" href="https://codecov.io/gh/raphaelvallat/yasa"><img alt="https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg" src="https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg" /></a>
@@ -97,16 +99,16 @@
 <div class="figure align-center">
 <img alt="_images/yasa_logo.png" src="_images/yasa_logo.png" />
 </div>
-<p><strong>YASA</strong> (<em>Yet Another Spindle Algorithm</em>) is a sleep analysis toolbox in Python. YASA includes several fast and convenient command-line functions to:</p>
+<p><strong>YASA</strong> (<em>Yet Another Spindle Algorithm</em>) is a command-line sleep analysis toolbox in Python. The main functions of YASA are:</p>
 <ul class="simple">
-<li><p>Perform automatic sleep staging.</p></li>
-<li><p>Detect sleep spindles, slow-waves, and rapid eye movements on single and multi-channel EEG data.</p></li>
-<li><p>Reject major artifacts on single or multi-channel EEG data.</p></li>
-<li><p>Perform advanced spectral analyses: spectral bandpower, phase-amplitude coupling, event-locked analyses, 1/f, and more!</p></li>
-<li><p>Manipulate hypnogram and calculate sleep statistics.</p></li>
+<li><p>Automatic sleep staging of polysomnography data (see <a class="reference external" href="https://doi.org/10.1101/2021.05.28.446165">preprint article</a>).</p></li>
+<li><p>Event detection: sleep spindles, slow-waves and rapid eye movements, on single or multi-channel EEG data.</p></li>
+<li><p>Artefact rejection, on single or multi-channel EEG data.</p></li>
+<li><p>Spectral analyses: bandpower, phase-amplitude coupling, 1/f slope, and more!</p></li>
+<li><p>Hypnogram analysis: sleep statistics and stage tranisitions.</p></li>
 </ul>
-<p>For more details, check out the <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/index.html">API documentation</a> or try the
-<a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">tutorial (Jupyter notebooks)</a>.</p>
+<p>For more details, check out the <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/index.html">API documentation</a>, try the
+<a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">tutorial (Jupyter notebooks)</a> or read the <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/faq.html">FAQ</a>.</p>
 <hr class="docutils" />
 <div class="section" id="installation">
 <h1>Installation</h1>
@@ -119,56 +121,53 @@
 <ul class="simple">
 <li><p>Some basic knowledge of Python, especially the <a class="reference external" href="https://docs.scipy.org/doc/numpy/user/quickstart.html">NumPy</a>, <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html">Pandas</a> and <a class="reference external" href="https://martinos.org/mne/stable/index.html">MNE</a> packages.</p></li>
 <li><p>A Python editor: YASA works best with <a class="reference external" href="https://jupyterlab.readthedocs.io/en/stable/index.html">Jupyter Lab</a>, a web-based interactive user interface.</p></li>
-<li><p>Some sleep EEG data and optionally a sleep staging file (hypnogram) to perform calculations on specific sleep stages. To facilitate masking and indexing operations, the data and hypnogram must have the same sampling frequency and number of samples. YASA provide some convenient functions to load and upsample hypnogram data to the desired shape.</p></li>
+<li><p>Some sleep EEG data and optionally a sleep staging file (hypnogram).</p></li>
 </ul>
 <p><strong>I have sleep EEG data in European Data Format (.edf), how do I load the data in Python?</strong></p>
 <p>If you have sleep EEG data in standard formats (e.g. EDF or BrainVision), you can use the <a class="reference external" href="https://mne.tools/stable/index.html">MNE package</a> to load and preprocess your data in Python. A simple preprocessing pipeline using MNE is shown below:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">mne</span>
-<span class="c1"># Load the EDF file, excluding the EOGs and EKG channels</span>
-<span class="n">raw</span> <span class="o">=</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">read_raw_edf</span><span class="p">(</span><span class="s1">&#39;MYEDFFILE.edf&#39;</span><span class="p">,</span> <span class="n">preload</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;EOG1&#39;</span><span class="p">,</span> <span class="s1">&#39;EOG2&#39;</span><span class="p">,</span> <span class="s1">&#39;EKG&#39;</span><span class="p">])</span>
-<span class="n">raw</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>                      <span class="c1"># Downsample the data to 100 Hz</span>
-<span class="n">raw</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">40</span><span class="p">)</span>                    <span class="c1"># Apply a bandpass filter from 0.1 to 40 Hz</span>
-<span class="n">raw</span><span class="o">.</span><span class="n">pick_channels</span><span class="p">([</span><span class="s1">&#39;C4-A1&#39;</span><span class="p">,</span> <span class="s1">&#39;C3-A2&#39;</span><span class="p">])</span>  <span class="c1"># Select a subset of EEG channels</span>
+<span class="c1"># Load the EDF file</span>
+<span class="n">raw</span> <span class="o">=</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">read_raw_edf</span><span class="p">(</span><span class="s1">&#39;MYEDFFILE.edf&#39;</span><span class="p">,</span> <span class="n">preload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># Downsample the data to 100 Hz</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="c1"># Apply a bandpass filter from 0.1 to 40 Hz</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">40</span><span class="p">)</span>
+<span class="c1"># Select a subset of EEG channels</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">pick_channels</span><span class="p">([</span><span class="s1">&#39;C4-A1&#39;</span><span class="p">,</span> <span class="s1">&#39;C3-A2&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
 <hr class="docutils" />
 <div class="section" id="how-do-i-get-started-with-yasa">
 <h1>How do I get started with YASA?</h1>
-<p>If you want to dive right in, you can simply go to the main documentation (<a class="reference internal" href="api.html#api-ref"><span class="std std-ref">API reference</span></a>) and try to apply YASA’s functions on your own EEG data. However, for most users, we strongly recommend that you first try running the examples Jupyter notebooks to get a sense of how YASA works and what it can do! The advantage is that the notebooks also come with example datasets so they should work right out of the box as long as you’ve installed YASA first. The notebooks and datasets can be found on <a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">GitHub</a> (make sure that you download the whole <em>notebooks/</em> folder). A short description of all notebooks is provided below:</p>
-<p><strong>Spindles detection</strong></p>
+<p>If you want to dive right in, you can simply go to the main documentation (<a class="reference internal" href="api.html#api-ref"><span class="std std-ref">API reference</span></a>) and try to apply YASA’s functions on your own EEG data.
+However, for most users, we strongly recommend that you first try running the examples Jupyter notebooks to get a sense of how YASA works and what it can do!
+The notebooks also come with example datasets so they should work right out of the box as long as you’ve installed YASA first.
+The notebooks and datasets can be found on <a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">GitHub</a> (make sure that you download the whole <em>notebooks/</em> folder). A short description of all notebooks is provided below:</p>
+<p><strong>Automatic sleep staging</strong></p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb">01_spindles_detection</a>: single-channel spindles detection and step-by-step description of the spindles detection algorithm.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/02_spindles_detection_multi.ipynb">02_spindles_detection_multi</a>: multi-channel spindles detection.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/03_spindles_detection_NREM_only.ipynb">03_spindles_detection_NREM_only</a>: how to limit the spindles detection on specific sleep stages using an hypnogram.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/04_spindles_slow_fast.ipynb">04_spindles_slow_fast</a>: slow versus fast spindles.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_automatic_sleep_staging.ipynb">automatic_staging</a>: Automatic sleep staging of polysomnography data.</p></li>
+</ul>
+<p><strong>Event detection</strong></p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb">spindles_detection</a>: single-channel spindles detection and step-by-step description of the spindles detection algorithm.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/02_spindles_detection_multi.ipynb">spindles_detection_multi</a>: multi-channel spindles detection.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/03_spindles_detection_NREM_only.ipynb">spindles_detection_NREM_only</a>: how to limit the spindles detection on specific sleep stages using an hypnogram.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/04_spindles_slow_fast.ipynb">spindles_slow_fast</a>: slow versus fast spindles.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb">sw_detection</a>: single-channel slow-waves detection and step-by-step description of the slow-waves detection algorithm.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection_multi.ipynb">sw_detection_multi</a>: multi-channel slow-waves detection.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb">artifact_rejection</a>: automatic artifact rejection on single and multi-channel EEG data.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb">REMs_detection</a>: REMs detection.</p></li>
 <li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/run_visbrain.py">run_visbrain</a>: interactive display of the detected spindles using the Visbrain visualization software in Python.</p></li>
-</ul>
-<p><strong>Slow-waves detection</strong></p>
-<ul class="simple">
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb">05_sw_detection</a>: single-channel slow-waves detection and step-by-step description of the slow-waves detection algorithm.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection_multi.ipynb">06_sw_detection_multi</a>: multi-channel slow-waves detection.</p></li>
-</ul>
-<p><strong>Rapid Eye Movements (REMs) detection</strong></p>
-<ul class="simple">
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb">07_REMs_detection</a>: REMs detection.</p></li>
 </ul>
 <p><strong>Spectral analysis</strong></p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_bandpower.ipynb">08_bandpower</a>: calculate spectral band power, optionally averaged across channels and sleep stages.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_IRASA.ipynb">09_IRASA</a>: separate the aperiodic (= fractal = 1/f) components of the EEG power spectrum using the IRASA method.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_spectrogram.ipynb">10_spectrogram</a>: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_nonlinear_features.ipynb">11_nonlinear_features</a>: calculate non-linear EEG features on 30-seconds epochs and perform sleep stage classification.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_spindles-SO_coupling.ipynb">12_spindles-SO_coupling</a>: slow-oscillations/spindles phase-amplitude coupling and data-driven comodulogram.</p></li>
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/15_topoplot.ipynb">15_topoplot</a>: topoplot.</p></li>
-</ul>
-<p><strong>Artifact rejection</strong></p>
-<ul class="simple">
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb">13_artifact_rejection</a>: automatic artifact rejection on single and multi-channel EEG data.</p></li>
-</ul>
-<p><strong>Automatic sleep staging</strong></p>
-<ul class="simple">
-<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/14_automatic_sleep_staging.ipynb">14_automatic_sleep_staging</a>: automatic sleep staging of polysomnography data.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_bandpower.ipynb">bandpower</a>: calculate spectral band power, optionally averaged across channels and sleep stages.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_IRASA.ipynb">IRASA</a>: separate the aperiodic (= fractal = 1/f) components of the EEG power spectrum using the IRASA method.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_spectrogram.ipynb">spectrogram</a>: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/11_nonlinear_features.ipynb">nonlinear_features</a>: calculate non-linear EEG features on 30-seconds epochs and perform a naive sleep stage classification.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_SO-sigma_coupling.ipynb">SO-sigma_coupling</a>: slow-oscillations/spindles phase-amplitude coupling and data-driven comodulogram.</p></li>
+<li><p><a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/15_topoplot.ipynb">topoplot</a>: topoplot.</p></li>
 </ul>
 </div>
 <hr class="docutils" />
@@ -183,15 +182,17 @@
 <hr class="docutils" />
 <div class="section" id="development">
 <h1>Development</h1>
-<p>YASA was created and is maintained by <a class="reference external" href="https://raphaelvallat.com">Raphael Vallat</a>. Contributions are more than welcome so feel free to contact me, open an issue or submit a pull request!</p>
+<p>YASA was created and is maintained by <a class="reference external" href="https://raphaelvallat.com">Raphael Vallat</a>, a postdoctoral researcher in <a class="reference external" href="https://www.humansleepscience.com/">Matthew Walker’s lab</a> at UC Berkeley. Contributions are more than welcome so feel free to contact me, open an issue or submit a pull request!</p>
 <p>To see the code or report a bug, please visit the <a class="reference external" href="https://github.com/raphaelvallat/yasa">GitHub repository</a>.</p>
 <p>Note that this program is provided with NO WARRANTY OF ANY KIND.</p>
 </div>
 <hr class="docutils" />
 <div class="section" id="citation">
 <h1>Citation</h1>
-<p>To cite YASA, please use the Zenodo DOI:</p>
-<a class="reference external image-reference" href="https://doi.org/10.5281/zenodo.2370600"><img alt="https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg" src="https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg" /></a>
+<p>To cite YASA, please use the preprint publication:</p>
+<ul class="simple">
+<li><p>Raphael Vallat and Matthew P. Walker (2021). <em>A universal, open-source, high-performance tool for automated sleep staging</em>. bioRxiv 2021.05.28.446165; doi: <a class="reference external" href="https://doi.org/10.1101/2021.05.28.446165">https://doi.org/10.1101/2021.05.28.446165</a></p></li>
+</ul>
 <div class="line-block">
 <div class="line"><br /></div>
 </div>
@@ -212,7 +213,7 @@
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Raphael Vallat.<br/>
+        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
     </p>
   </div>
