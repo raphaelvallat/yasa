@@ -3,7 +3,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.topoplot &#8212; yasa 0.5.0 documentation</title>
+    <title>yasa.topoplot &#8212; yasa 0.5.1 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
@@ -38,7 +38,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.5.0</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.5.1</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -100,7 +100,7 @@
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>data</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v1.3.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code></a></span></dt><dd><p>A pandas Series with the values to plot. The index MUST be the channel
+<dt><strong>data</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v1.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code></a></span></dt><dd><p>A pandas Series with the values to plot. The index MUST be the channel
 names (e.g. [‘C4’, ‘F4’] or [‘C4-M1’, ‘C3-M2’]).</p>
 </dd>
 <dt><strong>montage</strong><span class="classifier">str</span></dt><dd><p>The name of the montage to use. Valid montages can be found at
@@ -109,7 +109,7 @@ names (e.g. [‘C4’, ‘F4’] or [‘C4-M1’, ‘C3-M2’]).</p>
 <dt><strong>vmin, vmax</strong><span class="classifier">float</span></dt><dd><p>The minimum and maximum values of the colormap. If None, these will be
 defined based on the min / max values of <code class="docutils literal notranslate"><span class="pre">data</span></code>.</p>
 </dd>
-<dt><strong>mask</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v1.3.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code></a></span></dt><dd><p>A pandas Series indicating the significant electrodes. The index MUST
+<dt><strong>mask</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v1.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code></a></span></dt><dd><p>A pandas Series indicating the significant electrodes. The index MUST
 be the channel names (e.g. [‘C4’, ‘F4’] or [‘C4-M1’, ‘C3-M2’]).</p>
 </dd>
 <dt><strong>title</strong><span class="classifier">str</span></dt><dd><p>The plot title.</p>
@@ -135,7 +135,7 @@ be the channel names (e.g. [‘C4’, ‘F4’] or [‘C4-M1’, ‘C3-M2’]).<
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>fig</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/api/figure_api.html#matplotlib.figure.Figure" title="(in Matplotlib v3.4.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.figure.Figure</span></code></a></span></dt><dd><p>Matplotlib Figure</p>
+<dt><strong>fig</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/api/figure_api.html#matplotlib.figure.Figure" title="(in Matplotlib v3.4.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.figure.Figure</span></code></a></span></dt><dd><p>Matplotlib Figure</p>
 </dd>
 </dl>
 </dd>

@@ -3,6 +3,15 @@
 What's new
 ##########
 
+.. contents:: Table of Contents
+    :depth: 2
+
+v0.5.1 (August 2021)
+--------------------
+
+This is a bugfix release. The latest pre-trained classifiers for :py:class:`yasa.SleepStaging` were accidentally missing from the previous release. They have now been included in this release.
+
+
 v0.5.0 (August 2021)
 --------------------
 
