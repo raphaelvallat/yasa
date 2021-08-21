@@ -26,16 +26,15 @@ from .others import (moving_transform, trimbothstd, get_centered_indices,
 
 logger = logging.getLogger('yasa')
 
-__all__ = ['art_detect', 'spindles_detect', 'SpindlesResults',
-           'sw_detect', 'SWResults', 'rem_detect', 'REMResults']
+__all__ = ['art_detect', 'spindles_detect', 'SpindlesResults', 'sw_detect', 'SWResults',
+           'rem_detect', 'REMResults']
 
 
 #############################################################################
 # DATA PREPROCESSING
 #############################################################################
 
-def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None,
-                      check_amp=True):
+def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, check_amp=True):
     """Helper functions for preprocessing of data and hypnogram."""
     # 1) Extract data as a 2D NumPy array
     if isinstance(data, mne.io.BaseRaw):
@@ -67,8 +66,7 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None,
         assert include is not None, 'include cannot be None if hypno is given'
         include = np.atleast_1d(np.asarray(include))
         assert include.size >= 1, '`include` must have at least one element.'
-        assert hypno.dtype.kind == include.dtype.kind, ('hypno and include '
-                                                        'must have same dtype')
+        assert hypno.dtype.kind == include.dtype.kind, ('hypno and include must have same dtype')
         assert np.in1d(hypno, include).any(), ('None of the stages specified '
                                                'in `include` are present in '
                                                'hypno.')
@@ -81,10 +79,8 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None,
     all_trimstd = trimbothstd(data, cut=0.05)
     bad_chan = np.zeros(n_chan, dtype=bool)
     for i in range(n_chan):
-        logger.info('Trimmed standard deviation of %s = %.4f uV'
-                    % (ch_names[i], all_trimstd[i]))
-        logger.info('Peak-to-peak amplitude of %s = %.4f uV'
-                    % (ch_names[i], all_ptp[i]))
+        logger.info('Trimmed standard deviation of %s = %.4f uV' % (ch_names[i], all_trimstd[i]))
+        logger.info('Peak-to-peak amplitude of %s = %.4f uV' % (ch_names[i], all_ptp[i]))
         if check_amp and not(0.1 < all_trimstd[i] < 1e3):
             logger.error('Wrong data amplitude for %s '
                          '(trimmed STD = %.3f). Unit of data MUST be uV! '
@@ -98,8 +94,7 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None,
     else:
         mask = np.ones(n_samples, dtype=bool)
 
-    return (data, sf, ch_names, hypno, include, mask, n_chan, n_samples,
-            bad_chan)
+    return (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan)
 
 
 #############################################################################
@@ -118,15 +113,33 @@ class _DetectionResults(object):
         self._ch_names = ch_names
         self._data_filt = data_filt
 
-    def summary(self, event_type, grp_chan=False, grp_stage=False, aggfunc='mean', sort=True):
+    def _check_mask(self, mask):
+        assert isinstance(mask, (pd.Series, np.ndarray, list, type(None)))
+        n_events = self._events.shape[0]
+        if mask is None:
+            mask = np.ones(n_events, dtype="bool")  # All set to True
+        else:
+            mask = np.asarray(mask)
+            assert mask.dtype.kind == "b", "Mask must be a boolean array."
+            assert mask.ndim == 1, "Mask must be one-dimensional"
+            assert mask.size == n_events, "Mask.size must be the number of detected events."
+        return mask
+
+    def summary(self, event_type, grp_chan=False, grp_stage=False, aggfunc='mean', sort=True,
+                mask=None):
         """Summary"""
+        # Check masking
+        mask = self._check_mask(mask)
+
+        # Define grouping
         grouper = []
         if grp_stage is True and 'Stage' in self._events:
             grouper.append('Stage')
         if grp_chan is True and 'Channel' in self._events:
             grouper.append('Channel')
         if not len(grouper):
-            return self._events.copy()
+            # Return a copy of self._events after masking, without grouping
+            return self._events.loc[mask, :].copy()
 
         if event_type == 'spindles':
             aggdict = {'Start': 'count',
@@ -172,8 +185,8 @@ class _DetectionResults(object):
                        'LOCAbsFallSlope': aggfunc,
                        'ROCAbsFallSlope': aggfunc}
 
-        # Apply grouping
-        df_grp = self._events.groupby(grouper, sort=sort, as_index=False).agg(aggdict)
+        # Apply grouping, after masking
+        df_grp = self._events.loc[mask, :].groupby(grouper, sort=sort, as_index=False).agg(aggdict)
         df_grp = df_grp.rename(columns={'Start': 'Count'})
 
         # Calculate density (= number per min of each stage)
@@ -202,10 +215,12 @@ class _DetectionResults(object):
             mask[i, idx_ev] = 1
         return np.squeeze(mask)
 
-    def get_sync_events(self, center, time_before, time_after,
-                        filt=(None, None)):
-        """Get_sync_events
-        (not for REM, spindles & SW only)
+    def get_sync_events(self, center, time_before, time_after, filt=(None, None), mask=None):
+        """Get_sync_events (not for REM, spindles & SW only)
+
+        TODO:
+        - Add `resample=100`
+        - Add `as_dataframe=True` (otherwise returns a list of NumPy arrays)
         """
         from yasa.others import get_centered_indices
         assert time_before >= 0
@@ -213,21 +228,24 @@ class _DetectionResults(object):
         bef = int(self._sf * time_before)
         aft = int(self._sf * time_after)
         # TODO: Step size is determined by sf: 0.01 sec at 100 Hz, 0.002 sec at
-        # 500 Hz, 0.00390625 sec at 256 Hz. Should we add a step_size=0.01
-        # option?
+        # 500 Hz, 0.00390625 sec at 256 Hz. Should we add a resample=100 (Hz)?
         time = np.arange(-bef, aft + 1, dtype='int') / self._sf
 
         if any(filt):
-            data = mne.filter.filter_data(self._data, self._sf, l_freq=filt[0],
-                                          h_freq=filt[1], method='fir',
-                                          verbose=False)
+            data = mne.filter.filter_data(
+                self._data, self._sf, l_freq=filt[0], h_freq=filt[1], method='fir', verbose=False)
         else:
             data = self._data
 
         df_sync = pd.DataFrame()
 
-        for i in self._events['IdxChannel'].unique():
-            ev_chan = self._events[self._events['IdxChannel'] == i].copy()
+        # Apply mask
+        mask = self._check_mask(mask)
+        masked_events = self._events.loc[mask, :]
+
+        for i in masked_events['IdxChannel'].unique():
+            # Copy is required to merge with the stage later on
+            ev_chan = masked_events[masked_events['IdxChannel'] == i].copy()
             ev_chan['Event'] = np.arange(ev_chan.shape[0])
             peaks = (ev_chan[center] * self._sf).astype(int).to_numpy()
             # Get centered indices
@@ -236,9 +254,7 @@ class _DetectionResults(object):
             if len(idx_valid) == 0:
                 logger.error(
                     'Time before and/or time after exceed data bounds, please '
-                    'lower the temporal window around center. '
-                    'Skipping channel.'
-                )
+                    'lower the temporal window around center. Skipping channel.')
                 continue
 
             # Get data at indices and time vector and convert to df
@@ -246,13 +262,10 @@ class _DetectionResults(object):
             df_chan = pd.DataFrame(amps.T)
             df_chan['Time'] = time
             # Convert to long-format
-            df_chan = df_chan.melt(id_vars='Time', var_name='Event',
-                                   value_name='Amplitude')
+            df_chan = df_chan.melt(id_vars='Time', var_name='Event', value_name='Amplitude')
             # Append stage
-            if 'Stage' in self._events:
-                df_chan = df_chan.merge(
-                    ev_chan[['Event', 'Stage']].iloc[idx_valid]
-                )
+            if 'Stage' in masked_events:
+                df_chan = df_chan.merge(ev_chan[['Event', 'Stage']].iloc[idx_valid])
             # Append channel name
             df_chan['Channel'] = ev_chan['Channel'].iloc[0]
             df_chan['IdxChannel'] = i
@@ -291,17 +304,14 @@ class _DetectionResults(object):
 
         return coinc_mat
 
-    def plot_average(self, event_type, center='Peak', hue='Channel',
-                     time_before=1, time_after=1, filt=(None, None),
-                     figsize=(6, 4.5), **kwargs):
-        """plot_average
-        (not for REM, spindles & SW only)
-        """
+    def plot_average(self, event_type, center='Peak', hue='Channel', time_before=1,
+                     time_after=1, filt=(None, None), mask=None, figsize=(6, 4.5), **kwargs):
+        """plot_average (not for REM, spindles & SW only)"""
         import seaborn as sns
         import matplotlib.pyplot as plt
 
         df_sync = self.get_sync_events(center=center, time_before=time_before,
-                                       time_after=time_after, filt=filt)
+                                       time_after=time_after, filt=filt, mask=mask)
         assert not df_sync.empty, "Could not calculate event-locked data."
         assert hue in ['Stage', 'Channel'], "hue must be 'Channel' or 'Stage'"
         assert hue in df_sync.columns, "%s is not present in data." % hue
@@ -313,8 +323,7 @@ class _DetectionResults(object):
 
         # Start figure
         fig, ax = plt.subplots(1, 1, figsize=figsize)
-        sns.lineplot(data=df_sync, x='Time', y='Amplitude', hue=hue, ax=ax,
-                     **kwargs)
+        sns.lineplot(data=df_sync, x='Time', y='Amplitude', hue=hue, ax=ax, **kwargs)
         # ax.legend(frameon=False, loc='lower right')
         ax.set_xlim(df_sync['Time'].min(), df_sync['Time'].max())
         ax.set_title(title)
@@ -657,8 +666,8 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         # Here we use a step of 200 ms to speed up the computation.
         # Note that even if the threshold is None we still need to calculate it
         # for the individual spindles parameter (RelPow).
-        f, t, Sxx = stft_power(data_broad[i, :], sf, window=2, step=.2,
-                               band=freq_broad, interp=False, norm=True)
+        f, t, Sxx = stft_power(data_broad[i, :], sf, window=2, step=.2, band=freq_broad,
+                               interp=False, norm=True)
         idx_sigma = np.logical_and(f >= freq_sp[0], f <= freq_sp[1])
         rel_pow = Sxx[idx_sigma].sum(0)
 
@@ -666,26 +675,21 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         # Note that we could also have use the `interp=True` in the
         # `stft_power` function, however 2D interpolation is much slower than
         # 1D interpolation.
-        func = interp1d(t, rel_pow, kind='cubic', bounds_error=False,
-                        fill_value=0)
+        func = interp1d(t, rel_pow, kind='cubic', bounds_error=False, fill_value=0)
         t = np.arange(n_samples) / sf
         rel_pow = func(t)
 
         if do_corr:
-            _, mcorr = moving_transform(x=data_sigma[i, :], y=data_broad[i, :],
-                                        sf=sf, window=.3, step=.1,
-                                        method='corr', interp=True)
+            _, mcorr = moving_transform(x=data_sigma[i, :], y=data_broad[i, :], sf=sf, window=.3,
+                                        step=.1, method='corr', interp=True)
         if do_rms:
-            _, mrms = moving_transform(x=data_sigma[i, :], sf=sf,
-                                       window=.3, step=.1, method='rms',
+            _, mrms = moving_transform(x=data_sigma[i, :], sf=sf, window=.3, step=.1, method='rms',
                                        interp=True)
             # Let's define the thresholds
             if hypno is None:
-                thresh_rms = mrms.mean() + thresh['rms'] * \
-                    trimbothstd(mrms, cut=0.10)
+                thresh_rms = mrms.mean() + thresh['rms'] * trimbothstd(mrms, cut=0.10)
             else:
-                thresh_rms = mrms[mask].mean() + thresh['rms'] * \
-                    trimbothstd(mrms[mask], cut=0.10)
+                thresh_rms = mrms[mask].mean() + thresh['rms'] * trimbothstd(mrms[mask], cut=0.10)
             # Avoid too high threshold caused by Artefacts / Motion during Wake
             thresh_rms = min(thresh_rms, 10)
             logger.info('Moving RMS threshold = %.3f', thresh_rms)
@@ -695,8 +699,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         if do_rel_pow:
             idx_rel_pow = (rel_pow >= thresh['rel_pow']).astype(int)
             idx_sum += idx_rel_pow
-            logger.info('N supra-theshold relative power = %i',
-                        idx_rel_pow.sum())
+            logger.info('N supra-theshold relative power = %i', idx_rel_pow.sum())
         if do_corr:
             idx_mcorr = (mcorr >= thresh['corr']).astype(int)
             idx_sum += idx_mcorr
@@ -776,8 +779,8 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
             sp_freq[j] = np.median(sp_inst_freq[sp_inst_freq > 0])
 
             # Number of oscillations
-            peaks, peaks_params = signal.find_peaks(sp_det, distance=distance,
-                                                    prominence=(None, None))
+            peaks, peaks_params = signal.find_peaks(
+                sp_det, distance=distance, prominence=(None, None))
             sp_osc[j] = len(peaks)
 
             # For frequency and amplitude, we can also optionally use these
@@ -858,9 +861,9 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
     # Find spindles that are present on at least two channels
     if multi_only and df['Channel'].nunique() > 1:
         # We round to the nearest second
-        idx_good = np.logical_or(df['Start'].round(0).duplicated(keep=False),
-                                 df['End'].round(0).duplicated(keep=False)
-                                 ).to_list()
+        idx_good = np.logical_or(
+            df['Start'].round(0).duplicated(keep=False),
+            df['End'].round(0).duplicated(keep=False)).to_list()
         df = df[idx_good].reset_index(drop=True)
 
     return SpindlesResults(events=df, data=data, sf=sf, ch_names=ch_names,
@@ -889,8 +892,7 @@ class SpindlesResults(_DetectionResults):
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         super().__init__(events, data, sf, ch_names, hypno, data_filt)
 
-    def summary(self, grp_chan=False, grp_stage=False, aggfunc='mean',
-                sort=True):
+    def summary(self, grp_chan=False, grp_stage=False, mask=None, aggfunc='mean', sort=True):
         """Return a summary of the spindles detection, optionally grouped
         across channels and/or stage.
 
@@ -901,14 +903,17 @@ class SpindlesResults(_DetectionResults):
         grp_stage : bool
             If True, group by sleep stage (provided that an hypnogram was
             used).
+        mask : array_like or None
+            Custom boolean mask. Only the detected events for which mask is True will be
+            included in the summary dataframe. Default is None, i.e. no masking
+            (all events are included).
         aggfunc : str or function
             Averaging function (e.g. ``'mean'`` or ``'median'``).
         sort : bool
             If True, sort group keys when grouping.
         """
-        return super().summary(event_type='spindles',
-                               grp_chan=grp_chan, grp_stage=grp_stage,
-                               aggfunc=aggfunc, sort=sort)
+        return super().summary(event_type='spindles', grp_chan=grp_chan, grp_stage=grp_stage,
+                               aggfunc=aggfunc, sort=sort, mask=mask)
 
     def get_coincidence_matrix(self, scaled=True):
         """Return the (scaled) coincidence matrix.
@@ -965,8 +970,8 @@ class SpindlesResults(_DetectionResults):
         """
         return super().get_mask()
 
-    def get_sync_events(self, center='Peak', time_before=1, time_after=1,
-                        filt=(None, None)):
+    def get_sync_events(self, center='Peak', time_before=1, time_after=1, filt=(None, None),
+                        mask=None):
         """
         Return the raw or filtered data of each detected event after
         centering to a specific timepoint.
@@ -985,6 +990,9 @@ class SpindlesResults(_DetectionResults):
             will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
             will apply a 40 Hz lowpass filter. Filtering is done using default
             parameters in the :py:func:`mne.filter.filter_data` function.
+        mask : array_like or None
+            Custom boolean mask. Only the detected events for which mask is True will be
+            included. Default is None, i.e. no masking (all events are included).
 
         Returns
         -------
@@ -999,12 +1007,10 @@ class SpindlesResults(_DetectionResults):
             'Stage': Sleep stage in which the events occured (if available)
         """
         return super().get_sync_events(center=center, time_before=time_before,
-                                       time_after=time_after,
-                                       filt=filt)
+                                       time_after=time_after, filt=filt, mask=mask)
 
     def plot_average(self, center='Peak', hue='Channel', time_before=1,
-                     time_after=1, filt=(None, None), figsize=(6, 4.5),
-                     **kwargs):
+                     time_after=1, filt=(None, None), mask=None, figsize=(6, 4.5), **kwargs):
         """
         Plot the average spindle.
 
@@ -1021,10 +1027,13 @@ class SpindlesResults(_DetectionResults):
         time_after : float
             Time (in seconds) after ``center``.
         filt : tuple
-            Optional filtering to apply to data. For instance, ``filt=(1, 30)``
-            will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
-            will apply a 40 Hz lowpass filter. Filtering is done using default
+            Optional filtering to apply to data. For instance, ``filt=(12, 16)``
+            will apply a 12 to 16 Hz bandpass filter, and ``filt=(None, 40)``
+            will apply a 40 Hz lowpass filter. Filtering is done using the default
             parameters in the :py:func:`mne.filter.filter_data` function.
+        mask : array_like or None
+            Custom boolean mask. Only the detected events for which mask is True will be
+            plotted. Default is None, i.e. no masking (all events are included).
         figsize : tuple
             Figure size in inches.
         **kwargs : dict
@@ -1032,7 +1041,7 @@ class SpindlesResults(_DetectionResults):
         """
         return super().plot_average(event_type='spindles', center=center,
                                     hue=hue, time_before=time_before,
-                                    time_after=time_after, filt=filt,
+                                    time_after=time_after, filt=filt, mask=mask,
                                     figsize=figsize, **kwargs)
 
     def plot_detection(self):
@@ -1055,10 +1064,9 @@ class SpindlesResults(_DetectionResults):
 #############################################################################
 
 
-def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
-              freq_sw=(0.3, 1.5), dur_neg=(0.3, 1.5), dur_pos=(0.1, 1),
-              amp_neg=(40, 300), amp_pos=(10, 200), amp_ptp=(75, 500),
-              coupling=False, freq_sp=(12, 16), remove_outliers=False,
+def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=(0.3, 1.5),
+              dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 300), amp_pos=(10, 200),
+              amp_ptp=(75, 500), coupling=False, freq_sp=(12, 16), remove_outliers=False,
               verbose=False):
     """Slow-waves detection.
 
@@ -1161,14 +1169,12 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         4. ``MI``: the Modulation Index within a 4-sec epoch centered around the negative peak of
            the slow-wave.
 
-        The lower and upper frequencies for the slow-waves and
-        spindles-related sigma signals are defined in ``freq_sw`` and
-        ``freq_sp``, respectively.
+        The lower and upper frequencies for the slow-waves and spindles-related sigma signals are
+        defined in ``freq_sw`` and ``freq_sp``, respectively.
         For more details, please refer to the `Jupyter notebook
         <https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_SO-sigma_coupling.ipynb>`_
 
-        Note that setting ``coupling=True`` may significantly increase
-        computation time.
+        Note that setting ``coupling=True`` may increase computation time.
 
         .. versionadded:: 0.2.0
 
@@ -1556,8 +1562,7 @@ class SWResults(_DetectionResults):
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         super().__init__(events, data, sf, ch_names, hypno, data_filt)
 
-    def summary(self, grp_chan=False, grp_stage=False, aggfunc='mean',
-                sort=True):
+    def summary(self, grp_chan=False, grp_stage=False, mask=None, aggfunc='mean', sort=True):
         """Return a summary of the SW detection, optionally grouped across
         channels and/or stage.
 
@@ -1567,13 +1572,16 @@ class SWResults(_DetectionResults):
             If True, group by channel (for multi-channels detection only).
         grp_stage : bool
             If True, group by sleep stage (provided that an hypnogram was used).
+        mask : array_like or None
+            Custom boolean mask. Only the detected events for which mask is True will be
+            included in the summary. Default is None, i.e. no masking (all events are included).
         aggfunc : str or function
             Averaging function (e.g. ``'mean'`` or ``'median'``).
         sort : bool
             If True, sort group keys when grouping.
         """
-        return super().summary(
-            event_type='sw', grp_chan=grp_chan, grp_stage=grp_stage, aggfunc=aggfunc, sort=sort)
+        return super().summary(event_type='sw', grp_chan=grp_chan, grp_stage=grp_stage,
+                               aggfunc=aggfunc, sort=sort, mask=mask)
 
     def find_cooccurring_spindles(self, spindles, lookaround=1.2):
         """Given a spindles detection summary dataframe, find slow-waves that co-occur with
@@ -1582,7 +1590,7 @@ class SWResults(_DetectionResults):
         Parameters
         ----------
         spindles : :py:class:`pandas.DataFrame`
-            Output dataframe of :py:func:`yasa.spindles_detect`.
+            Output dataframe of :py:meth:`yasa.SpindlesResults.summary`.
         lookaround : float
             Lookaround window, in seconds. The default is +/- 1.2 seconds around the
             negative peak of the slow-wave, as in [1]_. This means that YASA will look for a
@@ -1708,7 +1716,8 @@ class SWResults(_DetectionResults):
         """
         return super().get_mask()
 
-    def get_sync_events(self, center='NegPeak', time_before=0.4, time_after=0.8, filt=(None, None)):
+    def get_sync_events(self, center='NegPeak', time_before=0.4, time_after=0.8, filt=(None, None),
+                        mask=None):
         """
         Return the raw data of each detected event after centering to a specific timepoint.
 
@@ -1726,6 +1735,9 @@ class SWResults(_DetectionResults):
             will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
             will apply a 40 Hz lowpass filter. Filtering is done using default
             parameters in the :py:func:`mne.filter.filter_data` function.
+        mask : array_like or None
+            Custom boolean mask. Only the detected events for which mask is True will be
+            included. Default is None, i.e. no masking (all events are included).
 
         Returns
         -------
@@ -1740,11 +1752,10 @@ class SWResults(_DetectionResults):
             'Stage': Sleep stage in which the events occured (if available)
         """
         return super().get_sync_events(center=center, time_before=time_before,
-                                       time_after=time_after,
-                                       filt=filt)
+                                       time_after=time_after, filt=filt, mask=mask)
 
     def plot_average(self, center='NegPeak', hue='Channel', time_before=0.4, time_after=0.8,
-                     filt=(None, None), figsize=(6, 4.5), **kwargs):
+                     filt=(None, None), mask=None, figsize=(6, 4.5), **kwargs):
         """
         Plot the average slow-wave.
 
@@ -1765,6 +1776,9 @@ class SWResults(_DetectionResults):
             will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
             will apply a 40 Hz lowpass filter. Filtering is done using default
             parameters in the :py:func:`mne.filter.filter_data` function.
+        mask : array_like or None
+            Custom boolean mask. Only the detected events for which mask is True will be
+            plotted. Default is None, i.e. no masking (all events are included).
         figsize : tuple
             Figure size in inches.
         **kwargs : dict
@@ -1772,7 +1786,7 @@ class SWResults(_DetectionResults):
         """
         return super().plot_average(
             event_type='sw', center=center, hue=hue, time_before=time_before,
-            time_after=time_after, filt=filt, figsize=figsize, **kwargs)
+            time_after=time_after, filt=filt, mask=mask, figsize=figsize, **kwargs)
 
     def plot_detection(self):
         """Plot an overlay of the detected slow-waves on the EEG signal.
@@ -1794,9 +1808,8 @@ class SWResults(_DetectionResults):
 #############################################################################
 
 
-def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
-               duration=(0.3, 1.2), freq_rem=(0.5, 5), remove_outliers=False,
-               verbose=False):
+def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325), duration=(0.3, 1.2),
+               freq_rem=(0.5, 5), remove_outliers=False, verbose=False):
     """Rapid eye movements (REMs) detection.
 
     This detection requires both the left EOG (LOC) and right EOG (LOC).
@@ -1953,10 +1966,8 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
     # - prominence: required prominence of peaks.
     # - wlen: limit search for bases to a specific window.
     hmin, hmax = amplitude[0]**2, amplitude[1]**2
-    pks, pks_params = signal.find_peaks(negp, height=(hmin, hmax),
-                                        distance=(duration[0] * sf),
-                                        prominence=(0.8 * hmin),
-                                        wlen=(duration[1] * sf))
+    pks, pks_params = signal.find_peaks(negp, height=(hmin, hmax), distance=(duration[0] * sf),
+                                        prominence=(0.8 * hmin), wlen=(duration[1] * sf))
 
     # Intersect with sleep stage vector
     # We do that before calculating the features in order to gain some time
@@ -1992,14 +2003,10 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
     # Absolute rising and falling slope
     dist_pk_left = (pks - pks_params['left_bases']) / sf
     dist_pk_right = (pks_params['right_bases'] - pks) / sf
-    locrs = (data_filt[0, pks] -
-             data_filt[0, pks_params['left_bases']]) / dist_pk_left
-    rocrs = (data_filt[1, pks] -
-             data_filt[1, pks_params['left_bases']]) / dist_pk_left
-    locfs = (data_filt[0, pks_params['right_bases']] -
-             data_filt[0, pks]) / dist_pk_right
-    rocfs = (data_filt[1, pks_params['right_bases']] -
-             data_filt[1, pks]) / dist_pk_right
+    locrs = (data_filt[0, pks] - data_filt[0, pks_params['left_bases']]) / dist_pk_left
+    rocrs = (data_filt[1, pks] - data_filt[1, pks_params['left_bases']]) / dist_pk_left
+    locfs = (data_filt[0, pks_params['right_bases']] - data_filt[0, pks]) / dist_pk_right
+    rocfs = (data_filt[1, pks_params['right_bases']] - data_filt[1, pks]) / dist_pk_right
     pks_params['LOCAbsRiseSlope'] = abs(locrs)
     pks_params['ROCAbsRiseSlope'] = abs(rocrs)
     pks_params['LOCAbsFallSlope'] = abs(locfs)
@@ -2010,31 +2017,27 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325),
     df = pd.DataFrame(pks_params)
 
     # Make sure that the sign of ROC and LOC is opposite
-    df['IsOppositeSign'] = (np.sign(data_filt[1, pks]) !=
-                            np.sign(data_filt[0, pks]))
+    df['IsOppositeSign'] = (np.sign(data_filt[1, pks]) != np.sign(data_filt[0, pks]))
     df = df[np.sign(data_filt[1, pks]) != np.sign(data_filt[0, pks])]
 
     # Remove bad duration
     tmin, tmax = duration
-    good_dur = np.logical_and(pks_params['Duration'] >= tmin,
-                              pks_params['Duration'] < tmax)
+    good_dur = np.logical_and(pks_params['Duration'] >= tmin, pks_params['Duration'] < tmax)
     df = df[good_dur]
 
     # Keep only useful channels
-    df = df[['Start', 'Peak', 'End', 'Duration', 'LOCAbsValPeak',
-             'ROCAbsValPeak', 'LOCAbsRiseSlope', 'ROCAbsRiseSlope',
-             'LOCAbsFallSlope', 'ROCAbsFallSlope', 'Stage']]
+    df = df[['Start', 'Peak', 'End', 'Duration', 'LOCAbsValPeak', 'ROCAbsValPeak',
+             'LOCAbsRiseSlope', 'ROCAbsRiseSlope', 'LOCAbsFallSlope', 'ROCAbsFallSlope', 'Stage']]
 
     if hypno is None:
         df = df.drop(columns=['Stage'])
     else:
         df['Stage'] = df['Stage'].astype(int)
 
-    # We need at least 100 detected REMs to apply the Isolation Forest.
+    # We need at least 50 detected REMs to apply the Isolation Forest.
     if remove_outliers and df.shape[0] >= 50:
-        col_keep = ['Duration', 'LOCAbsValPeak', 'ROCAbsValPeak',
-                    'LOCAbsRiseSlope', 'ROCAbsRiseSlope', 'LOCAbsFallSlope',
-                    'ROCAbsFallSlope']
+        col_keep = ['Duration', 'LOCAbsValPeak', 'ROCAbsValPeak', 'LOCAbsRiseSlope',
+                    'ROCAbsRiseSlope', 'LOCAbsFallSlope', 'ROCAbsFallSlope']
         ilf = IsolationForest(contamination='auto', max_samples='auto',
                               verbose=0, random_state=42)
         good = ilf.fit_predict(df[col_keep])
@@ -2073,15 +2076,17 @@ class REMResults(_DetectionResults):
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         super().__init__(events, data, sf, ch_names, hypno, data_filt)
 
-    def summary(self, grp_stage=False, aggfunc='mean', sort=True):
-        """Return a summary of the REM detection, optionally grouped across
-        stage.
+    def summary(self, grp_stage=False, mask=None, aggfunc='mean', sort=True):
+        """Return a summary of the REM detection, optionally grouped across stage.
 
         Parameters
         ----------
         grp_stage : bool
             If True, group by sleep stage (provided that an hypnogram was
             used).
+        mask : array_like or None
+            Custom boolean mask. Only the detected events for which mask is True will be
+            included in the summary. Default is None, i.e. no masking (all events are included).
         aggfunc : str or function
             Averaging function (e.g. ``'mean'`` or ``'median'``).
         sort : bool
@@ -2089,8 +2094,8 @@ class REMResults(_DetectionResults):
         """
         # ``grp_chan`` is always False for REM detection because the
         # REMs are always detected on a combination of LOC and ROC.
-        return super().summary(event_type='rem', grp_chan=False,
-                               grp_stage=grp_stage, aggfunc=aggfunc, sort=sort)
+        return super().summary(event_type='rem', grp_chan=False, grp_stage=grp_stage,
+                               aggfunc=aggfunc, sort=sort, mask=mask)
 
     def get_mask(self):
         """Return a boolean array indicating for each sample in data if this
@@ -2105,10 +2110,10 @@ class REMResults(_DetectionResults):
         return mask
 
     def get_sync_events(self, center='Peak', time_before=0.4, time_after=0.4,
-                        filt=(None, None)):
+                        filt=(None, None), mask=None):
         """
-        Return the raw or filtered data of each detected event after
-        centering to a specific timepoint.
+        Return the raw or filtered data of each detected event after centering to a specific
+        timepoint.
 
         Parameters
         ----------
@@ -2124,6 +2129,9 @@ class REMResults(_DetectionResults):
             will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
             will apply a 40 Hz lowpass filter. Filtering is done using default
             parameters in the :py:func:`mne.filter.filter_data` function.
+        mask : array_like or None
+            Custom boolean mask. Only the detected events for which mask is True will be
+            included. Default is None, i.e. no masking (all events are included).
 
         Returns
         -------
@@ -2143,15 +2151,18 @@ class REMResults(_DetectionResults):
         aft = int(self._sf * time_after)
 
         if any(filt):
-            data = mne.filter.filter_data(self._data, self._sf, l_freq=filt[0],
-                                          h_freq=filt[1], method='fir',
-                                          verbose=False)
+            data = mne.filter.filter_data(
+                self._data, self._sf, l_freq=filt[0], h_freq=filt[1], method='fir', verbose=False)
         else:
             data = self._data
 
+        # Apply mask
+        mask = self._check_mask(mask)
+        masked_events = self._events.loc[mask, :]
+
         time = np.arange(-bef, aft + 1, dtype='int') / self._sf
         # Get location of peaks in data
-        peaks = (self._events[center] * self._sf).astype(int).to_numpy()
+        peaks = (masked_events[center] * self._sf).astype(int).to_numpy()
         # Get centered indices (here we could use second channel as well).
         idx, idx_valid = get_centered_indices(data[0, :], peaks, bef, aft)
         # If no good epochs are returned raise a warning
@@ -2161,22 +2172,21 @@ class REMResults(_DetectionResults):
 
         # Initialize empty dataframe
         df_sync = pd.DataFrame()
+
         # Loop across both EOGs (LOC and ROC)
         for i, ch in enumerate(self._ch_names):
             amps = data[i, idx]
             df_chan = pd.DataFrame(amps.T)
             df_chan['Time'] = time
-            df_chan = df_chan.melt(id_vars='Time', var_name='Event',
-                                   value_name='Amplitude')
+            df_chan = df_chan.melt(id_vars='Time', var_name='Event', value_name='Amplitude')
             df_chan['Channel'] = ch
             df_chan['IdxChannel'] = i
             df_sync = df_sync.append(df_chan, ignore_index=True)
 
         return df_sync
 
-    def plot_average(self, center='Peak', time_before=0.4,
-                     time_after=0.4, filt=(None, None), figsize=(6, 4.5),
-                     **kwargs):
+    def plot_average(self, center='Peak', time_before=0.4, time_after=0.4, filt=(None, None),
+                     mask=None, figsize=(6, 4.5), **kwargs):
         """
         Plot the average REM.
 
@@ -2194,6 +2204,9 @@ class REMResults(_DetectionResults):
             will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
             will apply a 40 Hz lowpass filter. Filtering is done using default
             parameters in the :py:func:`mne.filter.filter_data` function.
+        mask : array_like or None
+            Custom boolean mask. Only the detected events for which mask is True will be
+            included. Default is None, i.e. no masking (all events are included).
         figsize : tuple
             Figure size in inches.
         **kwargs : dict
@@ -2203,12 +2216,11 @@ class REMResults(_DetectionResults):
         import matplotlib.pyplot as plt
 
         df_sync = self.get_sync_events(center=center, time_before=time_before,
-                                       time_after=time_after, filt=filt)
+                                       time_after=time_after, filt=filt, mask=mask)
 
         # Start figure
         fig, ax = plt.subplots(1, 1, figsize=figsize)
-        sns.lineplot(data=df_sync, x='Time', y='Amplitude', hue='Channel',
-                     ax=ax, **kwargs)
+        sns.lineplot(data=df_sync, x='Time', y='Amplitude', hue='Channel', ax=ax, **kwargs)
         # ax.legend(frameon=False, loc='lower right')
         ax.set_xlim(df_sync['Time'].min(), df_sync['Time'].max())
         ax.set_title("Average REM")
@@ -2403,8 +2415,7 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     set_log_level(verbose)
 
     (data, sf, _, hypno, include, _, n_chan, n_samples, _
-     ) = _check_data_hypno(data, sf, ch_names=None, hypno=hypno,
-                           include=include, check_amp=False)
+     ) = _check_data_hypno(data, sf, ch_names=None, hypno=hypno, include=include, check_amp=False)
 
     assert isinstance(n_chan_reject, int), 'n_chan_reject must be int.'
     assert n_chan_reject >= 1, 'n_chan_reject must be >= 1.'
@@ -2548,10 +2559,8 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
                                    f"stage {stage}")
                 continue
             # Calculate z-scores of STD for each channel x stage
-            c_mean = np.nanmean(std_epochs[where_stage], axis=0,
-                                keepdims=True)
-            c_std = np.nanstd(std_epochs[where_stage], axis=0,
-                              keepdims=True)
+            c_mean = np.nanmean(std_epochs[where_stage], axis=0, keepdims=True)
+            c_std = np.nanstd(std_epochs[where_stage], axis=0, keepdims=True)
             zs = (std_epochs[where_stage] - c_mean) / c_std
             # Any epoch with at least X channel above or below threshold
             n_chan_supra = (np.abs(zs) > threshold).sum(axis=1)  # >
@@ -2574,11 +2583,9 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
 
     # Log total percentage of epochs rejected
     perc_reject = 100 * (epoch_is_art.sum() / n_epochs)
-    text = (f"TOTAL: {epoch_is_art.sum()} / {n_epochs} "
-            f"epochs rejected ({perc_reject:.2f}%)")
+    text = (f"TOTAL: {epoch_is_art.sum()} / {n_epochs} epochs rejected ({perc_reject:.2f}%)")
     logger.info(text)
 
     # Convert epoch_is_art to boolean [0, 0, 1] -- > [False, False, True]
     epoch_is_art = epoch_is_art.astype(bool)
-
     return epoch_is_art, zscores
