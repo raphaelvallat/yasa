@@ -118,8 +118,7 @@ class _DetectionResults(object):
         self._ch_names = ch_names
         self._data_filt = data_filt
 
-    def summary(self, event_type, grp_chan=False, grp_stage=False,
-                aggfunc='mean', sort=True):
+    def summary(self, event_type, grp_chan=False, grp_stage=False, aggfunc='mean', sort=True):
         """Summary"""
         grouper = []
         if grp_stage is True and 'Stage' in self._events:
@@ -142,8 +141,7 @@ class _DetectionResults(object):
 
             # if 'SOPhase' in self._events:
             #     from scipy.stats import circmean
-            #     aggdict['SOPhase'] = lambda x: circmean(x, low=-np.pi,
-            #                                             high=np.pi)
+            #     aggdict['SOPhase'] = lambda x: circmean(x, low=-np.pi, high=np.pi)
 
         elif event_type == 'sw':
             aggdict = {'Start': 'count',
@@ -156,9 +154,13 @@ class _DetectionResults(object):
 
             if 'PhaseAtSigmaPeak' in self._events:
                 from scipy.stats import circmean
-                aggdict['PhaseAtSigmaPeak'] = lambda x: circmean(x, low=-np.pi,
-                                                                 high=np.pi)
+                aggdict['PhaseAtSigmaPeak'] = lambda x: circmean(x, low=-np.pi, high=np.pi)
                 aggdict['ndPAC'] = aggfunc
+                aggdict['MI'] = aggfunc
+
+            if "CooccurringSpindle" in self._events:
+                aggdict["CooccurringSpindle"] = aggfunc
+                aggdict["DistanceSpindleToSW"] = aggfunc
 
         else:  # REM
             aggdict = {'Start': 'count',
@@ -171,8 +173,7 @@ class _DetectionResults(object):
                        'ROCAbsFallSlope': aggfunc}
 
         # Apply grouping
-        df_grp = self._events.groupby(grouper, sort=sort,
-                                      as_index=False).agg(aggdict)
+        df_grp = self._events.groupby(grouper, sort=sort, as_index=False).agg(aggdict)
         df_grp = df_grp.rename(columns={'Start': 'Count'})
 
         # Calculate density (= number per min of each stage)
@@ -186,8 +187,7 @@ class _DetectionResults(object):
             # Insert new density column in grouped dataframe after count
             df_grp.insert(
                 loc=df_grp.columns.get_loc('Count') + 1, column='Density',
-                value=df_grp.apply(lambda rw: rw['Count'] / dur[rw['Stage']],
-                                   axis=1))
+                value=df_grp.apply(lambda rw: rw['Count'] / dur[rw['Stage']], axis=1))
 
         return df_grp.set_index(grouper)
 
@@ -1155,9 +1155,11 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
                mean_direction = pg.circ_mean(sw['PhaseAtSigmaPeak'])
                vector_length = pg.circ_r(sw['PhaseAtSigmaPeak'])
 
-        3. ``ndPAC``: the normalized Mean Vector Length
-           (also called the normalized direct PAC, or ndPAC) within a 4-sec
-           epoch centered around the negative peak of the slow-wave.
+        3. ``ndPAC``: the normalized Mean Vector Length (also called the normalized direct PAC,
+           or ndPAC) within a 4-sec epoch centered around the negative peak of the slow-wave.
+
+        4. ``MI``: the Modulation Index within a 4-sec epoch centered around the negative peak of
+           the slow-wave.
 
         The lower and upper frequencies for the slow-waves and
         spindles-related sigma signals are defined in ``freq_sw`` and
@@ -1211,32 +1213,29 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     -----
     The parameters that are calculated for each slow-wave are:
 
-    * ``'Start'``: Start time of each detected slow-wave, in seconds from the
-      beginning of data.
+    * ``'Start'``: Start time of each detected slow-wave, in seconds from the beginning of data.
     * ``'NegPeak'``: Location of the negative peak (in seconds)
-    * ``'MidCrossing'``: Location of the negative-to-positive zero-crossing
-      (in seconds)
+    * ``'MidCrossing'``: Location of the negative-to-positive zero-crossing (in seconds)
     * ``'Pospeak'``: Location of the positive peak (in seconds)
     * ``'End'``: End time(in seconds)
     * ``'Duration'``: Duration (in seconds)
-    * ``'ValNegPeak'``: Amplitude of the negative peak (in uV, calculated
-      on the ``freq_sw`` bandpass-filtered signal)
-    * ``'ValPosPeak'``: Amplitude of the positive peak (in uV, calculated
-      on the ``freq_sw`` bandpass-filtered signal)
-    * ``'PTP'``: Peak-to-peak amplitude (= ``ValPosPeak`` - ``ValNegPeak``,
-      calculated on the ``freq_sw`` bandpass-filtered signal)
-    * ``'Slope'``: Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec,
-      calculated on the ``freq_sw`` bandpass-filtered signal)
+    * ``'ValNegPeak'``: Amplitude of the negative peak (in uV, calculated on the ``freq_sw``
+      bandpass-filtered signal)
+    * ``'ValPosPeak'``: Amplitude of the positive peak (in uV, calculated on the ``freq_sw``
+      bandpass-filtered signal)
+    * ``'PTP'``: Peak-to-peak amplitude (= ``ValPosPeak`` - ``ValNegPeak``, calculated on the
+      ``freq_sw`` bandpass-filtered signal)
+    * ``'Slope'``: Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec, calculated on the
+      ``freq_sw`` bandpass-filtered signal)
     * ``'Frequency'``: Frequency of the slow-wave (= 1 / ``Duration``)
-    * ``'SigmaPeak'``: Location of the sigma peak amplitude within a 4-sec
-      epoch centered around the negative peak of the slow-wave. This is only
-      calculated when ``coupling=True``.
-    * ``'PhaseAtSigmaPeak'``: SW phase at max sigma amplitude within a
-      4-sec epoch centered around the negative peak of the slow-wave. This is
-      only calculated when ``coupling=True``
-    * ``'ndPAC'``: Normalized direct PAC within a 4-sec epoch centered
-      the negative peak of the slow-wave. This is only calculated when
-      ``coupling=True``
+    * ``'SigmaPeak'``: Location of the sigma peak amplitude within a 4-sec epoch centered around
+      the negative peak of the slow-wave. This is only calculated when ``coupling=True``.
+    * ``'PhaseAtSigmaPeak'``: SW phase at max sigma amplitude within a 4-sec epoch centered around
+      the negative peak of the slow-wave. This is only calculated when ``coupling=True``
+    * ``'ndPAC'``: Normalized direct PAC within a 4-sec epoch centered around the negative peak
+      of the slow-wave. This is only calculated when ``coupling=True``
+    * ``'MI'``: Modulation Index within a 4-sec epoch centered the negative peak of the slow-wave.
+      This is only calculated when ``coupling=True``
     * ``'Stage'``: Sleep stage (only if hypno was provided)
 
     .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/master/docs/pictures/slow_waves.png  # noqa
@@ -1282,9 +1281,9 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
 
     # Bandpass filter
     nfast = next_fast_len(n_samples)
-    data_filt = filter_data(data, sf, freq_sw[0], freq_sw[1], method='fir',
-                            verbose=0, l_trans_bandwidth=0.2,
-                            h_trans_bandwidth=0.2)
+    data_filt = filter_data(
+        data, sf, freq_sw[0], freq_sw[1], method='fir', verbose=0, l_trans_bandwidth=0.2,
+        h_trans_bandwidth=0.2)
 
     # Extract the spindles-related sigma signal for coupling
     if coupling:
@@ -1296,9 +1295,9 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         # must be large enough to fit the sidebands caused by the assumed
         # modulating lower frequency band (Aru et al. 2015).
         # https://doi.org/10.1016/j.conb.2014.08.002
-        data_sp = filter_data(data, sf, freq_sp[0], freq_sp[1], method='fir',
-                              l_trans_bandwidth=1.5, h_trans_bandwidth=1.5,
-                              verbose=0)
+        data_sp = filter_data(
+            data, sf, freq_sp[0], freq_sp[1], method='fir', l_trans_bandwidth=1.5,
+            h_trans_bandwidth=1.5, verbose=0)
         # Now extract the instantaneous phase/amplitude using Hilbert transform
         sw_pha = np.angle(signal.hilbert(data_filt, N=nfast)[:, :n_samples])
         sp_amp = np.abs(signal.hilbert(data_sp, N=nfast)[:, :n_samples])
@@ -1316,15 +1315,12 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
 
         # Find peaks in data
         # Negative peaks with value comprised between -40 to -300 uV
-        idx_neg_peaks, _ = signal.find_peaks(-1 * data_filt[i, :],
-                                             height=amp_neg)
+        idx_neg_peaks, _ = signal.find_peaks(-1 * data_filt[i, :], height=amp_neg)
         # Positive peaks with values comprised between 10 to 200 uV
         idx_pos_peaks, _ = signal.find_peaks(data_filt[i, :], height=amp_pos)
         # Intersect with sleep stage vector
-        idx_neg_peaks = np.intersect1d(idx_neg_peaks, idx_mask,
-                                       assume_unique=True)
-        idx_pos_peaks = np.intersect1d(idx_pos_peaks, idx_mask,
-                                       assume_unique=True)
+        idx_neg_peaks = np.intersect1d(idx_neg_peaks, idx_mask, assume_unique=True)
+        idx_pos_peaks = np.intersect1d(idx_pos_peaks, idx_mask, assume_unique=True)
 
         # If no peaks are detected, return None
         if len(idx_neg_peaks) == 0 or len(idx_pos_peaks) == 0:
@@ -1343,8 +1339,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         idx_pos_peaks = idx_neg_peaks + closest_pos_peaks
 
         # Now we compute the PTP amplitude and keep only the good peaks
-        sw_ptp = (np.abs(data_filt[i, idx_neg_peaks]) +
-                  data_filt[i, idx_pos_peaks])
+        sw_ptp = (np.abs(data_filt[i, idx_neg_peaks]) + data_filt[i, idx_pos_peaks])
         good_ptp = np.logical_and(sw_ptp > amp_ptp[0], sw_ptp < amp_ptp[1])
 
         # If good_ptp is all False
@@ -1362,9 +1357,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         # Make sure that there is a zero-crossing after the last detected peak
         if zero_crossings[-1] < max(idx_pos_peaks[-1], idx_neg_peaks[-1]):
             # If not, append the index of the last peak
-            zero_crossings = np.append(zero_crossings,
-                                       max(idx_pos_peaks[-1],
-                                           idx_neg_peaks[-1]))
+            zero_crossings = np.append(zero_crossings, max(idx_pos_peaks[-1], idx_neg_peaks[-1]))
 
         # Find distance to previous and following zc
         neg_sorted = np.searchsorted(zero_crossings, idx_neg_peaks)
@@ -1464,8 +1457,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
             # Center of each epoch is defined as the negative peak of the SW
             n_peaks = idx_neg_peaks.shape[0]
             # idx.shape = (len(idx_valid), bef + aft + 1)
-            idx, idx_valid = get_centered_indices(data[i, :], idx_neg_peaks,
-                                                  bef, aft)
+            idx, idx_valid = get_centered_indices(data[i, :], idx_neg_peaks, bef, aft)
             sw_pha_ev = sw_pha[i, idx]
             sp_amp_ev = sp_amp[i, idx]
             # 1) Find location of max sigma amplitude in epoch
@@ -1483,16 +1475,19 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
             sw_params['SigmaPeak'][idx_valid] = time_sigpk_abs
             # 2) PhaseAtSigmaPeak
             # Find SW phase at max sigma amplitude in epoch
-            pha_at_max = np.squeeze(np.take_along_axis(sw_pha_ev,
-                                                       idx_max_amp[..., None],
-                                                       axis=1))
+            pha_at_max = np.squeeze(np.take_along_axis(sw_pha_ev, idx_max_amp[..., None], axis=1))
             sw_params['PhaseAtSigmaPeak'] = np.ones(n_peaks) * np.nan
             sw_params['PhaseAtSigmaPeak'][idx_valid] = pha_at_max
             # 3) Normalized Direct PAC, without thresholding
-            ndp = np.squeeze(tpm.norm_direct_pac(sw_pha_ev[None, ...],
-                                                 sp_amp_ev[None, ...], p=1))
+            ndp = np.squeeze(tpm.norm_direct_pac(sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=1))
             sw_params['ndPAC'] = np.ones(n_peaks) * np.nan
             sw_params['ndPAC'][idx_valid] = ndp
+            # 4) Modulation Index
+            with np.errstate(all="ignore"):
+                # Avoid annoying "RuntimeWarning: invalid value encountered in multiply"
+                mi = np.squeeze(tpm.modulation_index(sw_pha_ev[None, ...], sp_amp_ev[None, ...]))
+                sw_params['MI'] = np.ones(n_peaks) * np.nan
+                sw_params['MI'][idx_valid] = mi
             # Make sure that Stage is the last column of the dataframe
             sw_params.move_to_end('Stage')
 
@@ -1505,8 +1500,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
 
         # We need at least 50 detected slow waves to apply the Isolation Forest
         if remove_outliers and df_chan.shape[0] >= 50:
-            col_keep = ['Duration', 'ValNegPeak', 'ValPosPeak', 'PTP', 'Slope',
-                        'Frequency']
+            col_keep = ['Duration', 'ValNegPeak', 'ValPosPeak', 'PTP', 'Slope', 'Frequency']
             ilf = IsolationForest(contamination='auto', max_samples='auto',
                                   verbose=0, random_state=42)
             good = ilf.fit_predict(df_chan[col_keep])
@@ -1572,16 +1566,92 @@ class SWResults(_DetectionResults):
         grp_chan : bool
             If True, group by channel (for multi-channels detection only).
         grp_stage : bool
-            If True, group by sleep stage (provided that an hypnogram was
-            used).
+            If True, group by sleep stage (provided that an hypnogram was used).
         aggfunc : str or function
             Averaging function (e.g. ``'mean'`` or ``'median'``).
         sort : bool
             If True, sort group keys when grouping.
         """
-        return super().summary(event_type='sw',
-                               grp_chan=grp_chan, grp_stage=grp_stage,
-                               aggfunc=aggfunc, sort=sort)
+        return super().summary(
+            event_type='sw', grp_chan=grp_chan, grp_stage=grp_stage, aggfunc=aggfunc, sort=sort)
+
+    def find_cooccurring_spindles(self, spindles, lookaround=1.2):
+        """Given a spindles detection summary dataframe, find slow-waves that co-occur with
+        sleep spindles.
+
+        Parameters
+        ----------
+        spindles : :py:class:`pandas.DataFrame`
+            Output dataframe of :py:func:`yasa.spindles_detect`.
+        lookaround : float
+            Lookaround window, in seconds. The default is +/- 1.2 seconds around the
+            negative peak of the slow-wave, as in [1]_. This means that YASA will look for a
+            spindle in a 2.4 seconds window centered around the downstate of the slow-wave.
+
+        Returns
+        -------
+        _events : :py:class:`pandas.DataFrame`
+            The slow-wave detection is modified IN-PLACE (see Notes). To see the updated dataframe,
+            call the :py:meth:`yasa.SWResults.summary` method.
+
+        Notes
+        -----
+        From [1]_:
+
+            "SO–spindle co-occurrence was first determined by the number of spindle centers
+            occurring within a ±1.2-sec window around the downstate peak of a SO, expressed as
+            the ratio of all detected SO events in an individual channel."
+
+        This function adds three columns to the output detection dataframe:
+
+        * `CooccurringSpindle`: a boolean column (True / False) that indicates whether the given
+          slow-wave co-occur with a sleep spindle.
+
+        * `CooccurringSpindlePeak`: the timestamp of the peak of the co-occurring,
+          in seconds from beginning of recording. Values are set to np.nan when no co-occurring
+          spindles were found.
+
+        * `DistanceSpindleToSW`: The distance in seconds from the center peak of the spindles and
+          the negative peak of the slow-waves. Negative values indicate that the spindles occured
+          before the negative peak of the slow-waves. Values are set to np.nan when no co-occurring
+          spindles were found.
+
+        References
+        ----------
+        .. [1] Kurz, E. M., Conzelmann, A., Barth, G. M., Renner, T. J., Zinke, K., & Born, J.
+               (2021). How do children with autism spectrum disorder form gist memory during sleep?
+               A study of slow oscillation–spindle coupling. Sleep, 44(6), zsaa290.
+        """
+        assert isinstance(spindles, pd.DataFrame), "spindles must be a detection dataframe."
+        distance_sp_to_sw_peak = []
+        cooccurring_spindle_peaks = []
+
+        # Find intersecting channels
+        common_ch = np.intersect1d(self._events['Channel'].unique(), spindles['Channel'].unique())
+        assert len(common_ch), "No common channel(s) were found."
+
+        # Loop across channels
+        for chan in self._events['Channel'].unique():
+            sw_chan_peaks = self._events[self._events["Channel"] == chan]["NegPeak"].to_numpy()
+            sp_chan_peaks = spindles[spindles["Channel"] == chan]['Peak'].to_numpy()
+            # Loop across individual slow-waves
+            for sw_negpeak in sw_chan_peaks:
+                start = sw_negpeak - lookaround
+                end = sw_negpeak + lookaround
+                mask = np.logical_and(start < sp_chan_peaks, sp_chan_peaks < end)
+                if any(mask):
+                    # If multiple spindles are present, take the last one
+                    sp_peak = sp_chan_peaks[mask][-1]
+                    cooccurring_spindle_peaks.append(sp_peak)
+                    distance_sp_to_sw_peak.append(sp_peak - sw_negpeak)
+                else:
+                    cooccurring_spindle_peaks.append(np.nan)
+                    distance_sp_to_sw_peak.append(np.nan)
+
+        # Add columns to self._events: IN-PLACE MODIFICATION!
+        self._events["CooccurringSpindle"] = ~np.isnan(distance_sp_to_sw_peak)
+        self._events["CooccurringSpindlePeak"] = cooccurring_spindle_peaks
+        self._events['DistanceSpindleToSW'] = distance_sp_to_sw_peak
 
     def get_coincidence_matrix(self, scaled=True):
         """Return the (scaled) coincidence matrix.
@@ -1638,11 +1708,9 @@ class SWResults(_DetectionResults):
         """
         return super().get_mask()
 
-    def get_sync_events(self, center='NegPeak', time_before=0.4,
-                        time_after=0.8, filt=(None, None)):
+    def get_sync_events(self, center='NegPeak', time_before=0.4, time_after=0.8, filt=(None, None)):
         """
-        Return the raw data of each detected event after
-        centering to a specific timepoint.
+        Return the raw data of each detected event after centering to a specific timepoint.
 
         Parameters
         ----------
@@ -1675,17 +1743,16 @@ class SWResults(_DetectionResults):
                                        time_after=time_after,
                                        filt=filt)
 
-    def plot_average(self, center='NegPeak', hue='Channel', time_before=0.4,
-                     time_after=0.8, filt=(None, None), figsize=(6, 4.5),
-                     **kwargs):
+    def plot_average(self, center='NegPeak', hue='Channel', time_before=0.4, time_after=0.8,
+                     filt=(None, None), figsize=(6, 4.5), **kwargs):
         """
         Plot the average slow-wave.
 
         Parameters
         ----------
         center : str
-            Landmark of the event to synchronize the timing on.
-            Default is to use the negative peak of the slow-wave.
+            Landmark of the event to synchronize the timing on. The default is to use the negative
+            peak of the slow-wave.
         hue : str
             Grouping variable that will produce lines with different colors.
             Can be either 'Channel' or 'Stage'.
@@ -1703,10 +1770,9 @@ class SWResults(_DetectionResults):
         **kwargs : dict
             Optional argument that are passed to :py:func:`seaborn.lineplot`.
         """
-        return super().plot_average(event_type='sw', center=center,
-                                    hue=hue, time_before=time_before,
-                                    time_after=time_after, filt=filt,
-                                    figsize=figsize, **kwargs)
+        return super().plot_average(
+            event_type='sw', center=center, hue=hue, time_before=time_before,
+            time_after=time_after, filt=filt, figsize=figsize, **kwargs)
 
     def plot_detection(self):
         """Plot an overlay of the detected slow-waves on the EEG signal.
