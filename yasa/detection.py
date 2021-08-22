@@ -215,20 +215,16 @@ class _DetectionResults(object):
             mask[i, idx_ev] = 1
         return np.squeeze(mask)
 
-    def get_sync_events(self, center, time_before, time_after, filt=(None, None), mask=None):
-        """Get_sync_events (not for REM, spindles & SW only)
-
-        TODO:
-        - Add `resample=100`
-        - Add `as_dataframe=True` (otherwise returns a list of NumPy arrays)
-        """
+    def get_sync_events(self, center, time_before, time_after, filt=(None, None), mask=None,
+                        as_dataframe=True):
+        """Get_sync_events (not for REM, spindles & SW only)"""
         from yasa.others import get_centered_indices
         assert time_before >= 0
         assert time_after >= 0
         bef = int(self._sf * time_before)
         aft = int(self._sf * time_after)
         # TODO: Step size is determined by sf: 0.01 sec at 100 Hz, 0.002 sec at
-        # 500 Hz, 0.00390625 sec at 256 Hz. Should we add a resample=100 (Hz)?
+        # 500 Hz, 0.00390625 sec at 256 Hz. Should we add resample=100 (Hz) or step_size=0.01?
         time = np.arange(-bef, aft + 1, dtype='int') / self._sf
 
         if any(filt):
@@ -237,11 +233,11 @@ class _DetectionResults(object):
         else:
             data = self._data
 
-        df_sync = pd.DataFrame()
-
         # Apply mask
         mask = self._check_mask(mask)
         masked_events = self._events.loc[mask, :]
+
+        output = []
 
         for i in masked_events['IdxChannel'].unique():
             # Copy is required to merge with the stage later on
@@ -257,8 +253,15 @@ class _DetectionResults(object):
                     'lower the temporal window around center. Skipping channel.')
                 continue
 
-            # Get data at indices and time vector and convert to df
+            # Get data at indices and time vector
             amps = data[i, idx]
+
+            if not as_dataframe:
+                # Output is a list (n_channels) of numpy arrays (n_events, n_times)
+                output.append(amps)
+                continue
+
+            # Convert to long-format dataframe
             df_chan = pd.DataFrame(amps.T)
             df_chan['Time'] = time
             # Convert to long-format
@@ -270,9 +273,12 @@ class _DetectionResults(object):
             df_chan['Channel'] = ev_chan['Channel'].iloc[0]
             df_chan['IdxChannel'] = i
             # Append to master dataframe
-            df_sync = df_sync.append(df_chan, ignore_index=True)
+            output.append(df_chan)
 
-        return df_sync
+        if as_dataframe:
+            output = pd.concat(output, ignore_index=True)
+
+        return output
 
     def get_coincidence_matrix(self, scaled=True):
         """get_coincidence_matrix"""
@@ -971,7 +977,7 @@ class SpindlesResults(_DetectionResults):
         return super().get_mask()
 
     def get_sync_events(self, center='Peak', time_before=1, time_after=1, filt=(None, None),
-                        mask=None):
+                        mask=None, as_dataframe=True):
         """
         Return the raw or filtered data of each detected event after
         centering to a specific timepoint.
@@ -993,11 +999,15 @@ class SpindlesResults(_DetectionResults):
         mask : array_like or None
             Custom boolean mask. Only the detected events for which mask is True will be
             included. Default is None, i.e. no masking (all events are included).
+        as_dataframe : boolean
+            If True (default), returns a long-format pandas dataframe. If False, returns a list of
+            numpy arrays. Each element of the list a unique channel, and the shape of the numpy
+            arrays within the list is (n_events, n_times).
 
         Returns
         -------
         df_sync : :py:class:`pandas.DataFrame`
-            Long-format dataframe::
+            Ouput long-format dataframe (if ``as_dataframe=True``)::
 
             'Event' : Event number
             'Time' : Timing of the events (in seconds)
@@ -1007,7 +1017,8 @@ class SpindlesResults(_DetectionResults):
             'Stage': Sleep stage in which the events occured (if available)
         """
         return super().get_sync_events(center=center, time_before=time_before,
-                                       time_after=time_after, filt=filt, mask=mask)
+                                       time_after=time_after, filt=filt, mask=mask,
+                                       as_dataframe=as_dataframe)
 
     def plot_average(self, center='Peak', hue='Channel', time_before=1,
                      time_after=1, filt=(None, None), mask=None, figsize=(6, 4.5), **kwargs):
@@ -1717,7 +1728,7 @@ class SWResults(_DetectionResults):
         return super().get_mask()
 
     def get_sync_events(self, center='NegPeak', time_before=0.4, time_after=0.8, filt=(None, None),
-                        mask=None):
+                        mask=None, as_dataframe=True):
         """
         Return the raw data of each detected event after centering to a specific timepoint.
 
@@ -1738,11 +1749,15 @@ class SWResults(_DetectionResults):
         mask : array_like or None
             Custom boolean mask. Only the detected events for which mask is True will be
             included. Default is None, i.e. no masking (all events are included).
+        as_dataframe : boolean
+            If True (default), returns a long-format pandas dataframe. If False, returns a list of
+            numpy arrays. Each element of the list a unique channel, and the shape of the numpy
+            arrays within the list is (n_events, n_times).
 
         Returns
         -------
-        df_sync : :py:class:`pandas.DataFrame`
-            Ouput long-format dataframe::
+        df_sync : :py:class:`pandas.DataFrame` or list
+            Ouput long-format dataframe (if ``as_dataframe=True``)::
 
             'Event' : Event number
             'Time' : Timing of the events (in seconds)
@@ -1751,8 +1766,9 @@ class SWResults(_DetectionResults):
             'IdxChannel' : Index of channel in data
             'Stage': Sleep stage in which the events occured (if available)
         """
-        return super().get_sync_events(center=center, time_before=time_before,
-                                       time_after=time_after, filt=filt, mask=mask)
+        return super().get_sync_events(
+            center=center, time_before=time_before, time_after=time_after, filt=filt, mask=mask,
+            as_dataframe=as_dataframe)
 
     def plot_average(self, center='NegPeak', hue='Channel', time_before=0.4, time_after=0.8,
                      filt=(None, None), mask=None, figsize=(6, 4.5), **kwargs):
