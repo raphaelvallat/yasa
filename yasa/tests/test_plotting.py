@@ -1,8 +1,9 @@
 """Test the functions in the yasa/plotting.py file."""
 import unittest
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from yasa.plotting import topoplot
+from yasa.plotting import topoplot, plot_hypnogram
 
 
 class TestPlotting(unittest.TestCase):
@@ -31,4 +32,27 @@ class TestPlotting(unittest.TestCase):
                          index=['F3', 'Fz', 'F4', 'C3', 'Cz', 'C4', 'Pz'])
         _ = topoplot(data, vmin=-1, vmax=1, n_colors=8)
 
+        plt.close('all')
+
+    def test_plot_hypnogram(self):
+        """Test plot_hypnogram function."""
+        # Default parameters
+        hypno = np.loadtxt("notebooks/data_full_6hrs_100Hz_hypno_30s.txt")
+        _ = plot_hypnogram(hypno)
+        # Changing the figsize
+        hypno = pd.Series(np.repeat([0, 1, 2, 3, 4, 0], 120))
+        _ = plot_hypnogram(hypno, figsize=(12, 2))
+        # Changing the lw and sf_hypno
+        hypno = list(np.repeat([0, 0, -1, -1, 0, 0, 1, 2, 3, 4, 0, 0, 0], 120))
+        _ = plot_hypnogram(hypno, sf_hypno=1 / 10, lw=2.5)
+        # With Unscored
+        hypno = np.repeat([0, 1, 2, 3, 4, 0, -2], 120)
+        _ = plot_hypnogram(hypno)
+        # With both Art and Uns
+        hypno = np.repeat([-2, -2, -2, 0, -1, 0, 1, 2, 2, 2, 3, 3, 3, 4, -2, -2], 30)
+        _ = plot_hypnogram(hypno)
+        # Error because of "-3"
+        with pytest.raises(AssertionError):
+            hypno = np.repeat([0, 1, 2, 3, 4, -2, -1, -3], 120)
+            _ = plot_hypnogram(hypno)
         plt.close('all')

@@ -9,8 +9,105 @@ import matplotlib.pyplot as plt
 from lspopt import spectrogram_lspopt
 from matplotlib.colors import Normalize, ListedColormap
 
-__all__ = ['plot_spectrogram', 'topoplot']
+__all__ = ['plot_hypnogram', 'plot_spectrogram', 'topoplot']
 
+
+def plot_hypnogram(hypno, sf_hypno=1/30, lw=1.5, figsize=(9, 3)):
+    """
+    Plot a hypnogram.
+
+    .. versionadded:: 0.5.2
+
+    Parameters
+    ----------
+    hypno : array_like
+        Sleep stage (hypnogram).
+
+        .. note::
+            The default hypnogram format in YASA is a 1D integer vector where:
+
+            * -2 = Unscored
+            * -1 = Artefact / Movement
+            * 0 = Wake
+            * 1 = N1 sleep
+            * 2 = N2 sleep
+            * 3 = N3 sleep
+            * 4 = REM sleep
+    sf_hypno : float
+        The current sampling frequency of the hypnogram, in Hz, e.g.
+
+        * 1/30 = 1 value per each 30 seconds of EEG data,
+        * 1 = 1 value per second of EEG data
+    lw : float
+        Linewidth.
+    figsize : tuple
+       Width, height in inches.
+
+    Returns
+    -------
+    ax : :py:class:`matplotlib.axes.Axes`
+        Matplotlib Axes
+
+    Examples
+    --------
+    .. plot::
+
+        >>> import yasa
+        >>> import numpy as np
+        >>> hypno = np.loadtxt("https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt")
+        >>> ax = yasa.plot_hypnogram(hypno)
+    """
+    # Increase font size while preserving original
+    old_fontsize = plt.rcParams['font.size']
+    plt.rcParams.update({'font.size': 18})
+
+    # Safety checks
+    assert isinstance(hypno, (np.ndarray, pd.Series, list)), 'hypno must be an array.'
+    hypno = np.asarray(hypno).astype(int)
+    assert (hypno >= -2).all() and (hypno <= 4).all(), "hypno values must be between -2 to 4."
+    assert hypno.ndim == 1, 'hypno must be a 1D array.'
+    assert isinstance(sf_hypno, (int, float)), 'sf must be int or float.'
+
+    t_hyp = np.arange(hypno.size) / (sf_hypno * 3600)
+    # Make sure that REM is displayed after Wake
+    hypno = pd.Series(hypno).map({-2: -2, -1: -1, 0: 0, 1: 2, 2: 3, 3: 4, 4: 1}).values
+    hypno_rem = np.ma.masked_not_equal(hypno, 1)
+    hypno_art_uns = np.ma.masked_greater(hypno, -1)
+
+    fig, ax0 = plt.subplots(nrows=1, figsize=figsize)
+
+    # Hypnogram (top axis)
+    ax0.step(t_hyp, -1 * hypno, color='k', lw=lw)
+    ax0.step(t_hyp, -1 * hypno_rem, color='red', lw=lw)
+    ax0.step(t_hyp, -1 * hypno_art_uns, color='grey', lw=lw)
+    if -2 in hypno and -1 in hypno:
+        # Both Unscored and Artefacts are present
+        ax0.set_yticks([2, 1, 0, -1, -2, -3, -4])
+        ax0.set_yticklabels(['Uns', 'Art', 'W', 'R', 'N1', 'N2', 'N3'])
+        ax0.set_ylim(-4.5, 2.5)
+    elif -2 in hypno and -1 not in hypno:
+        # Only Unscored are present
+        ax0.set_yticks([2, 0, -1, -2, -3, -4])
+        ax0.set_yticklabels(['Uns', 'W', 'R', 'N1', 'N2', 'N3'])
+        ax0.set_ylim(-4.5, 2.5)
+    elif -2 not in hypno and -1 in hypno:
+        # Only Artefacts are present
+        ax0.set_yticks([1, 0, -1, -2, -3, -4])
+        ax0.set_yticklabels(['Art', 'W', 'R', 'N1', 'N2', 'N3'])
+        ax0.set_ylim(-4.5, 1.5)
+    else:
+        # No artefacts or Unscored
+        ax0.set_yticks([0, -1, -2, -3, -4])
+        ax0.set_yticklabels(['W', 'R', 'N1', 'N2', 'N3'])
+        ax0.set_ylim(-4.5, 0.5)
+    ax0.set_xlim(0, t_hyp.max())
+    ax0.set_ylabel('Stage')
+    ax0.set_xlabel('Time [hrs]')
+    ax0.spines['right'].set_visible(False)
+    ax0.spines['top'].set_visible(False)
+    # Revert font-size
+    plt.rcParams.update({'font.size': old_fontsize})
+    return ax0
 
 def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
                      trimperc=2.5, cmap='RdBu_r'):
@@ -239,8 +336,8 @@ def topoplot(data, montage="standard_1020", vmin=None, vmax=None, mask=None,
         The title of the colorbar.
     cbar_ticks : list
         The ticks of the colorbar.
-    figsize : tuple of float
-        The figure size.
+    figsize : tuple
+       Width, height in inches.
     dpi : int
         The resolution of the plot.
     fontsize : int
