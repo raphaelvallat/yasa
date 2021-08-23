@@ -169,7 +169,6 @@ class _DetectionResults(object):
                 from scipy.stats import circmean
                 aggdict['PhaseAtSigmaPeak'] = lambda x: circmean(x, low=-np.pi, high=np.pi)
                 aggdict['ndPAC'] = aggfunc
-                aggdict['MI'] = aggfunc
 
             if "CooccurringSpindle" in self._events:
                 aggdict["CooccurringSpindle"] = aggfunc
@@ -1177,9 +1176,6 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
         3. ``ndPAC``: the normalized Mean Vector Length (also called the normalized direct PAC,
            or ndPAC) within a 4-sec epoch centered around the negative peak of the slow-wave.
 
-        4. ``MI``: the Modulation Index within a 4-sec epoch centered around the negative peak of
-           the slow-wave.
-
         The lower and upper frequencies for the slow-waves and spindles-related sigma signals are
         defined in ``freq_sw`` and ``freq_sp``, respectively.
         For more details, please refer to the `Jupyter notebook
@@ -1251,8 +1247,6 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
       the negative peak of the slow-wave. This is only calculated when ``coupling=True``
     * ``'ndPAC'``: Normalized direct PAC within a 4-sec epoch centered around the negative peak
       of the slow-wave. This is only calculated when ``coupling=True``
-    * ``'MI'``: Modulation Index within a 4-sec epoch centered the negative peak of the slow-wave.
-      This is only calculated when ``coupling=True``
     * ``'Stage'``: Sleep stage (only if hypno was provided)
 
     .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/master/docs/pictures/slow_waves.png  # noqa
@@ -1499,12 +1493,6 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
             ndp = np.squeeze(tpm.norm_direct_pac(sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=1))
             sw_params['ndPAC'] = np.ones(n_peaks) * np.nan
             sw_params['ndPAC'][idx_valid] = ndp
-            # 4) Modulation Index
-            with np.errstate(all="ignore"):
-                # Avoid annoying "RuntimeWarning: invalid value encountered in multiply"
-                mi = np.squeeze(tpm.modulation_index(sw_pha_ev[None, ...], sp_amp_ev[None, ...]))
-                sw_params['MI'] = np.ones(n_peaks) * np.nan
-                sw_params['MI'][idx_valid] = mi
             # Make sure that Stage is the last column of the dataframe
             sw_params.move_to_end('Stage')
 
