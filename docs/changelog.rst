@@ -6,6 +6,26 @@ What's new
 .. contents:: Table of Contents
     :depth: 2
 
+v0.5.2 (dev)
+------------
+
+**Plotting**
+
+* Added the :py:func:`plot_hypnogram` function to plot an hypnogram.
+
+**Events detection**
+
+* Added :py:meth:`yasa.SWResults.find_cooccurring_spindles` to detect whether each slow-wave co-occurr with a sleep spindle.
+
+* Added the ``as_dataframe`` parameter in :py:meth:`yasa.SWResults.get_sync_events` and :py:meth:`yasa.SpindlesResults.get_sync_events`. If set to False, YASA will return the peak-locked data as a list (n_channels) of numpy arrays (n_events, n_times). This facilitates any analyses that requires access to event-locked data (e.g. time-frequency plot, or comodulogram).
+
+* Added the ``mask`` parameter in :py:meth:`yasa.SWResults.summary`, :py:meth:`yasa.SWResults.get_sync_events`, and :py:meth:`yasa.SWResults.plot_average`. This allows users to only include selected events in the summary or plots (e.g. the slow-waves with the largest peak-to-peak amplitude, or strongest coupling).
+
+* Added the ``mask`` parameter in :py:meth:`yasa.SpindlesResults.summary`, :py:meth:`yasa.SpindlesResults.get_sync_events`, and :py:meth:`yasa.SpindlesResults.plot_average`. This allows users to only include selected events in the summary or plots (e.g. the spindles with the largest amplitude).
+
+* Added the ``mask`` parameter in :py:meth:`yasa.REMResults.summary`, :py:meth:`yasa.REMResults.get_sync_events`, and :py:meth:`yasa.REMResults.plot_average`.
+
+
 v0.5.1 (August 2021)
 --------------------
 

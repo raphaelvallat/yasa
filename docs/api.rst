@@ -22,8 +22,8 @@ Automatic sleep staging & events detection
     sw_detect
     SWResults
 
-Hypnogram tools & sleep statistics
-----------------------------------
+Hypnogram & sleep statistics
+----------------------------
 
 .. _hgram:
 
@@ -35,11 +35,12 @@ Hypnogram tools & sleep statistics
     hypno_str_to_int
     hypno_int_to_str
     load_profusion_hypno
+    plot_spectrogram
     transition_matrix
     sleep_statistics
 
-Spectral analyses & plotting tools
-----------------------------------
+Spectral analyses
+-----------------
 
 .. _others:
 
