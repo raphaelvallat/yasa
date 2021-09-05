@@ -108,8 +108,10 @@ def transition_matrix(hypno):
     # Convert to a Pandas DataFrame
     counts = pd.DataFrame(counts, index=unique, columns=unique)
     probs = pd.DataFrame(probs, index=unique, columns=unique)
-    counts.index.name = 'Stage'
-    probs.index.name = 'Stage'
+    counts.index.name = 'From Stage'
+    probs.index.name = 'From Stage'
+    counts.columns.name = 'To Stage'
+    probs.columns.name = 'To Stage'
     return counts, probs
 
 #############################################################################
