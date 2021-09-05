@@ -400,7 +400,7 @@ def topoplot(data, montage="standard_1020", vmin=None, vmax=None, mask=None,
 
     # Define electrodes coordinates
     Info = mne.create_info(data.index.tolist(), sfreq=100, ch_types='eeg')
-    Info.set_montage(montage, on_missing='ignore')
+    Info.set_montage(montage, match_case=False, on_missing='ignore')
     chan = Info.ch_names
 
     # Define vmin and vmax
