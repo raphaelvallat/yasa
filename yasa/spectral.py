@@ -480,7 +480,15 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
     assert band[0] > 0, 'first element of band must be > 0.'
     assert band[1] < (sf / 2), 'second element of band must be < (sf / 2).'
     win = int(win_sec * sf)  # nperseg
-
+    
+    # Inform about maximum resampled fitting range
+    h_max = np.max(hset)
+    band_evaluated = (band[0] / h_max, band[1] * h_max)
+    print("Fitting range: "
+          f"{band[0]:.2f}Hz-{band[1]:.2f}Hz")
+    print("Evaluated frequency range: "
+          f"{band_evaluated[0]:.2f}Hz-{band_evaluated[1]:.2f}Hz")
+    
     # Calculate the original PSD over the whole data
     freqs, psd = signal.welch(data, sf, nperseg=win, **kwargs_welch)
 
