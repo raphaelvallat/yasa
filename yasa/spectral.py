@@ -435,6 +435,8 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
 
     For an example of how to use this function, please refer to
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_IRASA.ipynb
+    
+    For an article discussing the challenges of using IRASA (or fooof) see [5].
 
     References
     ----------
@@ -448,6 +450,8 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
     [3] https://github.com/fooof-tools/fooof
 
     [4] https://www.biorxiv.org/content/10.1101/299859v1
+    
+    [5] https://doi.org/10.1101/2021.10.15.464483
     """
     import fractions
     # Check if input data is a MNE Raw object
