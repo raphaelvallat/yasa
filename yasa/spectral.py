@@ -522,10 +522,10 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
 
         def func(t, a, b):
             # See https://github.com/fooof-tools/fooof
-            return a + np.log10(t**b)
+            return a + np.log(t**b)
 
         for y in np.atleast_2d(psd_aperiodic):
-            y_log = np.log10(y)
+            y_log = np.log(y)
             # Note that here we define bounds for the slope but not for the
             # intercept.
             popt, pcov = curve_fit(func, freqs, y_log, p0=(2, -1),
