@@ -9,6 +9,7 @@ import pandas as pd
 from scipy import signal
 from scipy.integrate import simps
 from scipy.interpolate import RectBivariateSpline
+from .io import set_log_level
 
 logger = logging.getLogger('yasa')
 
@@ -460,6 +461,7 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
     [5] https://doi.org/10.1101/2021.10.15.464483
     """
     import fractions
+    set_log_level(verbose)
     # Check if input data is a MNE Raw object
     if isinstance(data, mne.io.BaseRaw):
         sf = data.info['sfreq']  # Extract sampling frequency
