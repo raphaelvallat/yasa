@@ -395,6 +395,11 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
     kwargs_welch : dict
         Optional keywords arguments that are passed to the
         :py:func:`scipy.signal.welch` function.
+    verbose : bool or str
+        Verbose level. Default (False) will only print warning and error
+        messages. The logging levels are 'debug', 'info', 'warning', 'error',
+        and 'critical'. For most users the choice is between 'info'
+        (or ``verbose=True``) and warning (``verbose=False``).
 
     Returns
     -------
