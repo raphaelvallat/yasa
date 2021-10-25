@@ -484,8 +484,8 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
             ch_names = np.atleast_1d(np.asarray(ch_names, dtype=str))
             assert ch_names.ndim == 1, 'ch_names must be 1D.'
             assert len(ch_names) == nchan, 'ch_names must match data.shape[0].'
-        hp = None  # Highpass filter unknown
-        lp = None  # Lowpass filter unknown
+        hp = 0  # Highpass filter unknown -> set to 0 Hz
+        lp = sf / 2  # Lowpass filter unknown -> set to Nyquist
 
     # Check the other arguments
     hset = np.asarray(hset)
@@ -506,12 +506,12 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
           f"{band[0]:.2f}Hz-{band[1]:.2f}Hz")
     logging.info("Evaluated frequency range: "
           f"{band_evaluated[0]:.2f}Hz-{band_evaluated[1]:.2f}Hz")
-    if hp and band_evaluated[0] < hp:
+    if band_evaluated[0] < hp:
         logging.warning("The evaluated frequency range starts below the "
                         f"highpass filter ({hp:.2f}Hz). Increase the lower band"
                         f" ({band[0]:.2f}Hz) or decrease the maximum value of "
                         f"the hset ({h_max:.2f}).")
-    if lp and band_evaluated[1] > lp:
+    if band_evaluated[1] > lp and lp < freq_Nyq_res:
         logging.warning("The evaluated frequency range ends after the "
                         f"lowpass filter ({lp:.2f}Hz). Decrease the upper band"
                         f" ({band[1]:.2f}Hz) or decrease the maximum value of "
