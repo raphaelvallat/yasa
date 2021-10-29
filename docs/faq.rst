@@ -174,9 +174,9 @@ Sleep staging
       <div id="accuracy_yasa" class="panel-collapse collapse">
         <div class="panel-body">
 
-YASA was trained and evaluated on a large and heterogeneous database of thousands of polysomnography recordings, including healthy individuals and patients with sleep disorders. Overall, the results show that **YASA matches human inter-rater agreement, with an accuracy of ~85% against expert consensus scoring**. The full validation of YASA can be found in the preprint article:
+YASA was trained and evaluated on a large and heterogeneous database of thousands of polysomnography recordings, including healthy individuals and patients with sleep disorders. Overall, the results show that **YASA matches human inter-rater agreement, with an accuracy of ~85% against expert consensus scoring**. The full validation of YASA was published in `eLife <https://elifesciences.org/articles/70092>`_:
 
-* Raphael Vallat and Matthew P. Walker (2021). *A universal, open-source, high-performance tool for automated sleep staging*. bioRxiv 2021.05.28.446165; doi: https://doi.org/10.1101/2021.05.28.446165
+* Vallat, Raphael, and Matthew P. Walker. "An open-source, high-performance tool for automated sleep staging." Elife 10 (2021). doi: https://doi.org/10.7554/eLife.70092
 
 However, our recommendation is that **YASA should not replace human scoring, but rather serve as a starting point to speed up sleep staging**. If possible, you should always have a trained sleep scorer visually check the predictions of YASA, with a particular emphasis on low-confidence epochs and/or N1 sleep epochs, as these are the epochs most often misclassified by the algorithm.
 Finally, users can also leverage the :py:func:`yasa.plot_spectrogram` function to plot the predicted hypnogram on top of the full-night spectrogram. Such plots are very useful to quickly identify blatant errors in the hypnogram.
@@ -359,25 +359,23 @@ There are many ways to contribute to YASA, even if you are not a programmer, for
       <div id="collapse_cite" class="panel-collapse collapse">
         <div class="panel-body">
 
-To cite YASA, please use the preprint publication:
+To cite YASA, please use the `eLife publication <https://elifesciences.org/articles/70092>`_:
 
-* Raphael Vallat and Matthew P. Walker (2021). *A universal, open-source, high-performance tool for automated sleep staging*. bioRxiv 2021.05.28.446165; doi: https://doi.org/10.1101/2021.05.28.446165
+* Vallat, Raphael, and Matthew P. Walker. "An open-source, high-performance tool for automated sleep staging." Elife 10 (2021). doi: https://doi.org/10.7554/eLife.70092
 
 BibTeX:
 
 .. code-block:: latex
 
-  @article {Vallat2021.05.28.446165,
-    author = {Vallat, Raphael and Walker, Matthew P.},
-    title = {A universal, open-source, high-performance tool for automated sleep staging},
-    elocation-id = {2021.05.28.446165},
-    year = {2021},
-    doi = {10.1101/2021.05.28.446165},
-    publisher = {Cold Spring Harbor Laboratory},
-    abstract = {The creation of a completely automated sleep-scoring system that is highly accurate, flexible, well validated, free and simple to use by anyone has yet to be accomplished. In part, this is due to the difficulty of use of existing algorithms, algorithms having been trained on too small samples, and paywall demotivation. Here we describe a novel algorithm trained and validated on +27,000 hours of polysomnographic sleep recordings across heterogeneous populations around the world. This tool offers high sleep-staging accuracy matching or exceeding human accuracy and interscorer agreement no matter the population kind. The software is easy to use, computationally low-demanding, open source, and free. Such software has the potential to facilitate broad adoption of automated sleep staging with the hope of becoming an industry standard.Competing Interest StatementThe authors have declared no competing interest.AbbreviationsAHIapnea-hypopnea indexBMIbody mass indexEEGelectroencephalogramEOGelectrooculogramEMGelectromyogramOSAobstructive sleep apneaPSGpolysomnographyMCCMatthews correlation coefficientNREMnon rapid eye movement (sleep)REMrapid eye movement (sleep)},
-    URL = {https://www.biorxiv.org/content/early/2021/05/28/2021.05.28.446165},
-    eprint = {https://www.biorxiv.org/content/early/2021/05/28/2021.05.28.446165.full.pdf},
-    journal = {bioRxiv}
+  @article {vallat2021open,
+    title={An open-source, high-performance tool for automated sleep staging},
+    author={Vallat, Raphael and Walker, Matthew P},
+    journal={Elife},
+    volume={10},
+    year={2021},
+    doi = {https://doi.org/10.7554/eLife.70092},
+    URL = {https://elifesciences.org/articles/70092},
+    publisher={eLife Sciences Publications, Ltd}
   }
 
 .. ----------------------------- END -----------------------------

@@ -20,9 +20,6 @@
 .. image:: https://pepy.tech/badge/yasa
     :target: https://pepy.tech/badge/yasa
 
-.. .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2370600.svg
-..    :target: https://doi.org/10.5281/zenodo.2370600
-
 ----------------
 
 .. figure::  /docs/pictures/yasa_logo.png
@@ -129,6 +126,6 @@ Note that this program is provided with NO WARRANTY OF ANY KIND.
 Citation
 ~~~~~~~~
 
-To cite YASA, please use the preprint publication:
+To cite YASA, please use the `eLife publication <https://elifesciences.org/articles/70092>`_:
 
-* Raphael Vallat and Matthew P. Walker (2021). *A universal, open-source, high-performance tool for automated sleep staging*. bioRxiv 2021.05.28.446165; doi: https://doi.org/10.1101/2021.05.28.446165
+* Vallat, Raphael, and Matthew P. Walker. "An open-source, high-performance tool for automated sleep staging." Elife 10 (2021). doi: https://doi.org/10.7554/eLife.70092

@@ -55,21 +55,20 @@ class SleepStaging:
     Notes
     -----
 
-    If you use the SleepStaging module in a publication, please cite the following preprint:
+    If you use the SleepStaging module in a publication, please cite the following publication:
 
-    * A universal, open-source, high-performance tool for automated sleep staging. Raphael Vallat,
-      Matthew P. Walker. bioRxiv 2021.05.28.446165; doi: https://doi.org/10.1101/2021.05.28.446165
+    * Vallat, R., & Walker, M. P. (2021). An open-source, high-performance tool for automated
+      sleep staging. Elife, 10. doi: https://doi.org/10.7554/eLife.70092
 
     We provide below some key points on the algorithm and its validation. For more details,
-    we refer the reader to the preprint article. If you have any questions,
+    we refer the reader to the peer-reviewed publication. If you have any questions,
     make sure to first check the
     `FAQ section <https://raphaelvallat.com/yasa/build/html/faq.html>`_ of the documentation.
     If you did not find the answer to your question, please feel free to open an issue on GitHub.
 
     **1. Features extraction**
 
-    For each 30-seconds epoch and each channel, the following features are
-    calculated:
+    For each 30-seconds epoch and each channel, the following features are calculated:
 
     * Standard deviation
     * Interquartile range
@@ -82,44 +81,40 @@ class SleepStaging:
     * Permutation entropy
     * Higuchi and Petrosian fractal dimension
 
-    In addition, the algorithm also calculates a smoothed and normalized
-    version of these features. Specifically, a 7.5 min centered
-    triangular-weighted rolling average and a 2 min past rolling average
-    are applied. The resulting smoothed features are then normalized using a
-    robust z-score.
+    In addition, the algorithm also calculates a smoothed and normalized version of these features.
+    Specifically, a 7.5 min centered triangular-weighted rolling average and a 2 min past rolling
+    average are applied. The resulting smoothed features are then normalized using a robust
+    z-score.
 
-    The data are automatically downsampled to 100 Hz for faster
-    computation.
+    .. important:: The PSG data should be in micro-Volts. Do NOT transform (e.g. z-score) or filter
+        the signal before running the sleep staging algorithm.
+
+    The data are automatically downsampled to 100 Hz for faster computation.
 
     **2. Sleep stages prediction**
 
-    YASA comes with a default set of pre-trained classifiers, which
-    were trained and validated on ~3000 nights from the
-    `National Sleep Research Resource <https://sleepdata.org/>`_. These nights
-    involved participants from a wide age range, of different ethnicities,
-    gender, and health status. The default classifiers should therefore works
-    reasonably well on most data.
+    YASA comes with a default set of pre-trained classifiers, which were trained and validated
+    on ~3000 nights from the `National Sleep Research Resource <https://sleepdata.org/>`_.
+    These nights involved participants from a wide age range, of different ethnicities, gender,
+    and health status. The default classifiers should therefore works reasonably well on most data.
 
     The code that was used to train the classifiers can be found on GitHub at:
     https://github.com/raphaelvallat/yasa_classifier
 
-    In addition with the predicted sleep stages, YASA can also return the
-    predicted probabilities of each sleep stage at each epoch. This can in turn
-    be used to derive a confidence score at each epoch.
+    In addition with the predicted sleep stages, YASA can also return the predicted probabilities
+    of each sleep stage at each epoch. This can be used to derive a confidence score at each epoch.
 
     .. important:: The predictions should ALWAYS be double-check by a trained
         visual scorer, especially for epochs with low confidence. A full
         inspection should be performed in the following cases:
 
-        * Nap data, because the classifiers were exclusively trained on
-          full-night recordings.
+        * Nap data, because the classifiers were exclusively trained on full-night recordings.
         * Participants with sleep disorders.
         * Sub-optimal PSG system and/or referencing
 
-    .. warning:: N1 sleep is the sleep stage with the lowest detection
-        accuracy. This is expected because N1 is also the stage with the lowest
-        human inter-rater agreement. Be very careful for potential
-        misclassification of N1 sleep (e.g. scored as Wake or N2) when
+    .. warning:: N1 sleep is the sleep stage with the lowest detection accuracy. This is expected
+        because N1 is also the stage with the lowest human inter-rater agreement. Be very
+        careful for potential misclassification of N1 sleep (e.g. scored as Wake or N2) when
         inspecting the predicted sleep stages.
 
     References
@@ -162,8 +157,7 @@ class SleepStaging:
     `FAQ <https://raphaelvallat.com/yasa/build/html/faq.html>`_.
     """
 
-    def __init__(self, raw, eeg_name, *, eog_name=None, emg_name=None,
-                 metadata=None):
+    def __init__(self, raw, eeg_name, *, eog_name=None, emg_name=None, metadata=None):
         # Type check
         assert isinstance(eeg_name, str)
         assert isinstance(eog_name, (str, type(None)))
@@ -173,8 +167,7 @@ class SleepStaging:
         # Validate metadata
         if isinstance(metadata, dict):
             if 'age' in metadata.keys():
-                assert 0 < metadata['age'] < 120, ('age must be between 0 and '
-                                                   '120.')
+                assert 0 < metadata['age'] < 120, 'age must be between 0 and 120.'
             if 'male' in metadata.keys():
                 metadata['male'] = int(metadata['male'])
                 assert metadata['male'] in [0, 1], 'male must be 0 or 1.'
@@ -250,8 +243,7 @@ class SleepStaging:
             # Preprocessing
             # - Filter the data
             dt_filt = filter_data(
-                self.data[i, :],
-                sf, l_freq=freq_broad[0], h_freq=freq_broad[1], verbose=False)
+                self.data[i, :], sf, l_freq=freq_broad[0], h_freq=freq_broad[1], verbose=False)
             # - Extract epochs. Data is now of shape (n_epochs, n_samples).
             times, epochs = sliding_window(dt_filt, sf=sf, window=30)
 
@@ -284,8 +276,7 @@ class SleepStaging:
                 feat['at'] = feat['alpha'] / feat['theta']
 
             # Add total power
-            idx_broad = np.logical_and(
-                freqs >= freq_broad[0], freqs <= freq_broad[1])
+            idx_broad = np.logical_and(freqs >= freq_broad[0], freqs <= freq_broad[1])
             dx = freqs[1] - freqs[0]
             feat['abspow'] = np.trapz(psd[:, idx_broad], dx=dx)
 
@@ -372,13 +363,11 @@ class SleepStaging:
         f_diff = np.setdiff1d(clf.feature_name_, self.feature_name_)
         if len(f_diff):
             raise ValueError("The following features are present in the "
-                             "classifier but not in the current features set:",
-                             f_diff)
+                             "classifier but not in the current features set:", f_diff)
         f_diff = np.setdiff1d(self.feature_name_, clf.feature_name_, )
         if len(f_diff):
             raise ValueError("The following features are present in the "
-                             "current feature set but not in the classifier:",
-                             f_diff)
+                             "current feature set but not in the classifier:", f_diff)
 
     def _load_model(self, path_to_model):
         """Load the relevant trained classifier."""
@@ -413,8 +402,8 @@ class SleepStaging:
         Parameters
         ----------
         path_to_model : str or "auto"
-            Full path to a trained LGBMClassifier, exported as a
-            joblib file. Can be "auto" to use YASA's default classifier.
+            Full path to a trained LGBMClassifier, exported as a joblib file. Can be "auto" to
+            use YASA's default classifier.
 
         Returns
         -------
@@ -436,8 +425,7 @@ class SleepStaging:
 
     def predict_proba(self, path_to_model="auto"):
         """
-        Return the predicted probability for each sleep stage for each 30-sec
-        epoch of data.
+        Return the predicted probability for each sleep stage for each 30-sec epoch of data.
 
         Currently, only classifiers that were trained using a
         `LGBMClassifier <https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html>`_
@@ -446,14 +434,13 @@ class SleepStaging:
         Parameters
         ----------
         path_to_model : str or "auto"
-            Full path to a trained LGBMClassifier, exported as a
-            joblib file. Can be "auto" to use YASA's default classifier.
+            Full path to a trained LGBMClassifier, exported as a joblib file. Can be "auto" to
+            use YASA's default classifier.
 
         Returns
         -------
         proba : :py:class:`pandas.DataFrame`
-            The predicted probability for each sleep stage for each 30-sec
-            epoch of data.
+            The predicted probability for each sleep stage for each 30-sec epoch of data.
         """
         if not hasattr(self, '_proba'):
             self.predict(path_to_model)
@@ -463,17 +450,14 @@ class SleepStaging:
                            palette=['#99d7f1', '#009DDC', 'xkcd:twilight blue',
                                     'xkcd:rich purple', 'xkcd:sunflower']):
         """
-        Plot the predicted probability for each sleep stage for each 30-sec
-        epoch of data.
+        Plot the predicted probability for each sleep stage for each 30-sec epoch of data.
 
         Parameters
         ----------
         proba : self or DataFrame
-            A dataframe with the probability of each sleep stage for each
-            30-sec epoch of data.
+            A dataframe with the probability of each sleep stage for each 30-sec epoch of data.
         majority_only : boolean
-            If True, probabilities of the non-majority classes will be set
-            to 0.
+            If True, probabilities of the non-majority classes will be set to 0.
         """
         if proba is None and not hasattr(self, '_features'):
             raise ValueError("Must call .predict_proba before this function")
@@ -484,8 +468,7 @@ class SleepStaging:
         if majority_only:
             cond = proba.apply(lambda x: x == x.max(), axis=1)
             proba = proba.where(cond, other=0)
-        ax = proba.plot(kind='area', color=palette, figsize=(10, 5), alpha=.8,
-                        stacked=True, lw=0)
+        ax = proba.plot(kind='area', color=palette, figsize=(10, 5), alpha=.8, stacked=True, lw=0)
         # Add confidence
         # confidence = proba.max(1)
         # ax.plot(confidence, lw=1, color='k', ls='-', alpha=0.5,
