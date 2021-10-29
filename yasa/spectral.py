@@ -23,37 +23,31 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
                      (12, 16, 'Sigma'), (16, 30, 'Beta'), (30, 40, 'Gamma')],
               kwargs_welch=dict(average='median', window='hamming')):
     """
-    Calculate the Welch bandpower for each channel and, if specified,
-    for each sleep stage.
+    Calculate the Welch bandpower for each channel and, if specified, for each sleep stage.
 
     .. versionadded:: 0.1.6
 
     Parameters
     ----------
     data : np.array_like or :py:class:`mne.io.BaseRaw`
-        1D or 2D EEG data. Can also be a :py:class:`mne.io.BaseRaw`, in which
-        case ``data``, ``sf``, and ``ch_names`` will be automatically
-        extracted, and ``data`` will also be converted from Volts (MNE default)
-        to micro-Volts (YASA).
+        1D or 2D EEG data. Can also be a :py:class:`mne.io.BaseRaw`, in which case ``data``,
+        ``sf``, and ``ch_names`` will be automatically extracted, and ``data`` will also be
+        converted from Volts (MNE default) to micro-Volts (YASA).
     sf : float
-        The sampling frequency of data AND the hypnogram.
-        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+        The sampling frequency of data AND the hypnogram. Can be omitted if ``data`` is a
+        :py:class:`mne.io.BaseRaw`.
     ch_names : list
-        List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None,
-        channels will be labelled ['CHAN000', 'CHAN001', ...].
-        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+        List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None, channels will be labelled
+        ['CHAN000', 'CHAN001', ...]. Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
     hypno : array_like
-        Sleep stage (hypnogram). If the hypnogram is loaded, the
-        bandpower will be extracted for each sleep stage defined in
-        ``include``.
+        Sleep stage (hypnogram). If the hypnogram is loaded, the bandpower will be extracted for
+        each sleep stage defined in ``include``.
 
-        The hypnogram must have the exact same number of samples as ``data``.
-        To upsample your hypnogram, please refer to
-        :py:func:`yasa.hypno_upsample_to_data`.
+        The hypnogram must have the exact same number of samples as ``data``. To upsample your
+        hypnogram, please refer to :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
-            The default hypnogram format in YASA is a 1D integer
-            vector where:
+            The default hypnogram format in YASA is a 1D integer vector where:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
@@ -63,35 +57,30 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
             - 3 = N3 sleep
             - 4 = REM sleep
     include : tuple, list or int
-        Values in ``hypno`` that will be included in the mask. The default is
-        (2, 3), meaning that the bandpower are sequentially calculated
-        for N2 and N3 sleep. This has no effect when ``hypno`` is None.
+        Values in ``hypno`` that will be included in the mask. The default is (2, 3), meaning that
+        the bandpower are sequentially calculated for N2 and N3 sleep. This has no effect when
+        ``hypno`` is None.
     win_sec : int or float
-        The length of the sliding window, in seconds, used for the Welch PSD
-        calculation. Ideally, this should be at least two times the inverse of
-        the lower frequency of interest (e.g. for a lower frequency of interest
-        of 0.5 Hz, the window length should be at least 2 * 1 / 0.5 =
-        4 seconds).
+        The length of the sliding window, in seconds, used for the Welch PSD calculation.
+        Ideally, this should be at least two times the inverse of the lower frequency of
+        interest (e.g. for a lower frequency of interest of 0.5 Hz, the window length should
+        be at least 2 * 1 / 0.5 = 4 seconds).
     relative : boolean
-        If True, bandpower is divided by the total power between the min and
-        max frequencies defined in ``band``.
+        If True, bandpower is divided by the total power between the min and max frequencies
+        defined in ``band``.
     bandpass : boolean
-        If True, apply a standard FIR bandpass filter using the minimum and
-        maximum frequencies in ``bands``. Fore more details, refer to
-        :py:func:`mne.filter.filter_data`.
+        If True, apply a standard FIR bandpass filter using the minimum and maximum frequencies
+        in ``bands``. Fore more details, refer to :py:func:`mne.filter.filter_data`.
     bands : list of tuples
-        List of frequency bands of interests. Each tuple must contain the
-        lower and upper frequencies, as well as the band name
-        (e.g. (0.5, 4, 'Delta')).
+        List of frequency bands of interests. Each tuple must contain the lower and upper
+        frequencies, as well as the band name (e.g. (0.5, 4, 'Delta')).
     kwargs_welch : dict
-        Optional keywords arguments that are passed to the
-        :py:func:`scipy.signal.welch` function.
+        Optional keywords arguments that are passed to the :py:func:`scipy.signal.welch` function.
 
     Returns
     -------
     bandpowers : :py:class:`pandas.DataFrame`
-        Bandpower dataframe, in which each row is a channel and each column
-        a spectral band.
+        Bandpower dataframe, in which each row is a channel and each column a spectral band.
 
     Notes
     -----
@@ -129,16 +118,15 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         # Apply FIR bandpass filter
         all_freqs = np.hstack([[b[0], b[1]] for b in bands])
         fmin, fmax = min(all_freqs), max(all_freqs)
-        data = mne.filter.filter_data(data.astype('float64'), sf, fmin, fmax,
-                                      verbose=0)
+        data = mne.filter.filter_data(data.astype('float64'), sf, fmin, fmax, verbose=0)
 
     win = int(win_sec * sf)  # nperseg
 
     if hypno is None:
         # Calculate the PSD over the whole data
         freqs, psd = signal.welch(data, sf, nperseg=win, **kwargs_welch)
-        return bandpower_from_psd(psd, freqs, ch_names, bands=bands,
-                                  relative=relative).set_index('Chan')
+        return bandpower_from_psd(
+            psd, freqs, ch_names, bands=bands, relative=relative).set_index('Chan')
     else:
         # Per each sleep stage defined in ``include``.
         hypno = np.asarray(hypno)
@@ -147,11 +135,9 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
         assert hypno.ndim == 1, 'Hypno must be a 1D array.'
         assert hypno.size == npts, 'Hypno must have same size as data.shape[1]'
         assert include.size >= 1, '`include` must have at least one element.'
-        assert hypno.dtype.kind == include.dtype.kind, ('hypno and include '
-                                                        'must have same dtype')
-        assert np.in1d(hypno, include).any(), ('None of the stages '
-                                               'specified in `include` '
-                                               'are present in hypno.')
+        assert hypno.dtype.kind == include.dtype.kind, 'hypno and include must have same dtype'
+        assert np.in1d(hypno, include).any(), (
+            'None of the stages specified in `include` are present in hypno.')
         # Initialize empty dataframe and loop over stages
         df_bp = pd.DataFrame([])
         for stage in include:
@@ -178,18 +164,16 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
     Parameters
     ----------
     psd : array_like
-        Power spectral density of data, in uV^2/Hz.
-        Must be of shape (n_channels, n_freqs).
+        Power spectral density of data, in uV^2/Hz. Must be of shape (n_channels, n_freqs).
         See :py:func:`scipy.signal.welch` for more details.
     freqs : array_like
         Array of frequencies.
     ch_names : list
-        List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None,
-        channels will be labelled ['CHAN000', 'CHAN001', ...].
+        List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None, channels will be labelled
+        ['CHAN000', 'CHAN001', ...].
     bands : list of tuples
-        List of frequency bands of interests. Each tuple must contain the
-        lower and upper frequencies, as well as the band name
-        (e.g. (0.5, 4, 'Delta')).
+        List of frequency bands of interests. Each tuple must contain the lower and upper
+        frequencies, as well as the band name (e.g. (0.5, 4, 'Delta')).
     relative : boolean
         If True, bandpower is divided by the total power between the min and
         max frequencies defined in ``band`` (default 0.5 to 40 Hz).
@@ -197,8 +181,7 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
     Returns
     -------
     bandpowers : :py:class:`pandas.DataFrame`
-        Bandpower dataframe, in which each row is a channel and each column
-        a spectral band.
+        Bandpower dataframe, in which each row is a channel and each column a spectral band.
     """
     # Type checks
     assert isinstance(bands, list), 'bands must be a list of tuple(s)'
@@ -266,26 +249,22 @@ def bandpower_from_psd_ndarray(psd, freqs, bands=[(0.5, 4, 'Delta'),
                                (30, 40, 'Gamma')], relative=True):
     """Compute bandpowers in N-dimensional PSD.
 
-    This is a NumPy-only implementation of the
-    :py:func:`yasa.bandpower_from_psd` function,
-    which supports 1-D arrays of shape (n_freqs),
-    or N-dimensional arays
-    (e.g. 2-D (n_chan, n_freqs) or 3-D (n_chan, n_epochs, n_freqs))
+    This is a NumPy-only implementation of the :py:func:`yasa.bandpower_from_psd` function,
+    which supports 1-D arrays of shape (n_freqs), or N-dimensional arays (e.g. 2-D (n_chan,
+    n_freqs) or 3-D (n_chan, n_epochs, n_freqs))
 
     .. versionadded:: 0.2.0
 
     Parameters
     ----------
     psd : :py:class:`numpy.ndarray`
-        Power spectral density of data, in uV^2/Hz.
-        Must be a N-D array of shape (..., n_freqs).
+        Power spectral density of data, in uV^2/Hz. Must be a N-D array of shape (..., n_freqs).
         See :py:func:`scipy.signal.welch` for more details.
     freqs : :py:class:`numpy.ndarray`
         Array of frequencies. Must be a 1-D array of shape (n_freqs,)
     bands : list of tuples
-        List of frequency bands of interests. Each tuple must contain the
-        lower and upper frequencies, as well as the band name
-        (e.g. (0.5, 4, 'Delta')).
+        List of frequency bands of interests. Each tuple must contain the lower and upper
+        frequencies, as well as the band name (e.g. (0.5, 4, 'Delta')).
     relative : boolean
         If True, bandpower is divided by the total power between the min and
         max frequencies defined in ``band`` (default 0.5 to 40 Hz).
@@ -442,22 +421,22 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
 
     For an example of how to use this function, please refer to
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_IRASA.ipynb
-    
+
     For an article discussing the challenges of using IRASA (or fooof) see [5].
 
     References
     ----------
     [1] Wen, H., & Liu, Z. (2016). Separating Fractal and Oscillatory
-    Components in the Power Spectrum of Neurophysiological Signal.
-    Brain Topography, 29(1), 13–26.
-    https://doi.org/10.1007/s10548-015-0448-0
+        Components in the Power Spectrum of Neurophysiological Signal.
+        Brain Topography, 29(1), 13–26.
+        https://doi.org/10.1007/s10548-015-0448-0
 
     [2] https://github.com/fieldtrip/fieldtrip/blob/master/specest/
 
     [3] https://github.com/fooof-tools/fooof
 
     [4] https://www.biorxiv.org/content/10.1101/299859v1
-    
+
     [5] https://doi.org/10.1101/2021.10.15.464483
     """
     import fractions
@@ -496,16 +475,14 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
     assert band[0] > 0, 'first element of band must be > 0.'
     assert band[1] < (sf / 2), 'second element of band must be < (sf / 2).'
     win = int(win_sec * sf)  # nperseg
-    
+
     # Inform about maximum resampled fitting range
     h_max = np.max(hset)
     band_evaluated = (band[0] / h_max, band[1] * h_max)
     freq_Nyq = sf / 2  # Nyquist frequency
     freq_Nyq_res = freq_Nyq / h_max  # minimum resampled Nyquist frequency
-    logging.info("Fitting range: "
-          f"{band[0]:.2f}Hz-{band[1]:.2f}Hz")
-    logging.info("Evaluated frequency range: "
-          f"{band_evaluated[0]:.2f}Hz-{band_evaluated[1]:.2f}Hz")
+    logging.info(f"Fitting range: {band[0]:.2f}Hz-{band[1]:.2f}Hz")
+    logging.info(f"Evaluated frequency range: {band_evaluated[0]:.2f}Hz-{band_evaluated[1]:.2f}Hz")
     if band_evaluated[0] < hp:
         logging.warning("The evaluated frequency range starts below the "
                         f"highpass filter ({hp:.2f}Hz). Increase the lower band"
@@ -522,7 +499,7 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
                         f"({freq_Nyq_res:.2f}Hz). Decrease the upper band "
                         f"({band[1]:.2f}Hz) or decrease the maximum value "
                         f"of the hset ({h_max:.2f}).")
-    
+
     # Calculate the original PSD over the whole data
     freqs, psd = signal.welch(data, sf, nperseg=win, **kwargs_welch)
 
@@ -537,10 +514,8 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
         data_up = signal.resample_poly(data, up, down, axis=-1)
         data_down = signal.resample_poly(data, down, up, axis=-1)
         # Calculate the PSD using same params as original
-        freqs_up, psd_up = signal.welch(data_up, h * sf, nperseg=win,
-                                        **kwargs_welch)
-        freqs_dw, psd_dw = signal.welch(data_down, sf / h, nperseg=win,
-                                        **kwargs_welch)
+        freqs_up, psd_up = signal.welch(data_up, h * sf, nperseg=win, **kwargs_welch)
+        freqs_dw, psd_dw = signal.welch(data_down, sf / h, nperseg=win, **kwargs_welch)
         # Geometric mean of h and 1/h
         psds[i, :] = np.sqrt(psd_up * psd_dw)
 
@@ -589,8 +564,7 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
         return freqs, psd_aperiodic, psd_osc
 
 
-def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
-               norm=False):
+def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True, norm=False):
     """Compute the pointwise power via STFT and interpolation.
 
     Parameters
@@ -600,8 +574,7 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
     sf : float
         Sampling frequency of the data.
     window : int
-        Window size in seconds for STFT.
-        2 or 4 seconds are usually a good default.
+        Window size in seconds for STFT. 2 or 4 seconds are usually a good default.
         Higher values = higher frequency resolution = lower time resolution.
     step : int
         Step in seconds for the STFT.
@@ -612,14 +585,13 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
 
         Higher values = higher precision = slower computation.
     band : tuple or None
-        Broad band frequency range.
-        Default is 1 to 30 Hz.
+        Broad band frequency range. Default is 1 to 30 Hz.
     interp : boolean
-        If True, a cubic interpolation is performed to ensure that the output
-        is the same size as the input (= pointwise power).
+        If True, a cubic interpolation is performed to ensure that the output is the same size as
+        the input (= pointwise power).
     norm : bool
-        If True, return bandwise normalized band power, i.e. for each time
-        point, the sum of power in all the frequency bins equals 1.
+        If True, return bandwise normalized band power, i.e. for each time point, the sum of power
+        in all the frequency bins equals 1.
 
     Returns
     -------
@@ -632,16 +604,13 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
 
     Notes
     -----
-    2D Interpolation is done using
-    :py:class:`scipy.interpolate.RectBivariateSpline`
-    which is much faster than :py:class:`scipy.interpolate.interp2d`
-    for a rectangular grid. The default is to use a bivariate spline with
-    3 degrees.
+    2D Interpolation is done using :py:class:`scipy.interpolate.RectBivariateSpline`
+    which is much faster than :py:class:`scipy.interpolate.interp2d` for a rectangular grid.
+    The default is to use a bivariate spline with 3 degrees.
     """
     # Safety check
     data = np.asarray(data)
     assert step <= window
-
     step = 1 / sf if step == 0 else step
 
     # Define STFT parameters
@@ -649,8 +618,8 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
     noverlap = int(nperseg - (step * sf))
 
     # Compute STFT and remove the last epoch
-    f, t, Sxx = signal.stft(data, sf, nperseg=nperseg, noverlap=noverlap,
-                            detrend=False, padded=True)
+    f, t, Sxx = signal.stft(
+        data, sf, nperseg=nperseg, noverlap=noverlap, detrend=False, padded=True)
 
     # Let's keep only the frequency of interest
     if band is not None:
@@ -658,15 +627,14 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True,
         f = f[idx_band]
         Sxx = Sxx[idx_band, :]
 
-    # Compute power
+    # Compute power and interpolate
     Sxx = np.square(np.abs(Sxx))
-
-    # Interpolate
     if interp:
         func = RectBivariateSpline(f, t, Sxx)
         t = np.arange(data.size) / sf
         Sxx = func(f, t)
 
+    # Normalize
     if norm:
         sum_pow = Sxx.sum(0).reshape(1, -1)
         np.divide(Sxx, sum_pow, out=Sxx)

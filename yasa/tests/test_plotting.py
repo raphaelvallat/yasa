@@ -1,4 +1,5 @@
 """Test the functions in the yasa/plotting.py file."""
+import pytest
 import unittest
 import numpy as np
 import pandas as pd
@@ -17,8 +18,7 @@ class TestPlotting(unittest.TestCase):
         _ = topoplot(data, title='My first topoplot')
         _ = topoplot(data, vmin=0, vmax=8, cbar_title='Hello')
         _ = topoplot(data, n_colors=10, vmin=0, cmap="Blues")
-        _ = topoplot(data, sensors='ko', res=64, names='values',
-                     show_names=True)
+        _ = topoplot(data, sensors='ko', res=64, names='values', show_names=True)
 
         data = pd.Series(
             [-4, -8, -7, -1, -2, -3],

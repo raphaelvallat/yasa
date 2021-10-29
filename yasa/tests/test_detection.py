@@ -38,14 +38,12 @@ data_sw = data_full[1, 666000:672000].astype(np.float64)
 hypno_sw = hypno_full[666000:672000]
 
 # MNE Raw
-data_mne = mne.io.read_raw_fif('notebooks/sub-02_mne_raw.fif', preload=True,
-                               verbose=0)
+data_mne = mne.io.read_raw_fif('notebooks/sub-02_mne_raw.fif', preload=True, verbose=0)
 data_mne.pick_types(eeg=True)
 data_mne_single = data_mne.copy().pick_channels(['F3'])
 hypno_mne = np.loadtxt('notebooks/sub-02_hypno_30s.txt', dtype=str)
 hypno_mne = hypno_str_to_int(hypno_mne)
-hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30),
-                                   data=data_mne)
+hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30), data=data_mne)
 
 
 class TestDetection(unittest.TestCase):
@@ -66,8 +64,7 @@ class TestDetection(unittest.TestCase):
         prod_args = product(freq_sp, freq_broad, duration, min_distance)
 
         for i, (s, b, d, m) in enumerate(prod_args):
-            spindles_detect(data, sf, freq_sp=s, duration=d,
-                            freq_broad=b, min_distance=m)
+            spindles_detect(data, sf, freq_sp=s, duration=d, freq_broad=b, min_distance=m)
 
         sp = spindles_detect(data, sf, verbose=True)
         assert sp.summary().shape[0] == 2
@@ -96,8 +93,7 @@ class TestDetection(unittest.TestCase):
         spindles_detect(data, sf, hypno=np.ones(data.size))
 
         # Single channel with Isolation Forest + hypnogram
-        sp = spindles_detect(data_full[1, :], sf, hypno=hypno_full,
-                             remove_outliers=True)
+        sp = spindles_detect(data_full[1, :], sf, hypno=hypno_full, remove_outliers=True)
 
         # Calculate the coincidence matrix with only one channel
         with pytest.raises(ValueError):
@@ -130,8 +126,7 @@ class TestDetection(unittest.TestCase):
 
         # No values in hypno intersect with include
         with pytest.raises(AssertionError):
-            sp = spindles_detect(data, sf, include=2,
-                                 hypno=np.zeros(data.size, dtype=int))
+            sp = spindles_detect(data, sf, include=2, hypno=np.zeros(data.size, dtype=int))
 
         #######################################################################
         # MULTI CHANNEL
@@ -168,9 +163,7 @@ class TestDetection(unittest.TestCase):
 
         # Using a MNE raw object (and disabling one threshold)
         spindles_detect(data_mne, thresh={'corr': None, 'rms': 3})
-        spindles_detect(data_mne, hypno=hypno_mne, include=2,
-                        verbose=True)
-
+        spindles_detect(data_mne, hypno=hypno_mne, include=2, verbose=True)
         plt.close('all')
 
     def test_sw_detect(self):
@@ -183,14 +176,13 @@ class TestDetection(unittest.TestCase):
         amp_neg = [(40, 300), [40, None]]
         amp_pos = [(10, 150), (0, None)]
         amp_ptp = [(75, 400), [80, 300]]
-        prod_args = product(freq_sw, dur_neg, dur_pos, amp_neg, amp_pos,
-                            amp_ptp)
+        prod_args = product(freq_sw, dur_neg, dur_pos, amp_neg, amp_pos, amp_ptp)
 
         for i, (f, dn, dp, an, ap, aptp) in enumerate(prod_args):
             # print((f, dn, dp, an, ap, aptp))
-            sw_detect(data_sw, sf, freq_sw=f, dur_neg=dn,
-                      dur_pos=dp, amp_neg=an, amp_pos=ap,
-                      amp_ptp=aptp)
+            sw_detect(
+                data_sw, sf, freq_sw=f, dur_neg=dn, dur_pos=dp, amp_neg=an, amp_pos=ap,
+                amp_ptp=aptp)
 
         # With N3 hypnogram
         sw = sw_detect(data_sw, sf, hypno=hypno_sw, coupling=True)
@@ -213,8 +205,7 @@ class TestDetection(unittest.TestCase):
 
         # No values in hypno intersect with include
         with pytest.raises(AssertionError):
-            sw = sw_detect(data_sw, sf, include=3,
-                           hypno=np.ones(data_sw.shape, dtype=int))
+            sw = sw_detect(data_sw, sf, include=3, hypno=np.ones(data_sw.shape, dtype=int))
 
         #######################################################################
         # MULTI CHANNEL
@@ -228,12 +219,11 @@ class TestDetection(unittest.TestCase):
         sw.get_coincidence_matrix()
         sw.get_coincidence_matrix(scaled=False)
 
-        sw_no_out = sw_detect(data_full, sf, chan_full,
-                              remove_outliers=True)
+        sw_no_out = sw_detect(data_full, sf, chan_full, remove_outliers=True)
         assert sw_no_out._events.shape[0] < sw._events.shape[0]
 
         # Test with hypnogram
-        sw = sw_detect(data_full, sf, chan_full, hypno=hypno_full)
+        sw = sw_detect(data_full, sf, chan_full, hypno=hypno_full, coupling=True)
         sw.summary(grp_chan=False, grp_stage=False)
         sw.summary(grp_chan=False, grp_stage=True, aggfunc='median')
         sw.summary(grp_chan=True, grp_stage=False)
@@ -264,8 +254,7 @@ class TestDetection(unittest.TestCase):
         prod_args = product(freq_rem, duration, amplitude, hypno)
 
         for i, (f, dr, am, h) in enumerate(prod_args):
-            rem_detect(loc, roc, sf_rem, hypno=h, freq_rem=f, duration=dr,
-                       amplitude=am)
+            rem_detect(loc, roc, sf_rem, hypno=h, freq_rem=f, duration=dr, amplitude=am)
 
         # With isolation forest
         rem = rem_detect(loc, roc, sf, verbose='info')
@@ -280,8 +269,7 @@ class TestDetection(unittest.TestCase):
         # With REM hypnogram
         hypno_rem = 4 * np.ones_like(loc)
         rem = rem_detect(loc, roc, sf, hypno=hypno_rem)
-        hypno_rem = np.r_[np.ones(int(loc.size / 2)),
-                          4 * np.ones(int(loc.size / 2))]
+        hypno_rem = np.r_[np.ones(int(loc.size / 2)), 4 * np.ones(int(loc.size / 2))]
         rem2 = rem_detect(loc, roc, sf, hypno=hypno_rem)
         assert rem.summary().shape[0] > rem2.summary().shape[0]
         rem2.summary(grp_stage=True, aggfunc='median')
@@ -307,8 +295,7 @@ class TestDetection(unittest.TestCase):
         data_9 = file_9.get('data')
         hypno_9 = np.load('notebooks/data_full_6hrs_100Hz_hypno.npz').get('hypno')  # noqa
         # For the sake of the example, let's add some flat data at the end
-        data_9 = np.concatenate((data_9, np.zeros((data_9.shape[0], 20000))),
-                                axis=1)
+        data_9 = np.concatenate((data_9, np.zeros((data_9.shape[0], 20000))), axis=1)
         hypno_9 = np.concatenate((hypno_9, np.zeros(20000)))
 
         # Start different combinations
@@ -334,8 +321,7 @@ class TestDetection(unittest.TestCase):
         art_detect(data_with_flat, sf, method='std', n_chan_reject=5)
 
         # Using a MNE raw object
-        art_detect(data_mne, window=10., hypno=hypno_mne, method='covar',
-                   verbose='INFO')
+        art_detect(data_mne, window=10., hypno=hypno_mne, method='covar', verbose='INFO')
 
         with pytest.raises(AssertionError):
             # None of include in hypno

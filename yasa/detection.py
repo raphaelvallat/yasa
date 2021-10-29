@@ -1490,7 +1490,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
         if coupling:
             # Get phase and amplitude for each centered epoch
             time_before = time_after = coupling_params['time']
-            assert (sf * time_before).is_integer(), (
+            assert float(sf * time_before).is_integer(), (
                 "Invalid time parameter for coupling. Must be a whole number of samples.")
             bef = int(sf * time_before)
             aft = int(sf * time_after)
