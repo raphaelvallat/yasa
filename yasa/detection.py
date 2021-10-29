@@ -1096,8 +1096,8 @@ class SpindlesResults(_DetectionResults):
 
 
 def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=(0.3, 1.5),
-              dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 300), amp_pos=(10, 200),
-              amp_ptp=(75, 500), coupling=False, freq_sp=(12, 16), remove_outliers=False,
+              dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 200), amp_pos=(10, 150),
+              amp_ptp=(75, 350), coupling=False, freq_sp=(12, 16), remove_outliers=False,
               verbose=False):
     """Slow-waves detection.
 
@@ -1155,19 +1155,19 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
         slow wave. Default is 0.1 to 1 second.
     amp_neg : tuple or list
         Absolute minimum and maximum negative trough amplitude of the
-        slow-wave. Default is 40 uV to 300 uV. Can also be in unit of standard
+        slow-wave. Default is 40 uV to 200 uV. Can also be in unit of standard
         deviations if the data has been previously z-scored. If you do not want
         to specify any negative amplitude thresholds,
         use ``amp_neg=(None, None)``.
     amp_pos : tuple or list
         Absolute minimum and maximum positive peak amplitude of the
-        slow-wave. Default is 10 uV to 200 uV. Can also be in unit of standard
+        slow-wave. Default is 10 uV to 150 uV. Can also be in unit of standard
         deviations if the data has been previously z-scored.
         If you do not want to specify any positive amplitude thresholds,
         use ``amp_pos=(None, None)``.
     amp_ptp : tuple or list
         Minimum and maximum peak-to-peak amplitude of the slow-wave.
-        Default is 75 uV to 500 uV. Can also be in unit of standard
+        Default is 75 uV to 350 uV. Can also be in unit of standard
         deviations if the data has been previously z-scored.
         Use ``np.inf`` to set no upper amplitude threshold
         (e.g. ``amp_ptp=(75, np.inf)``).

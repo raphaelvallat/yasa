@@ -31,6 +31,8 @@ IMPORTANT - The default behavior of ``coupling=True`` in :py:func:`yasa.sw_detec
 
 **Events detection**
 
+* Use more conservative amplitude thresholds in :py:func:`yasa.sw_detect`: the max PTP amplitude has been reduced from 500 to 350 uV, the max negative amplitude has been reduced from 300 to 200 uV, and the max positive amplitude has been reduced from 200 to 150 uV.
+
 * Added :py:meth:`yasa.SWResults.find_cooccurring_spindles` to detect whether each slow-wave co-occurr with a sleep spindle.
 
 * Added the ``as_dataframe`` parameter in :py:meth:`yasa.SWResults.get_sync_events` and :py:meth:`yasa.SpindlesResults.get_sync_events`. If set to False, YASA will return the peak-locked data as a list (n_channels) of numpy arrays (n_events, n_times). This facilitates any analyses that requires access to event-locked data (e.g. time-frequency plot, or comodulogram).
