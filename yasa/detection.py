@@ -168,7 +168,24 @@ class _DetectionResults(object):
             if 'PhaseAtSigmaPeak' in self._events:
                 from scipy.stats import circmean
                 aggdict['PhaseAtSigmaPeak'] = lambda x: circmean(x, low=-np.pi, high=np.pi)
-                aggdict['ndPAC'] = aggfunc
+
+                def mean_nonzero(x):
+                    """Mean (or aggfunc) of non-zero / non-missing elements.
+
+                    >>> x = pd.Series([np.nan, 2, 3, 0, 1, 0])
+                    >>> mean_nonzero(x) == 2
+                    """
+                    return x[x > 0].agg(aggfunc)
+
+                def prop_nonzero(x):
+                    """Proportion of non-zero / non-missing elements.
+
+                    >>> x = pd.Series([np.nan, 2, 3, 0, 1, 0])
+                    >>> prop_nonzero(x) == 0.5
+                    """
+                    return x[x > 0].count() / x.size
+
+                aggdict['ndPAC'] = [mean_nonzero, prop_nonzero]
 
             if "CooccurringSpindle" in self._events:
                 aggdict["CooccurringSpindle"] = aggfunc
@@ -186,6 +203,10 @@ class _DetectionResults(object):
 
         # Apply grouping, after masking
         df_grp = self._events.loc[mask, :].groupby(grouper, sort=sort, as_index=False).agg(aggdict)
+        if df_grp.columns.nlevels > 1:
+            # Flatten the two agg functions for ndPAC
+            df_grp.columns = df_grp.columns.get_level_values(0)
+            df_grp.columns = [*df_grp.columns[:-1], 'PropCoupled']
         df_grp = df_grp.rename(columns={'Start': 'Count'})
 
         # Calculate density (= number per min of each stage)
@@ -1157,7 +1178,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
         output dataframe:
 
         1. ``'SigmaPeak'``: The location (in seconds) of the maximum sigma peak
-           amplitude within a 4-seconds epoch centered around the negative peak
+           amplitude within a 2-seconds epoch centered around the negative peak
            (through) of the current slow-wave.
 
         2. ``PhaseAtSigmaPeak``: the phase of the bandpas-filtered slow-wave
@@ -1174,7 +1195,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
                vector_length = pg.circ_r(sw['PhaseAtSigmaPeak'])
 
         3. ``ndPAC``: the normalized Mean Vector Length (also called the normalized direct PAC,
-           or ndPAC) within a 4-sec epoch centered around the negative peak of the slow-wave.
+           or ndPAC) within a 2-sec epoch centered around the negative peak of the slow-wave.
 
         The lower and upper frequencies for the slow-waves and spindles-related sigma signals are
         defined in ``freq_sw`` and ``freq_sp``, respectively.
@@ -1241,11 +1262,11 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
     * ``'Slope'``: Slope between ``NegPeak`` and ``MidCrossing`` (in uV/sec, calculated on the
       ``freq_sw`` bandpass-filtered signal)
     * ``'Frequency'``: Frequency of the slow-wave (= 1 / ``Duration``)
-    * ``'SigmaPeak'``: Location of the sigma peak amplitude within a 4-sec epoch centered around
+    * ``'SigmaPeak'``: Location of the sigma peak amplitude within a 2-sec epoch centered around
       the negative peak of the slow-wave. This is only calculated when ``coupling=True``.
-    * ``'PhaseAtSigmaPeak'``: SW phase at max sigma amplitude within a 4-sec epoch centered around
+    * ``'PhaseAtSigmaPeak'``: SW phase at max sigma amplitude within a 2-sec epoch centered around
       the negative peak of the slow-wave. This is only calculated when ``coupling=True``
-    * ``'ndPAC'``: Normalized direct PAC within a 4-sec epoch centered around the negative peak
+    * ``'ndPAC'``: Normalized direct PAC within a 2-sec epoch centered around the negative peak
       of the slow-wave. This is only calculated when ``coupling=True``
     * ``'Stage'``: Sleep stage (only if hypno was provided)
 
@@ -1458,11 +1479,11 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
         })
 
         # Add phase (in radians) of slow-oscillation signal at maximum
-        # spindles-related sigma amplitude within a 4-seconds centered epochs.
+        # spindles-related sigma amplitude within a XX-seconds centered epochs.
         if coupling:
             # Get phase and amplitude for each centered epoch
             # TODO: allow user-specified window size.
-            time_before = time_after = 2
+            time_before = time_after = 1
             bef = int(sf * time_before)
             aft = int(sf * time_after)
             # Center of each epoch is defined as the negative peak of the SW
@@ -1489,8 +1510,9 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
             pha_at_max = np.squeeze(np.take_along_axis(sw_pha_ev, idx_max_amp[..., None], axis=1))
             sw_params['PhaseAtSigmaPeak'] = np.ones(n_peaks) * np.nan
             sw_params['PhaseAtSigmaPeak'][idx_valid] = pha_at_max
-            # 3) Normalized Direct PAC, without thresholding
-            ndp = np.squeeze(tpm.norm_direct_pac(sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=1))
+            # 3) Normalized Direct PAC, with thresholding
+            # Unreliable values are set to 0
+            ndp = np.squeeze(tpm.norm_direct_pac(sw_pha_ev[None, ...], sp_amp_ev[None, ...]))
             sw_params['ndPAC'] = np.ones(n_peaks) * np.nan
             sw_params['ndPAC'][idx_valid] = ndp
             # Make sure that Stage is the last column of the dataframe
