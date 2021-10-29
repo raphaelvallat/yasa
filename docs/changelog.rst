@@ -6,6 +6,8 @@ What's new
 .. contents:: Table of Contents
     :depth: 2
 
+----------------------------------------------------------------------------------------
+
 v0.5.2 (dev)
 ------------
 
@@ -43,12 +45,16 @@ IMPORTANT - The default behavior of ``coupling=True`` in :py:func:`yasa.sw_detec
 
 * Added the ``mask`` parameter in :py:meth:`yasa.REMResults.summary`, :py:meth:`yasa.REMResults.get_sync_events`, and :py:meth:`yasa.REMResults.plot_average`.
 
+**Others**
+
+* :py:func:`yasa.irasa` now informs about the maximum resampled fitting range, and raises a warning if parameters/frequencies are ill-specified. See `PR42 <https://github.com/raphaelvallat/yasa/pull/42>`_ and associated paper: https://doi.org/10.1101/2021.10.15.464483
+
+----------------------------------------------------------------------------------------
 
 v0.5.1 (August 2021)
 --------------------
 
 This is a bugfix release. The latest pre-trained classifiers for :py:class:`yasa.SleepStaging` were accidentally missing from the previous release. They have now been included in this release.
-
 
 v0.5.0 (August 2021)
 --------------------
