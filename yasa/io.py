@@ -3,9 +3,8 @@
 import logging
 
 
-LOGGING_TYPES = dict(DEBUG=logging.DEBUG, INFO=logging.INFO,
-                     WARNING=logging.WARNING, ERROR=logging.ERROR,
-                     CRITICAL=logging.CRITICAL)
+LOGGING_TYPES = dict(DEBUG=logging.DEBUG, INFO=logging.INFO, WARNING=logging.WARNING,
+                     ERROR=logging.ERROR, CRITICAL=logging.CRITICAL)
 
 
 def set_log_level(verbose=None):
@@ -29,8 +28,7 @@ def set_log_level(verbose=None):
             verbose = LOGGING_TYPES[verbose]
             logger.setLevel(verbose)
         else:
-            raise ValueError("verbose must be in "
-                             "%s" % ', '.join(LOGGING_TYPES))
+            raise ValueError("verbose must be in %s" % ', '.join(LOGGING_TYPES))
 
 
 def is_tensorpac_installed():
@@ -38,8 +36,7 @@ def is_tensorpac_installed():
     try:
         import tensorpac  # noqa
     except IOError:  # pragma: no cover
-        raise IOError("tensorpac needs to be installed. Please use `pip "
-                      "install tensorpac -U`.")
+        raise IOError("tensorpac needs to be installed. Please use `pip install tensorpac -U`.")
 
 
 def is_pyriemann_installed():
@@ -47,5 +44,4 @@ def is_pyriemann_installed():
     try:
         import pyriemann  # noqa
     except IOError:  # pragma: no cover
-        raise IOError("pyRiemann needs to be installed. Please use `pip "
-                      "install pyriemann -U`.")
+        raise IOError("pyRiemann needs to be installed. Please use `pip install pyriemann -U`.")

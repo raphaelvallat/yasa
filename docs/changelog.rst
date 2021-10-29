@@ -49,6 +49,8 @@ IMPORTANT - The default behavior of ``coupling=True`` in :py:func:`yasa.sw_detec
 
 * :py:func:`yasa.irasa` now informs about the maximum resampled fitting range, and raises a warning if parameters/frequencies are ill-specified. See `PR42 <https://github.com/raphaelvallat/yasa/pull/42>`_ and associated paper: https://doi.org/10.1101/2021.10.15.464483
 
+* Added a ``verbose`` parameter to :py:func:`hypno_upsample_to_data` and :py:func:`yasa.irasa`.
+
 ----------------------------------------------------------------------------------------
 
 v0.5.1 (August 2021)

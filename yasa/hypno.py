@@ -31,6 +31,7 @@ import mne
 import logging
 import numpy as np
 import pandas as pd
+from .io import set_log_level
 
 __all__ = ['hypno_str_to_int', 'hypno_int_to_str', 'hypno_upsample_to_sf',
            'hypno_upsample_to_data', 'load_profusion_hypno']
@@ -58,8 +59,8 @@ def hypno_str_to_int(hypno, mapping_dict={'w': 0, 'wake': 0, 'n1': 1, 's1': 1,
     hypno : array_like
         The sleep staging (hypnogram) 1D array.
     mapping_dict : dict
-        The mapping dictionnary, in lowercase. Note that this function is
-        essentially a wrapper around :py:meth:`pandas.Series.map`.
+        The mapping dictionnary, in lowercase. Note that this function is essentially a wrapper
+        around :py:meth:`pandas.Series.map`.
 
     Returns
     --------
@@ -85,8 +86,8 @@ def hypno_int_to_str(hypno, mapping_dict={0: 'W', 1: 'N1', 2: 'N2', 3: 'N3',
     hypno : array_like
         The sleep staging (hypnogram) 1D array.
     mapping_dict : dict
-        The mapping dictionnary. Note that this function is
-        essentially a wrapper around :py:meth:`pandas.Series.map`.
+        The mapping dictionnary. Note that this function is essentially a wrapper around
+        :py:meth:`pandas.Series.map`.
 
     Returns
     --------
@@ -117,8 +118,7 @@ def hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
         * 1/30 = 1 value per each 30 seconds of EEG data,
         * 1 = 1 value per second of EEG data
     sf_data : float
-        The desired sampling frequency of the hypnogram, in Hz
-        (e.g. 100 Hz, 256 Hz, ...)
+        The desired sampling frequency of the hypnogram, in Hz (e.g. 100 Hz, 256 Hz, ...)
 
     Returns
     -------
@@ -144,8 +144,8 @@ def hypno_fit_to_data(hypno, data, sf=None):
     hypno : array_like
         The sleep staging (hypnogram) 1D array.
     data : np.array_like or mne.io.Raw
-        1D or 2D EEG data. Can also be a MNE Raw object, in which case data and
-        sf will be automatically extracted.
+        1D or 2D EEG data. Can also be a MNE Raw object, in which case data and sf will be
+        automatically extracted.
     sf : float, optional
         The sampling frequency of data AND the hypnogram.
 
@@ -169,12 +169,10 @@ def hypno_fit_to_data(hypno, data, sf=None):
         if sf is not None:
             dur_diff = npts_diff / sf
             logger.warning('Hypnogram is SHORTER than data by %.2f seconds. '
-                           'Padding hypnogram with last value to match '
-                           'data.size.' % dur_diff)
+                           'Padding hypnogram with last value to match data.size.' % dur_diff)
         else:
             logger.warning('Hypnogram is SHORTER than data by %i samples. '
-                           'Padding hypnogram with last value to match '
-                           'data.size.' % npts_diff)
+                           'Padding hypnogram with last value to match data.size.' % npts_diff)
         hypno = np.pad(hypno, (0, npts_diff), mode='edge')
     elif npts_hyp > npts_data:
         # Hypnogram is longer than data
@@ -182,17 +180,15 @@ def hypno_fit_to_data(hypno, data, sf=None):
         if sf is not None:
             dur_diff = npts_diff / sf
             logger.warning('Hypnogram is LONGER than data by %.2f seconds. '
-                           'Cropping hypnogram to match data.size.' %
-                           dur_diff)
+                           'Cropping hypnogram to match data.size.' % dur_diff)
         else:
             logger.warning('Hypnogram is LONGER than data by %i samples. '
-                           'Cropping hypnogram to match data.size.' %
-                           npts_diff)
+                           'Cropping hypnogram to match data.size.' % npts_diff)
         hypno = hypno[0:npts_data]
     return hypno
 
 
-def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None):
+def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=True):
     """Upsample an hypnogram to a given sampling frequency and fit the
     resulting hypnogram to corresponding EEG data, such that the hypnogram
     and EEG data have the exact same number of samples.
@@ -214,24 +210,29 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None):
     sf_data : float
         The sampling frequency of ``data``, in Hz (e.g. 100 Hz, 256 Hz, ...).
         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+    verbose : bool or str
+        Verbose level. Default (False) will only print warning and error
+        messages. The logging levels are 'debug', 'info', 'warning', 'error',
+        and 'critical'. For most users the choice is between 'info'
+        (or ``verbose=True``) and warning (``verbose=False``).
 
     Returns
     -------
     hypno : array_like
-        The hypnogram, upsampled to ``sf_data`` and cropped/padded to
-        ``max(data.shape)``.
+        The hypnogram, upsampled to ``sf_data`` and cropped/padded to ``max(data.shape)``.
 
     Warns
     -----
     UserWarning
         If the upsampled ``hypno`` is shorter / longer than ``max(data.shape)``
-        and therefore needs to be padded/cropped respectively.
+        and therefore needs to be padded/cropped respectively. This output can be disabled by
+        passing ``verbose='ERROR'``.
     """
+    set_log_level(verbose)
     if isinstance(data, mne.io.BaseRaw):
         sf_data = data.info['sfreq']
         data = data.times
-    hypno_up = hypno_upsample_to_sf(hypno=hypno, sf_hypno=sf_hypno,
-                                    sf_data=sf_data)
+    hypno_up = hypno_upsample_to_sf(hypno=hypno, sf_hypno=sf_hypno, sf_data=sf_data)
     return hypno_fit_to_data(hypno=hypno_up, data=data, sf=sf_data)
 
 
