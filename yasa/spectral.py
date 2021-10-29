@@ -9,6 +9,7 @@ import pandas as pd
 from scipy import signal
 from scipy.integrate import simps
 from scipy.interpolate import RectBivariateSpline
+from .io import set_log_level
 
 logger = logging.getLogger('yasa')
 
@@ -346,7 +347,8 @@ def bandpower_from_psd_ndarray(psd, freqs, bands=[(0.5, 4, 'Delta'),
 def irasa(data, sf=None, ch_names=None, band=(1, 30),
           hset=[1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4, 1.45, 1.5, 1.55, 1.6,
           1.65, 1.7, 1.75, 1.8, 1.85, 1.9], return_fit=True, win_sec=4,
-          kwargs_welch=dict(average='median', window='hamming')):
+          kwargs_welch=dict(average='median', window='hamming'),
+          verbose=True):
     r"""
     Separate the aperiodic (= fractal, or 1/f) and oscillatory component
     of the power spectra of EEG data using the IRASA method.
@@ -394,6 +396,11 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
     kwargs_welch : dict
         Optional keywords arguments that are passed to the
         :py:func:`scipy.signal.welch` function.
+    verbose : bool or str
+        Verbose level. Default (False) will only print warning and error
+        messages. The logging levels are 'debug', 'info', 'warning', 'error',
+        and 'critical'. For most users the choice is between 'info'
+        (or ``verbose=True``) and warning (``verbose=False``).
 
     Returns
     -------
@@ -435,6 +442,8 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
 
     For an example of how to use this function, please refer to
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_IRASA.ipynb
+    
+    For an article discussing the challenges of using IRASA (or fooof) see [5].
 
     References
     ----------
@@ -448,12 +457,17 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
     [3] https://github.com/fooof-tools/fooof
 
     [4] https://www.biorxiv.org/content/10.1101/299859v1
+    
+    [5] https://doi.org/10.1101/2021.10.15.464483
     """
     import fractions
+    set_log_level(verbose)
     # Check if input data is a MNE Raw object
     if isinstance(data, mne.io.BaseRaw):
         sf = data.info['sfreq']  # Extract sampling frequency
         ch_names = data.ch_names  # Extract channel names
+        hp = data.info['highpass']  # Extract highpass filter
+        lp = data.info['lowpass']  # Extract lowpass filter
         data = data.get_data() * 1e6  # Convert from V to uV
     else:
         # Safety checks
@@ -470,6 +484,8 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
             ch_names = np.atleast_1d(np.asarray(ch_names, dtype=str))
             assert ch_names.ndim == 1, 'ch_names must be 1D.'
             assert len(ch_names) == nchan, 'ch_names must match data.shape[0].'
+        hp = 0  # Highpass filter unknown -> set to 0 Hz
+        lp = sf / 2  # Lowpass filter unknown -> set to Nyquist
 
     # Check the other arguments
     hset = np.asarray(hset)
@@ -480,7 +496,33 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
     assert band[0] > 0, 'first element of band must be > 0.'
     assert band[1] < (sf / 2), 'second element of band must be < (sf / 2).'
     win = int(win_sec * sf)  # nperseg
-
+    
+    # Inform about maximum resampled fitting range
+    h_max = np.max(hset)
+    band_evaluated = (band[0] / h_max, band[1] * h_max)
+    freq_Nyq = sf / 2  # Nyquist frequency
+    freq_Nyq_res = freq_Nyq / h_max  # minimum resampled Nyquist frequency
+    logging.info("Fitting range: "
+          f"{band[0]:.2f}Hz-{band[1]:.2f}Hz")
+    logging.info("Evaluated frequency range: "
+          f"{band_evaluated[0]:.2f}Hz-{band_evaluated[1]:.2f}Hz")
+    if band_evaluated[0] < hp:
+        logging.warning("The evaluated frequency range starts below the "
+                        f"highpass filter ({hp:.2f}Hz). Increase the lower band"
+                        f" ({band[0]:.2f}Hz) or decrease the maximum value of "
+                        f"the hset ({h_max:.2f}).")
+    if band_evaluated[1] > lp and lp < freq_Nyq_res:
+        logging.warning("The evaluated frequency range ends after the "
+                        f"lowpass filter ({lp:.2f}Hz). Decrease the upper band"
+                        f" ({band[1]:.2f}Hz) or decrease the maximum value of "
+                        f"the hset ({h_max:.2f}).")
+    if band_evaluated[1] > freq_Nyq_res:
+        logging.warning("The evaluated frequency range ends after the "
+                        "resampled Nyquist frequency "
+                        f"({freq_Nyq_res:.2f}Hz). Decrease the upper band "
+                        f"({band[1]:.2f}Hz) or decrease the maximum value "
+                        f"of the hset ({h_max:.2f}).")
+    
     # Calculate the original PSD over the whole data
     freqs, psd = signal.welch(data, sf, nperseg=win, **kwargs_welch)
 
