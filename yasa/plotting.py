@@ -112,8 +112,7 @@ def plot_hypnogram(hypno, sf_hypno=1/30, lw=1.5, figsize=(9, 3)):
 def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
                      trimperc=2.5, cmap='RdBu_r'):
     """
-    Plot a full-night multi-taper spectrogram, optionally with the hypnogram
-    on top.
+    Plot a full-night multi-taper spectrogram, optionally with the hypnogram on top.
 
     For more details, please refer to the `Jupyter notebook
     <https://github.com/raphaelvallat/yasa/blob/master/notebooks/10_spectrogram.ipynb>`_
@@ -130,8 +129,7 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
         Sleep stage (hypnogram), optional.
 
         The hypnogram must have the exact same number of samples as ``data``.
-        To upsample your hypnogram, please refer to
-        :py:func:`yasa.hypno_upsample_to_data`.
+        To upsample your hypnogram, please refer to :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
             The default hypnogram format in YASA is a 1D integer
@@ -158,7 +156,6 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
         are defined as the 2.5 and 97.5 percentiles of the spectrogram.
     cmap : str
         Colormap. Default to 'RdBu_r'.
-
 
     Returns
     -------
@@ -232,8 +229,7 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
 
     if hypno is None:
         fig, ax = plt.subplots(nrows=1, figsize=(12, 4))
-        im = ax.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True,
-                           shading="auto")
+        im = ax.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True, shading="auto")
         ax.set_xlim(0, t.max())
         ax.set_ylabel('Frequency [Hz]')
         ax.set_xlabel('Time [hrs]')
@@ -248,12 +244,11 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
         assert hypno.size == data.size, 'Hypno must have the same sf as data.'
         t_hyp = np.arange(hypno.size) / (sf * 3600)
         # Make sure that REM is displayed after Wake
-        hypno = pd.Series(hypno).map({-2: -2, -1: -1, 0: 0, 1: 2,
-                                      2: 3, 3: 4, 4: 1}).values
+        hypno = pd.Series(hypno).map({-2: -2, -1: -1, 0: 0, 1: 2, 2: 3, 3: 4, 4: 1}).values
         hypno_rem = np.ma.masked_not_equal(hypno, 1)
 
-        fig, (ax0, ax1) = plt.subplots(nrows=2, figsize=(12, 6),
-                                       gridspec_kw={'height_ratios': [1, 2]})
+        fig, (ax0, ax1) = plt.subplots(
+            nrows=2, figsize=(12, 6), gridspec_kw={'height_ratios': [1, 2]})
         plt.subplots_adjust(hspace=0.1)
 
         # Hypnogram (top axis)
@@ -287,8 +282,7 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
         ax0.spines['top'].set_visible(False)
 
         # Spectrogram (bottom axis)
-        im = ax1.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True,
-                            shading="auto")
+        im = ax1.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True, shading="auto")
         ax1.set_xlim(0, t.max())
         ax1.set_ylabel('Frequency [Hz]')
         ax1.set_xlabel('Time [hrs]')
@@ -298,9 +292,9 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
         return fig
 
 
-def topoplot(data, montage="standard_1020", vmin=None, vmax=None, mask=None,
-             title=None, cmap=None, n_colors=100, cbar_title=None,
-             cbar_ticks=None, figsize=(4, 4), dpi=80, fontsize=14, **kwargs):
+def topoplot(data, montage="standard_1020", vmin=None, vmax=None, mask=None, title=None,
+             cmap=None, n_colors=100, cbar_title=None, cbar_ticks=None, figsize=(4, 4), dpi=80,
+             fontsize=14, **kwargs):
     """
     Topoplot.
 

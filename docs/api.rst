@@ -35,6 +35,7 @@ Hypnogram & sleep statistics
     hypno_str_to_int
     hypno_int_to_str
     load_profusion_hypno
+    plot_hypnogram
     plot_spectrogram
     transition_matrix
     sleep_statistics
