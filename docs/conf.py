@@ -118,7 +118,8 @@ html_theme_options = {
     'bootstrap_version': "3",
     'navbar_class': "navbar",
     'navbar_links': [
-        ("Functions", "api"),
+        ("API", "api"),
+        ("Quickstart", "quickstart"),
         ("FAQ", "faq"),
         ("What's new", "changelog"),
         ("Contribute", "contributing")],
@@ -132,7 +133,6 @@ html_favicon = 'pictures/favicon.ico'
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'yasadoc'
 html_show_sourcelink = False
-html_add_permalinks = ""
 
 
 # -- Options for LaTeX output ---------------------------------------------

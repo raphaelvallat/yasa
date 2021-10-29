@@ -9,6 +9,10 @@ What's new
 v0.5.2 (dev)
 ------------
 
+**Documentation**
+
+We have now added a :ref:`quickstart` section to illustrate the main functions of YASA. Make sure to check it out!
+
 **Plotting**
 
 * Added the :py:func:`plot_hypnogram` function to plot an hypnogram.

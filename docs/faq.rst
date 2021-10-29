@@ -318,7 +318,7 @@ Others
       <div id="collapse_release" class="panel-collapse collapse">
         <div class="panel-body">
 
-Pingouin uses `outdated <https://github.com/alexmojaki/outdated>`_, a Python package that automatically checks if a newer version of YASA is available upon loading. Alternatively, you can click "Watch" on the `GitHub <https://github.com/raphaelvallat/yasa>`_ of YASA.
+YASA uses `outdated <https://github.com/alexmojaki/outdated>`_, a Python package that automatically checks if a newer version of YASA is available upon loading. Alternatively, you can click "Watch" on the `GitHub <https://github.com/raphaelvallat/yasa>`_ of YASA.
 Whenever a new release is out there, you can upgrade your version by typing the following line in a terminal window:
 
 .. code-block:: shell
