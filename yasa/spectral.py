@@ -205,7 +205,7 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
         assert len(ch_names) == nchan, 'ch_names must match psd.shape[0].'
     else:
         ch_names = ['CHAN' + str(i).zfill(3) for i in range(nchan)]
-    bp = np.zeros((nchan, len(bands)), dtype=np.float)
+    bp = np.zeros((nchan, len(bands)), dtype=np.float64)
     psd = psd[:, idx_good_freq]
     total_power = simps(psd, dx=res)
     total_power = total_power[..., np.newaxis]
@@ -308,7 +308,7 @@ def bandpower_from_psd_ndarray(psd, freqs, bands=[(0.5, 4, 'Delta'),
     total_power = total_power[np.newaxis, ...]
 
     # Initialize empty array
-    bp = np.zeros((len(bands), *psd.shape[:-1]), dtype=np.float)
+    bp = np.zeros((len(bands), *psd.shape[:-1]), dtype=np.float64)
 
     # Enumerate over the frequency bands
     labels = []
