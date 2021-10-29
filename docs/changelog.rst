@@ -23,17 +23,17 @@ We have now added a :ref:`quickstart` section to illustrate the main functions o
 
 IMPORTANT - The default behavior of ``coupling=True`` in :py:func:`yasa.sw_detect` has been changed:
 
-* YASA now uses a ± 1 second window around the negative peak of the slow-waves (2 sec total) to calculate the coupling, instead of a ± 2 sec window. Overall, this tends to increase the ndPAC values because of the higher temporal specificity.
+* YASA now uses a ± 1 second window around the negative peak of the slow-waves (2 sec total) to calculate the coupling, instead of a ± 2 sec window. Overall, this tends to increase the ndPAC values because of the higher temporal specificity. To keep a 4-sec window, use ``coupling_params['time'] = 2``.
 
-* We've enabled the statistical thresholding in the ndPAC calculation. Practically, this means that events with a weak/unreliable coupling are assigned an ndPAC value of zero.
+* We've enabled the statistical thresholding in the ndPAC calculation. Practically, this means that events with a weak/unreliable coupling are assigned an ndPAC value of zero. Statistical thresholding can be disabled with ``coupling_params['p'] = None``.
 
 * When using :py:meth:`yasa.SWResults.summary`, the ndPAC column now refers to the average coupling of the reliable (non-zero) events. This is a marker of coupling strength, or quality. In addition, we have added the PropCoupled column, which indicates the proportion of all events that have a significant reliable coupling (= non-zero), according to the ndPAC method. The latter is a marker of coupling quantity (i.e. how many slow oscillations are significantly coupled?)
 
-.. warning:: Because of these changes, the coupling values are therefore not comparable with previous versions of YASA. Please make sure to re-run your analyses with the new default parameters, or stick to a previous version of YASA.
+.. warning:: Because of these changes, the coupling values are therefore not comparable with previous versions of YASA. Please make sure to re-run your analyses with the new default parameters.
 
 **Events detection**
 
-* Use more conservative amplitude thresholds in :py:func:`yasa.sw_detect`: the max PTP amplitude has been reduced from 500 to 350 uV, the max negative amplitude has been reduced from 300 to 200 uV, and the max positive amplitude has been reduced from 200 to 150 uV.
+* The :py:func:`yasa.sw_detect` function now uses more conservative amplitude thresholds: the max PTP amplitude has been reduced from 500 to 350 uV, the max negative amplitude has been reduced from 300 to 200 uV, and the max positive amplitude has been reduced from 200 to 150 uV.
 
 * Added :py:meth:`yasa.SWResults.find_cooccurring_spindles` to detect whether each slow-wave co-occurr with a sleep spindle.
 

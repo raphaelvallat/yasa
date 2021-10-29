@@ -1097,8 +1097,9 @@ class SpindlesResults(_DetectionResults):
 
 def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=(0.3, 1.5),
               dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 200), amp_pos=(10, 150),
-              amp_ptp=(75, 350), coupling=False, freq_sp=(12, 16), remove_outliers=False,
-              verbose=False):
+              amp_ptp=(75, 350), coupling=False,
+              coupling_params={"freq_sp": (12, 16), "time": 1, "p": 0.05},
+              remove_outliers=False, verbose=False):
     """Slow-waves detection.
 
     Parameters
@@ -1177,16 +1178,14 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
         amplitude. Specifically, the following columns will be added to the
         output dataframe:
 
-        1. ``'SigmaPeak'``: The location (in seconds) of the maximum sigma peak
-           amplitude within a 2-seconds epoch centered around the negative peak
-           (through) of the current slow-wave.
+        1. ``'SigmaPeak'``: The location (in seconds) of the maximum sigma peak amplitude within a
+           2-seconds epoch centered around the negative peak (through) of the current slow-wave.
 
-        2. ``PhaseAtSigmaPeak``: the phase of the bandpas-filtered slow-wave
-           signal (in radians) at ``'SigmaPeak'``.
+        2. ``PhaseAtSigmaPeak``: the phase of the bandpas-filtered slow-wave signal (in radians)
+           at ``'SigmaPeak'``.
 
-           Importantly, since ``PhaseAtSigmaPeak`` is expressed in radians,
-           one should use circular statistics to calculate the mean direction
-           and vector length:
+           Importantly, since ``PhaseAtSigmaPeak`` is expressed in radians, one should use circular
+           statistics to calculate the mean direction and vector length:
 
            .. code-block:: python
 
@@ -1198,7 +1197,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
            or ndPAC) within a 2-sec epoch centered around the negative peak of the slow-wave.
 
         The lower and upper frequencies for the slow-waves and spindles-related sigma signals are
-        defined in ``freq_sw`` and ``freq_sp``, respectively.
+        defined in ``freq_sw`` and ``coupling_params['freq_sp']``, respectively.
         For more details, please refer to the `Jupyter notebook
         <https://github.com/raphaelvallat/yasa/blob/master/notebooks/12_SO-sigma_coupling.ipynb>`_
 
@@ -1206,12 +1205,21 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
 
         .. versionadded:: 0.2.0
 
-    freq_sp : tuple or list
-        Spindles-related frequency of interest. This is only relevant if
-        ``coupling=True``. Default is 12 to 16 Hz, with a wide transition
-        bandwidth of 1.5 Hz.
+    coupling_params : dict
+        Parameters for the phase-amplitude coupling.
 
-        .. versionadded:: 0.2.0
+        * ``freq_sp`` is a tuple or list that defines the spindles-related frequency of interest.
+          The default is 12 to 16 Hz, with a wide transition bandwidth of 1.5 Hz.
+
+        * ``time`` is an int or a float that defines the time around the negative peak of each
+          detected slow-waves, in seconds. For example, a value of 1 means that the coupling will
+          be calculated for each slow-waves using a 2-seconds epoch centered around the negative
+          peak of the slow-waves (i.e. 1 second on each side).
+
+        * ``p`` is a parameter passed to the :py:func:`tensorpac.methods.norm_direct_pac``
+          function. It represents the p-value to use for thresholding of unreliable coupling
+          values. Sub-threshold PAC values will be set to 0. To disable this behavior (no masking),
+          use ``p=1`` or ``p=None``.
 
     remove_outliers : boolean
         If True, YASA will automatically detect and remove outliers slow-waves
@@ -1281,16 +1289,14 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
     ----------
     The slow-waves detection algorithm is based on:
 
-    * Massimini, M., Huber, R., Ferrarelli, F., Hill, S., & Tononi, G.
-      (2004). `The sleep slow oscillation as a traveling wave.
-      <https://doi.org/10.1523/JNEUROSCI.1318-04.2004>`_. The Journal of
-      Neuroscience, 24(31), 6862–6870.
+    * Massimini, M., Huber, R., Ferrarelli, F., Hill, S., & Tononi, G. (2004). `The sleep slow
+      oscillation as a traveling wave. <https://doi.org/10.1523/JNEUROSCI.1318-04.2004>`_. The
+      Journal of Neuroscience, 24(31), 6862–6870.
 
-    * Carrier, J., Viens, I., Poirier, G., Robillard, R., Lafortune, M.,
-      Vandewalle, G., Martin, N., Barakat, M., Paquet, J., & Filipini, D.
-      (2011). `Sleep slow wave changes during the middle years of life.
-      <https://doi.org/10.1111/j.1460-9568.2010.07543.x>`_
-      The European Journal of Neuroscience, 33(4), 758–766.
+    * Carrier, J., Viens, I., Poirier, G., Robillard, R., Lafortune, M., Vandewalle, G., Martin,
+      N., Barakat, M., Paquet, J., & Filipini, D. (2011). `Sleep slow wave changes during the
+      middle years of life. <https://doi.org/10.1111/j.1460-9568.2010.07543.x>`_. The European
+      Journal of Neuroscience, 33(4), 758–766.
 
     Examples
     --------
@@ -1327,6 +1333,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
         # must be large enough to fit the sidebands caused by the assumed
         # modulating lower frequency band (Aru et al. 2015).
         # https://doi.org/10.1016/j.conb.2014.08.002
+        freq_sp = coupling_params['freq_sp']
         data_sp = filter_data(
             data, sf, freq_sp[0], freq_sp[1], method='fir', l_trans_bandwidth=1.5,
             h_trans_bandwidth=1.5, verbose=0)
@@ -1482,8 +1489,9 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
         # spindles-related sigma amplitude within a XX-seconds centered epochs.
         if coupling:
             # Get phase and amplitude for each centered epoch
-            # TODO: allow user-specified window size.
-            time_before = time_after = 1
+            time_before = time_after = coupling_params['time']
+            assert (sf * time_before).is_integer(), (
+                "Invalid time parameter for coupling. Must be a whole number of samples.")
             bef = int(sf * time_before)
             aft = int(sf * time_after)
             # Center of each epoch is defined as the negative peak of the SW
@@ -1512,7 +1520,8 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
             sw_params['PhaseAtSigmaPeak'][idx_valid] = pha_at_max
             # 3) Normalized Direct PAC, with thresholding
             # Unreliable values are set to 0
-            ndp = np.squeeze(tpm.norm_direct_pac(sw_pha_ev[None, ...], sp_amp_ev[None, ...]))
+            ndp = np.squeeze(tpm.norm_direct_pac(
+                sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=coupling_params['p']))
             sw_params['ndPAC'] = np.ones(n_peaks) * np.nan
             sw_params['ndPAC'][idx_valid] = ndp
             # Make sure that Stage is the last column of the dataframe

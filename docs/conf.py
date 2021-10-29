@@ -124,4 +124,5 @@ intersphinx_mapping = {
     'mne': ('https://martinos.org/mne/stable/', None),
     'seaborn': ('https://seaborn.pydata.org/', None),
     'pyriemann': ('https://pyriemann.readthedocs.io/en/latest/', None),
+    'tensorpac': ('https://etiennecmb.github.io/tensorpac/', None),
 }
