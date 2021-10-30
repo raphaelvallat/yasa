@@ -27,8 +27,6 @@ IMPORTANT - The default behavior of ``coupling=True`` in :py:func:`yasa.sw_detec
 
 * We've enabled the statistical thresholding in the ndPAC calculation. Practically, this means that events with a weak/unreliable coupling are assigned an ndPAC value of zero. Statistical thresholding can be disabled with ``coupling_params['p'] = None``.
 
-* When using :py:meth:`yasa.SWResults.summary`, the ndPAC column now refers to the average coupling of the reliable (non-zero) events. This is a marker of coupling strength, or quality. In addition, we have added the PropCoupled column, which indicates the proportion of all events that have a significant reliable coupling (= non-zero), according to the ndPAC method. The latter is a marker of coupling quantity (i.e. how many slow oscillations are significantly coupled?)
-
 .. warning:: Because of these changes, the coupling values are therefore not comparable with previous versions of YASA. Please make sure to re-run your analyses with the new default parameters.
 
 **Events detection**

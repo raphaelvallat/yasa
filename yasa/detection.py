@@ -168,26 +168,10 @@ class _DetectionResults(object):
             if 'PhaseAtSigmaPeak' in self._events:
                 from scipy.stats import circmean
                 aggdict['PhaseAtSigmaPeak'] = lambda x: circmean(x, low=-np.pi, high=np.pi)
-
-                def mean_nonzero(x):
-                    """Mean (or aggfunc) of non-zero / non-missing elements.
-
-                    >>> x = pd.Series([np.nan, 2, 3, 0, 1, 0])
-                    >>> mean_nonzero(x) == 2
-                    """
-                    return x[x > 0].agg(aggfunc)
-
-                def prop_nonzero(x):
-                    """Proportion of non-zero / non-missing elements.
-
-                    >>> x = pd.Series([np.nan, 2, 3, 0, 1, 0])
-                    >>> prop_nonzero(x) == 0.5
-                    """
-                    return x[x > 0].count() / x.size
-
-                aggdict['ndPAC'] = [mean_nonzero, prop_nonzero]
+                aggdict['ndPAC'] = aggfunc
 
             if "CooccurringSpindle" in self._events:
+                # We do not average "CooccurringSpindlePeak"
                 aggdict["CooccurringSpindle"] = aggfunc
                 aggdict["DistanceSpindleToSW"] = aggfunc
 
@@ -203,10 +187,6 @@ class _DetectionResults(object):
 
         # Apply grouping, after masking
         df_grp = self._events.loc[mask, :].groupby(grouper, sort=sort, as_index=False).agg(aggdict)
-        if df_grp.columns.nlevels > 1:
-            # Flatten the two agg functions for ndPAC
-            df_grp.columns = df_grp.columns.get_level_values(0)
-            df_grp.columns = [*df_grp.columns[:-1], 'PropCoupled']
         df_grp = df_grp.rename(columns={'Start': 'Count'})
 
         # Calculate density (= number per min of each stage)

@@ -218,7 +218,7 @@ class TestDetection(unittest.TestCase):
         sw.plot_detection()
         sw.get_coincidence_matrix()
         sw.get_coincidence_matrix(scaled=False)
-
+        # Test with outlier removal. There should be fewer events.
         sw_no_out = sw_detect(data_full, sf, chan_full, remove_outliers=True)
         assert sw_no_out._events.shape[0] < sw._events.shape[0]
 
@@ -233,17 +233,17 @@ class TestDetection(unittest.TestCase):
         sw.plot_detection()
         # Check coupling
         sw_sum = sw.summary()
-        assert "PropCoupled" in sw_sum.columns
         assert "ndPAC" in sw_sum.columns
         # There should be some zero in the ndPAC (full dataframe)
-        assert sw[sw['ndPAC'] == 0].shape[0] > 0
+        assert sw._events[sw._events['ndPAC'] == 0].shape[0] > 0
         # Coinciding spindles and masking
         sp = spindles_detect(data_full, sf, chan_full, hypno=hypno_full)
         sw.find_cooccurring_spindles(sp.summary())
         sw_sum = sw.summary()
         assert "CooccurringSpindle" in sw_sum.columns
         assert "DistanceSpindleToSW" in sw_sum.columns
-        sw_sum_masked = sw.summary(grp_chan=True, grp_stage=False, mask=sw['CooccurringSpindle'])
+        sw_sum_masked = sw.summary(grp_chan=True, grp_stage=False,
+                                   mask=sw._events['CooccurringSpindle'])
         assert sw_sum_masked.shape[0] < sw_sum.shape[0]
 
         # Test with different coupling params
