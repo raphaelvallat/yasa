@@ -303,8 +303,7 @@ class _DetectionResults(object):
     def get_coincidence_matrix(self, scaled=True):
         """get_coincidence_matrix"""
         if len(self._ch_names) < 2:
-            raise ValueError(
-                "At least 2 channels are required to calculate coincidence.")
+            raise ValueError("At least 2 channels are required to calculate coincidence.")
         mask = self.get_mask()
         mask = pd.DataFrame(mask.T, columns=self._ch_names)
         mask.columns.name = "Channel"
@@ -650,15 +649,14 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
     # Filtering
     nfast = next_fast_len(n_samples)
     # 1) Broadband bandpass filter (optional -- careful of lower freq for PAC)
-    data_broad = filter_data(data, sf, freq_broad[0], freq_broad[1],
-                             method='fir', verbose=0)
+    data_broad = filter_data(data, sf, freq_broad[0], freq_broad[1], method='fir', verbose=0)
     # 2) Sigma bandpass filter
     # The width of the transition band is set to 1.5 Hz on each side,
     # meaning that for freq_sp = (12, 15 Hz), the -6 dB points are located at
     # 11.25 and 15.75 Hz.
-    data_sigma = filter_data(data, sf, freq_sp[0], freq_sp[1],
-                             l_trans_bandwidth=1.5, h_trans_bandwidth=1.5,
-                             method='fir', verbose=0)
+    data_sigma = filter_data(
+        data, sf, freq_sp[0], freq_sp[1], l_trans_bandwidth=1.5, h_trans_bandwidth=1.5,
+        method='fir', verbose=0)
 
     # Hilbert power (to define the instantaneous frequency / power)
     analytic = signal.hilbert(data_sigma, N=nfast)[:, :n_samples]
@@ -692,8 +690,8 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         # Here we use a step of 200 ms to speed up the computation.
         # Note that even if the threshold is None we still need to calculate it
         # for the individual spindles parameter (RelPow).
-        f, t, Sxx = stft_power(data_broad[i, :], sf, window=2, step=.2, band=freq_broad,
-                               interp=False, norm=True)
+        f, t, Sxx = stft_power(
+            data_broad[i, :], sf, window=2, step=.2, band=freq_broad, interp=False, norm=True)
         idx_sigma = np.logical_and(f >= freq_sp[0], f <= freq_sp[1])
         rel_pow = Sxx[idx_sigma].sum(0)
 
@@ -850,8 +848,8 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         if remove_outliers and df_chan.shape[0] >= 50:
             col_keep = ['Duration', 'Amplitude', 'RMS', 'AbsPower', 'RelPower',
                         'Frequency', 'Oscillations', 'Symmetry']
-            ilf = IsolationForest(contamination='auto', max_samples='auto',
-                                  verbose=0, random_state=42)
+            ilf = IsolationForest(
+                contamination='auto', max_samples='auto', verbose=0, random_state=42)
             good = ilf.fit_predict(df_chan[col_keep])
             good[good == -1] = 0
             logger.info('%i outliers were removed in channel %s.'
@@ -1221,6 +1219,8 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
           values. Sub-threshold PAC values will be set to 0. To disable this behavior (no masking),
           use ``p=1`` or ``p=None``.
 
+        .. versionadded:: 0.5.2
+
     remove_outliers : boolean
         If True, YASA will automatically detect and remove outliers slow-waves
         using :py:class:`sklearn.ensemble.IsolationForest`.
@@ -1333,6 +1333,10 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
         # must be large enough to fit the sidebands caused by the assumed
         # modulating lower frequency band (Aru et al. 2015).
         # https://doi.org/10.1016/j.conb.2014.08.002
+        assert isinstance(coupling_params, dict)
+        assert "freq_sp" in coupling_params.keys()
+        assert "time" in coupling_params.keys()
+        assert "p" in coupling_params.keys()
         freq_sp = coupling_params['freq_sp']
         data_sp = filter_data(
             data, sf, freq_sp[0], freq_sp[1], method='fir', l_trans_bandwidth=1.5,
@@ -1616,6 +1620,8 @@ class SWResults(_DetectionResults):
     def find_cooccurring_spindles(self, spindles, lookaround=1.2):
         """Given a spindles detection summary dataframe, find slow-waves that co-occur with
         sleep spindles.
+
+        .. versionadded:: 0.5.2
 
         Parameters
         ----------

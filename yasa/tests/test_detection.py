@@ -231,6 +231,24 @@ class TestDetection(unittest.TestCase):
         sw.plot_average(ci=None)
         sw.plot_average(hue="Stage", ci=None)
         sw.plot_detection()
+        # Check coupling
+        sw_sum = sw.summary()
+        assert "PropCoupled" in sw_sum.columns
+        assert "ndPAC" in sw_sum.columns
+        # There should be some zero in the ndPAC (full dataframe)
+        assert sw[sw['ndPAC'] == 0].shape[0] > 0
+        # Coinciding spindles and masking
+        sp = spindles_detect(data_full, sf, chan_full, hypno=hypno_full)
+        sw.find_cooccurring_spindles(sp.summary())
+        sw_sum = sw.summary()
+        assert "CooccurringSpindle" in sw_sum.columns
+        assert "DistanceSpindleToSW" in sw_sum.columns
+        sw_sum_masked = sw.summary(grp_chan=True, grp_stage=False, mask=sw['CooccurringSpindle'])
+        assert sw_sum_masked.shape[0] < sw_sum.shape[0]
+
+        # Test with different coupling params
+        sw_detect(data_full, sf, chan_full, hypno=hypno_full, coupling=True,
+                  coupling_params={"freq_sp": (12, 16), "time": 2, "p": None})
 
         # Using a MNE raw object
         sw_detect(data_mne)
