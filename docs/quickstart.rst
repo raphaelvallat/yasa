@@ -139,8 +139,10 @@ Using the :py:func:`yasa.plot_hypnogram` function, we can plot the hypnogram:
 .. figure::  /pictures/quickstart/hypnogram.png
   :align: center
 
+****************
+
 Sleep statistics and stage-transition matrix
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------------------------
 
 Using the hypnogram, we can calculate standard sleep statistics using the :py:func:`yasa.sleep_statistics` function.
 Importantly, this function has an ``sf_hyp`` argument, which is the sampling frequency of the hypnogram. Since we have one value every 30-seconds, the sampling frequency is 0.3333 Hz, or 1 / 30 Hz.
@@ -190,6 +192,11 @@ Several metrics of sleep fragmentation can be calculated from ``probs``. For exa
   >>> import numpy as np
   >>> np.diag(probs.loc[2:, 2:]).mean().round(3)
 
+********
+
+Spectral analyses
+-----------------
+
 Full-night spectrogram plot
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -216,10 +223,8 @@ Warmer colors indicate higher spectral power in this specific frequency band at 
 
   Whenever you start a new analysis in YASA, we always recommend that you the :py:func:`yasa.plot_spectrogram` function to check your data. This can help you easily identify artefact in the data or misalignement between the PSG data and hypnogram.
 
-********
-
-Spectral analyses
------------------
+EEG power in specific frequency bands
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For a primer on EEG spectral bandpower please refer to https://raphaelvallat.com/bandpower.html.
 
@@ -264,5 +269,76 @@ Events detection
 Spindles
 ~~~~~~~~
 
+Automatic spindles detection can be performed with the :py:func:`yasa.spindles_detect` function. The detection is based on the algorithm described in `Lacourse et al 2018 <https://pubmed.ncbi.nlm.nih.gov/30107208/>`_, and a step-by-step explanation is provided in `this notebook <https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb>`_. For the sake of this tutorial, we'll use the default detection thresholds, but these can (and should) be adjusted based on your own data. In the example below, we'll specify the hypnogram and limit the detection to stage N2 and 3 (``include=(2, 3)``).
+
+>>> sp = yasa.spindles_detect(raw, hypno=hypno_up, include=(2, 3))
+
+Here, the ``sp`` variable is a `class <https://raphaelvallat.com/yasa/build/html/generated/yasa.SpindlesResults.html#yasa.SpindlesResults>`_, which is simply a bundle of functions (called methods) and data (attributes). For example, we can see a dataframe with all the detected events with:
+
+>>> sp.summary()
+
+.. image::  /pictures/quickstart/spindles_summary.png
+  :align: center
+
+The `documentation of the function <https://raphaelvallat.com/yasa/build/html/generated/yasa.spindles_detect.html>`_ explains what each of these columns represent and how they're calculated. Furthermore, by specifying the ``grp_chan`` and ``grp_stage`` parameters, we tell YASA to first average across channels and slep stages, respectively:
+
+>>> sp.summary(grp_chan=True, grp_stage=True)
+
+Finally, we can plot the average spindle, calculated for each channel separately and time-synced to the most prominent peak of the spindles:
+
+.. code-block:: python
+
+  >>> # Because of the large number of channels, we disable the 95%CI and legend
+  >>> sp.plot_average(ci=None, legend=False, palette="Blues");
+
+.. image::  /pictures/quickstart/avg_spindles.png
+  :align: center
+  :scale: 50%
+
+Slow-waves
+~~~~~~~~~~
+
+The exact same steps can be applied with the :py:func:`yasa.sw_detect` function to automatically detect slow-waves:
+
+.. code-block:: python
+
+  >>> sw = yasa.sw_detect(raw, hypno=hypno_up, include=(2, 3))
+  >>> sw.summary()
+
+.. image::  /pictures/quickstart/sw_summary.png
+  :align: center
+
+>>> sw.plot_average(ci=None, legend=False, palette="Blues");
+
+.. image::  /pictures/quickstart/avg_sw.png
+  :align: center
+  :scale: 50%
+
+For more details on the output of the slow-waves detection, be sure to read the `documentation <https://raphaelvallat.com/yasa/build/html/generated/yasa.sw_detect.html>`_ and try the `Jupyter notebooks <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_.
+
+********
+
+Automatic sleep staging
+-----------------------
+
+In this final section, we'll see how to perform automatic sleep staging in YASA. As shown below, this takes no more than a few lines of code! Here, we'll use a single EEG channel to predict a full-night hypnogram. For more details on the algorithm, check out the `eLife publication <https://elifesciences.org/articles/70092>`_ or the `documentation <https://raphaelvallat.com/yasa/build/html/generated/yasa.SleepStaging.html#yasa.SleepStaging>`_ of the function.
+
+.. code-block:: python
+
+  >>> sls = yasa.SleepStaging(raw, eeg_name='C3-A2')
+  >>> hypno_pred = sls.predict()  # Predict the sleep stages
+  >>> hypno_pred = yasa.hypno_str_to_int(hypno_pred)  # Convert "W" to 0, "N1" to 1, etc
+  >>> yasa.plot_hypnogram(hypno_pred);  # Plot
+
+.. figure::  /pictures/quickstart/hypnogram.png
+  :align: center
+
+Let's calculate the agreement against the ground-truth expert scoring:
+
+.. code-block:: python
+
+  >>> from sklearn.metrics import accuracy_score
+  >>> print(f"The accuracy is {100 * accuracy_score(hypno, hypno_pred):.3f}%")
+  The accuracy is 82.676%
 
 |

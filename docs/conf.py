@@ -18,6 +18,7 @@ extensions = ['sphinx.ext.mathjax',
               'sphinx.ext.autodoc',
               'sphinx.ext.intersphinx',
               'matplotlib.sphinxext.plot_directive',
+              'sphinx_copybutton',
               'numpydoc']
 
 # Generate the API documentation when building
@@ -29,6 +30,11 @@ autodoc_default_options = {
     # 'special-members': '__init__',
     # 'exclude-members': '__weakref__'
 }
+
+# configure sphinx-copybutton
+# https://github.com/executablebooks/sphinx-copybutton
+copybutton_prompt_text = r">>> |\.\.\. |\$ "
+copybutton_prompt_is_regexp = True
 
 numpydoc_show_class_members = False
 
