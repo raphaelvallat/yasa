@@ -68,10 +68,13 @@ def _index_to_events(x):
     -----
     Original code imported from the Visbrain package.
     """
-    index = np.array([])
-    for k in range(x.shape[0]):
-        index = np.append(index, np.arange(x[k, 0], x[k, 1] + 1))
-    return index.astype(int)
+    x_copy = np.copy(x)
+    x_copy[:, 1] += 1
+    split_idx = x_copy.reshape(-1).astype(int)
+    full_idx = np.arange(split_idx.max())
+    index = np.split(full_idx, split_idx)[1::2]
+    index = np.concatenate(index)
+    return index
 
 
 def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
