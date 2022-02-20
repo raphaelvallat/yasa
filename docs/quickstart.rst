@@ -200,7 +200,7 @@ Spectral analyses
 Full-night spectrogram plot
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The current sampling frequency of the hypnogram is one value every 30-seconds, i.e. ~0.3333 Hz. However, most YASA functions requires the sampling frequency of the hypnogram to be the same as the sampling frequency of the PSG data. In this example, we therefore need to upsample our hypnogram from 0.333 Hz to 200 Hz.
+The current sampling frequency of the hypnogram is one value every 30-seconds, i.e. ~0.3333 Hz. However, most YASA functions requires the sampling frequency of the hypnogram to be the same as the sampling frequency of the PSG data. In this example, we therefore need to upsample our hypnogram from 0.333 Hz to 100 Hz.
 This can be done with the :py:func:`yasa.hypno_upsample_to_data` function:
 
 .. code-block:: python
