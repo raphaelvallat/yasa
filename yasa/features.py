@@ -171,14 +171,11 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
 
     # 2.1) 1Hz bins, N2 / N3 / REM
     # win_sec = 4 sec = 0.25 Hz freq resolution
-    df_bp = yasa.bandpower(raw_eeg, hypno=hypno, bands=bands, win_sec=4,
-                           include=(2, 3, 4))
+    df_bp = yasa.bandpower(raw_eeg, hypno=hypno, bands=bands, win_sec=4, include=(2, 3, 4))
     # Same for NREM / WN
-    df_bp_NREM = yasa.bandpower(raw_eeg, hypno=hypno_NREM, bands=bands,
-                                include=6)
-    df_bp_WN = yasa.bandpower(raw_eeg, hypno=hypno_WN, bands=bands,
-                              include=7)
-    df_bp = df_bp.append(df_bp_NREM).append(df_bp_WN)
+    df_bp_NREM = yasa.bandpower(raw_eeg, hypno=hypno_NREM, bands=bands, include=6)
+    df_bp_WN = yasa.bandpower(raw_eeg, hypno=hypno_WN, bands=bands, include=7)
+    df_bp = pd.concat([df_bp, df_bp_NREM, df_bp_WN], axis=0)
     df_bp.drop(columns=['TotalAbsPow', 'FreqRes', 'Relative'], inplace=True)
     df_bp = df_bp.add_prefix('bp_').reset_index()
     # Replace 2 --> N2
@@ -254,10 +251,8 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
     df_sp_NREM['Stage'] = 6
     df_sp_NREM.set_index(['Stage', 'Channel'], inplace=True)
     density_NREM = df_sp_NREM['Count'] / minutes_of_NREM
-    df_sp_NREM.insert(loc=1, column='Density',
-                      value=density_NREM.to_numpy())
-
-    df_sp = df_sp.append(df_sp_NREM)
+    df_sp_NREM.insert(loc=1, column='Density', value=density_NREM.to_numpy())
+    df_sp = pd.concat([df_sp, df_sp_NREM], axis=0)
     df_sp.columns = ['sp_' + c if c in ['Count', 'Density'] else
                      'sp_mean_' + c for c in df_sp.columns]
 
@@ -288,10 +283,9 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
     df_sw_NREM['Stage'] = 6
     df_sw_NREM.set_index(['Stage', 'Channel'], inplace=True)
     density_NREM = df_sw_NREM['Count'] / minutes_of_NREM
-    df_sw_NREM.insert(loc=1, column='Density',
-                      value=density_NREM.to_numpy())
-    df_sw = df_sw.append(df_sw_NREM)[['Count', 'Density', 'Duration',
-                                      'PTP', 'Frequency', 'ndPAC']]
+    df_sw_NREM.insert(loc=1, column='Density', value=density_NREM.to_numpy())
+    df_sw = pd.concat([df_sw, df_sw_NREM])
+    df_sw = df_sw[['Count', 'Density', 'Duration', 'PTP', 'Frequency', 'ndPAC']]
     df_sw.columns = ['sw_' + c if c in ['Count', 'Density'] else
                      'sw_mean_' + c for c in df_sw.columns]
 
@@ -310,7 +304,7 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
     )[['PTP', 'Frequency', 'ndPAC']].reset_index()
     df_sw_cv_NREM['Stage'] = 6
     df_sw_cv_NREM.set_index(['Stage', 'Channel'], inplace=True)
-    df_sw_cv = df_sw_cv.append(df_sw_cv_NREM)
+    df_sw_cv = pd.concat([df_sw_cv, df_sw_cv_NREM], axis=0)
     df_sw_cv.columns = ['sw_cv_' + c for c in df_sw_cv.columns]
 
     # Combine the mean and CV into a single dataframe

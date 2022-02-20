@@ -844,7 +844,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         # ####################################################################
         df_chan['Channel'] = ch_names[i]
         df_chan['IdxChannel'] = i
-        df = df.append(df_chan, ignore_index=True)
+        df = pd.concat([df, df_chan], axis=0, ignore_index=True)
 
     # If no spindles were detected, return None
     if df.empty:
@@ -1538,7 +1538,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
 
         df_chan['Channel'] = ch_names[i]
         df_chan['IdxChannel'] = i
-        df = df.append(df_chan, ignore_index=True)
+        df = pd.concat([df, df_chan], axis=0, ignore_index=True)
 
     # If no SW were detected, return None
     if df.empty:
@@ -2202,7 +2202,7 @@ class REMResults(_DetectionResults):
             df_chan = df_chan.melt(id_vars='Time', var_name='Event', value_name='Amplitude')
             df_chan['Channel'] = ch
             df_chan['IdxChannel'] = i
-            df_sync = df_sync.append(df_chan, ignore_index=True)
+            df_sync = pd.concat([df_sync, df_chan], axis=0, ignore_index=True)
 
         return df_sync
 
