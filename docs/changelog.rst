@@ -8,8 +8,8 @@ What's new
 
 ----------------------------------------------------------------------------------------
 
-v0.5.2 (dev)
-------------
+v0.6.0 (February 2022)
+----------------------
 
 **Documentation**
 
@@ -17,7 +17,7 @@ We have now added a :ref:`quickstart` section to illustrate the main functions o
 
 **Plotting**
 
-* Added the :py:func:`plot_hypnogram` function to plot an hypnogram.
+* Added the :py:func:`yasa.plot_hypnogram` function to plot an hypnogram.
 
 **Slow oscillations—sigma coupling**
 
@@ -47,7 +47,7 @@ IMPORTANT - The default behavior of ``coupling=True`` in :py:func:`yasa.sw_detec
 
 * :py:func:`yasa.irasa` now informs about the maximum resampled fitting range, and raises a warning if parameters/frequencies are ill-specified. See `PR42 <https://github.com/raphaelvallat/yasa/pull/42>`_ and associated paper: https://doi.org/10.1101/2021.10.15.464483
 
-* Added a ``verbose`` parameter to :py:func:`hypno_upsample_to_data` and :py:func:`yasa.irasa`.
+* Added a ``verbose`` parameter to :py:func:`yasa.hypno_upsample_to_data` and :py:func:`yasa.irasa`.
 
 ----------------------------------------------------------------------------------------
 
