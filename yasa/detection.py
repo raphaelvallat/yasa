@@ -311,7 +311,7 @@ class _DetectionResults(object):
 
     def plot_average(self, event_type, center='Peak', hue='Channel', time_before=1,
                      time_after=1, filt=(None, None), mask=None, figsize=(6, 4.5), **kwargs):
-        """plot_average (not for REM, spindles & SW only)"""
+        """Plot the average event (not for REM, spindles & SW only)"""
         import seaborn as sns
         import matplotlib.pyplot as plt
 
@@ -1199,7 +1199,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
           values. Sub-threshold PAC values will be set to 0. To disable this behavior (no masking),
           use ``p=1`` or ``p=None``.
 
-        .. versionadded:: 0.5.2
+        .. versionadded:: 0.6.0
 
     remove_outliers : boolean
         If True, YASA will automatically detect and remove outliers slow-waves
@@ -1601,7 +1601,7 @@ class SWResults(_DetectionResults):
         """Given a spindles detection summary dataframe, find slow-waves that co-occur with
         sleep spindles.
 
-        .. versionadded:: 0.5.2
+        .. versionadded:: 0.6.0
 
         Parameters
         ----------

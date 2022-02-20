@@ -16,7 +16,7 @@ def plot_hypnogram(hypno, sf_hypno=1/30, lw=1.5, figsize=(9, 3)):
     """
     Plot a hypnogram.
 
-    .. versionadded:: 0.5.2
+    .. versionadded:: 0.6.0
 
     Parameters
     ----------
