@@ -242,7 +242,7 @@
             <span class="n">bp_stage</span> <span class="o">=</span> <span class="n">bandpower_from_psd</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">ch_names</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="n">bands</span><span class="p">,</span>
                                           <span class="n">relative</span><span class="o">=</span><span class="n">relative</span><span class="p">)</span>
             <span class="n">bp_stage</span><span class="p">[</span><span class="s1">&#39;Stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stage</span>
-            <span class="n">df_bp</span> <span class="o">=</span> <span class="n">df_bp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bp_stage</span><span class="p">)</span>
+            <span class="n">df_bp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df_bp</span><span class="p">,</span> <span class="n">bp_stage</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">df_bp</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s1">&#39;Stage&#39;</span><span class="p">,</span> <span class="s1">&#39;Chan&#39;</span><span class="p">])</span></div>
 
 

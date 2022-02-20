@@ -27,8 +27,7 @@
 * Spectral analyses: bandpower, phase-amplitude coupling, 1/f slope, and more!
 * Hypnogram analysis: sleep statistics and stage tranisitions.
 
-For more details, check out the `API documentation <https://raphaelvallat.com/yasa/build/html/index.html>`_, try the
-`tutorial (Jupyter notebooks) <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_ or read the `FAQ <https://raphaelvallat.com/yasa/build/html/faq.html>`_.
+For more details, try the `quickstart <https://raphaelvallat.com/yasa/build/html/quickstart.html>`_ or read the `FAQ <https://raphaelvallat.com/yasa/build/html/faq.html>`_.
 
 **********
 

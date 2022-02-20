@@ -937,7 +937,7 @@
         <span class="c1"># ####################################################################</span>
         <span class="n">df_chan</span><span class="p">[</span><span class="s1">&#39;Channel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ch_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
         <span class="n">df_chan</span><span class="p">[</span><span class="s1">&#39;IdxChannel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
-        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df_chan</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">,</span> <span class="n">df_chan</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="c1"># If no spindles were detected, return None</span>
     <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
@@ -1631,7 +1631,7 @@
 
         <span class="n">df_chan</span><span class="p">[</span><span class="s1">&#39;Channel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ch_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
         <span class="n">df_chan</span><span class="p">[</span><span class="s1">&#39;IdxChannel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
-        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df_chan</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">,</span> <span class="n">df_chan</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="c1"># If no SW were detected, return None</span>
     <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
@@ -2295,7 +2295,7 @@
             <span class="n">df_chan</span> <span class="o">=</span> <span class="n">df_chan</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">id_vars</span><span class="o">=</span><span class="s1">&#39;Time&#39;</span><span class="p">,</span> <span class="n">var_name</span><span class="o">=</span><span class="s1">&#39;Event&#39;</span><span class="p">,</span> <span class="n">value_name</span><span class="o">=</span><span class="s1">&#39;Amplitude&#39;</span><span class="p">)</span>
             <span class="n">df_chan</span><span class="p">[</span><span class="s1">&#39;Channel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ch</span>
             <span class="n">df_chan</span><span class="p">[</span><span class="s1">&#39;IdxChannel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
-            <span class="n">df_sync</span> <span class="o">=</span> <span class="n">df_sync</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df_chan</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">df_sync</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df_sync</span><span class="p">,</span> <span class="n">df_chan</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">df_sync</span></div>
 
