@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.art_detect &#8212; yasa 0.5.1 documentation</title>
+    <title>yasa.art_detect &#8212; yasa 0.6.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -20,9 +23,9 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js "></script>
 <script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
 <script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
 
   </head><body>
@@ -38,13 +41,14 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.5.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
-                <li><a href="../api.html">Functions</a></li>
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../quickstart.html">Quickstart</a></li>
                 <li><a href="../faq.html">FAQ</a></li>
                 <li><a href="../changelog.html">What's new</a></li>
                 <li><a href="../contributing.html">Contribute</a></li>
@@ -87,10 +91,10 @@
     <div class="body col-md-12 content" role="main">
       
   <div class="section" id="yasa-art-detect">
-<h1>yasa.art_detect</h1>
+<h1>yasa.art_detect<a class="headerlink" href="#yasa-art-detect" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
 <dt id="yasa.art_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">art_detect</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">window</span><span class="o">=</span><span class="default_value">5</span></em>, <em class="sig-param"><span class="n">hypno</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include</span><span class="o">=</span><span class="default_value">1, 2, 3, 4</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'covar'</span></em>, <em class="sig-param"><span class="n">threshold</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">n_chan_reject</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#art_detect"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">art_detect</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">window</span><span class="o">=</span><span class="default_value">5</span></em>, <em class="sig-param"><span class="n">hypno</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include</span><span class="o">=</span><span class="default_value">1, 2, 3, 4</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'covar'</span></em>, <em class="sig-param"><span class="n">threshold</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">n_chan_reject</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#art_detect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.art_detect" title="Permalink to this definition">¶</a></dt>
 <dd><p>Automatic artifact rejection.</p>
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 0.2.0.</span></p>
@@ -100,7 +104,7 @@
 <dd class="field-odd"><dl>
 <dt><strong>data</strong><span class="classifier">array_like</span></dt><dd><p>Single or multi-channel EEG data.
 Unit must be uV and shape <em>(n_chan, n_samples)</em>.
-Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.23.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>
+Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>
 and <code class="docutils literal notranslate"><span class="pre">sf</span></code> will be automatically extracted,
 and <code class="docutils literal notranslate"><span class="pre">data</span></code> will also be automatically converted from Volts (MNE)
 to micro-Volts (YASA).</p>
@@ -111,7 +115,7 @@ exclude any EOG, EKG or EMG channels.</p>
 </div>
 </dd>
 <dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>Sampling frequency of the data in Hz.
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.23.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> object.</p>
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> object.</p>
 </dd>
 <dt><strong>window</strong><span class="classifier">float</span></dt><dd><p>The window length (= resolution) for artifact rejection, in seconds.
 Default to 5 seconds. Shorter windows (e.g. 1 or 2-seconds) will
@@ -275,8 +279,8 @@ A Publication of the IEEE Engineering in Medicine and Biology Society,
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
+        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
     </p>
   </div>
 </footer>

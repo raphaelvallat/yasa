@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>FAQ &#8212; yasa 0.5.1 documentation</title>
+    <title>FAQ &#8212; yasa 0.6.0 documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/language_data.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
@@ -20,9 +23,9 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-1.12.4.min.js "></script>
 <script type="text/javascript" src="_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
 <script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
 
   </head><body>
@@ -38,13 +41,14 @@
         </button>
         <a class="navbar-brand" href="index.html"><span><img src="_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.5.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
-                <li><a href="api.html">Functions</a></li>
+                <li><a href="api.html">API</a></li>
+                <li><a href="quickstart.html">Quickstart</a></li>
                 <li><a href="#">FAQ</a></li>
                 <li><a href="changelog.html">What's new</a></li>
                 <li><a href="contributing.html">Contribute</a></li>
@@ -87,9 +91,9 @@
     <div class="body col-md-12 content" role="main">
       
   <div class="section" id="faq">
-<span id="id1"></span><h1>FAQ</h1>
+<span id="id1"></span><h1>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="loading-and-visualizing-polysomnography-data">
-<h2>Loading and visualizing polysomnography data</h2>
+<h2>Loading and visualizing polysomnography data<a class="headerlink" href="#loading-and-visualizing-polysomnography-data" title="Permalink to this headline">¶</a></h2>
 <div class="panel-group">
   <div class="panel panel-default">
     <div class="panel-heading">
@@ -128,7 +132,7 @@
   </div>
 </div></div>
 <div class="section" id="event-detection">
-<h2>Event detection</h2>
+<h2>Event detection<a class="headerlink" href="#event-detection" title="Permalink to this headline">¶</a></h2>
 <div class="panel panel-default">
   <div class="panel-heading">
     <h5 class="panel-title">
@@ -176,7 +180,7 @@
   </div>
 </div></div>
 <div class="section" id="sleep-staging">
-<h2>Sleep staging</h2>
+<h2>Sleep staging<a class="headerlink" href="#sleep-staging" title="Permalink to this headline">¶</a></h2>
 <div class="panel panel-default">
   <div class="panel-heading">
     <h5 class="panel-title">
@@ -184,9 +188,9 @@
     </h5>
   </div>
   <div id="accuracy_yasa" class="panel-collapse collapse">
-    <div class="panel-body"><p>YASA was trained and evaluated on a large and heterogeneous database of thousands of polysomnography recordings, including healthy individuals and patients with sleep disorders. Overall, the results show that <strong>YASA matches human inter-rater agreement, with an accuracy of ~85% against expert consensus scoring</strong>. The full validation of YASA can be found in the preprint article:</p>
+    <div class="panel-body"><p>YASA was trained and evaluated on a large and heterogeneous database of thousands of polysomnography recordings, including healthy individuals and patients with sleep disorders. Overall, the results show that <strong>YASA matches human inter-rater agreement, with an accuracy of ~85% against expert consensus scoring</strong>. The full validation of YASA was published in <a class="reference external" href="https://elifesciences.org/articles/70092">eLife</a>:</p>
 <ul class="simple">
-<li><p>Raphael Vallat and Matthew P. Walker (2021). <em>A universal, open-source, high-performance tool for automated sleep staging</em>. bioRxiv 2021.05.28.446165; doi: <a class="reference external" href="https://doi.org/10.1101/2021.05.28.446165">https://doi.org/10.1101/2021.05.28.446165</a></p></li>
+<li><p>Vallat, Raphael, and Matthew P. Walker. “An open-source, high-performance tool for automated sleep staging.” Elife 10 (2021). doi: <a class="reference external" href="https://doi.org/10.7554/eLife.70092">https://doi.org/10.7554/eLife.70092</a></p></li>
 </ul>
 <p>However, our recommendation is that <strong>YASA should not replace human scoring, but rather serve as a starting point to speed up sleep staging</strong>. If possible, you should always have a trained sleep scorer visually check the predictions of YASA, with a particular emphasis on low-confidence epochs and/or N1 sleep epochs, as these are the epochs most often misclassified by the algorithm.
 Finally, users can also leverage the <a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.plot_spectrogram()</span></code></a> function to plot the predicted hypnogram on top of the full-night spectrogram. Such plots are very useful to quickly identify blatant errors in the hypnogram.</p>
@@ -267,7 +271,7 @@ In addition, all the code used to train YASA is freely available at <a class="re
   </div>
 </div></div>
 <div class="section" id="others">
-<h2>Others</h2>
+<h2>Others<a class="headerlink" href="#others" title="Permalink to this headline">¶</a></h2>
 <div class="panel panel-default">
   <div class="panel-heading">
     <h5 class="panel-title">
@@ -275,7 +279,7 @@ In addition, all the code used to train YASA is freely available at <a class="re
     </h5>
   </div>
   <div id="collapse_release" class="panel-collapse collapse">
-    <div class="panel-body"><p>Pingouin uses <a class="reference external" href="https://github.com/alexmojaki/outdated">outdated</a>, a Python package that automatically checks if a newer version of YASA is available upon loading. Alternatively, you can click “Watch” on the <a class="reference external" href="https://github.com/raphaelvallat/yasa">GitHub</a> of YASA.
+    <div class="panel-body"><p>YASA uses <a class="reference external" href="https://github.com/alexmojaki/outdated">outdated</a>, a Python package that automatically checks if a newer version of YASA is available upon loading. Alternatively, you can click “Watch” on the <a class="reference external" href="https://github.com/raphaelvallat/yasa">GitHub</a> of YASA.
 Whenever a new release is out there, you can upgrade your version by typing the following line in a terminal window:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip install --upgrade yasa
 </pre></div>
@@ -303,22 +307,20 @@ Whenever a new release is out there, you can upgrade your version by typing the 
     </h5>
   </div>
   <div id="collapse_cite" class="panel-collapse collapse">
-    <div class="panel-body"><p>To cite YASA, please use the preprint publication:</p>
+    <div class="panel-body"><p>To cite YASA, please use the <a class="reference external" href="https://elifesciences.org/articles/70092">eLife publication</a>:</p>
 <ul class="simple">
-<li><p>Raphael Vallat and Matthew P. Walker (2021). <em>A universal, open-source, high-performance tool for automated sleep staging</em>. bioRxiv 2021.05.28.446165; doi: <a class="reference external" href="https://doi.org/10.1101/2021.05.28.446165">https://doi.org/10.1101/2021.05.28.446165</a></p></li>
+<li><p>Vallat, Raphael, and Matthew P. Walker. “An open-source, high-performance tool for automated sleep staging.” Elife 10 (2021). doi: <a class="reference external" href="https://doi.org/10.7554/eLife.70092">https://doi.org/10.7554/eLife.70092</a></p></li>
 </ul>
 <p>BibTeX:</p>
-<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span>@article <span class="nb">{</span>Vallat2021.05.28.446165,
-  author = <span class="nb">{</span>Vallat, Raphael and Walker, Matthew P.<span class="nb">}</span>,
-  title = <span class="nb">{</span>A universal, open-source, high-performance tool for automated sleep staging<span class="nb">}</span>,
-  elocation-id = <span class="nb">{</span>2021.05.28.446165<span class="nb">}</span>,
-  year = <span class="nb">{</span>2021<span class="nb">}</span>,
-  doi = <span class="nb">{</span>10.1101/2021.05.28.446165<span class="nb">}</span>,
-  publisher = <span class="nb">{</span>Cold Spring Harbor Laboratory<span class="nb">}</span>,
-  abstract = <span class="nb">{</span>The creation of a completely automated sleep-scoring system that is highly accurate, flexible, well validated, free and simple to use by anyone has yet to be accomplished. In part, this is due to the difficulty of use of existing algorithms, algorithms having been trained on too small samples, and paywall demotivation. Here we describe a novel algorithm trained and validated on +27,000 hours of polysomnographic sleep recordings across heterogeneous populations around the world. This tool offers high sleep-staging accuracy matching or exceeding human accuracy and interscorer agreement no matter the population kind. The software is easy to use, computationally low-demanding, open source, and free. Such software has the potential to facilitate broad adoption of automated sleep staging with the hope of becoming an industry standard.Competing Interest StatementThe authors have declared no competing interest.AbbreviationsAHIapnea-hypopnea indexBMIbody mass indexEEGelectroencephalogramEOGelectrooculogramEMGelectromyogramOSAobstructive sleep apneaPSGpolysomnographyMCCMatthews correlation coefficientNREMnon rapid eye movement (sleep)REMrapid eye movement (sleep)<span class="nb">}</span>,
-  URL = <span class="nb">{</span>https://www.biorxiv.org/content/early/2021/05/28/2021.05.28.446165<span class="nb">}</span>,
-  eprint = <span class="nb">{</span>https://www.biorxiv.org/content/early/2021/05/28/2021.05.28.446165.full.pdf<span class="nb">}</span>,
-  journal = <span class="nb">{</span>bioRxiv<span class="nb">}</span>
+<div class="highlight-latex notranslate"><div class="highlight"><pre><span></span>@article <span class="nb">{</span>vallat2021open,
+  title=<span class="nb">{</span>An open-source, high-performance tool for automated sleep staging<span class="nb">}</span>,
+  author=<span class="nb">{</span>Vallat, Raphael and Walker, Matthew P<span class="nb">}</span>,
+  journal=<span class="nb">{</span>Elife<span class="nb">}</span>,
+  volume=<span class="nb">{</span>10<span class="nb">}</span>,
+  year=<span class="nb">{</span>2021<span class="nb">}</span>,
+  doi = <span class="nb">{</span>https://doi.org/10.7554/eLife.70092<span class="nb">}</span>,
+  URL = <span class="nb">{</span>https://elifesciences.org/articles/70092<span class="nb">}</span>,
+  publisher=<span class="nb">{</span>eLife Sciences Publications, Ltd<span class="nb">}</span>
 <span class="nb">}</span>
 </pre></div>
 </div>
@@ -342,8 +344,8 @@ Whenever a new release is out there, you can upgrade your version by typing the 
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
+        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
     </p>
   </div>
 </footer>

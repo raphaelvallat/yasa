@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.SleepStaging &#8212; yasa 0.5.1 documentation</title>
+    <title>yasa.SleepStaging &#8212; yasa 0.6.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -20,9 +23,9 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js "></script>
 <script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
 <script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
 
   </head><body>
@@ -38,13 +41,14 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.5.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
-                <li><a href="../api.html">Functions</a></li>
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../quickstart.html">Quickstart</a></li>
                 <li><a href="../faq.html">FAQ</a></li>
                 <li><a href="../changelog.html">What's new</a></li>
                 <li><a href="../contributing.html">Contribute</a></li>
@@ -87,10 +91,10 @@
     <div class="body col-md-12 content" role="main">
       
   <div class="section" id="yasa-sleepstaging">
-<h1>yasa.SleepStaging</h1>
+<h1>yasa.SleepStaging<a class="headerlink" href="#yasa-sleepstaging" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="yasa.SleepStaging">
-<em class="property">class </em><code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">SleepStaging</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">raw</span></em>, <em class="sig-param"><span class="n">eeg_name</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">eog_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">emg_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging"><span class="viewcode-link">[source]</span></a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">SleepStaging</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">raw</span></em>, <em class="sig-param"><span class="n">eeg_name</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">eog_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">emg_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SleepStaging" title="Permalink to this definition">¶</a></dt>
 <dd><p>Automatic sleep staging of polysomnography data.</p>
 <p>To run the automatic sleep staging, you must install the
 <a class="reference external" href="https://lightgbm.readthedocs.io/">LightGBM</a> and
@@ -101,7 +105,7 @@
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>raw</strong><span class="classifier"><a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.23.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>An MNE Raw instance.</p>
+<dt><strong>raw</strong><span class="classifier"><a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>An MNE Raw instance.</p>
 </dd>
 <dt><strong>eeg_name</strong><span class="classifier">str</span></dt><dd><p>The name of the EEG channel in <code class="docutils literal notranslate"><span class="pre">raw</span></code>. Preferentially a central
 electrode referenced either to the mastoids (C4-M1, C3-M2) or to the
@@ -126,19 +130,18 @@ False = female)</p></li>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>If you use the SleepStaging module in a publication, please cite the following preprint:</p>
+<p>If you use the SleepStaging module in a publication, please cite the following publication:</p>
 <ul class="simple">
-<li><p>A universal, open-source, high-performance tool for automated sleep staging. Raphael Vallat,
-Matthew P. Walker. bioRxiv 2021.05.28.446165; doi: <a class="reference external" href="https://doi.org/10.1101/2021.05.28.446165">https://doi.org/10.1101/2021.05.28.446165</a></p></li>
+<li><p>Vallat, R., &amp; Walker, M. P. (2021). An open-source, high-performance tool for automated
+sleep staging. Elife, 10. doi: <a class="reference external" href="https://doi.org/10.7554/eLife.70092">https://doi.org/10.7554/eLife.70092</a></p></li>
 </ul>
 <p>We provide below some key points on the algorithm and its validation. For more details,
-we refer the reader to the preprint article. If you have any questions,
+we refer the reader to the peer-reviewed publication. If you have any questions,
 make sure to first check the
 <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/faq.html">FAQ section</a> of the documentation.
 If you did not find the answer to your question, please feel free to open an issue on GitHub.</p>
 <p><strong>1. Features extraction</strong></p>
-<p>For each 30-seconds epoch and each channel, the following features are
-calculated:</p>
+<p>For each 30-seconds epoch and each channel, the following features are calculated:</p>
 <ul class="simple">
 <li><p>Standard deviation</p></li>
 <li><p>Interquartile range</p></li>
@@ -151,43 +154,41 @@ calculated:</p>
 <li><p>Permutation entropy</p></li>
 <li><p>Higuchi and Petrosian fractal dimension</p></li>
 </ul>
-<p>In addition, the algorithm also calculates a smoothed and normalized
-version of these features. Specifically, a 7.5 min centered
-triangular-weighted rolling average and a 2 min past rolling average
-are applied. The resulting smoothed features are then normalized using a
-robust z-score.</p>
-<p>The data are automatically downsampled to 100 Hz for faster
-computation.</p>
+<p>In addition, the algorithm also calculates a smoothed and normalized version of these features.
+Specifically, a 7.5 min centered triangular-weighted rolling average and a 2 min past rolling
+average are applied. The resulting smoothed features are then normalized using a robust
+z-score.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The PSG data should be in micro-Volts. Do NOT transform (e.g. z-score) or filter
+the signal before running the sleep staging algorithm.</p>
+</div>
+<p>The data are automatically downsampled to 100 Hz for faster computation.</p>
 <p><strong>2. Sleep stages prediction</strong></p>
-<p>YASA comes with a default set of pre-trained classifiers, which
-were trained and validated on ~3000 nights from the
-<a class="reference external" href="https://sleepdata.org/">National Sleep Research Resource</a>. These nights
-involved participants from a wide age range, of different ethnicities,
-gender, and health status. The default classifiers should therefore works
-reasonably well on most data.</p>
+<p>YASA comes with a default set of pre-trained classifiers, which were trained and validated
+on ~3000 nights from the <a class="reference external" href="https://sleepdata.org/">National Sleep Research Resource</a>.
+These nights involved participants from a wide age range, of different ethnicities, gender,
+and health status. The default classifiers should therefore works reasonably well on most data.</p>
 <p>The code that was used to train the classifiers can be found on GitHub at:
 <a class="reference external" href="https://github.com/raphaelvallat/yasa_classifier">https://github.com/raphaelvallat/yasa_classifier</a></p>
-<p>In addition with the predicted sleep stages, YASA can also return the
-predicted probabilities of each sleep stage at each epoch. This can in turn
-be used to derive a confidence score at each epoch.</p>
+<p>In addition with the predicted sleep stages, YASA can also return the predicted probabilities
+of each sleep stage at each epoch. This can be used to derive a confidence score at each epoch.</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
 <p>The predictions should ALWAYS be double-check by a trained
 visual scorer, especially for epochs with low confidence. A full
 inspection should be performed in the following cases:</p>
 <ul class="simple">
-<li><p>Nap data, because the classifiers were exclusively trained on
-full-night recordings.</p></li>
+<li><p>Nap data, because the classifiers were exclusively trained on full-night recordings.</p></li>
 <li><p>Participants with sleep disorders.</p></li>
 <li><p>Sub-optimal PSG system and/or referencing</p></li>
 </ul>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>N1 sleep is the sleep stage with the lowest detection
-accuracy. This is expected because N1 is also the stage with the lowest
-human inter-rater agreement. Be very careful for potential
-misclassification of N1 sleep (e.g. scored as Wake or N2) when
+<p>N1 sleep is the sleep stage with the lowest detection accuracy. This is expected
+because N1 is also the stage with the lowest human inter-rater agreement. Be very
+careful for potential misclassification of N1 sleep (e.g. scored as Wake or N2) when
 inspecting the predicted sleep stages.</p>
 </div>
 <p class="rubric">References</p>
@@ -227,7 +228,7 @@ Association 25.10 (2018): 1351-1358.</p></li>
 <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/faq.html">FAQ</a>.</p>
 <dl class="py method">
 <dt id="yasa.SleepStaging.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">raw</span></em>, <em class="sig-param"><span class="n">eeg_name</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">eog_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">emg_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.__init__"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">raw</span></em>, <em class="sig-param"><span class="n">eeg_name</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">eog_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">emg_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">metadata</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SleepStaging.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
 </dd></dl>
 
@@ -238,29 +239,29 @@ Association 25.10 (2018): 1351-1358.</p></li>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SleepStaging.__init__" title="yasa.SleepStaging.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(self, raw, eeg_name, *[, eog_name, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SleepStaging.__init__" title="yasa.SleepStaging.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(raw, eeg_name, *[, eog_name, …])</p></td>
 <td><p>Initialize self.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SleepStaging.fit" title="yasa.SleepStaging.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(self)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SleepStaging.fit" title="yasa.SleepStaging.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>()</p></td>
 <td><p>Extract features from data.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SleepStaging.get_features" title="yasa.SleepStaging.get_features"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_features</span></code></a>(self)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SleepStaging.get_features" title="yasa.SleepStaging.get_features"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_features</span></code></a>()</p></td>
 <td><p>Extract features from data and return a copy of the dataframe.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SleepStaging.plot_predict_proba" title="yasa.SleepStaging.plot_predict_proba"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_predict_proba</span></code></a>(self[, proba, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SleepStaging.plot_predict_proba" title="yasa.SleepStaging.plot_predict_proba"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_predict_proba</span></code></a>([proba, majority_only, …])</p></td>
 <td><p>Plot the predicted probability for each sleep stage for each 30-sec epoch of data.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SleepStaging.predict" title="yasa.SleepStaging.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(self[, path_to_model])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SleepStaging.predict" title="yasa.SleepStaging.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>([path_to_model])</p></td>
 <td><p>Return the predicted sleep stage for each 30-sec epoch of data.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SleepStaging.predict_proba" title="yasa.SleepStaging.predict_proba"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_proba</span></code></a>(self[, path_to_model])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SleepStaging.predict_proba" title="yasa.SleepStaging.predict_proba"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_proba</span></code></a>([path_to_model])</p></td>
 <td><p>Return the predicted probability for each sleep stage for each 30-sec epoch of data.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
 <dt id="yasa.SleepStaging.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.fit"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SleepStaging.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract features from data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -273,12 +274,12 @@ Association 25.10 (2018): 1351-1358.</p></li>
 
 <dl class="py method">
 <dt id="yasa.SleepStaging.get_features">
-<code class="sig-name descname">get_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.get_features"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-name descname">get_features</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.get_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SleepStaging.get_features" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract features from data and return a copy of the dataframe.</p>
 <dl class="field-list">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><dl>
-<dt><strong>features</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Feature dataframe.</p>
+<dt><strong>features</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.4.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Feature dataframe.</p>
 </dd>
 </dl>
 </dd>
@@ -287,17 +288,14 @@ Association 25.10 (2018): 1351-1358.</p></li>
 
 <dl class="py method">
 <dt id="yasa.SleepStaging.plot_predict_proba">
-<code class="sig-name descname">plot_predict_proba</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">proba</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">majority_only</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">palette</span><span class="o">=</span><span class="default_value">['#99d7f1', '#009DDC', 'xkcd:twilight blue', 'xkcd:rich purple', 'xkcd:sunflower']</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.plot_predict_proba"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Plot the predicted probability for each sleep stage for each 30-sec
-epoch of data.</p>
+<code class="sig-name descname">plot_predict_proba</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">proba</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">majority_only</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">palette</span><span class="o">=</span><span class="default_value">['#99d7f1', '#009DDC', 'xkcd:twilight blue', 'xkcd:rich purple', 'xkcd:sunflower']</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.plot_predict_proba"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SleepStaging.plot_predict_proba" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the predicted probability for each sleep stage for each 30-sec epoch of data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>proba</strong><span class="classifier">self or DataFrame</span></dt><dd><p>A dataframe with the probability of each sleep stage for each
-30-sec epoch of data.</p>
+<dt><strong>proba</strong><span class="classifier">self or DataFrame</span></dt><dd><p>A dataframe with the probability of each sleep stage for each 30-sec epoch of data.</p>
 </dd>
-<dt><strong>majority_only</strong><span class="classifier">boolean</span></dt><dd><p>If True, probabilities of the non-majority classes will be set
-to 0.</p>
+<dt><strong>majority_only</strong><span class="classifier">boolean</span></dt><dd><p>If True, probabilities of the non-majority classes will be set to 0.</p>
 </dd>
 </dl>
 </dd>
@@ -306,7 +304,7 @@ to 0.</p>
 
 <dl class="py method">
 <dt id="yasa.SleepStaging.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">path_to_model</span><span class="o">=</span><span class="default_value">'auto'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.predict"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path_to_model</span><span class="o">=</span><span class="default_value">'auto'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SleepStaging.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the predicted sleep stage for each 30-sec epoch of data.</p>
 <p>Currently, only classifiers that were trained using a
 <a class="reference external" href="https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html">LGBMClassifier</a>
@@ -314,14 +312,14 @@ are supported.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>path_to_model</strong><span class="classifier">str or “auto”</span></dt><dd><p>Full path to a trained LGBMClassifier, exported as a
-joblib file. Can be “auto” to use YASA’s default classifier.</p>
+<dt><strong>path_to_model</strong><span class="classifier">str or “auto”</span></dt><dd><p>Full path to a trained LGBMClassifier, exported as a joblib file. Can be “auto” to
+use YASA’s default classifier.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>pred</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.21)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>The predicted sleep stages.</p>
+<dt><strong>pred</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>The predicted sleep stages.</p>
 </dd>
 </dl>
 </dd>
@@ -330,24 +328,22 @@ joblib file. Can be “auto” to use YASA’s default classifier.</p>
 
 <dl class="py method">
 <dt id="yasa.SleepStaging.predict_proba">
-<code class="sig-name descname">predict_proba</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">path_to_model</span><span class="o">=</span><span class="default_value">'auto'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.predict_proba"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Return the predicted probability for each sleep stage for each 30-sec
-epoch of data.</p>
+<code class="sig-name descname">predict_proba</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path_to_model</span><span class="o">=</span><span class="default_value">'auto'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/staging.html#SleepStaging.predict_proba"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SleepStaging.predict_proba" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the predicted probability for each sleep stage for each 30-sec epoch of data.</p>
 <p>Currently, only classifiers that were trained using a
 <a class="reference external" href="https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html">LGBMClassifier</a>
 are supported.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>path_to_model</strong><span class="classifier">str or “auto”</span></dt><dd><p>Full path to a trained LGBMClassifier, exported as a
-joblib file. Can be “auto” to use YASA’s default classifier.</p>
+<dt><strong>path_to_model</strong><span class="classifier">str or “auto”</span></dt><dd><p>Full path to a trained LGBMClassifier, exported as a joblib file. Can be “auto” to
+use YASA’s default classifier.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>proba</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>The predicted probability for each sleep stage for each 30-sec
-epoch of data.</p>
+<dt><strong>proba</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.4.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>The predicted probability for each sleep stage for each 30-sec epoch of data.</p>
 </dd>
 </dl>
 </dd>
@@ -373,8 +369,8 @@ epoch of data.</p>
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
+        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
     </p>
   </div>
 </footer>

@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.staging &#8212; yasa 0.5.1 documentation</title>
+    <title>yasa.staging &#8212; yasa 0.6.0 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
     <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/language_data.js"></script>
+    <script src="../../_static/clipboard.min.js"></script>
+    <script src="../../_static/copybutton.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -20,9 +23,9 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../../_static/js/jquery-1.12.4.min.js "></script>
 <script type="text/javascript" src="../../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../../_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
 <script type="text/javascript" src="../../_static/bootstrap-sphinx.js "></script>
 
   </head><body>
@@ -38,13 +41,14 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.5.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
-                <li><a href="../../api.html">Functions</a></li>
+                <li><a href="../../api.html">API</a></li>
+                <li><a href="../../quickstart.html">Quickstart</a></li>
                 <li><a href="../../faq.html">FAQ</a></li>
                 <li><a href="../../changelog.html">What's new</a></li>
                 <li><a href="../../contributing.html">Contribute</a></li>
@@ -144,21 +148,20 @@
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
 
-<span class="sd">    If you use the SleepStaging module in a publication, please cite the following preprint:</span>
+<span class="sd">    If you use the SleepStaging module in a publication, please cite the following publication:</span>
 
-<span class="sd">    * A universal, open-source, high-performance tool for automated sleep staging. Raphael Vallat,</span>
-<span class="sd">      Matthew P. Walker. bioRxiv 2021.05.28.446165; doi: https://doi.org/10.1101/2021.05.28.446165</span>
+<span class="sd">    * Vallat, R., &amp; Walker, M. P. (2021). An open-source, high-performance tool for automated</span>
+<span class="sd">      sleep staging. Elife, 10. doi: https://doi.org/10.7554/eLife.70092</span>
 
 <span class="sd">    We provide below some key points on the algorithm and its validation. For more details,</span>
-<span class="sd">    we refer the reader to the preprint article. If you have any questions,</span>
+<span class="sd">    we refer the reader to the peer-reviewed publication. If you have any questions,</span>
 <span class="sd">    make sure to first check the</span>
 <span class="sd">    `FAQ section &lt;https://raphaelvallat.com/yasa/build/html/faq.html&gt;`_ of the documentation.</span>
 <span class="sd">    If you did not find the answer to your question, please feel free to open an issue on GitHub.</span>
 
 <span class="sd">    **1. Features extraction**</span>
 
-<span class="sd">    For each 30-seconds epoch and each channel, the following features are</span>
-<span class="sd">    calculated:</span>
+<span class="sd">    For each 30-seconds epoch and each channel, the following features are calculated:</span>
 
 <span class="sd">    * Standard deviation</span>
 <span class="sd">    * Interquartile range</span>
@@ -171,44 +174,40 @@
 <span class="sd">    * Permutation entropy</span>
 <span class="sd">    * Higuchi and Petrosian fractal dimension</span>
 
-<span class="sd">    In addition, the algorithm also calculates a smoothed and normalized</span>
-<span class="sd">    version of these features. Specifically, a 7.5 min centered</span>
-<span class="sd">    triangular-weighted rolling average and a 2 min past rolling average</span>
-<span class="sd">    are applied. The resulting smoothed features are then normalized using a</span>
-<span class="sd">    robust z-score.</span>
+<span class="sd">    In addition, the algorithm also calculates a smoothed and normalized version of these features.</span>
+<span class="sd">    Specifically, a 7.5 min centered triangular-weighted rolling average and a 2 min past rolling</span>
+<span class="sd">    average are applied. The resulting smoothed features are then normalized using a robust</span>
+<span class="sd">    z-score.</span>
 
-<span class="sd">    The data are automatically downsampled to 100 Hz for faster</span>
-<span class="sd">    computation.</span>
+<span class="sd">    .. important:: The PSG data should be in micro-Volts. Do NOT transform (e.g. z-score) or filter</span>
+<span class="sd">        the signal before running the sleep staging algorithm.</span>
+
+<span class="sd">    The data are automatically downsampled to 100 Hz for faster computation.</span>
 
 <span class="sd">    **2. Sleep stages prediction**</span>
 
-<span class="sd">    YASA comes with a default set of pre-trained classifiers, which</span>
-<span class="sd">    were trained and validated on ~3000 nights from the</span>
-<span class="sd">    `National Sleep Research Resource &lt;https://sleepdata.org/&gt;`_. These nights</span>
-<span class="sd">    involved participants from a wide age range, of different ethnicities,</span>
-<span class="sd">    gender, and health status. The default classifiers should therefore works</span>
-<span class="sd">    reasonably well on most data.</span>
+<span class="sd">    YASA comes with a default set of pre-trained classifiers, which were trained and validated</span>
+<span class="sd">    on ~3000 nights from the `National Sleep Research Resource &lt;https://sleepdata.org/&gt;`_.</span>
+<span class="sd">    These nights involved participants from a wide age range, of different ethnicities, gender,</span>
+<span class="sd">    and health status. The default classifiers should therefore works reasonably well on most data.</span>
 
 <span class="sd">    The code that was used to train the classifiers can be found on GitHub at:</span>
 <span class="sd">    https://github.com/raphaelvallat/yasa_classifier</span>
 
-<span class="sd">    In addition with the predicted sleep stages, YASA can also return the</span>
-<span class="sd">    predicted probabilities of each sleep stage at each epoch. This can in turn</span>
-<span class="sd">    be used to derive a confidence score at each epoch.</span>
+<span class="sd">    In addition with the predicted sleep stages, YASA can also return the predicted probabilities</span>
+<span class="sd">    of each sleep stage at each epoch. This can be used to derive a confidence score at each epoch.</span>
 
 <span class="sd">    .. important:: The predictions should ALWAYS be double-check by a trained</span>
 <span class="sd">        visual scorer, especially for epochs with low confidence. A full</span>
 <span class="sd">        inspection should be performed in the following cases:</span>
 
-<span class="sd">        * Nap data, because the classifiers were exclusively trained on</span>
-<span class="sd">          full-night recordings.</span>
+<span class="sd">        * Nap data, because the classifiers were exclusively trained on full-night recordings.</span>
 <span class="sd">        * Participants with sleep disorders.</span>
 <span class="sd">        * Sub-optimal PSG system and/or referencing</span>
 
-<span class="sd">    .. warning:: N1 sleep is the sleep stage with the lowest detection</span>
-<span class="sd">        accuracy. This is expected because N1 is also the stage with the lowest</span>
-<span class="sd">        human inter-rater agreement. Be very careful for potential</span>
-<span class="sd">        misclassification of N1 sleep (e.g. scored as Wake or N2) when</span>
+<span class="sd">    .. warning:: N1 sleep is the sleep stage with the lowest detection accuracy. This is expected</span>
+<span class="sd">        because N1 is also the stage with the lowest human inter-rater agreement. Be very</span>
+<span class="sd">        careful for potential misclassification of N1 sleep (e.g. scored as Wake or N2) when</span>
 <span class="sd">        inspecting the predicted sleep stages.</span>
 
 <span class="sd">    References</span>
@@ -251,8 +250,7 @@
 <span class="sd">    `FAQ &lt;https://raphaelvallat.com/yasa/build/html/faq.html&gt;`_.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="SleepStaging.__init__"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">eeg_name</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">eog_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">emg_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                 <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="SleepStaging.__init__"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">eeg_name</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">eog_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">emg_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="c1"># Type check</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eeg_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eog_name</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)))</span>
@@ -262,8 +260,7 @@
         <span class="c1"># Validate metadata</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="k">if</span> <span class="s1">&#39;age&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">120</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;age must be between 0 and &#39;</span>
-                                                   <span class="s1">&#39;120.&#39;</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">120</span><span class="p">,</span> <span class="s1">&#39;age must be between 0 and 120.&#39;</span>
             <span class="k">if</span> <span class="s1">&#39;male&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
                 <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;male&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;male&#39;</span><span class="p">])</span>
                 <span class="k">assert</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;male&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;male must be 0 or 1.&#39;</span>
@@ -339,8 +336,7 @@
             <span class="c1"># Preprocessing</span>
             <span class="c1"># - Filter the data</span>
             <span class="n">dt_filt</span> <span class="o">=</span> <span class="n">filter_data</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span>
-                <span class="n">sf</span><span class="p">,</span> <span class="n">l_freq</span><span class="o">=</span><span class="n">freq_broad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">h_freq</span><span class="o">=</span><span class="n">freq_broad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">sf</span><span class="p">,</span> <span class="n">l_freq</span><span class="o">=</span><span class="n">freq_broad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">h_freq</span><span class="o">=</span><span class="n">freq_broad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="c1"># - Extract epochs. Data is now of shape (n_epochs, n_samples).</span>
             <span class="n">times</span><span class="p">,</span> <span class="n">epochs</span> <span class="o">=</span> <span class="n">sliding_window</span><span class="p">(</span><span class="n">dt_filt</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 
@@ -373,8 +369,7 @@
                 <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;theta&#39;</span><span class="p">]</span>
 
             <span class="c1"># Add total power</span>
-            <span class="n">idx_broad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
-                <span class="n">freqs</span> <span class="o">&gt;=</span> <span class="n">freq_broad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">freqs</span> <span class="o">&lt;=</span> <span class="n">freq_broad</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">idx_broad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">freqs</span> <span class="o">&gt;=</span> <span class="n">freq_broad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">freqs</span> <span class="o">&lt;=</span> <span class="n">freq_broad</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
             <span class="n">dx</span> <span class="o">=</span> <span class="n">freqs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">freqs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;abspow&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">psd</span><span class="p">[:,</span> <span class="n">idx_broad</span><span class="p">],</span> <span class="n">dx</span><span class="o">=</span><span class="n">dx</span><span class="p">)</span>
 
@@ -461,13 +456,11 @@
         <span class="n">f_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">clf</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f_diff</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The following features are present in the &quot;</span>
-                             <span class="s2">&quot;classifier but not in the current features set:&quot;</span><span class="p">,</span>
-                             <span class="n">f_diff</span><span class="p">)</span>
+                             <span class="s2">&quot;classifier but not in the current features set:&quot;</span><span class="p">,</span> <span class="n">f_diff</span><span class="p">)</span>
         <span class="n">f_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">,</span> <span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f_diff</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The following features are present in the &quot;</span>
-                             <span class="s2">&quot;current feature set but not in the classifier:&quot;</span><span class="p">,</span>
-                             <span class="n">f_diff</span><span class="p">)</span>
+                             <span class="s2">&quot;current feature set but not in the classifier:&quot;</span><span class="p">,</span> <span class="n">f_diff</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_load_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_model</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Load the relevant trained classifier.&quot;&quot;&quot;</span>
@@ -502,8 +495,8 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        path_to_model : str or &quot;auto&quot;</span>
-<span class="sd">            Full path to a trained LGBMClassifier, exported as a</span>
-<span class="sd">            joblib file. Can be &quot;auto&quot; to use YASA&#39;s default classifier.</span>
+<span class="sd">            Full path to a trained LGBMClassifier, exported as a joblib file. Can be &quot;auto&quot; to</span>
+<span class="sd">            use YASA&#39;s default classifier.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -525,8 +518,7 @@
 
 <div class="viewcode-block" id="SleepStaging.predict_proba"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.predict_proba">[docs]</a>    <span class="k">def</span> <span class="nf">predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_model</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Return the predicted probability for each sleep stage for each 30-sec</span>
-<span class="sd">        epoch of data.</span>
+<span class="sd">        Return the predicted probability for each sleep stage for each 30-sec epoch of data.</span>
 
 <span class="sd">        Currently, only classifiers that were trained using a</span>
 <span class="sd">        `LGBMClassifier &lt;https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html&gt;`_</span>
@@ -535,14 +527,13 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        path_to_model : str or &quot;auto&quot;</span>
-<span class="sd">            Full path to a trained LGBMClassifier, exported as a</span>
-<span class="sd">            joblib file. Can be &quot;auto&quot; to use YASA&#39;s default classifier.</span>
+<span class="sd">            Full path to a trained LGBMClassifier, exported as a joblib file. Can be &quot;auto&quot; to</span>
+<span class="sd">            use YASA&#39;s default classifier.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        proba : :py:class:`pandas.DataFrame`</span>
-<span class="sd">            The predicted probability for each sleep stage for each 30-sec</span>
-<span class="sd">            epoch of data.</span>
+<span class="sd">            The predicted probability for each sleep stage for each 30-sec epoch of data.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_proba&#39;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">)</span>
@@ -552,17 +543,14 @@
                            <span class="n">palette</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;#99d7f1&#39;</span><span class="p">,</span> <span class="s1">&#39;#009DDC&#39;</span><span class="p">,</span> <span class="s1">&#39;xkcd:twilight blue&#39;</span><span class="p">,</span>
                                     <span class="s1">&#39;xkcd:rich purple&#39;</span><span class="p">,</span> <span class="s1">&#39;xkcd:sunflower&#39;</span><span class="p">]):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Plot the predicted probability for each sleep stage for each 30-sec</span>
-<span class="sd">        epoch of data.</span>
+<span class="sd">        Plot the predicted probability for each sleep stage for each 30-sec epoch of data.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        proba : self or DataFrame</span>
-<span class="sd">            A dataframe with the probability of each sleep stage for each</span>
-<span class="sd">            30-sec epoch of data.</span>
+<span class="sd">            A dataframe with the probability of each sleep stage for each 30-sec epoch of data.</span>
 <span class="sd">        majority_only : boolean</span>
-<span class="sd">            If True, probabilities of the non-majority classes will be set</span>
-<span class="sd">            to 0.</span>
+<span class="sd">            If True, probabilities of the non-majority classes will be set to 0.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">proba</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_features&#39;</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must call .predict_proba before this function&quot;</span><span class="p">)</span>
@@ -573,8 +561,7 @@
         <span class="k">if</span> <span class="n">majority_only</span><span class="p">:</span>
             <span class="n">cond</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">==</span> <span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="n">proba</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">other</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">ax</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;area&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">8</span><span class="p">,</span>
-                        <span class="n">stacked</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;area&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">8</span><span class="p">,</span> <span class="n">stacked</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="c1"># Add confidence</span>
         <span class="c1"># confidence = proba.max(1)</span>
         <span class="c1"># ax.plot(confidence, lw=1, color=&#39;k&#39;, ls=&#39;-&#39;, alpha=0.5,</span>
@@ -601,8 +588,8 @@
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
+        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
     </p>
   </div>
 </footer>

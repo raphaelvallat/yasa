@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.bandpower &#8212; yasa 0.5.1 documentation</title>
+    <title>yasa.bandpower &#8212; yasa 0.6.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -20,9 +23,9 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js "></script>
 <script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
 <script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
 
   </head><body>
@@ -38,13 +41,14 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.5.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
-                <li><a href="../api.html">Functions</a></li>
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../quickstart.html">Quickstart</a></li>
                 <li><a href="../faq.html">FAQ</a></li>
                 <li><a href="../changelog.html">What's new</a></li>
                 <li><a href="../contributing.html">Contribute</a></li>
@@ -87,40 +91,34 @@
     <div class="body col-md-12 content" role="main">
       
   <div class="section" id="yasa-bandpower">
-<h1>yasa.bandpower</h1>
+<h1>yasa.bandpower<a class="headerlink" href="#yasa-bandpower" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
 <dt id="yasa.bandpower">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">bandpower</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ch_names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hypno</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include</span><span class="o">=</span><span class="default_value">2, 3</span></em>, <em class="sig-param"><span class="n">win_sec</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">relative</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">bandpass</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">bands</span><span class="o">=</span><span class="default_value">[0.5, 4, 'Delta', 4, 8, 'Theta', 8, 12, 'Alpha', 12, 16, 'Sigma', 16, 30, 'Beta', 30, 40, 'Gamma']</span></em>, <em class="sig-param"><span class="n">kwargs_welch</span><span class="o">=</span><span class="default_value">{'average': 'median', 'window': 'hamming'}</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/spectral.html#bandpower"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Calculate the Welch bandpower for each channel and, if specified,
-for each sleep stage.</p>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">bandpower</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ch_names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hypno</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include</span><span class="o">=</span><span class="default_value">2, 3</span></em>, <em class="sig-param"><span class="n">win_sec</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">relative</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">bandpass</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">bands</span><span class="o">=</span><span class="default_value">[0.5, 4, 'Delta', 4, 8, 'Theta', 8, 12, 'Alpha', 12, 16, 'Sigma', 16, 30, 'Beta', 30, 40, 'Gamma']</span></em>, <em class="sig-param"><span class="n">kwargs_welch</span><span class="o">=</span><span class="default_value">{'average': 'median', 'window': 'hamming'}</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/spectral.html#bandpower"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.bandpower" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the Welch bandpower for each channel and, if specified, for each sleep stage.</p>
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 0.1.6.</span></p>
 </div>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>data</strong><span class="classifier">np.array_like or <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.23.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>1D or 2D EEG data. Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.23.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which
-case <code class="docutils literal notranslate"><span class="pre">data</span></code>, <code class="docutils literal notranslate"><span class="pre">sf</span></code>, and <code class="docutils literal notranslate"><span class="pre">ch_names</span></code> will be automatically
-extracted, and <code class="docutils literal notranslate"><span class="pre">data</span></code> will also be converted from Volts (MNE default)
-to micro-Volts (YASA).</p>
+<dt><strong>data</strong><span class="classifier">np.array_like or <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>1D or 2D EEG data. Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>,
+<code class="docutils literal notranslate"><span class="pre">sf</span></code>, and <code class="docutils literal notranslate"><span class="pre">ch_names</span></code> will be automatically extracted, and <code class="docutils literal notranslate"><span class="pre">data</span></code> will also be
+converted from Volts (MNE default) to micro-Volts (YASA).</p>
 </dd>
-<dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency of data AND the hypnogram.
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.23.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+<dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency of data AND the hypnogram. Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a
+<a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
-<dt><strong>ch_names</strong><span class="classifier">list</span></dt><dd><p>List of channel names, e.g. [‘Cz’, ‘F3’, ‘F4’, …]. If None,
-channels will be labelled [‘CHAN000’, ‘CHAN001’, …].
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.23.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+<dt><strong>ch_names</strong><span class="classifier">list</span></dt><dd><p>List of channel names, e.g. [‘Cz’, ‘F3’, ‘F4’, …]. If None, channels will be labelled
+[‘CHAN000’, ‘CHAN001’, …]. Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
-<dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Sleep stage (hypnogram). If the hypnogram is loaded, the
-bandpower will be extracted for each sleep stage defined in
-<code class="docutils literal notranslate"><span class="pre">include</span></code>.</p>
-<p>The hypnogram must have the exact same number of samples as <code class="docutils literal notranslate"><span class="pre">data</span></code>.
-To upsample your hypnogram, please refer to
-<a class="reference internal" href="yasa.hypno_upsample_to_data.html#yasa.hypno_upsample_to_data" title="yasa.hypno_upsample_to_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.hypno_upsample_to_data()</span></code></a>.</p>
+<dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Sleep stage (hypnogram). If the hypnogram is loaded, the bandpower will be extracted for
+each sleep stage defined in <code class="docutils literal notranslate"><span class="pre">include</span></code>.</p>
+<p>The hypnogram must have the exact same number of samples as <code class="docutils literal notranslate"><span class="pre">data</span></code>. To upsample your
+hypnogram, please refer to <a class="reference internal" href="yasa.hypno_upsample_to_data.html#yasa.hypno_upsample_to_data" title="yasa.hypno_upsample_to_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.hypno_upsample_to_data()</span></code></a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The default hypnogram format in YASA is a 1D integer
-vector where:</p>
+<p>The default hypnogram format in YASA is a 1D integer vector where:</p>
 <ul class="simple">
 <li><p>-2 = Unscored</p></li>
 <li><p>-1 = Artefact / Movement</p></li>
@@ -132,36 +130,31 @@ vector where:</p>
 </ul>
 </div>
 </dd>
-<dt><strong>include</strong><span class="classifier">tuple, list or int</span></dt><dd><p>Values in <code class="docutils literal notranslate"><span class="pre">hypno</span></code> that will be included in the mask. The default is
-(2, 3), meaning that the bandpower are sequentially calculated
-for N2 and N3 sleep. This has no effect when <code class="docutils literal notranslate"><span class="pre">hypno</span></code> is None.</p>
+<dt><strong>include</strong><span class="classifier">tuple, list or int</span></dt><dd><p>Values in <code class="docutils literal notranslate"><span class="pre">hypno</span></code> that will be included in the mask. The default is (2, 3), meaning that
+the bandpower are sequentially calculated for N2 and N3 sleep. This has no effect when
+<code class="docutils literal notranslate"><span class="pre">hypno</span></code> is None.</p>
 </dd>
-<dt><strong>win_sec</strong><span class="classifier">int or float</span></dt><dd><p>The length of the sliding window, in seconds, used for the Welch PSD
-calculation. Ideally, this should be at least two times the inverse of
-the lower frequency of interest (e.g. for a lower frequency of interest
-of 0.5 Hz, the window length should be at least 2 * 1 / 0.5 =
-4 seconds).</p>
+<dt><strong>win_sec</strong><span class="classifier">int or float</span></dt><dd><p>The length of the sliding window, in seconds, used for the Welch PSD calculation.
+Ideally, this should be at least two times the inverse of the lower frequency of
+interest (e.g. for a lower frequency of interest of 0.5 Hz, the window length should
+be at least 2 * 1 / 0.5 = 4 seconds).</p>
 </dd>
-<dt><strong>relative</strong><span class="classifier">boolean</span></dt><dd><p>If True, bandpower is divided by the total power between the min and
-max frequencies defined in <code class="docutils literal notranslate"><span class="pre">band</span></code>.</p>
+<dt><strong>relative</strong><span class="classifier">boolean</span></dt><dd><p>If True, bandpower is divided by the total power between the min and max frequencies
+defined in <code class="docutils literal notranslate"><span class="pre">band</span></code>.</p>
 </dd>
-<dt><strong>bandpass</strong><span class="classifier">boolean</span></dt><dd><p>If True, apply a standard FIR bandpass filter using the minimum and
-maximum frequencies in <code class="docutils literal notranslate"><span class="pre">bands</span></code>. Fore more details, refer to
-<a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v0.23.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a>.</p>
+<dt><strong>bandpass</strong><span class="classifier">boolean</span></dt><dd><p>If True, apply a standard FIR bandpass filter using the minimum and maximum frequencies
+in <code class="docutils literal notranslate"><span class="pre">bands</span></code>. Fore more details, refer to <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v0.24)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a>.</p>
 </dd>
-<dt><strong>bands</strong><span class="classifier">list of tuples</span></dt><dd><p>List of frequency bands of interests. Each tuple must contain the
-lower and upper frequencies, as well as the band name
-(e.g. (0.5, 4, ‘Delta’)).</p>
+<dt><strong>bands</strong><span class="classifier">list of tuples</span></dt><dd><p>List of frequency bands of interests. Each tuple must contain the lower and upper
+frequencies, as well as the band name (e.g. (0.5, 4, ‘Delta’)).</p>
 </dd>
-<dt><strong>kwargs_welch</strong><span class="classifier">dict</span></dt><dd><p>Optional keywords arguments that are passed to the
-<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/reference/generated/scipy.signal.welch.html#scipy.signal.welch" title="(in SciPy v1.7.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.signal.welch()</span></code></a> function.</p>
+<dt><strong>kwargs_welch</strong><span class="classifier">dict</span></dt><dd><p>Optional keywords arguments that are passed to the <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.welch.html#scipy.signal.welch" title="(in SciPy v1.8.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.signal.welch()</span></code></a> function.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Bandpower dataframe, in which each row is a channel and each column
-a spectral band.</p>
+<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.4.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Bandpower dataframe, in which each row is a channel and each column a spectral band.</p>
 </dd>
 </dl>
 </dd>
@@ -188,8 +181,8 @@ a spectral band.</p>
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
+        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
     </p>
   </div>
 </footer>

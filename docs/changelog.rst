@@ -11,9 +11,11 @@ What's new
 v0.6.0 (February 2022)
 ----------------------
 
+This is a MAJOR release with several API-breaking changes, new functions, bugfixes and a new section in the documentation.
+
 **Documentation**
 
-We have now added a :ref:`quickstart` section to illustrate the main functions of YASA. Make sure to check it out!
+* Added a :ref:`quickstart` section to illustrate the main functions of YASA. Make sure to check it out!
 
 **Plotting**
 
@@ -21,7 +23,7 @@ We have now added a :ref:`quickstart` section to illustrate the main functions o
 
 **Slow oscillations—sigma coupling**
 
-IMPORTANT - The default behavior of ``coupling=True`` in :py:func:`yasa.sw_detect` has been changed:
+IMPORTANT — The default behavior of ``coupling=True`` in :py:func:`yasa.sw_detect` has been changed:
 
 * YASA now uses a ± 1 second window around the negative peak of the slow-waves (2 sec total) to calculate the coupling, instead of a ± 2 sec window. Overall, this tends to increase the ndPAC values because of the higher temporal specificity. To keep a 4-sec window, use ``coupling_params['time'] = 2``.
 

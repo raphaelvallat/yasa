@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.spindles_detect &#8212; yasa 0.5.1 documentation</title>
+    <title>yasa.spindles_detect &#8212; yasa 0.6.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -20,9 +23,9 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js "></script>
 <script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
 <script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
 
   </head><body>
@@ -38,13 +41,14 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.5.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
-                <li><a href="../api.html">Functions</a></li>
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../quickstart.html">Quickstart</a></li>
                 <li><a href="../faq.html">FAQ</a></li>
                 <li><a href="../changelog.html">What's new</a></li>
                 <li><a href="../contributing.html">Contribute</a></li>
@@ -87,31 +91,31 @@
     <div class="body col-md-12 content" role="main">
       
   <div class="section" id="yasa-spindles-detect">
-<h1>yasa.spindles_detect</h1>
+<h1>yasa.spindles_detect<a class="headerlink" href="#yasa-spindles-detect" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
 <dt id="yasa.spindles_detect">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">spindles_detect</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ch_names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hypno</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include</span><span class="o">=</span><span class="default_value">1, 2, 3</span></em>, <em class="sig-param"><span class="n">freq_sp</span><span class="o">=</span><span class="default_value">12, 15</span></em>, <em class="sig-param"><span class="n">freq_broad</span><span class="o">=</span><span class="default_value">1, 30</span></em>, <em class="sig-param"><span class="n">duration</span><span class="o">=</span><span class="default_value">0.5, 2</span></em>, <em class="sig-param"><span class="n">min_distance</span><span class="o">=</span><span class="default_value">500</span></em>, <em class="sig-param"><span class="n">thresh</span><span class="o">=</span><span class="default_value">{'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5}</span></em>, <em class="sig-param"><span class="n">multi_only</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">remove_outliers</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#spindles_detect"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">spindles_detect</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ch_names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hypno</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include</span><span class="o">=</span><span class="default_value">1, 2, 3</span></em>, <em class="sig-param"><span class="n">freq_sp</span><span class="o">=</span><span class="default_value">12, 15</span></em>, <em class="sig-param"><span class="n">freq_broad</span><span class="o">=</span><span class="default_value">1, 30</span></em>, <em class="sig-param"><span class="n">duration</span><span class="o">=</span><span class="default_value">0.5, 2</span></em>, <em class="sig-param"><span class="n">min_distance</span><span class="o">=</span><span class="default_value">500</span></em>, <em class="sig-param"><span class="n">thresh</span><span class="o">=</span><span class="default_value">{'corr': 0.65, 'rel_pow': 0.2, 'rms': 1.5}</span></em>, <em class="sig-param"><span class="n">multi_only</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">remove_outliers</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#spindles_detect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.spindles_detect" title="Permalink to this definition">¶</a></dt>
 <dd><p>Spindles detection.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
 <dt><strong>data</strong><span class="classifier">array_like</span></dt><dd><p>Single or multi-channel data. Unit must be uV and shape (n_samples) or
-(n_chan, n_samples). Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.23.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
+(n_chan, n_samples). Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
 in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>, <code class="docutils literal notranslate"><span class="pre">sf</span></code>, and <code class="docutils literal notranslate"><span class="pre">ch_names</span></code> will be automatically
 extracted, and <code class="docutils literal notranslate"><span class="pre">data</span></code> will also be automatically converted from
 Volts (MNE) to micro-Volts (YASA).</p>
 </dd>
 <dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>Sampling frequency of the data in Hz.
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.23.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>If the detection is taking too long, make sure to downsample
 your data to 100 Hz (or 128 Hz). For more details, please refer to
-<a class="reference external" href="https://mne.tools/stable/generated/mne.filter.resample.html#mne.filter.resample" title="(in MNE v0.23.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.resample()</span></code></a>.</p>
+<a class="reference external" href="https://mne.tools/stable/generated/mne.filter.resample.html#mne.filter.resample" title="(in MNE v0.24)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.resample()</span></code></a>.</p>
 </div>
 </dd>
 <dt><strong>ch_names</strong><span class="classifier">list of str</span></dt><dd><p>Channel names. Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a
-<a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.23.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+<a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
 <dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Sleep stage (hypnogram). If the hypnogram is loaded, the
 detection will only be applied to the value defined in
@@ -171,7 +175,7 @@ no selection is applied and the output is just a concatenation of the
 single-channel detection dataframe. Default is False.</p>
 </dd>
 <dt><strong>remove_outliers</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will automatically detect and remove outliers spindles
-using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
+using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v1.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
 The outliers detection is performed on all the spindles
 parameters with the exception of the <code class="docutils literal notranslate"><span class="pre">Start</span></code>, <code class="docutils literal notranslate"><span class="pre">Peak</span></code>, <code class="docutils literal notranslate"><span class="pre">End</span></code>,
 <code class="docutils literal notranslate"><span class="pre">Stage</span></code>, and <code class="docutils literal notranslate"><span class="pre">SOPhase</span></code> columns.
@@ -196,7 +200,7 @@ and ‘critical’. For most users the choice is between ‘info’
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sp</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>This will give a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> where each row is a
+<p>This will give a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.4.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> where each row is a
 detected spindle and each column is a parameter (= feature or property)
 of this spindle. To get the average spindles parameters per channel and
 sleep stage:</p>
@@ -272,8 +276,8 @@ Jupyter notebooks:</p>
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
+        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
     </p>
   </div>
 </footer>

@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.hypno &#8212; yasa 0.5.1 documentation</title>
+    <title>yasa.hypno &#8212; yasa 0.6.0 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
     <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/language_data.js"></script>
+    <script src="../../_static/clipboard.min.js"></script>
+    <script src="../../_static/copybutton.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -20,9 +23,9 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../../_static/js/jquery-1.12.4.min.js "></script>
 <script type="text/javascript" src="../../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../../_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
 <script type="text/javascript" src="../../_static/bootstrap-sphinx.js "></script>
 
   </head><body>
@@ -38,13 +41,14 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.5.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
-                <li><a href="../../api.html">Functions</a></li>
+                <li><a href="../../api.html">API</a></li>
+                <li><a href="../../quickstart.html">Quickstart</a></li>
                 <li><a href="../../faq.html">FAQ</a></li>
                 <li><a href="../../changelog.html">What's new</a></li>
                 <li><a href="../../contributing.html">Contribute</a></li>
@@ -120,6 +124,7 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">.io</span> <span class="kn">import</span> <span class="n">set_log_level</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;hypno_str_to_int&#39;</span><span class="p">,</span> <span class="s1">&#39;hypno_int_to_str&#39;</span><span class="p">,</span> <span class="s1">&#39;hypno_upsample_to_sf&#39;</span><span class="p">,</span>
            <span class="s1">&#39;hypno_upsample_to_data&#39;</span><span class="p">,</span> <span class="s1">&#39;load_profusion_hypno&#39;</span><span class="p">]</span>
@@ -147,8 +152,8 @@
 <span class="sd">    hypno : array_like</span>
 <span class="sd">        The sleep staging (hypnogram) 1D array.</span>
 <span class="sd">    mapping_dict : dict</span>
-<span class="sd">        The mapping dictionnary, in lowercase. Note that this function is</span>
-<span class="sd">        essentially a wrapper around :py:meth:`pandas.Series.map`.</span>
+<span class="sd">        The mapping dictionnary, in lowercase. Note that this function is essentially a wrapper</span>
+<span class="sd">        around :py:meth:`pandas.Series.map`.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    --------</span>
@@ -174,8 +179,8 @@
 <span class="sd">    hypno : array_like</span>
 <span class="sd">        The sleep staging (hypnogram) 1D array.</span>
 <span class="sd">    mapping_dict : dict</span>
-<span class="sd">        The mapping dictionnary. Note that this function is</span>
-<span class="sd">        essentially a wrapper around :py:meth:`pandas.Series.map`.</span>
+<span class="sd">        The mapping dictionnary. Note that this function is essentially a wrapper around</span>
+<span class="sd">        :py:meth:`pandas.Series.map`.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    --------</span>
@@ -206,8 +211,7 @@
 <span class="sd">        * 1/30 = 1 value per each 30 seconds of EEG data,</span>
 <span class="sd">        * 1 = 1 value per second of EEG data</span>
 <span class="sd">    sf_data : float</span>
-<span class="sd">        The desired sampling frequency of the hypnogram, in Hz</span>
-<span class="sd">        (e.g. 100 Hz, 256 Hz, ...)</span>
+<span class="sd">        The desired sampling frequency of the hypnogram, in Hz (e.g. 100 Hz, 256 Hz, ...)</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -233,8 +237,8 @@
 <span class="sd">    hypno : array_like</span>
 <span class="sd">        The sleep staging (hypnogram) 1D array.</span>
 <span class="sd">    data : np.array_like or mne.io.Raw</span>
-<span class="sd">        1D or 2D EEG data. Can also be a MNE Raw object, in which case data and</span>
-<span class="sd">        sf will be automatically extracted.</span>
+<span class="sd">        1D or 2D EEG data. Can also be a MNE Raw object, in which case data and sf will be</span>
+<span class="sd">        automatically extracted.</span>
 <span class="sd">    sf : float, optional</span>
 <span class="sd">        The sampling frequency of data AND the hypnogram.</span>
 
@@ -258,12 +262,10 @@
         <span class="k">if</span> <span class="n">sf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">dur_diff</span> <span class="o">=</span> <span class="n">npts_diff</span> <span class="o">/</span> <span class="n">sf</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Hypnogram is SHORTER than data by </span><span class="si">%.2f</span><span class="s1"> seconds. &#39;</span>
-                           <span class="s1">&#39;Padding hypnogram with last value to match &#39;</span>
-                           <span class="s1">&#39;data.size.&#39;</span> <span class="o">%</span> <span class="n">dur_diff</span><span class="p">)</span>
+                           <span class="s1">&#39;Padding hypnogram with last value to match data.size.&#39;</span> <span class="o">%</span> <span class="n">dur_diff</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Hypnogram is SHORTER than data by </span><span class="si">%i</span><span class="s1"> samples. &#39;</span>
-                           <span class="s1">&#39;Padding hypnogram with last value to match &#39;</span>
-                           <span class="s1">&#39;data.size.&#39;</span> <span class="o">%</span> <span class="n">npts_diff</span><span class="p">)</span>
+                           <span class="s1">&#39;Padding hypnogram with last value to match data.size.&#39;</span> <span class="o">%</span> <span class="n">npts_diff</span><span class="p">)</span>
         <span class="n">hypno</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">npts_diff</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;edge&#39;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">npts_hyp</span> <span class="o">&gt;</span> <span class="n">npts_data</span><span class="p">:</span>
         <span class="c1"># Hypnogram is longer than data</span>
@@ -271,17 +273,15 @@
         <span class="k">if</span> <span class="n">sf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">dur_diff</span> <span class="o">=</span> <span class="n">npts_diff</span> <span class="o">/</span> <span class="n">sf</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Hypnogram is LONGER than data by </span><span class="si">%.2f</span><span class="s1"> seconds. &#39;</span>
-                           <span class="s1">&#39;Cropping hypnogram to match data.size.&#39;</span> <span class="o">%</span>
-                           <span class="n">dur_diff</span><span class="p">)</span>
+                           <span class="s1">&#39;Cropping hypnogram to match data.size.&#39;</span> <span class="o">%</span> <span class="n">dur_diff</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Hypnogram is LONGER than data by </span><span class="si">%i</span><span class="s1"> samples. &#39;</span>
-                           <span class="s1">&#39;Cropping hypnogram to match data.size.&#39;</span> <span class="o">%</span>
-                           <span class="n">npts_diff</span><span class="p">)</span>
+                           <span class="s1">&#39;Cropping hypnogram to match data.size.&#39;</span> <span class="o">%</span> <span class="n">npts_diff</span><span class="p">)</span>
         <span class="n">hypno</span> <span class="o">=</span> <span class="n">hypno</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npts_data</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">hypno</span>
 
 
-<div class="viewcode-block" id="hypno_upsample_to_data"><a class="viewcode-back" href="../../generated/yasa.hypno_upsample_to_data.html#yasa.hypno_upsample_to_data">[docs]</a><span class="k">def</span> <span class="nf">hypno_upsample_to_data</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hypno</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sf_data</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="hypno_upsample_to_data"><a class="viewcode-back" href="../../generated/yasa.hypno_upsample_to_data.html#yasa.hypno_upsample_to_data">[docs]</a><span class="k">def</span> <span class="nf">hypno_upsample_to_data</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hypno</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sf_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Upsample an hypnogram to a given sampling frequency and fit the</span>
 <span class="sd">    resulting hypnogram to corresponding EEG data, such that the hypnogram</span>
 <span class="sd">    and EEG data have the exact same number of samples.</span>
@@ -303,24 +303,29 @@
 <span class="sd">    sf_data : float</span>
 <span class="sd">        The sampling frequency of ``data``, in Hz (e.g. 100 Hz, 256 Hz, ...).</span>
 <span class="sd">        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.</span>
+<span class="sd">    verbose : bool or str</span>
+<span class="sd">        Verbose level. Default (False) will only print warning and error</span>
+<span class="sd">        messages. The logging levels are &#39;debug&#39;, &#39;info&#39;, &#39;warning&#39;, &#39;error&#39;,</span>
+<span class="sd">        and &#39;critical&#39;. For most users the choice is between &#39;info&#39;</span>
+<span class="sd">        (or ``verbose=True``) and warning (``verbose=False``).</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    hypno : array_like</span>
-<span class="sd">        The hypnogram, upsampled to ``sf_data`` and cropped/padded to</span>
-<span class="sd">        ``max(data.shape)``.</span>
+<span class="sd">        The hypnogram, upsampled to ``sf_data`` and cropped/padded to ``max(data.shape)``.</span>
 
 <span class="sd">    Warns</span>
 <span class="sd">    -----</span>
 <span class="sd">    UserWarning</span>
 <span class="sd">        If the upsampled ``hypno`` is shorter / longer than ``max(data.shape)``</span>
-<span class="sd">        and therefore needs to be padded/cropped respectively.</span>
+<span class="sd">        and therefore needs to be padded/cropped respectively. This output can be disabled by</span>
+<span class="sd">        passing ``verbose=&#39;ERROR&#39;``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">set_log_level</span><span class="p">(</span><span class="n">verbose</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">BaseRaw</span><span class="p">):</span>
         <span class="n">sf_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;sfreq&#39;</span><span class="p">]</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">times</span>
-    <span class="n">hypno_up</span> <span class="o">=</span> <span class="n">hypno_upsample_to_sf</span><span class="p">(</span><span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hypno</span><span class="o">=</span><span class="n">sf_hypno</span><span class="p">,</span>
-                                    <span class="n">sf_data</span><span class="o">=</span><span class="n">sf_data</span><span class="p">)</span>
+    <span class="n">hypno_up</span> <span class="o">=</span> <span class="n">hypno_upsample_to_sf</span><span class="p">(</span><span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hypno</span><span class="o">=</span><span class="n">sf_hypno</span><span class="p">,</span> <span class="n">sf_data</span><span class="o">=</span><span class="n">sf_data</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">hypno_fit_to_data</span><span class="p">(</span><span class="n">hypno</span><span class="o">=</span><span class="n">hypno_up</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="n">sf_data</span><span class="p">)</span></div>
 
 
@@ -393,8 +398,8 @@
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
+        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
     </p>
   </div>
 </footer>

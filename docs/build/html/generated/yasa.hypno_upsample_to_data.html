@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.hypno_upsample_to_data &#8212; yasa 0.5.1 documentation</title>
+    <title>yasa.hypno_upsample_to_data &#8212; yasa 0.6.0 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/language_data.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -20,9 +23,9 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js "></script>
 <script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
 <script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
 
   </head><body>
@@ -38,13 +41,14 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.5.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
-                <li><a href="../api.html">Functions</a></li>
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../quickstart.html">Quickstart</a></li>
                 <li><a href="../faq.html">FAQ</a></li>
                 <li><a href="../changelog.html">What's new</a></li>
                 <li><a href="../contributing.html">Contribute</a></li>
@@ -87,10 +91,10 @@
     <div class="body col-md-12 content" role="main">
       
   <div class="section" id="yasa-hypno-upsample-to-data">
-<h1>yasa.hypno_upsample_to_data</h1>
+<h1>yasa.hypno_upsample_to_data<a class="headerlink" href="#yasa-hypno-upsample-to-data" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
 <dt id="yasa.hypno_upsample_to_data">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">hypno_upsample_to_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">hypno</span></em>, <em class="sig-param"><span class="n">sf_hypno</span></em>, <em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf_data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/hypno.html#hypno_upsample_to_data"><span class="viewcode-link">[source]</span></a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">hypno_upsample_to_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">hypno</span></em>, <em class="sig-param"><span class="n">sf_hypno</span></em>, <em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf_data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/hypno.html#hypno_upsample_to_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.hypno_upsample_to_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Upsample an hypnogram to a given sampling frequency and fit the
 resulting hypnogram to corresponding EEG data, such that the hypnogram
 and EEG data have the exact same number of samples.</p>
@@ -108,25 +112,30 @@ and EEG data have the exact same number of samples.</p>
 <li><p>1 = 1 value per second of EEG data</p></li>
 </ul>
 </dd>
-<dt><strong>data</strong><span class="classifier">array_like or <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.23.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>1D or 2D EEG data. Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.23.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which
+<dt><strong>data</strong><span class="classifier">array_like or <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>1D or 2D EEG data. Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which
 case <code class="docutils literal notranslate"><span class="pre">data</span></code> and <code class="docutils literal notranslate"><span class="pre">sf_data</span></code> will be automatically extracted.</p>
 </dd>
 <dt><strong>sf_data</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency of <code class="docutils literal notranslate"><span class="pre">data</span></code>, in Hz (e.g. 100 Hz, 256 Hz, …).
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.23.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+</dd>
+<dt><strong>verbose</strong><span class="classifier">bool or str</span></dt><dd><p>Verbose level. Default (False) will only print warning and error
+messages. The logging levels are ‘debug’, ‘info’, ‘warning’, ‘error’,
+and ‘critical’. For most users the choice is between ‘info’
+(or <code class="docutils literal notranslate"><span class="pre">verbose=True</span></code>) and warning (<code class="docutils literal notranslate"><span class="pre">verbose=False</span></code>).</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>The hypnogram, upsampled to <code class="docutils literal notranslate"><span class="pre">sf_data</span></code> and cropped/padded to
-<code class="docutils literal notranslate"><span class="pre">max(data.shape)</span></code>.</p>
+<dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>The hypnogram, upsampled to <code class="docutils literal notranslate"><span class="pre">sf_data</span></code> and cropped/padded to <code class="docutils literal notranslate"><span class="pre">max(data.shape)</span></code>.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-odd">Warns</dt>
 <dd class="field-odd"><dl class="simple">
 <dt>UserWarning</dt><dd><p>If the upsampled <code class="docutils literal notranslate"><span class="pre">hypno</span></code> is shorter / longer than <code class="docutils literal notranslate"><span class="pre">max(data.shape)</span></code>
-and therefore needs to be padded/cropped respectively.</p>
+and therefore needs to be padded/cropped respectively. This output can be disabled by
+passing <code class="docutils literal notranslate"><span class="pre">verbose='ERROR'</span></code>.</p>
 </dd>
 </dl>
 </dd>
@@ -150,8 +159,8 @@ and therefore needs to be padded/cropped respectively.</p>
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
+        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
     </p>
   </div>
 </footer>

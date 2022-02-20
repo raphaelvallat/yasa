@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>Contribute to YASA &#8212; yasa 0.5.1 documentation</title>
+    <title>Contribute to YASA &#8212; yasa 0.6.0 documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/language_data.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
@@ -20,9 +23,9 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-1.12.4.min.js "></script>
 <script type="text/javascript" src="_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
 <script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
 
   </head><body>
@@ -38,13 +41,14 @@
         </button>
         <a class="navbar-brand" href="index.html"><span><img src="_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.5.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.0</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
           <ul class="nav navbar-nav">
             
-                <li><a href="api.html">Functions</a></li>
+                <li><a href="api.html">API</a></li>
+                <li><a href="quickstart.html">Quickstart</a></li>
                 <li><a href="faq.html">FAQ</a></li>
                 <li><a href="changelog.html">What's new</a></li>
                 <li><a href="#">Contribute</a></li>
@@ -87,11 +91,11 @@
     <div class="body col-md-12 content" role="main">
       
   <div class="section" id="contribute-to-yasa">
-<span id="contribute"></span><h1>Contribute to YASA</h1>
+<span id="contribute"></span><h1>Contribute to YASA<a class="headerlink" href="#contribute-to-yasa" title="Permalink to this headline">¶</a></h1>
 <p>There are many ways to contribute to YASA: reporting bugs, adding new functions, improving the documentation, etc…</p>
 <p>If you like YASA, you can also consider <a class="reference external" href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&amp;business=K2FZVJGCKYPAG&amp;currency_code=USD&amp;source=url">buying the developers a coffee</a>!</p>
 <div class="section" id="code-guidelines">
-<h2>Code guidelines</h2>
+<h2>Code guidelines<a class="headerlink" href="#code-guidelines" title="Permalink to this headline">¶</a></h2>
 <p>Before starting new code, we highly recommend opening an issue on <a class="reference external" href="https://github.com/raphaelvallat/yasa">GitHub</a> to discuss potential changes.</p>
 <ul>
 <li><p>Please use standard <a class="reference external" href="https://pypi.python.org/pypi/pep8">pep8</a> and <a class="reference external" href="http://flake8.pycqa.org/">flake8</a> Python style guidelines. To test that your code complies with those, you can run:</p>
@@ -110,7 +114,7 @@
 </ul>
 </div>
 <div class="section" id="checking-and-building-documentation">
-<h2>Checking and building documentation</h2>
+<h2>Checking and building documentation<a class="headerlink" href="#checking-and-building-documentation" title="Permalink to this headline">¶</a></h2>
 <p>YASA’s documentation (including docstring in code) uses ReStructuredText format,
 see <a class="reference external" href="http://www.sphinx-doc.org/en/master/">Sphinx documentation</a> to learn more about editing them. The code
 follows the <a class="reference external" href="https://numpydoc.readthedocs.io/en/latest/format.html">NumPy docstring standard</a>.</p>
@@ -140,8 +144,8 @@ follows the <a class="reference external" href="https://numpydoc.readthedocs.io/
       
     </p>
     <p>
-        &copy; Copyright 2018-2021, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.<br/>
+        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
     </p>
   </div>
 </footer>
