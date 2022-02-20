@@ -5,9 +5,6 @@
 .. image:: https://badge.fury.io/py/yasa.svg
     :target: https://badge.fury.io/py/yasa
 
-.. image:: https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue
-    :target: https://www.python.org/downloads/
-
 .. image:: https://img.shields.io/github/license/raphaelvallat/yasa.svg
     :target: https://github.com/raphaelvallat/yasa/blob/master/LICENSE
 
