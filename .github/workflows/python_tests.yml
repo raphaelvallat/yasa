@@ -16,6 +16,9 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
 
+    env:
+      FORCE_COLOR: true
+
     steps:
     - uses: actions/checkout@v2
 
@@ -33,4 +36,11 @@ jobs:
 
     - name: Test with pytest
       run: |
-        pytest --cov --verbose
+        pytest --cov --cov-report=xml --cov-config=setup.cfg --verbose
+
+    - name: Upload coverage report
+      if: ${{ matrix.platform == 'ubuntu-latest' && matrix.python-version == 3.8 }}
+      uses: codecov/codecov-action@v1
+      with:
+        token: a58a0c62-fb11-4429-977b-65bec01ecb44
+        file: ./coverage.xml

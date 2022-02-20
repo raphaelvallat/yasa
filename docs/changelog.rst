@@ -51,6 +51,10 @@ IMPORTANT — The default behavior of ``coupling=True`` in :py:func:`yasa.sw_det
 
 * Added a ``verbose`` parameter to :py:func:`yasa.hypno_upsample_to_data` and :py:func:`yasa.irasa`.
 
+* Remove Travis CI
+
+* Remove CI testing for Python 3.6
+
 ----------------------------------------------------------------------------------------
 
 v0.5.1 (August 2021)
