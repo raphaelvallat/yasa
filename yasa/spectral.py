@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from scipy import signal
 from scipy.integrate import simps
+from scipy.optimize import curve_fit
 from scipy.interpolate import RectBivariateSpline
 from .io import set_log_level
 
@@ -534,7 +535,6 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
 
     if return_fit:
         # Aperiodic fit in semilog space for each channel
-        from scipy.optimize import curve_fit
         intercepts, slopes, r_squared = [], [], []
 
         def func(t, a, b):
@@ -639,3 +639,145 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True, norm=Fals
         sum_pow = Sxx.sum(0).reshape(1, -1)
         np.divide(Sxx, sum_pow, out=Sxx)
     return f, t, Sxx
+
+
+def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(0.5, 4),
+              freq_broad=(0.5, 30), win_sec=4, relative=False, bandpass=True,
+              kwargs_welch=dict(average='median', window='hamming')):
+    """
+    Calculate the exponential decline (i.e. homeostasis decay) of process S across the night
+    using NREM sleep EEG slow-wave activity (SWA).
+
+    .. versionadded:: 0.6.1
+
+    Parameters
+    ----------
+    data : np.array_like or :py:class:`mne.io.BaseRaw`
+        1D or 2D EEG data. Can also be a :py:class:`mne.io.BaseRaw`, in which case ``data``,
+        ``sf``, and ``ch_names`` will be automatically extracted, and ``data`` will also be
+        converted from Volts (MNE default) to micro-Volts (YASA).
+    hypno : array_like
+        Sleep stage (hypnogram). The hypnogram must have the exact same number of samples as
+        ``data``. To upsample your hypnogram, please refer to
+        :py:func:`yasa.hypno_upsample_to_data`.
+
+        .. note::
+            The default hypnogram format in YASA is a 1D integer vector where:
+
+            - -2 = Unscored
+            - -1 = Artefact / Movement
+            - 0 = Wake
+            - 1 = N1 sleep
+            - 2 = N2 sleep
+            - 3 = N3 sleep
+            - 4 = REM sleep
+
+    sf : float
+        The sampling frequency of data AND the hypnogram. Can be omitted if ``data`` is a
+        :py:class:`mne.io.BaseRaw`.
+    ch_names : list
+        List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None, channels will be labelled
+        ['CHAN000', 'CHAN001', ...]. Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+    include : tuple, list or int
+        Values in ``hypno`` that will be included in the mask. The default is (2, 3), meaning that
+        the SWA exponential decline will be calculated on N2 and N3 sleep (together,
+        not separately).
+    freq_swa : list of tuples
+        Frequency range of slow-wave activity (SWA). Default is 0.5 to 4 Hz.
+    freq_broad : list of tuples
+        Frequency range of broadband signal. Default is 0.5 to 30 Hz.
+    win_sec : int or float
+        The length of the sliding window, in seconds, used for the Welch PSD calculation.
+        Ideally, this should be at least two times the inverse of the lower frequency of
+        interest (e.g. for a lower frequency of interest of 0.5 Hz, the window length should
+        be at least 2 * 1 / 0.5 = 4 seconds).
+    relative : boolean
+        If True, the SWA power is divided by the total power in the ``freq_broad`` frequency range.
+        The default is False, meaning that absolute power values are used.
+    bandpass : boolean
+        If True (default), apply a standard FIR bandpass filter in the ``freq_broad`` band.
+        For more details, refer to :py:func:`mne.filter.filter_data`.
+    kwargs_welch : dict
+        Optional keywords arguments that are passed to the :py:func:`scipy.signal.welch` function.
+
+    Returns
+    -------
+    swa_decay : :py:class:`pandas.DataFrame`
+        Exponential SWA decay values for each channel.
+
+    Notes
+    -----
+    - Sleep onset is defined as the first two consecutive epochs of N2 or N3 sleep.
+    """
+    # Type checks
+    assert isinstance(freq_swa, (tuple, list)), 'band must be a list or a tuple'
+    assert isinstance(freq_broad, (tuple, list)), 'band must be a list or a tuple'
+    assert isinstance(relative, bool), 'relative must be a boolean'
+    assert isinstance(bandpass, bool), 'bandpass must be a boolean'
+
+    # Check if input data is a MNE Raw object
+    if isinstance(data, mne.io.BaseRaw):
+        sf = data.info['sfreq']  # Extract sampling frequency
+        ch_names = data.ch_names  # Extract channel names
+        data = data.get_data() * 1e6  # Convert from V to uV
+        _, npts = data.shape
+    else:
+        # Safety checks
+        assert isinstance(data, np.ndarray), 'Data must be a numpy array.'
+        data = np.atleast_2d(data)
+        assert data.ndim == 2, 'Data must be of shape (nchan, n_samples).'
+        nchan, npts = data.shape
+        # assert nchan < npts, 'Data must be of shape (nchan, n_samples).'
+        assert sf is not None, 'sf must be specified if passing a numpy array.'
+        assert isinstance(sf, (int, float))
+        if ch_names is None:
+            ch_names = ['CHAN' + str(i).zfill(3) for i in range(nchan)]
+        else:
+            ch_names = np.atleast_1d(np.asarray(ch_names, dtype=str))
+            assert ch_names.ndim == 1, 'ch_names must be 1D.'
+            assert len(ch_names) == nchan, 'ch_names must match data.shape[0].'
+
+    if bandpass:
+        # Apply FIR bandpass filter
+        fmin, fmax = min(freq_broad), max(freq_broad)
+        data = mne.filter.filter_data(data.astype('float64'), sf, fmin, fmax, verbose=0)
+
+    # Calculate NREM mask and sleep onset
+    hypno = np.asarray(hypno)
+    assert include is not None, 'include cannot be None if hypno is given'
+    include = np.atleast_1d(np.asarray(include))
+    assert hypno.ndim == 1, 'Hypno must be a 1D array.'
+    assert hypno.size == npts, 'Hypno must have same size as data.shape[1]'
+    assert include.size >= 1, '`include` must have at least one element.'
+    assert hypno.dtype.kind == include.dtype.kind, 'hypno and include must have same dtype'
+    assert np.in1d(hypno, include).any(), (
+        'None of the stages specified in `include` are present in hypno.')
+    mask = np.in1d(hypno, include)
+    # Sleep onset is defined as the first epoch of N2 or N3 sleep sleep
+    idx_onset = np.nonzero(np.in1d(hypno, (2, 3)))[0]
+
+    # Calculate NREM periods (>5 min consecutive)
+    # TODO: Use yasa.sliding_windows?
+
+    # Calculate SWA power in each period
+    # win = int(win_sec * sf)  # nperseg
+
+    # Calculate exponential decline
+    # https://doi.org/10.1093/sleep/33.4.491
+    # https://bmcneurosci.biomedcentral.com/articles/10.1186/1471-2202-12-84#Sec8
+    # S(t) = (S_sleeponset - lower_asym) * exp(-t / slope) + lower_asym
+    # - The time t starts at zero at sleep onset.
+    # - Data were normalized within each subject with mean SWA across all derivations
+    # - Therefore, SWA and LA are expressed in percentage.
+
+    def _fit_exp_decay(t, asym, intercept, slope):
+        """Exponential decay equation"""
+        return asym + intercept * np.exp(-slope * t)
+
+    # popt, _ = curve_fit(_fit_exp_decay, time, swa)
+
+    # intercept = popt[1] + popt[0]
+    # asym = popt[0]
+    # slope = popt[2]
+
+    return mask, idx_onset
