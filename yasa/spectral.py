@@ -8,14 +8,14 @@ import numpy as np
 import pandas as pd
 from scipy import signal
 from scipy.integrate import simps
-from scipy.optimize import curve_fit
 from scipy.interpolate import RectBivariateSpline
+from scipy.optimize import curve_fit, OptimizeWarning
 from .io import set_log_level
 
 logger = logging.getLogger('yasa')
 
 __all__ = ['bandpower', 'bandpower_from_psd', 'bandpower_from_psd_ndarray',
-           'irasa', 'stft_power']
+           'irasa', 'stft_power', 'swa_decay']
 
 
 def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
@@ -664,10 +664,38 @@ def find_runs(x):
     return pd.DataFrame({'values': run_values, 'start': run_starts, 'length': run_lengths})
 
 
-def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(0.5, 4),
-              freq_broad=(0.5, 30), win_sec=4, bandpass=True,
-              kwargs_welch=dict(average='median', window='hamming')):
+def _decay_func(t, asym, intercept, tau):
+    """Exponential decay equation.
+
+    S(t) = (S_sleeponset - lower_asym) * exp(-t / tau) + lower_asym
+
+    Parameters
+    ----------
+    t : array_like
+        Time
+    asym : float
+        Asymptote. Must be between 0 and 1 if evaluating relative power. Expressed in units of
+        SWA relative power.
+    intercept : float
+        Intercept. Must be between 0 and 1 if evaluating relative power. Expressed in units of
+        SWA relative power.
+    tau : float
+        Time constant (in hours). Must be between 0 to 4 hours to stay within
+        physiological range. Higher values = slower homeostasis decay (i.e. closer to a
+        flat line).
+
+    Notes
+    -----
+    The initial guess for the parameters are 0.5 for the asymptote, 0.8 for the intercept
+    and 1 hour for the time constant.
     """
+    return (intercept - asym) * np.exp(- t / tau) + asym
+
+
+def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(0.5, 4),
+              freq_broad=(0.5, 30), epoch_length="5min", win_sec=4, bandpass=True,
+              kwargs_welch=dict(average='median', window='hamming'), verbose=True):
+    r"""
     Calculate the exponential decline (i.e. homeostasis decay) of process S across the night
     using NREM sleep EEG slow-wave activity (SWA).
 
@@ -709,6 +737,9 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
         Frequency range of slow-wave activity (SWA). Default is 0.5 to 4 Hz.
     freq_broad : list of tuples
         Frequency range of broadband signal. Default is 0.5 to 30 Hz.
+    epoch_length : string
+        A string representing the minimum duration of the NREM epochs that will be included in the
+        SWA calculation. Default is "5min", i.e. at least 5 minutes of consecutive NREM.
     win_sec : int or float
         The length of the sliding window, in seconds, used for the Welch PSD calculation.
         Ideally, this should be at least two times the inverse of the lower frequency of
@@ -719,6 +750,11 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
         For more details, refer to :py:func:`mne.filter.filter_data`.
     kwargs_welch : dict
         Optional keywords arguments that are passed to the :py:func:`scipy.signal.welch` function.
+    verbose : bool or str
+        Verbose level. Default (False) will only print warning and error
+        messages. The logging levels are 'debug', 'info', 'warning', 'error',
+        and 'critical'. For most users the choice is between 'info'
+        (or ``verbose=True``) and warning (``verbose=False``).
 
     Returns
     -------
@@ -727,12 +763,72 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
 
     Notes
     -----
-    - Sleep onset is defined as the first two consecutive epochs of N2 or N3 sleep.
+    **Method**
+
+    - Sleep onset is defined as the first epoch of N2 or N3 sleep.
+
+    **Output parameters**
+
+    The parameters that are calculated are:
+
+    * ``'Intercept'``: Estimated relative SWA power at sleep onset.
+    * ``'Asym'``: Estimated relative SWA power at sleep offset.
+    * ``'Tau'`` : Time constant $\\tau_d$ of the exponential decline, in hours.
+    * ``'Decay'``: Exponential slope, i.e. the inverse of Tau (= 1 / Tau). Larger values indicate
+      a more rapid exponential decay of SWA.
+    * ``'MSE'``: Mean-squared error of the exponential fit.
+
+    References
+    ----------
+    * Rusterholz, Dürr & Achermann (2010). Inter-individual differences in the dynamics of sleep
+      homeostasis. Sleep. https://doi.org/10.1093/sleep/33.4.491
+
+    * Robillard et al (2010). Topography of homeostatic sleep pressure dissipation across the
+      night in young and middle‐aged men and women. Journal of sleep research.
+      https://pubmed.ncbi.nlm.nih.gov/20408933/
+
+    Examples
+    --------
+
+    Simulated exponential decline with different $\\tau$ parameters.
+
+    .. plot::
+
+        >>> import numpy as np
+        >>> import seaborn as sns
+        >>> import matplotlib.pyplot as plt
+        >>> sns.set(font_scale=1.25)
+        >>> # Define exponential function
+        >>> def _decay_func(t, asym, intercept, tau):
+        >>>     return (intercept - asym) * np.exp(- t / tau) + asym
+        >>> sim_xdata = np.arange(0, 9, 1)
+        >>> pal = sns.color_palette("Blues_d", n_colors=4)
+        >>> plt.figure(figsize=(5, 5))
+        >>> plt.plot(sim_xdata, _decay_func(sim_xdata, *[0.5, 0.9, 4]),
+        ...          marker="o", color=pal[0], label="$\\tau = 4$");
+        >>> plt.plot(sim_xdata, _decay_func(sim_xdata, *[0.5, 0.9, 2]),
+        ...          marker="o", color=pal[1], label="$\\tau = 2$");
+        >>> plt.plot(sim_xdata, _decay_func(sim_xdata, *[0.5, 0.9, 1]),
+        ...          marker="o", color=pal[2], label="$\\tau = 1$");
+        >>> plt.plot(sim_xdata, _decay_func(sim_xdata, *[0.5, 0.9, 0.5]),
+        ...          marker="o", color=pal[3], label="$\\tau = 0.5$");
+        >>> plt.ylim(0, 1)
+        >>> plt.xlim(0, None)
+        >>> plt.xlabel("Time (hours)")
+        >>> plt.ylabel("Relative SWA (0.5-4 Hz) power")
+        >>> plt.title("Simulated exponential decline", fontweight="bold")
+        >>> plt.legend(frameon=True, loc="lower right");
+
     """
+    ###############################################################################################
+    # PREPROCESSING
+    ###############################################################################################
+    set_log_level(verbose)
     # Type checks
     assert isinstance(freq_swa, (tuple, list)), 'band must be a list or a tuple'
     assert isinstance(freq_broad, (tuple, list)), 'band must be a list or a tuple'
     assert isinstance(bandpass, bool), 'bandpass must be a boolean'
+    assert isinstance(epoch_length, str), "epoch_length must be a string."
 
     # Check if input data is a MNE Raw object
     if isinstance(data, mne.io.BaseRaw):
@@ -759,7 +855,7 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
     if bandpass:
         # Apply FIR bandpass filter
         fmin, fmax = min(freq_broad), max(freq_broad)
-        data = mne.filter.filter_data(data.astype('float64'), sf, fmin, fmax, verbose=0)
+        data = mne.filter.filter_data(data, sf, fmin, fmax, verbose=0)
 
     # More safety checks for hypno, include and sf
     hypno = np.asarray(hypno)
@@ -774,19 +870,42 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
     assert float(sf).is_integer(), "Sampling frequency must be an integer."
     mask = np.in1d(hypno, include).astype(int)
 
-    # Find NREM periods (at least >5 min of consecutive NREM)
-    # The time could be a user-defined parameter, e.g. "5min" or "15min"
-    n_samples_5min = int(pd.Timedelta("5min").seconds * sf)  # noqa
+    ###############################################################################################
+    # FIND "CLEAN" NREM PERIODS, i.e. at least X min of consecutive NREM
+    ###############################################################################################
+
+    # How many samples is 5 /10 / X min?
+    n_samples_epoch = int(pd.Timedelta(epoch_length).seconds * sf)  # noqa
+
+    # METHOD 1: variable-length epoch
     # This show the onset and duration (in samples) of all the NREM epochs that are > 5 min
     epochs = find_runs(mask).query(
-        "values == 1 and length > @n_samples_5min").reset_index(drop=True)
+        "values == 1 and length > @n_samples_epoch").reset_index(drop=True)
 
-    if epochs.shape[0] < 4:
-        logging.error(
-            "Less than 4 NREM epochs were found in hypno. SWA decay cannot be calculated.")
+    # METHOD 2: equal-length epochs
+    # n_windows = int(np.floor(mask[idx_onset:].size / n_samples_thr))
+    # epoch_counter = 0
+    # epochs = {'values': [], 'start': [], 'length': []}
+    # for i in range(n_windows):
+    #     start = idx_onset + n_samples_thr * i
+    #     end = start + n_samples_thr
+    #     if mask[start:end].all():
+    #         epochs['values'].append(1)
+    #         epochs['start'].append(start)
+    #         epochs['length'].append(end - start)
+    # epochs = pd.DataFrame(epochs)
+
+    # Check that we have enough epochs
+    n_epochs = epochs.shape[0]
+    logger.info(
+        f"{n_epochs} NREM epochs longer than {epoch_length} were found in hypno.")
+    if n_epochs < 4:
+        raise ValueError(
+            f"Less than 4 NREM epochs > {epoch_length} were found in hypno. SWA decay cannot be "
+            f"calculated. Please decrease {epoch_length}.")
 
     # Calculate the onset time (relative to sleep onset) of each NREM period
-    # Sleep onset is defined as the first epoch of N2 or N3 sleep
+    # IMPORTANT: Sleep onset is defined as the first epoch of N2 or N3 sleep
     idx_onset = np.nonzero(np.in1d(hypno, (2, 3)))[0][0]
     epochs['time_onset_hrs'] = (epochs['start'] - idx_onset) / sf / 3600
     epochs['length_hrs'] = epochs['length'] / 2 / sf / 3600
@@ -795,33 +914,46 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
     # Calculate continuous mask with unique value for each epoch
     mask_epoch = np.zeros_like(mask, dtype=int)
     for i, row in epochs.iterrows():
-        start, end = int(row['start'])
-        end = int(row['start'] + row['length'] + 1)
+        start = int(row['start'])
+        end = int(row['start'] + row['length'])
         mask_epoch[start:end] = i + 1
+
+    ###############################################################################################
+    # EXPONENTIAL DECLINE IN SWA, for each channel separately
+    ###############################################################################################
 
     # Calculate SWA absolute power in each period, for each channel
     bp = bandpower(
-        data=data, sf=sf, ch_names=ch_names,
-        hypno=mask_epoch, include=list(range(1, max(mask_epoch) + 1)),
+        data=data, sf=sf, ch_names=ch_names, hypno=mask_epoch,
+        include=list(range(1, max(mask_epoch) + 1)),
         bands=[(freq_swa[0], freq_swa[1], "SWA"), (freq_broad[0], freq_broad[1], "Broad")],
-        win_sec=win_sec, relative=False, bandpass=False, kwargs_welch=kwargs_welch
-    )
+        win_sec=win_sec, relative=True, bandpass=False, kwargs_welch=kwargs_welch)
 
-    # Calculate exponential decline
-    # https://doi.org/10.1093/sleep/33.4.491
-    # https://bmcneurosci.biomedcentral.com/articles/10.1186/1471-2202-12-84#Sec8
-    # S(t) = (S_sleeponset - lower_asym) * exp(-t / slope) + lower_asym
-    # - The time t starts at zero at sleep onset.
-    # - Data were normalized within each subject with mean SWA across all derivations
-    # - Therefore, SWA and LA are expressed in percentage.
-    def _fit_exp_decay(t, asym, intercept, slope):
-        """Exponential decay equation"""
-        return asym + intercept * np.exp(-slope * t)
+    # Initialize output
+    df_decay = {"Intercept": [], "Asym": [], "Tau": [], "Decay": [], "MSE": []}
 
-    # popt, _ = curve_fit(_fit_exp_decay, time, swa)
+    # Calculate exponential decline, for each channel
+    # Note that we use the midpoint of each epoch as the xdata, and not the onset, to account for
+    # different epoch duration.
+    xdata = epochs['time_mid_hrs'].to_numpy()
+    for chan in ch_names:
+        ydata = bp.xs(chan, level=-1)["SWA"].to_numpy()
+        try:
+            # See docstring of "_decay_func" for an explanation of the bound.
+            popt, _ = curve_fit(
+                _decay_func, xdata, ydata, p0=(0.5, 0.8, 1), bounds=((0, 0, 0), (1, 1, 4)))
+            mse = np.mean((ydata - _decay_func(xdata, *popt))**2)
+        except (ValueError, RuntimeError, OptimizeWarning) as e:
+            logger.error(f"Exponential fit failed. Returning NaN for channel {chan}\nError: {e}")
+            popt = np.array([np.nan, np.nan, np.nan])
+            mse = np.nan
 
-    # intercept = popt[1] + popt[0]
-    # asym = popt[0]
-    # slope = popt[2]
+        # Append to dict
+        df_decay["Asym"].append(popt[0])
+        df_decay["Intercept"].append(popt[1])
+        df_decay["Tau"].append(popt[2])
+        df_decay["Decay"].append(1 / popt[2])
+        df_decay["MSE"].append(mse)
 
-    return mask, idx_onset
+    # Convert to dataframe
+    return pd.DataFrame(df_decay, index=ch_names)
