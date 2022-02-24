@@ -764,7 +764,7 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
         * ``'Tau'`` : Time constant :math:`\tau` of the exponential decline, in hours.
         * ``'Decay'``: Exponential slope (= 1 / :math:`\tau`). Larger values indicate a more rapid
           decay of SWA across the night.
-        * ``'MSE'``: Mean-squared error of the exponential fit.
+        * ``'MAE'``: Mean absolute error of the exponential fit. Lower is better.
 
     Notes
     -----
@@ -939,7 +939,7 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
         win_sec=win_sec, relative=True, bandpass=False, kwargs_welch=kwargs_welch)
 
     # Initialize output
-    df_decay = {"Intercept": [], "Asym": [], "Tau": [], "Decay": [], "MSE": []}
+    df_decay = {"Intercept": [], "Asym": [], "Tau": [], "Decay": [], "MAE": []}
 
     # Calculate exponential decline, for each channel
     # Note that we use the midpoint of each epoch as the xdata, and not the onset, to account for
@@ -951,18 +951,18 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
             # See docstring of "_decay_func" for an explanation of the bound.
             popt, _ = curve_fit(
                 _decay_func, xdata, ydata, p0=(0.5, 0.8, 1), bounds=((0, 0, 0), (1, 1, 4)))
-            mse = np.mean((ydata - _decay_func(xdata, *popt))**2)
+            mae = np.mean(np.abs(ydata - _decay_func(xdata, *popt)))
         except (ValueError, RuntimeError, OptimizeWarning) as e:
             logger.error(f"Exponential fit failed. Returning NaN for channel {chan}\nError: {e}")
             popt = np.array([np.nan, np.nan, np.nan])
-            mse = np.nan
+            mae = np.nan
 
         # Append to dict
         df_decay["Asym"].append(popt[0])
         df_decay["Intercept"].append(popt[1])
         df_decay["Tau"].append(popt[2])
         df_decay["Decay"].append(1 / popt[2])
-        df_decay["MSE"].append(mse)
+        df_decay["MAE"].append(mae)
 
     # Convert to dataframe
     return pd.DataFrame(df_decay, index=ch_names)
