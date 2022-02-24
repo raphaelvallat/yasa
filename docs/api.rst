@@ -56,4 +56,5 @@ Spectral analyses
     plot_spectrogram
     sliding_window
     stft_power
+    swa_decay
     topoplot

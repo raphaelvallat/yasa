@@ -427,18 +427,17 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
 
     References
     ----------
-    [1] Wen, H., & Liu, Z. (2016). Separating Fractal and Oscillatory
-        Components in the Power Spectrum of Neurophysiological Signal.
-        Brain Topography, 29(1), 13–26.
-        https://doi.org/10.1007/s10548-015-0448-0
+    * Wen, H., & Liu, Z. (2016). Separating Fractal and Oscillatory
+      Components in the Power Spectrum of Neurophysiological Signal.
+      Brain Topography, 29(1), 13–26. https://doi.org/10.1007/s10548-015-0448-0
 
-    [2] https://github.com/fieldtrip/fieldtrip/blob/master/specest/
+    * https://github.com/fieldtrip/fieldtrip/blob/master/specest/
 
-    [3] https://github.com/fooof-tools/fooof
+    * https://github.com/fooof-tools/fooof
 
-    [4] https://www.biorxiv.org/content/10.1101/299859v1
+    * https://www.biorxiv.org/content/10.1101/299859v1
 
-    [5] https://doi.org/10.1101/2021.10.15.464483
+    * https://doi.org/10.1101/2021.10.15.464483
     """
     import fractions
     set_log_level(verbose)
@@ -696,14 +695,14 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
               freq_broad=(0.5, 30), epoch_length="5min", win_sec=4, bandpass=True,
               kwargs_welch=dict(average='median', window='hamming'), verbose=True):
     r"""
-    Calculate the exponential decline (i.e. homeostasis decay) of process S across the night
-    using NREM sleep EEG slow-wave activity (SWA).
+    Calculate the exponential decline of process S across the night using NREM sleep EEG slow-wave
+    activity (SWA).
 
     .. versionadded:: 0.6.1
 
     Parameters
     ----------
-    data : np.array_like or :py:class:`mne.io.BaseRaw`
+    data : array_like or :py:class:`mne.io.BaseRaw`
         1D or 2D EEG data. Can also be a :py:class:`mne.io.BaseRaw`, in which case ``data``,
         ``sf``, and ``ch_names`` will be automatically extracted, and ``data`` will also be
         converted from Volts (MNE default) to micro-Volts (YASA).
@@ -725,14 +724,13 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
 
     sf : float
         The sampling frequency of data AND the hypnogram. Can be omitted if ``data`` is a
-        :py:class:`mne.io.BaseRaw`.
+        :py:class:`mne.io.BaseRaw`. The sampling frequency must be a whole number.
     ch_names : list
         List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None, channels will be labelled
         ['CHAN000', 'CHAN001', ...]. Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
     include : tuple, list or int
         Values in ``hypno`` that will be included in the mask. The default is (2, 3), meaning that
-        the SWA exponential decline will be calculated on N2 and N3 sleep (together,
-        not separately).
+        the SWA exponential decline will be calculated on a mask consisting of N2 and N3 sleep.
     freq_swa : list of tuples
         Frequency range of slow-wave activity (SWA). Default is 0.5 to 4 Hz.
     freq_broad : list of tuples
@@ -761,64 +759,77 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
     swa_decay : :py:class:`pandas.DataFrame`
         Exponential SWA decay values for each channel.
 
+        * ``'Intercept'``: Estimated relative SWA power at sleep onset.
+        * ``'Asym'``: Estimated relative SWA power at sleep offset.
+        * ``'Tau'`` : Time constant :math:`\tau` of the exponential decline, in hours.
+        * ``'Decay'``: Exponential slope (= 1 / :math:`\tau`). Larger values indicate a more rapid
+          decay of SWA across the night.
+        * ``'MSE'``: Mean-squared error of the exponential fit.
+
     Notes
     -----
-    **Method**
+    The homeostatic decay of Process S during sleep is modeled using the following equation [1]_:
 
-    - Sleep onset is defined as the first epoch of N2 or N3 sleep.
+    .. math:: S(t) = (I - A) * \exp \left ( -\frac{t}{\tau} \right ) + A
 
-    **Output parameters**
+    where,
 
-    The parameters that are calculated are:
+    * :math:`I` is the intercept, i.e. SWA level at sleep onset, defined as the first epoch of
+      N2 or N3 sleep
 
-    * ``'Intercept'``: Estimated relative SWA power at sleep onset.
-    * ``'Asym'``: Estimated relative SWA power at sleep offset.
-    * ``'Tau'`` : Time constant $\\tau_d$ of the exponential decline, in hours.
-    * ``'Decay'``: Exponential slope, i.e. the inverse of Tau (= 1 / Tau). Larger values indicate
-      a more rapid exponential decay of SWA.
-    * ``'MSE'``: Mean-squared error of the exponential fit.
+    * :math:`A` is the lower asymptote
+
+    * :math:`\tau` is the time constant of the decreasing exponential function during sleep.
+
+    :math:`I` and :math:`A` are expressed in relative SWA power [2]_ and thus are bounded between
+    0 and 1. The time constant :math:`\tau` is expressed in hours and bounded within the
+    physiological range of 0 to 4 hours.
+
+    Parameter estimation is performed using a non-linear least squares
+    (see :py:func:`scipy.optimize.curve_fit`).
 
     References
     ----------
-    * Rusterholz, Dürr & Achermann (2010). Inter-individual differences in the dynamics of sleep
-      homeostasis. Sleep. https://doi.org/10.1093/sleep/33.4.491
+    .. [1] Rusterholz, Dürr & Achermann (2010). Inter-individual differences in the dynamics of
+       sleep homeostasis. Sleep. https://doi.org/10.1093/sleep/33.4.491
 
-    * Robillard et al (2010). Topography of homeostatic sleep pressure dissipation across the
-      night in young and middle‐aged men and women. Journal of sleep research.
-      https://pubmed.ncbi.nlm.nih.gov/20408933/
+    .. [2] Robillard et al (2010). Topography of homeostatic sleep pressure dissipation across the
+       night in young and middle-aged men and women. Journal of sleep research.
+       https://pubmed.ncbi.nlm.nih.gov/20408933/
 
     Examples
     --------
-
-    Simulated exponential decline with different $\\tau$ parameters.
+    Simulated exponential decline with different :math:`\tau` parameters. The asymptote :math:`A`
+    and intercept :math:`I` are fixed at 0.5 and 0.9 relative SWA power, respectively.
 
     .. plot::
 
-        >>> import numpy as np
-        >>> import seaborn as sns
-        >>> import matplotlib.pyplot as plt
-        >>> sns.set(font_scale=1.25)
-        >>> # Define exponential function
-        >>> def _decay_func(t, asym, intercept, tau):
-        >>>     return (intercept - asym) * np.exp(- t / tau) + asym
-        >>> sim_xdata = np.arange(0, 9, 1)
-        >>> pal = sns.color_palette("Blues_d", n_colors=4)
-        >>> plt.figure(figsize=(5, 5))
-        >>> plt.plot(sim_xdata, _decay_func(sim_xdata, *[0.5, 0.9, 4]),
-        ...          marker="o", color=pal[0], label="$\\tau = 4$");
-        >>> plt.plot(sim_xdata, _decay_func(sim_xdata, *[0.5, 0.9, 2]),
-        ...          marker="o", color=pal[1], label="$\\tau = 2$");
-        >>> plt.plot(sim_xdata, _decay_func(sim_xdata, *[0.5, 0.9, 1]),
-        ...          marker="o", color=pal[2], label="$\\tau = 1$");
-        >>> plt.plot(sim_xdata, _decay_func(sim_xdata, *[0.5, 0.9, 0.5]),
-        ...          marker="o", color=pal[3], label="$\\tau = 0.5$");
-        >>> plt.ylim(0, 1)
-        >>> plt.xlim(0, None)
-        >>> plt.xlabel("Time (hours)")
-        >>> plt.ylabel("Relative SWA (0.5-4 Hz) power")
-        >>> plt.title("Simulated exponential decline", fontweight="bold")
-        >>> plt.legend(frameon=True, loc="lower right");
+        import numpy as np
+        import seaborn as sns
+        import matplotlib.pyplot as plt
+        sns.set(font_scale=1.25)
 
+        # Define exponential function
+        def func(t, asym, intercept, tau):
+            return (intercept - asym) * np.exp(- t / tau) + asym
+
+        # Define x-data (one point every hour)
+        x = np.arange(0, 9, 1)
+
+        # Plot
+        pal = sns.color_palette("Blues_d", n_colors=4)
+        plt.figure(figsize=(5, 5))
+        plt.plot(x, func(x, *[0.5, 0.9, 4]), marker="o", color=pal[0], label="$\\tau = 4$");
+        plt.plot(x, func(x, *[0.5, 0.9, 2]), marker="o", color=pal[1], label="$\\tau = 2$");
+        plt.plot(x, func(x, *[0.5, 0.9, 1]), marker="o", color=pal[2], label="$\\tau = 1$");
+        plt.plot(x, func(x, *[0.5, 0.9, 0.5]), marker="o", color=pal[3], label="$\\tau = 0.5$");
+        plt.ylim(0, 1)
+        plt.xlim(0, None)
+        plt.xlabel("Time (hours)")
+        plt.ylabel("Relative SWA (0.5-4 Hz) power")
+        plt.title("Simulated exponential decline", fontweight="bold")
+        plt.legend(frameon=True, loc="lower right")
+        plt.tight_layout()
     """
     ###############################################################################################
     # PREPROCESSING
