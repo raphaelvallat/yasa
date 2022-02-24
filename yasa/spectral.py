@@ -641,8 +641,31 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True, norm=Fals
     return f, t, Sxx
 
 
+###################################################################################################
+# SLOW-WAVE ACTIVITY EXPONENTIAL DECAY
+###################################################################################################
+
+
+def find_runs(x):
+    """Find runs of consecutive items in an array.
+
+    From https://gist.github.com/alimanfoo/c5977e87111abe8127453b21204c1065
+    """
+    n = x.shape[0]
+    # Find run starts
+    loc_run_start = np.empty(n, dtype=bool)
+    loc_run_start[0] = True
+    np.not_equal(x[:-1], x[1:], out=loc_run_start[1:])
+    run_starts = np.nonzero(loc_run_start)[0]
+    # Find run values
+    run_values = x[loc_run_start]
+    # Find run lengths
+    run_lengths = np.diff(np.append(run_starts, n))
+    return pd.DataFrame({'values': run_values, 'start': run_starts, 'length': run_lengths})
+
+
 def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(0.5, 4),
-              freq_broad=(0.5, 30), win_sec=4, relative=False, bandpass=True,
+              freq_broad=(0.5, 30), win_sec=4, bandpass=True,
               kwargs_welch=dict(average='median', window='hamming')):
     """
     Calculate the exponential decline (i.e. homeostasis decay) of process S across the night
@@ -691,9 +714,6 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
         Ideally, this should be at least two times the inverse of the lower frequency of
         interest (e.g. for a lower frequency of interest of 0.5 Hz, the window length should
         be at least 2 * 1 / 0.5 = 4 seconds).
-    relative : boolean
-        If True, the SWA power is divided by the total power in the ``freq_broad`` frequency range.
-        The default is False, meaning that absolute power values are used.
     bandpass : boolean
         If True (default), apply a standard FIR bandpass filter in the ``freq_broad`` band.
         For more details, refer to :py:func:`mne.filter.filter_data`.
@@ -712,7 +732,6 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
     # Type checks
     assert isinstance(freq_swa, (tuple, list)), 'band must be a list or a tuple'
     assert isinstance(freq_broad, (tuple, list)), 'band must be a list or a tuple'
-    assert isinstance(relative, bool), 'relative must be a boolean'
     assert isinstance(bandpass, bool), 'bandpass must be a boolean'
 
     # Check if input data is a MNE Raw object
@@ -742,7 +761,7 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
         fmin, fmax = min(freq_broad), max(freq_broad)
         data = mne.filter.filter_data(data.astype('float64'), sf, fmin, fmax, verbose=0)
 
-    # Calculate NREM mask and sleep onset
+    # More safety checks for hypno, include and sf
     hypno = np.asarray(hypno)
     assert include is not None, 'include cannot be None if hypno is given'
     include = np.atleast_1d(np.asarray(include))
@@ -752,15 +771,41 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
     assert hypno.dtype.kind == include.dtype.kind, 'hypno and include must have same dtype'
     assert np.in1d(hypno, include).any(), (
         'None of the stages specified in `include` are present in hypno.')
-    mask = np.in1d(hypno, include)
-    # Sleep onset is defined as the first epoch of N2 or N3 sleep sleep
-    idx_onset = np.nonzero(np.in1d(hypno, (2, 3)))[0]
+    assert float(sf).is_integer(), "Sampling frequency must be an integer."
+    mask = np.in1d(hypno, include).astype(int)
 
-    # Calculate NREM periods (>5 min consecutive)
-    # TODO: Use yasa.sliding_windows?
+    # Find NREM periods (at least >5 min of consecutive NREM)
+    # The time could be a user-defined parameter, e.g. "5min" or "15min"
+    n_samples_5min = int(pd.Timedelta("5min").seconds * sf)  # noqa
+    # This show the onset and duration (in samples) of all the NREM epochs that are > 5 min
+    epochs = find_runs(mask).query(
+        "values == 1 and length > @n_samples_5min").reset_index(drop=True)
 
-    # Calculate SWA power in each period
-    # win = int(win_sec * sf)  # nperseg
+    if epochs.shape[0] < 4:
+        logging.error(
+            "Less than 4 NREM epochs were found in hypno. SWA decay cannot be calculated.")
+
+    # Calculate the onset time (relative to sleep onset) of each NREM period
+    # Sleep onset is defined as the first epoch of N2 or N3 sleep
+    idx_onset = np.nonzero(np.in1d(hypno, (2, 3)))[0][0]
+    epochs['time_onset_hrs'] = (epochs['start'] - idx_onset) / sf / 3600
+    epochs['length_hrs'] = epochs['length'] / 2 / sf / 3600
+    epochs['time_mid_hrs'] = epochs['time_onset_hrs'] + epochs['length_hrs']
+
+    # Calculate continuous mask with unique value for each epoch
+    mask_epoch = np.zeros_like(mask, dtype=int)
+    for i, row in epochs.iterrows():
+        start, end = int(row['start'])
+        end = int(row['start'] + row['length'] + 1)
+        mask_epoch[start:end] = i + 1
+
+    # Calculate SWA absolute power in each period, for each channel
+    bp = bandpower(
+        data=data, sf=sf, ch_names=ch_names,
+        hypno=mask_epoch, include=list(range(1, max(mask_epoch) + 1)),
+        bands=[(freq_swa[0], freq_swa[1], "SWA"), (freq_broad[0], freq_broad[1], "Broad")],
+        win_sec=win_sec, relative=False, bandpass=False, kwargs_welch=kwargs_welch
+    )
 
     # Calculate exponential decline
     # https://doi.org/10.1093/sleep/33.4.491
@@ -769,7 +814,6 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
     # - The time t starts at zero at sleep onset.
     # - Data were normalized within each subject with mean SWA across all derivations
     # - Therefore, SWA and LA are expressed in percentage.
-
     def _fit_exp_decay(t, asym, intercept, slope):
         """Exponential decay equation"""
         return asym + intercept * np.exp(-slope * t)
