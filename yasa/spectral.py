@@ -785,7 +785,7 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
     0 and 1. The time constant :math:`\tau` is expressed in hours and bounded within the
     physiological range of 0 to 4 hours.
 
-    Parameter estimation is performed using a non-linear least squares
+    Parameter estimation is performed using non-linear least squares curve fitting
     (see :py:func:`scipy.optimize.curve_fit`).
 
     References
@@ -834,8 +834,8 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
     ###############################################################################################
     # PREPROCESSING
     ###############################################################################################
+
     set_log_level(verbose)
-    # Type checks
     assert isinstance(freq_swa, (tuple, list)), 'band must be a list or a tuple'
     assert isinstance(freq_broad, (tuple, list)), 'band must be a list or a tuple'
     assert isinstance(bandpass, bool), 'bandpass must be a boolean'
@@ -896,12 +896,10 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
     # METHOD 2: equal-length epochs
     # n_windows = int(np.floor(mask[idx_onset:].size / n_samples_thr))
     # epoch_counter = 0
-    # epochs = {'values': [], 'start': [], 'length': []}
+    # epochs = {'start': [], 'length': []}
     # for i in range(n_windows):
     #     start = idx_onset + n_samples_thr * i
-    #     end = start + n_samples_thr
-    #     if mask[start:end].all():
-    #         epochs['values'].append(1)
+    #     if mask[start:(start + n_samples_thr)].all():
     #         epochs['start'].append(start)
     #         epochs['length'].append(end - start)
     # epochs = pd.DataFrame(epochs)
@@ -945,7 +943,7 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
 
     # Calculate exponential decline, for each channel
     # Note that we use the midpoint of each epoch as the xdata, and not the onset, to account for
-    # different epoch duration.
+    # different epoch durations.
     xdata = epochs['time_mid_hrs'].to_numpy()
     for chan in ch_names:
         ydata = bp.xs(chan, level=-1)["SWA"].to_numpy()
