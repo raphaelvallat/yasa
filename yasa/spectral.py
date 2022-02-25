@@ -885,21 +885,25 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
     # FIND "CLEAN" NREM PERIODS, i.e. at least X min of consecutive NREM
     ###############################################################################################
 
+    # IMPORTANT: Sleep onset is defined as the first epoch of N2 or N3 sleep
+    # TODO: Should we use the first two consecutive N2 or N3 sleep epoch?
+    idx_onset = np.nonzero(np.in1d(hypno, (2, 3)))[0][0]
+
     # How many samples is 5 /10 / X min?
     n_samples_epoch = int(pd.Timedelta(epoch_length).seconds * sf)  # noqa
 
-    # METHOD 1: variable-length epoch
+    # METHOD 1: variable-length epochs
     # This show the onset and duration (in samples) of all the NREM epochs that are > 5 min
     epochs = find_runs(mask).query(
         "values == 1 and length > @n_samples_epoch").reset_index(drop=True)
 
     # METHOD 2: equal-length epochs
-    # n_windows = int(np.floor(mask[idx_onset:].size / n_samples_thr))
-    # epoch_counter = 0
+    # n_windows = int(np.floor(mask[idx_onset:].size / n_samples_epoch))
     # epochs = {'start': [], 'length': []}
     # for i in range(n_windows):
-    #     start = idx_onset + n_samples_thr * i
-    #     if mask[start:(start + n_samples_thr)].all():
+    #     start = idx_onset + n_samples_epoch * i
+    #     end = start + n_samples_epoch
+    #     if mask[start:end].all():
     #         epochs['start'].append(start)
     #         epochs['length'].append(end - start)
     # epochs = pd.DataFrame(epochs)
@@ -914,8 +918,6 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
             f"calculated. Please decrease {epoch_length}.")
 
     # Calculate the onset time (relative to sleep onset) of each NREM period
-    # IMPORTANT: Sleep onset is defined as the first epoch of N2 or N3 sleep
-    idx_onset = np.nonzero(np.in1d(hypno, (2, 3)))[0][0]
     epochs['time_onset_hrs'] = (epochs['start'] - idx_onset) / sf / 3600
     epochs['length_hrs'] = epochs['length'] / 2 / sf / 3600
     epochs['time_mid_hrs'] = epochs['time_onset_hrs'] + epochs['length_hrs']
