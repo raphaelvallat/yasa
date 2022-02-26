@@ -938,7 +938,7 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
         data=data, sf=sf, ch_names=ch_names, hypno=mask_epoch,
         include=list(range(1, max(mask_epoch) + 1)),
         bands=[(freq_swa[0], freq_swa[1], "SWA"), (freq_broad[0], freq_broad[1], "Broad")],
-        win_sec=win_sec, relative=True, bandpass=False, kwargs_welch=kwargs_welch)
+        win_sec=win_sec, relative=False, bandpass=False, kwargs_welch=kwargs_welch)
 
     # Initialize output
     df_decay = {"Intercept": [], "Asym": [], "Tau": [], "Decay": [], "MAE": []}
@@ -952,7 +952,7 @@ def swa_decay(data, hypno, *, sf=None, ch_names=None, include=(2, 3), freq_swa=(
         try:
             # See docstring of "_decay_func" for an explanation of the bound.
             popt, _ = curve_fit(
-                _decay_func, xdata, ydata, p0=(0.5, 0.8, 1), bounds=((0, 0, 0), (1, 1, 4)))
+                _decay_func, xdata, ydata, bounds=((0, 0, 0), (np.inf, np.inf, 4)))
             mae = np.mean(np.abs(ydata - _decay_func(xdata, *popt)))
         except (ValueError, RuntimeError, OptimizeWarning) as e:
             logger.error(f"Exponential fit failed. Returning NaN for channel {chan}\nError: {e}")
