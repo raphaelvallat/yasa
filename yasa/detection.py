@@ -721,7 +721,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         # real duration of the spindle. To overcome this, we compute a soft
         # threshold by smoothing the idx_sum vector with a 100 ms window.
         w = int(0.1 * sf)
-        idx_sum = np.convolve(idx_sum, np.ones(w) / w, mode='same')
+        idx_sum = np.convolve(idx_sum, np.ones(w), mode='same') / w
         # And we then find indices that are strictly greater than 2, i.e. we
         # find the 'true' beginning and 'true' end of the events by finding
         # where at least two out of the three treshold were crossed.
