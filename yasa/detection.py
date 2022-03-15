@@ -719,8 +719,11 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
 
         # The detection using the three thresholds tends to underestimate the
         # real duration of the spindle. To overcome this, we compute a soft
-        # threshold by smoothing the idx_sum vector with a 100 ms window.
+        # threshold by smoothing the idx_sum vector with a ~100 ms window.
+        # Sampling frequency = 100 Hz --> w = 10 samples
+        # Sampling frequecy = 256 Hz --> w = 25 samples = 97 ms
         w = int(0.1 * sf)
+        # Critical bugfix March 2022, see https://github.com/raphaelvallat/yasa/pull/55
         idx_sum = np.convolve(idx_sum, np.ones(w), mode='same') / w
         # And we then find indices that are strictly greater than 2, i.e. we
         # find the 'true' beginning and 'true' end of the events by finding
