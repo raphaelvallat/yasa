@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.detection &#8212; yasa 0.6.0 documentation</title>
+    <title>yasa.detection &#8212; yasa 0.6.1 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
@@ -41,7 +41,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.0</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.1</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -674,6 +674,12 @@
 
 <span class="sd">    For better results, apply this detection only on artefact-free NREM sleep.</span>
 
+<span class="sd">    .. warning::</span>
+<span class="sd">        A critical bug was fixed in YASA 0.6.1, in which the number of detected spindles could</span>
+<span class="sd">        vary drastically depending on the sampling frequency of the data. Please make sure to check</span>
+<span class="sd">        any results obtained with this function prior to the 0.6.1 release.</span>
+
+
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
 <span class="sd">    The sleep spindles detection algorithm is based on:</span>
@@ -812,9 +818,12 @@
 
         <span class="c1"># The detection using the three thresholds tends to underestimate the</span>
         <span class="c1"># real duration of the spindle. To overcome this, we compute a soft</span>
-        <span class="c1"># threshold by smoothing the idx_sum vector with a 100 ms window.</span>
+        <span class="c1"># threshold by smoothing the idx_sum vector with a ~100 ms window.</span>
+        <span class="c1"># Sampling frequency = 100 Hz --&gt; w = 10 samples</span>
+        <span class="c1"># Sampling frequecy = 256 Hz --&gt; w = 25 samples = 97 ms</span>
         <span class="n">w</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.1</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span>
-        <span class="n">idx_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">idx_sum</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="o">/</span> <span class="n">w</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)</span>
+        <span class="c1"># Critical bugfix March 2022, see https://github.com/raphaelvallat/yasa/pull/55</span>
+        <span class="n">idx_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">idx_sum</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">w</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="n">w</span>
         <span class="c1"># And we then find indices that are strictly greater than 2, i.e. we</span>
         <span class="c1"># find the &#39;true&#39; beginning and &#39;true&#39; end of the events by finding</span>
         <span class="c1"># where at least two out of the three treshold were crossed.</span>

@@ -12,7 +12,7 @@ MAINTAINER_EMAIL = 'raphaelvallat9@gmail.com'
 URL = 'https://github.com/raphaelvallat/yasa/'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/raphaelvallat/yasa/'
-VERSION = '0.6.0'
+VERSION = '0.6.1'
 PACKAGE_DATA = {'yasa.data.icons': ['*.svg']}
 
 INSTALL_REQUIRES = [
