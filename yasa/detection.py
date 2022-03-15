@@ -581,6 +581,12 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
 
     For better results, apply this detection only on artefact-free NREM sleep.
 
+    .. warning::
+        A critical bug was fixed in YASA 0.6.1, in which the number of detected spindles could
+        vary drastically depending on the sampling frequency of the data. Please make sure to check
+        any results obtained with this function prior to the 0.6.1 release.
+
+
     References
     ----------
     The sleep spindles detection algorithm is based on:
@@ -719,9 +725,12 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
 
         # The detection using the three thresholds tends to underestimate the
         # real duration of the spindle. To overcome this, we compute a soft
-        # threshold by smoothing the idx_sum vector with a 100 ms window.
+        # threshold by smoothing the idx_sum vector with a ~100 ms window.
+        # Sampling frequency = 100 Hz --> w = 10 samples
+        # Sampling frequecy = 256 Hz --> w = 25 samples = 97 ms
         w = int(0.1 * sf)
-        idx_sum = np.convolve(idx_sum, np.ones(w) / w, mode='same')
+        # Critical bugfix March 2022, see https://github.com/raphaelvallat/yasa/pull/55
+        idx_sum = np.convolve(idx_sum, np.ones(w), mode='same') / w
         # And we then find indices that are strictly greater than 2, i.e. we
         # find the 'true' beginning and 'true' end of the events by finding
         # where at least two out of the three treshold were crossed.

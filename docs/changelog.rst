@@ -8,6 +8,15 @@ What's new
 
 ----------------------------------------------------------------------------------------
 
+v0.6.1 (March 2022)
+-------------------
+
+This release fixes a CRITICAL BUG with the spindles detection. Specifically, the :py:func:`yasa.spindles_detect` could return different results depending on the sampling rate of the data.
+For example, downsampling the data from 256 Hz to 128 Hz may have significantly reduced the number of detected spindles. As explained in `issue 54 <https://github.com/raphaelvallat/yasa/issues/54>`_, this bug was caused by a floating-point error
+in :py:func:`np.convolve` when calculating the soft spindle threshold. Tests seem to indicate that only certain sampling frequencies were impacted, such as 200 Hz, 256 Hz or 400 Hz. Other sampling frequencies such as 100 Hz and 500 Hz were seemingly not affected by this bug. Please double-check any results obtained with :py:func:`yasa.spindles_detect`!
+
+.. warning:: We recommend all users to upgrade to this new version ASAP and check any results obtained with the :py:func:`yasa.spindles_detect` function!
+
 v0.6.0 (February 2022)
 ----------------------
 
