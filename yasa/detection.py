@@ -581,6 +581,12 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
 
     For better results, apply this detection only on artefact-free NREM sleep.
 
+    .. warning::
+        A critical bug was fixed in YASA 0.6.1, in which the number of detected spindles could
+        vary drastically depending on the sampling frequency of the data. Please make sure to check
+        any results obtained with this function prior to the 0.6.1 release.
+
+
     References
     ----------
     The sleep spindles detection algorithm is based on:
