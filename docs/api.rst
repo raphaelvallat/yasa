@@ -34,6 +34,7 @@ Hypnogram & sleep statistics
     hypno_upsample_to_sf
     hypno_str_to_int
     hypno_int_to_str
+    hypno_find_periods
     load_profusion_hypno
     plot_hypnogram
     plot_spectrogram

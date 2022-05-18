@@ -322,11 +322,11 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     Returns
     -------
     periods : :py:class:`pandas.DataFrame`
-        Output dataframe::
+        Output dataframe
 
-            'values' : The value in hypno of the current period
-            'start' : The index of the start of the period in hypno
-            'length' : The duration of the period, in number of samples
+        * 'values' : The value in hypno of the current period
+        * 'start' : The index of the start of the period in hypno
+        * 'length' : The duration of the period, in number of samples
 
     Examples
     --------
@@ -367,7 +367,7 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     1       2      5       6
     2       0     11       3
 
-    Lastly, using ``equal_length=True` will further divide the periods into segments of the
+    Lastly, using ``equal_length=True`` will further divide the periods into segments of the
     same duration, i.e. the duration defined in ``threshold``:
 
     >>> hypno = [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 0, 1]
