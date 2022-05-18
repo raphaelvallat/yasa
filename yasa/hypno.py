@@ -34,7 +34,7 @@ import pandas as pd
 from .io import set_log_level
 
 __all__ = ['hypno_str_to_int', 'hypno_int_to_str', 'hypno_upsample_to_sf',
-           'hypno_upsample_to_data', 'load_profusion_hypno']
+           'hypno_upsample_to_data', 'hypno_find_periods', 'load_profusion_hypno']
 
 
 logger = logging.getLogger('yasa')
@@ -289,3 +289,154 @@ def load_profusion_hypno(fname, replace=True):  # pragma: no cover
         # Stage 4 --> 3 and REM --> 4
         hypno = pd.Series(hypno).replace({4: 3, 5: 4}).to_numpy()
     return hypno, sf_hyp
+
+#############################################################################
+# PERIODS & CYCLES
+#############################################################################
+
+
+def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
+    """Find sequences of consecutive values exceeding a certain duration in hypnogram.
+
+    .. versionadded:: 0.6.2
+
+    Parameters
+    ----------
+    hypno : array_like
+        A 1D array with the sleep stages (= hypnogram). The dtype can be anything (int, bool, str).
+        More generally, this can be any vector for which you wish to find runs of
+        consecutive items.
+    sf_hypno : float
+        The current sampling frequency of ``hypno``, in Hz, e.g.
+
+        * 1/30 = 1 value per each 30 seconds of EEG data,
+        * 1 = 1 value per second of EEG data
+    threshold : str
+        This function will only keep periods that exceed a certain duration (default '5min'), e.g.
+        '5min', '15min', '30sec', '1hour'. To disable thresholding, use '0sec'.
+    equal_length: bool
+        If True, the periods will all have the exact duration defined
+        in threshold. That is, periods that are longer than the duration threshold will be divided
+        into sub-periods of exactly the length of ``threshold``.
+
+    Returns
+    -------
+    periods : :py:class:`pandas.DataFrame`
+        Output dataframe::
+
+            'values' : The value in hypno of the current period
+            'start' : The index of the start of the period in hypno
+            'length' : The duration of the period, in number of samples
+
+    Examples
+    --------
+    Let's assume that we have an hypnogram where sleep = 1 and wake = 0. There is one value per
+    minute, and therefore the sampling frequency of the hypnogram is 1 / 60 sec (~0.016 Hz).
+
+    >>> import yasa
+    >>> hypno = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0]
+    >>> yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold="0min")
+       values  start  length
+    0       0      0      11
+    1       1     11       3
+    2       0     14       2
+    3       1     16       9
+    4       0     25       2
+
+    This gives us the start and duration of each sequence of consecutive values in the hypnogram.
+    For example, the first row tells us that there is a sequence of 11 consecutive 0 starting at
+    the first index of hypno.
+
+    Now, we may want to keep only periods that are longer than a specific threshold,
+    for example 5 minutes:
+
+    >>> yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold="5min")
+       values  start  length
+    0       0      0      11
+    1       1     16       9
+
+    Only the two sequences that are longer than 5 minutes (11 minutes and 9 minutes respectively)
+    are kept. Feel free to play around with different values of threshold!
+
+    This function is not limited to binary arrays, e.g.
+
+    >>> hypno = [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 0, 1]
+    >>> yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold="2min")
+       values  start  length
+    0       0      0       4
+    1       2      5       6
+    2       0     11       3
+
+    Lastly, using ``equal_length=True` will further divide the periods into segments of the
+    same duration, i.e. the duration defined in ``threshold``:
+
+    >>> hypno = [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 0, 1]
+    >>> yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold="2min", equal_length=True)
+       values  start  length
+    0       0      0       2
+    1       0      2       2
+    2       2      5       2
+    3       2      7       2
+    4       2      9       2
+    5       0     11       2
+
+    Here, the first period of 4 minutes of consecutive 0 is further divided into 2 periods of
+    exactly 2 minutes. Next, the sequence of 6 consecutive 2 is further divided into 3 periods of
+    2 minutes. Lastly, the last value in the sequence of 3 consecutive 0 at the end of the array is
+    removed to keep only a segment of 2 exactly minutes. In other words, the remainder of the
+    division of a given segment by the desired duration is discarded.
+    """
+    # Convert the threshold to number of samples
+    assert isinstance(threshold, str), "Threshold must be a string, e.g. '5min', '30sec', '15min'"
+    thr_sec = pd.Timedelta(threshold).total_seconds()
+    thr_samp = sf_hypno * thr_sec
+    if float(thr_samp).is_integer():
+        thr_samp = int(thr_samp)
+    else:
+        raise ValueError(
+            f"The selected threshold does not result in an whole number of samples ("
+            f"{thr_sec:.3f} seconds * {sf_hypno:.3f} Hz = {thr_samp:.3f} samples)"
+        )
+
+    # Find run starts
+    # https://gist.github.com/alimanfoo/c5977e87111abe8127453b21204c1065
+    assert isinstance(hypno, (list, np.ndarray, pd.Series)), 'hypno must be an array.'
+    x = np.asarray(hypno)
+    n = x.shape[0]
+    loc_run_start = np.empty(n, dtype=bool)
+    loc_run_start[0] = True
+    np.not_equal(x[:-1], x[1:], out=loc_run_start[1:])
+    run_starts = np.nonzero(loc_run_start)[0]
+    # Find run values
+    run_values = x[loc_run_start]
+    # Find run lengths
+    run_lengths = np.diff(np.append(run_starts, n))
+    seq = pd.DataFrame({'values': run_values, 'start': run_starts, 'length': run_lengths})
+
+    # Remove run that are shorter than threshold
+    seq = seq[seq['length'] >= thr_samp].reset_index(drop=True)
+
+    if not equal_length:
+        return seq
+
+    # Divide into epochs of equal length
+    assert thr_samp > 0, "Threshold must be non-zero if using equal_length=True."
+    new_seq = {"values": [], "start": [], "length": []}
+
+    for i, row in seq.iterrows():
+        quotient, remainder = np.divmod(row['length'], thr_samp)
+        new_start = row['start']
+        if quotient > 0:
+            while quotient != 0:
+                new_seq["values"].append(row['values'])
+                new_seq["start"].append(new_start)
+                new_seq["length"].append(thr_samp)
+                new_start += thr_samp
+                quotient -= 1
+        else:
+            new_seq["values"].append(row['values'])
+            new_seq["start"].append(row['start'])
+            new_seq["length"].append(row['length'])
+
+    new_seq = pd.DataFrame(new_seq)
+    return new_seq

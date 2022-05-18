@@ -8,6 +8,13 @@ What's new
 
 ----------------------------------------------------------------------------------------
 
+v0.6.2.dev
+----------
+
+**New functions**
+
+a. Added the :py:func:`yasa.hypno_find_periods` function to find sequences of consecutive values in hypnogram that are longer than a certain duration. This function can be used to detect NREM/REM periods.
+
 v0.6.1 (March 2022)
 -------------------
 
