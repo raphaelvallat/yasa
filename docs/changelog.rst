@@ -13,7 +13,13 @@ v0.6.2.dev
 
 **New functions**
 
-a. Added the :py:func:`yasa.hypno_find_periods` function to find sequences of consecutive values in hypnogram that are longer than a certain duration. This function can be used to detect NREM/REM periods.
+a. Added the :py:func:`yasa.hypno_find_periods` function to find sequences of consecutive values in hypnogram that are longer than a certain duration. This is a flexible function that can be used to detect NREM/REM periods.
+b. Added the :py:func:`hrv_stage` function, which calculates heart rate (HR) and heart rate variability (HRV) by stage and periods. The epochs are found using the newly-added :py:func:`yasa.hypno_find_periods` function.
+c. Added a new dataset containing 8 hours of ECG data. The dataset is in compressed NumPy format and can be found in notebooks/data_ECG_8hrs_200Hz.npz. The dataset also includes an upsampled hypnogram.
+
+**Dependencies**
+
+a. Added `SleepECG <https://sleepecg.readthedocs.io/en/stable/>`_ to the dependencies. SleepECG is used for the heartbeats detection in :py:func:`hrv_stage`.
 
 v0.6.1 (March 2022)
 -------------------

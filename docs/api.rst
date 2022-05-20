@@ -44,7 +44,7 @@ Hypnogram & sleep statistics
 Spectral analyses
 -----------------
 
-.. _others:
+.. _spectral:
 
 .. autosummary::
    :toctree: generated/
@@ -58,3 +58,14 @@ Spectral analyses
     sliding_window
     stft_power
     topoplot
+
+
+Heart rate analysis
+-------------------
+
+.. _others:
+
+.. autosummary::
+   :toctree: generated/
+
+    hrv_stage
