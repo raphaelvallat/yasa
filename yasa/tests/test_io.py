@@ -2,7 +2,7 @@
 import pytest
 import logging
 import unittest
-from yasa.io import (set_log_level, is_tensorpac_installed,
+from yasa.io import (is_sleepecg_installed, set_log_level, is_tensorpac_installed,
                      is_pyriemann_installed)
 
 logger = logging.getLogger('yasa')
@@ -33,3 +33,4 @@ class TestIO(unittest.TestCase):
         """Test dependancies."""
         is_tensorpac_installed()
         is_pyriemann_installed()
+        is_sleepecg_installed()

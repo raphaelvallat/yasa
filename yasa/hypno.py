@@ -314,7 +314,7 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     threshold : str
         This function will only keep periods that exceed a certain duration (default '5min'), e.g.
         '5min', '15min', '30sec', '1hour'. To disable thresholding, use '0sec'.
-    equal_length: bool
+    equal_length : bool
         If True, the periods will all have the exact duration defined
         in threshold. That is, periods that are longer than the duration threshold will be divided
         into sub-periods of exactly the length of ``threshold``.
