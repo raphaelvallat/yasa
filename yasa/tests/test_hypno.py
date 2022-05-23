@@ -77,23 +77,27 @@ class TestHypno(unittest.TestCase):
         expected = pd.DataFrame({
             'values': [0, 1, 0, 1, 0],
             'start': [0, 11, 14, 16, 25],
-            'length': [11, 3, 2, 9, 2]}, dtype=np.int64)
+            'length': [11, 3, 2, 9, 2]})
 
-        assert_frame_equal(hfp(x, sf_hypno=1 / 60, threshold="0min"), expected)
-        assert_frame_equal(hfp(x, sf_hypno=1, threshold="0min"), expected)
+        kwargs = dict(
+            check_dtype=False, check_index_type=False, check_column_type=False,
+            check_frame_type=False)
+        assert_frame_equal(hfp(x, sf_hypno=1 / 60, threshold="0min"), expected, **kwargs)
+        assert_frame_equal(hfp(x, sf_hypno=1, threshold="0min"), expected, **kwargs)
 
         # 1b. With thresholding
         expected = pd.DataFrame(
-            {'values': [0, 1], 'start': [0, 16], 'length': [11, 9]}, dtype=np.int64)
-        assert_frame_equal(hfp(x, sf_hypno=1 / 60, threshold="5min"), expected)
+            {'values': [0, 1], 'start': [0, 16], 'length': [11, 9]})
+        assert_frame_equal(hfp(x, sf_hypno=1 / 60, threshold="5min"), expected, **kwargs)
         assert hfp(x, sf_hypno=1, threshold="5min").size == 0
 
         # 1c. Equal length
         expected = pd.DataFrame({
             'values': [0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0],
             'start': [0, 2, 4, 6, 8, 11, 14, 16, 18, 20, 22, 25],
-            'length': [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]}, dtype=np.int64)
-        assert_frame_equal(hfp(x, sf_hypno=1 / 60, threshold="2min", equal_length=True), expected)
+            'length': [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]})
+        assert_frame_equal(
+            hfp(x, sf_hypno=1 / 60, threshold="2min", equal_length=True), expected, **kwargs)
 
         # TEST 2: MULTI-CLASS VECTOR
         x = [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 0, 1]
@@ -101,5 +105,5 @@ class TestHypno(unittest.TestCase):
         expected = pd.DataFrame({
             'values': [0, 1, 2, 0, 1, 0, 1],
             'start': [0, 4, 5, 11, 14, 15, 16],
-            'length': [4, 1, 6, 3, 1, 1, 1]}, dtype=np.int64)
-        assert_frame_equal(hfp(x, sf_hypno=1 / 60, threshold="0min"), expected)
+            'length': [4, 1, 6, 3, 1, 1, 1]})
+        assert_frame_equal(hfp(x, sf_hypno=1 / 60, threshold="0min"), expected, **kwargs)
