@@ -3,6 +3,7 @@ import mne
 import unittest
 import numpy as np
 import pandas as pd
+from pandas.testing import assert_frame_equal
 from yasa.hypno import (hypno_str_to_int, hypno_int_to_str,
                         hypno_upsample_to_sf, hypno_fit_to_data,
                         hypno_upsample_to_data)
@@ -78,12 +79,12 @@ class TestHypno(unittest.TestCase):
             'start': [0, 11, 14, 16, 25],
             'length': [11, 3, 2, 9, 2]})
 
-        assert hfp(x, sf_hypno=1 / 60, threshold="0min").equals(expected)
-        assert hfp(x, sf_hypno=1, threshold="0min").equals(expected)
+        assert_frame_equal(hfp(x, sf_hypno=1 / 60, threshold="0min"), expected)
+        assert_frame_equal(hfp(x, sf_hypno=1, threshold="0min"), expected)
 
         # 1b. With thresholding
         expected = pd.DataFrame({'values': [0, 1], 'start': [0, 16], 'length': [11, 9]})
-        assert hfp(x, sf_hypno=1 / 60, threshold="5min").equals(expected)
+        assert_frame_equal(hfp(x, sf_hypno=1 / 60, threshold="5min"), expected)
         assert hfp(x, sf_hypno=1, threshold="5min").size == 0
 
         # 1c. Equal length
@@ -91,7 +92,7 @@ class TestHypno(unittest.TestCase):
             'values': [0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0],
             'start': [0, 2, 4, 6, 8, 11, 14, 16, 18, 20, 22, 25],
             'length': [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]})
-        assert hfp(x, sf_hypno=1 / 60, threshold="2min", equal_length=True).equals(expected)
+        assert_frame_equal(hfp(x, sf_hypno=1 / 60, threshold="2min", equal_length=True), expected)
 
         # TEST 2: MULTI-CLASS VECTOR
         x = [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 0, 1]
@@ -101,4 +102,4 @@ class TestHypno(unittest.TestCase):
             'start': [0, 4, 5, 11, 14, 15, 16],
             'length': [4, 1, 6, 3, 1, 1, 1]})
 
-        assert hfp(x, sf_hypno=1 / 60, threshold="0min").equals(expected)
+        assert_frame_equal(hfp(x, sf_hypno=1 / 60, threshold="0min"), expected)
