@@ -405,7 +405,7 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     n = x.shape[0]
     loc_run_start = np.empty(n, dtype=bool)
     loc_run_start[0] = True
-    np.not_equal(x[:-1], x[1:], out=loc_run_start[1:])
+    loc_run_start[1:] = x[:-1] != x[1:]
     run_starts = np.nonzero(loc_run_start)[0]
     # Find run values
     run_values = x[loc_run_start]

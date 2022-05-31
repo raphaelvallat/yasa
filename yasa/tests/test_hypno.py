@@ -25,6 +25,7 @@ def create_raw(npts, ch_names=['F4-M1', 'F3-M2'], sf=100):
 
 
 class TestHypno(unittest.TestCase):
+    """Test functions in the hypno.py file."""
 
     def test_conversion(self):
         """Test str <--> int conversion.
@@ -107,3 +108,8 @@ class TestHypno(unittest.TestCase):
             'start': [0, 4, 5, 11, 14, 15, 16],
             'length': [4, 1, 6, 3, 1, 1, 1]})
         assert_frame_equal(hfp(x, sf_hypno=1 / 60, threshold="0min"), expected, **kwargs)
+
+        # With a string dtype
+        expected["values"] = expected["values"].astype(str)
+        assert_frame_equal(
+            hfp(np.array(x).astype(str), sf_hypno=1 / 60, threshold="0min"), expected, **kwargs)
