@@ -158,7 +158,7 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
     raw_eeg.filter(l_freq, h_freq, verbose=False)
 
     # Extract data and sf
-    data = raw_eeg.get_data() * 1e6  # Scale from Volts (MNE default) to uV
+    data = raw_eeg.get_data(units="uV")  # Scale from Volts (MNE default) to uV
     sf = raw_eeg.info['sfreq']
     assert data.ndim == 2, 'data must be 2D (chan, times).'
     assert hypno.size == data.shape[1], 'Hypno must have same size as data.'
