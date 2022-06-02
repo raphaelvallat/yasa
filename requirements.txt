@@ -1,7 +1,7 @@
 numpy>=1.16.5
 scipy
 pandas
-mne>=0.20
+mne>=0.23
 numba
 outdated
 matplotlib
