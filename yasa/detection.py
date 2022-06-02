@@ -27,7 +27,7 @@ from .others import (moving_transform, trimbothstd, get_centered_indices,
 logger = logging.getLogger('yasa')
 
 __all__ = ['art_detect', 'spindles_detect', 'SpindlesResults', 'sw_detect', 'SWResults',
-           'rem_detect', 'REMResults']
+           'rem_detect', 'REMResults', 'compare_detection']
 
 
 #############################################################################
@@ -2621,3 +2621,126 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     # Convert epoch_is_art to boolean [0, 0, 1] -- > [False, False, True]
     epoch_is_art = epoch_is_art.astype(bool)
     return epoch_is_art, zscores
+
+
+#############################################################################
+# COMPARE DETECTION
+#############################################################################
+
+def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
+    """
+    Determine correctness of detected events against ground-truth events.
+
+    Parameters
+    ----------
+    indices_detection : array_like
+        Indices of the detected events. For example, this could be the indices of the
+        start of the spindles, or the negative peak of the slow-waves. The indices must be in
+        samples, and not in seconds.
+    indices_groundtruth : array_like
+        Indices of the ground-truth events, in samples.
+    max_distance : int, optional
+        Maximum distance between indices, in samples, to consider as the same event, by
+        default 0.
+
+    Returns
+    -------
+    results : dict
+        A dictionary with the comparison results:
+
+        * ``tp``: True positives, i.e. actual events detected as events.
+        * ``fp``: False positives, i.e. non-events detected as events.
+        * ``fn``: False negatives, i.e. actual events not detected as events.
+        * ``precision``: Precision score, aka positive predictive value (see Notes)
+        * ``recall``: Recall score, aka sensitivity (see Notes)
+        * ``f1``: F1-score (see Notes)
+
+    Notes
+    -----`
+    * The precision score is calculated as :math:`TP / (TP + FP)`.
+    * The recall score is calculated as :math:`TP / (TP + FN)`.
+    * The F1-score is calculated as :math:`TP / (TP + 0.5 * (FP + FN))`.
+
+    This function is inspired by the `sleepecg.compare_heartbeats
+    <https://sleepecg.readthedocs.io/en/stable/generated/sleepecg.compare_heartbeats.html>`_
+    function.
+
+    Examples
+    --------
+    >>> from yasa import compare_detection
+    >>> detected = [5, 12, 20, 34, 41, 57, 63]
+    >>> grndtrth = [5, 12, 18, 26, 34, 41, 55, 63, 68]
+    >>> compare_detection(detected, grndtrth, max_distance=0)
+    {'tp': array([ 5, 12, 34, 41, 63]),
+     'fp': array([20, 57]),
+     'fn': array([18, 26, 55, 68]),
+     'precision': 0.5555555555555556,
+     'recall': 0.7142857142857143,
+     'f1': 0.625}
+
+    >>> compare_detection(detected, grndtrth, max_distance=2)
+    {'tp': array([ 5, 12, 20, 34, 41, 57, 63]),
+     'fp': array([], dtype=int64),
+     'fn': array([26, 68]),
+     'precision': 0.7777777777777778,
+     'recall': 1.0,
+     'f1': 0.875}
+
+    >>> compare_detection([], grndtrth)
+    {'tp': array([], dtype=int64),
+     'fp': array([], dtype=int64),
+     'fn': array([ 5, 12, 18, 26, 34, 41, 55, 63, 68]),
+     'precision': 0,
+     'recall': 0,
+     'f1': 0}
+    """
+    # Safety check
+    indices_detection = np.asarray(indices_detection)
+    indices_groundtruth = np.asarray(indices_groundtruth)
+    assert all([float(i).is_integer() for i in indices_detection])  # all([]) == True
+    assert all([float(i).is_integer() for i in indices_groundtruth])
+    assert indices_detection.ndim == 1, "detection indices must be a 1D list or array."
+    assert indices_groundtruth.ndim == 1, "groundtruth indices must be a 1D list or array."
+    assert max_distance >= 0, "max_distance must be 0 or a positive integer."
+    assert isinstance(max_distance, int), "max_distance must be 0 or a positive integer."
+
+    # Handle cases where indices_detection or indices_groundtruth is empty
+    if indices_detection.size == 0:
+        results = dict(
+            tp=np.array([], dtype=int),
+            fp=np.array([], dtype=int),
+            fn=indices_groundtruth.copy(),
+            precision=0, recall=0, f1=0)
+        return results
+
+    if indices_groundtruth.size == 0:
+        results = dict(
+            tp=np.array([], dtype=int),
+            fp=indices_detection.copy(),
+            fn=np.array([], dtype=int),
+            precision=0, recall=0, f1=0)
+        return results
+
+    # Create boolean masks
+    max_len = max(max(indices_detection), max(indices_groundtruth)) + 1
+    detection_mask = np.zeros(max_len, dtype=bool)
+    detection_mask[indices_detection] = 1
+    true_mask = np.zeros(max_len, dtype=bool)
+    true_mask[indices_groundtruth] = 1
+
+    # Create smoothed masks
+    fuzzy_filter = np.ones(max_distance * 2 + 1, dtype=bool)
+    detection_mask_fuzzy = np.convolve(detection_mask, fuzzy_filter, mode='same')
+    true_mask_fuzzy = np.convolve(true_mask, fuzzy_filter, mode='same')
+
+    # Confusion matrix and performance metrics
+    results = {}
+    results['tp'] = np.where(detection_mask & true_mask_fuzzy)[0]
+    results['fp'] = np.where(detection_mask & ~true_mask_fuzzy)[0]
+    results['fn'] = np.where(~detection_mask_fuzzy & true_mask)[0]
+
+    n_tp, n_fp, n_fn = len(results['tp']), len(results['fp']), len(results['fn'])
+    results["precision"] = n_tp / (n_tp + n_fn)
+    results["recall"] = n_tp / (n_tp + n_fp)
+    results["f1"] = n_tp / (n_tp + 0.5 * (n_fp + n_fn))
+    return results
