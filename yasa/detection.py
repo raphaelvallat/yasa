@@ -40,7 +40,7 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
     if isinstance(data, mne.io.BaseRaw):
         sf = data.info['sfreq']  # Extract sampling frequency
         ch_names = data.ch_names  # Extract channel names
-        data = data.get_data(units="uV")
+        data = data.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
     else:
         assert sf is not None, 'sf must be specified if not using MNE Raw.'
     data = np.asarray(data, dtype=np.float64)

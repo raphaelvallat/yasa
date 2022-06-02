@@ -34,7 +34,7 @@ hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30),
 # Eyes-open 6 minutes resting-state, 2 channels, 200 Hz
 raw_eo = mne.io.read_raw_fif('notebooks/data_resting_EO_200Hz_raw.fif',
                              verbose=0)
-data_eo = raw_eo.get_data(units="uV")
+data_eo = raw_eo.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
 sf_eo = raw_eo.info['sfreq']
 chan_eo = raw_eo.ch_names
 

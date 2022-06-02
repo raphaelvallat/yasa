@@ -197,7 +197,7 @@ class SleepStaging:
             sf = raw_pick.info['sfreq']
 
         # Get data and convert to microVolts
-        data = raw_pick.get_data(units="uV")
+        data = raw_pick.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
 
         # Extract duration of recording in minutes
         duration_minutes = data.shape[1] / sf / 60
