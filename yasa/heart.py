@@ -77,7 +77,8 @@ def hrv_stage(data, sf, *, hypno=None, include=(2, 3, 4), threshold="2min", equa
     Returns
     -------
     epochs : :py:class:`pandas.DataFrame`
-        Output dataframe with stage and epoch number as index. The columns are
+        Output dataframe with values (= the sleep stages defined in ``include``) and
+        epoch number as index. The columns are
 
         * 'start' : The start of the epoch, in seconds from the beginning of the recording.
         * 'duration' : The duration of the epoch, in seconds.
@@ -109,7 +110,9 @@ def hrv_stage(data, sf, *, hypno=None, include=(2, 3, 4), threshold="2min", equa
     from sleepecg import detect_heartbeats
 
     if isinstance(hypno, type(None)):
-        logger.warning("No hypnogram was passed. The entire recording will be used.")
+        logger.warning(
+            "No hypnogram was passed. The entire recording will be used, i.e. "
+            "hypno will be set to np.zeros(data.size) and include will be set to 0.")
         data = np.asarray(data, dtype=np.float64)
         hypno = np.zeros(max(data.shape), dtype=int)
         include = 0
@@ -125,9 +128,9 @@ def hrv_stage(data, sf, *, hypno=None, include=(2, 3, 4), threshold="2min", equa
     assert epochs.shape[0] > 0, f"No epochs longer than {threshold} found in hypnogram."
     epochs = epochs[epochs["values"].isin(include)].reset_index(drop=True)
     # Sort by stage and add epoch number
-    epochs.sort_values(by=['values', 'start'], inplace=True)
+    epochs = epochs.sort_values(by=['values', 'start'])
     epochs['epoch'] = epochs.groupby("values")["start"].transform(lambda x: range(len(x)))
-    epochs.set_index(["values", "epoch"], inplace=True)
+    epochs = epochs.set_index(["values", "epoch"])
 
     # Loop over epochs
     rpeaks = {}
@@ -172,6 +175,6 @@ def hrv_stage(data, sf, *, hypno=None, include=(2, 3, 4), threshold="2min", equa
     # Convert start and duration to seconds
     epochs['start'] /= sf
     epochs['length'] /= sf
-    epochs.rename(columns={"length": "duration"}, inplace=True)
+    epochs = epochs.rename(columns={"length": "duration"})
 
     return epochs, rpeaks

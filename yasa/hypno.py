@@ -413,7 +413,7 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     run_lengths = np.diff(np.append(run_starts, n))
     seq = pd.DataFrame({'values': run_values, 'start': run_starts, 'length': run_lengths})
 
-    # Remove run that are shorter than threshold
+    # Remove runs that are shorter than threshold
     seq = seq[seq['length'] >= thr_samp].reset_index(drop=True)
 
     if not equal_length:
