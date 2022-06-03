@@ -13,13 +13,18 @@ v0.6.2.dev
 
 **New functions**
 
-a. Added the :py:func:`yasa.hypno_find_periods` function to find sequences of consecutive values in hypnogram that are longer than a certain duration. This is a flexible function that can be used to detect NREM/REM periods.
-b. Added the :py:func:`yasa.hrv_stage` function, which calculates heart rate (HR) and heart rate variability (HRV) by stage and periods. The epochs are found using the newly-added :py:func:`yasa.hypno_find_periods` function.
+a. Added the :py:func:`yasa.hypno_find_periods` function to find sequences of consecutive values in hypnogram that are longer than a certain duration. This is a flexible function that can be used to detect NREM/REM periods. `PR 68 <https://github.com/raphaelvallat/yasa/pull/68>`_
+b. Added the :py:func:`yasa.hrv_stage` function, which calculates heart rate (HR) and heart rate variability (HRV) by stage and periods. The epochs are found using the newly-added :py:func:`yasa.hypno_find_periods` function. `PR 68 <https://github.com/raphaelvallat/yasa/pull/68>`_
 c. Added a new dataset containing 8 hours of ECG data. The dataset is in compressed NumPy format and can be found in notebooks/data_ECG_8hrs_200Hz.npz. The dataset also includes an upsampled hypnogram.
+
+**Improvements**
+
+a. When using an MNE.Raw object, conversion of the data from Volts to micro-Volts is now performed within MNE. `PR 70 <https://github.com/raphaelvallat/yasa/pull/70>`_
 
 **Dependencies**
 
 a. Added `SleepECG <https://sleepecg.readthedocs.io/en/stable/>`_ to the dependencies. SleepECG is used for the heartbeats detection in :py:func:`yasa.hrv_stage`.
+b. YASA now requires MNE>0.23
 
 v0.6.1 (March 2022)
 -------------------
