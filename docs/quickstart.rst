@@ -92,13 +92,11 @@ Finally, the underlying data can be accessed with:
 
 .. code-block:: python
 
-  >>> data = raw.get_data() * 1e6
+  >>> data = raw.get_data(units="uV")
   >>> print(data.shape)
   (19, 2892000)
 
 In this example, ``data`` is a two-dimensional NumPy array where the rows represent the channels (19 EEG channels) and the columns represent the data samples (~3 million samples per channel).
-
-Note that we have also multiplied the data by a million (=1e6). This is because MNE converts the data from microVolts (the standard EEG unit) to Volts when loading the EDF file. We therefore revert this operation, i.e. convert from Volts to microVolts.
 
 Hypnogram
 ~~~~~~~~~

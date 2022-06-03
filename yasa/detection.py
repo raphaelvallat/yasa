@@ -40,7 +40,7 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
     if isinstance(data, mne.io.BaseRaw):
         sf = data.info['sfreq']  # Extract sampling frequency
         ch_names = data.ch_names  # Extract channel names
-        data = data.get_data() * 1e6  # Convert from V to uV
+        data = data.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
     else:
         assert sf is not None, 'sf must be specified if not using MNE Raw.'
         if isinstance(sf, np.ndarray):  # Deal with sf = array(100.) --> 100
@@ -1861,10 +1861,9 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325), duratio
         .. warning::
             The default unit of :py:class:`mne.io.BaseRaw` is Volts.
             Therefore, if passing data from a :py:class:`mne.io.BaseRaw`,
-            you need to multiply the data by 1e6 to convert to micro-Volts
-            (1 V = 1,000,000 uV), e.g.:
+            make sure to use units="uV" to get the data in micro-Volts, e.g.:
 
-            >>> data = raw.get_data() * 1e6  # Make sure that data is in uV
+            >>> data = raw.get_data(units="uV")  # Make sure that data is in uV
     sf : float
         Sampling frequency of the data, in Hz.
     hypno : array_like

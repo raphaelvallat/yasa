@@ -96,7 +96,7 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     if isinstance(data, mne.io.BaseRaw):
         sf = data.info['sfreq']  # Extract sampling frequency
         ch_names = data.ch_names  # Extract channel names
-        data = data.get_data() * 1e6  # Convert from V to uV
+        data = data.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
         _, npts = data.shape
     else:
         # Safety checks
@@ -447,7 +447,7 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
         ch_names = data.ch_names  # Extract channel names
         hp = data.info['highpass']  # Extract highpass filter
         lp = data.info['lowpass']  # Extract lowpass filter
-        data = data.get_data() * 1e6  # Convert from V to uV
+        data = data.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
     else:
         # Safety checks
         assert isinstance(data, np.ndarray), 'Data must be a numpy array.'
