@@ -2640,8 +2640,7 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
     indices_groundtruth : array_like
         Indices of the ground-truth events, in samples.
     max_distance : int, optional
-        Maximum distance between indices, in samples, to consider as the same event, by
-        default 0.
+        Maximum distance between indices, in samples, to consider as the same event (default = 0).
 
     Returns
     -------
@@ -2667,16 +2666,43 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
 
     Examples
     --------
+    A simple example. Here, `detected` refers to the indices (in the data) of the detected events.
+    These could be for example the index of the onset of each detected spindle. `grndtrth` refers
+    to the ground-truth (e.g. human-annotated) events.
+
     >>> from yasa import compare_detection
     >>> detected = [5, 12, 20, 34, 41, 57, 63]
     >>> grndtrth = [5, 12, 18, 26, 34, 41, 55, 63, 68]
-    >>> compare_detection(detected, grndtrth, max_distance=0)
+    >>> compare_detection(detected, grndtrth)
     {'tp': array([ 5, 12, 34, 41, 63]),
      'fp': array([20, 57]),
      'fn': array([18, 26, 55, 68]),
      'precision': 0.5555555555555556,
      'recall': 0.7142857142857143,
      'f1': 0.625}
+
+    There are 4 true positives, 2 false positives and 4 false negatives. This gives a precision
+    score of ~0.55 (= 5 / (5 + 4)), a recall score of 0.71 (= 5 / (5 + 2)) and a F1-score of 0.625.
+    The F1-score is the harmonic average of precision and recall, and should be the preferred
+    metric when comparing the performance of a detection against a ground-truth.
+
+    Order matters! If we set `detected` as the ground-truth, FP and FN are inverted, and same for
+    precision and recall. The TP and F1-score remain the same though. Therefore, when comparing two
+    detections (and not a detection against a ground-truth), the F1-score is the preferred metric
+    because it is independent of the order.
+
+    >>> compare_detection(grndtrth, detected)
+    {'tp': array([ 5, 12, 34, 41, 63]),
+     'fp': array([18, 26, 55, 68]),
+     'fn': array([20, 57]),
+     'precision': 0.7142857142857143,
+     'recall': 0.5555555555555556,
+     'f1': 0.625}
+
+    There might be some events that are very close to each other, and we would like to count them
+    as true positive even though they do not occur exactly at the same index. This is possible
+    with the `max_distance` argument, which defines the lookaround window (in samples) for
+    each event.
 
     >>> compare_detection(detected, grndtrth, max_distance=2)
     {'tp': array([ 5, 12, 20, 34, 41, 57, 63]),
@@ -2685,6 +2711,9 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
      'precision': 0.7777777777777778,
      'recall': 1.0,
      'f1': 0.875}
+
+    Finally, if detected is empty, all performance metrics will be set to zero, and a copy of
+    the groundtruth array will be returned as false negatives.
 
     >>> compare_detection([], grndtrth)
     {'tp': array([], dtype=int64),
@@ -2695,10 +2724,10 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
      'f1': 0}
     """
     # Safety check
-    indices_detection = np.asarray(indices_detection)
-    indices_groundtruth = np.asarray(indices_groundtruth)
     assert all([float(i).is_integer() for i in indices_detection])  # all([]) == True
     assert all([float(i).is_integer() for i in indices_groundtruth])
+    indices_detection = np.array(indices_detection, dtype=int)  # Force copy
+    indices_groundtruth = np.array(indices_groundtruth, dtype=int)
     assert indices_detection.ndim == 1, "detection indices must be a 1D list or array."
     assert indices_groundtruth.ndim == 1, "groundtruth indices must be a 1D list or array."
     assert max_distance >= 0, "max_distance must be 0 or a positive integer."
@@ -2730,6 +2759,10 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
 
     # Create smoothed masks
     fuzzy_filter = np.ones(max_distance * 2 + 1, dtype=bool)
+    if len(fuzzy_filter) >= max_len:
+        raise ValueError(
+            f"The convolution window is larger than the signal. `max_distance` should be between "
+            f"0 and {int(max_len / 2 - 1)} samples.")
     detection_mask_fuzzy = np.convolve(detection_mask, fuzzy_filter, mode='same')
     true_mask_fuzzy = np.convolve(true_mask, fuzzy_filter, mode='same')
 

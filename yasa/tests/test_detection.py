@@ -3,11 +3,12 @@ import mne
 import pytest
 import unittest
 import numpy as np
+import pandas as pd
 from itertools import product
 import matplotlib.pyplot as plt
 from mne.filter import filter_data
 from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
-from yasa.detection import spindles_detect, sw_detect, rem_detect, art_detect
+from yasa.detection import spindles_detect, sw_detect, rem_detect, art_detect, compare_detection
 
 ##############################################################################
 # DATA LOADING
@@ -47,6 +48,7 @@ hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30), data=data
 
 
 class TestDetection(unittest.TestCase):
+    """Unit tests for detection.py"""
 
     def test_check_data_hypno(self):
         """Test preprocessing of data and hypno."""
@@ -344,3 +346,79 @@ class TestDetection(unittest.TestCase):
         with pytest.raises(AssertionError):
             # None of include in hypno
             art_detect(data_mne, window=10., hypno=hypno_mne, include=[7, 8])
+
+    def test_compare_detect(self):
+        """Test compare_detect function."""
+        from scipy.stats import hmean
+
+        # Default
+        detected = [5, 12, 20, 34, 41, 57, 63]
+        grndtrth = [5, 12, 18, 26, 34, 41, 55, 63, 68]
+        res = compare_detection(detected, grndtrth)
+        assert all(res["tp"] == [5, 12, 34, 41, 63])
+        assert all(res["fp"] == [20, 57])
+        assert all(res["fn"] == [18, 26, 55, 68])
+        assert np.isclose(res["precision"], 5 / 9)
+        assert np.isclose(res["recall"], 5 / 7)
+        assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))
+
+        # Changing the order: FN <--> FP, precision <--> recall No change in F1-score.
+        res = compare_detection(grndtrth, detected)
+        assert all(res["tp"] == [5, 12, 34, 41, 63])
+        assert all(res["fn"] == [20, 57])
+        assert all(res["fp"] == [18, 26, 55, 68])
+        assert np.isclose(res["recall"], 5 / 9)
+        assert np.isclose(res["precision"], 5 / 7)
+        assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))
+
+        # With max_distance
+        res = compare_detection(detected, grndtrth, max_distance=2)
+        assert all(res["tp"] == [5, 12, 20, 34, 41, 57, 63])
+        assert len(res["fp"]) == 0
+        assert all(res["fn"] == [26, 68])
+        assert np.isclose(res["precision"], 7 / 9)
+        assert np.isclose(res["recall"], 1)
+        assert np.isclose(res["f1"], hmean([1, 7 / 9]))
+
+        # Special cases
+        # ..detected is empty
+        res = compare_detection([], grndtrth)
+        assert len(res["tp"]) == 0
+        assert len(res["fp"]) == 0
+        assert all(res["fn"] == grndtrth)
+
+        # ..ground-truth is empty
+        res = compare_detection(detected, [])
+        assert len(res["tp"]) == 0
+        assert all(res["fp"] == detected)
+        assert len(res["fn"]) == 0
+
+        # ..detected is not sorted
+        np.random.seed(42)
+        np.random.shuffle(detected)
+        res = compare_detection(detected, grndtrth)
+        assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))  # Same as first example
+
+        # ..detected has duplicate values
+        detected = [5, 12, 12, 20, 34, 41, 41, 57, 63]
+        res = compare_detection(detected, grndtrth)
+        assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))  # Same as first example
+
+        # Handle dtypes
+        detected = np.array([5, 12, 20, 34, 41, 57, 63], dtype=float)
+        grndtrth = np.array([5, 12, 18, 26, 34, 41, 55, 63, 68], dtype=int)
+        res = compare_detection(detected, grndtrth)
+        assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))
+        detected = [5., 12, 20., 34, 41., 57., 63]
+        grndtrth = pd.Series([5, 12, 18, 26, 34, 41, 55, 63, 68])
+        res = compare_detection(detected, grndtrth)
+        assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))
+
+        # Errors
+        with pytest.raises(AssertionError):
+            # Arrays contain non-integer floats
+            compare_detection([5.4, 12.2, 20], [5, 12.3, 18])
+
+        with pytest.raises(ValueError):
+            # Arrays contain non-integer floats
+            compare_detection(detected, grndtrth, max_distance=100)
