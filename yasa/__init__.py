@@ -1,6 +1,7 @@
 import logging
 from .detection import *
 from .features import *
+from .heart import *
 from .hypno import *
 from .numba import *
 from .others import *

@@ -45,3 +45,11 @@ def is_pyriemann_installed():
         import pyriemann  # noqa
     except IOError:  # pragma: no cover
         raise IOError("pyRiemann needs to be installed. Please use `pip install pyriemann -U`.")
+
+
+def is_sleepecg_installed():
+    """Test if sleepecg is installed."""
+    try:
+        import sleepecg  # noqa
+    except IOError:  # pragma: no cover
+        raise IOError("sleepecg needs to be installed. Please use `pip install sleepecg -U`.")

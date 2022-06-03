@@ -43,6 +43,9 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
         data = data.get_data() * 1e6  # Convert from V to uV
     else:
         assert sf is not None, 'sf must be specified if not using MNE Raw.'
+        if isinstance(sf, np.ndarray):  # Deal with sf = array(100.) --> 100
+            sf = float(sf)
+        assert isinstance(sf, (int, float)), "sf must be int or float."
     data = np.asarray(data, dtype=np.float64)
     assert data.ndim in [1, 2], 'data must be 1D (times) or 2D (chan, times).'
     if data.ndim == 1:

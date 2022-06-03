@@ -28,6 +28,7 @@ INSTALL_REQUIRES = [
     'scikit-learn',
     'tensorpac>=0.6.5',
     'pyriemann>=0.2.7',
+    'sleepecg>=0.5.0',
     'lspopt',
     'ipywidgets',
     'joblib'
