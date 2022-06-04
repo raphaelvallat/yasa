@@ -312,6 +312,106 @@ class _DetectionResults(object):
 
         return coinc_mat
 
+    def compare_channels(self, score="f1", max_distance_sec=0):
+        """
+        Compare detected events across channels.
+        See full documentation in the methods of SpindlesResults and SWResults.
+        """
+        from itertools import product
+        assert score in ["f1", "precision", "recall"], f"Invalid scoring metric: {score}"
+
+        # Extract events and channel
+        detected = self.summary()
+        chan = detected["Channel"].unique()
+
+        # Get indices of start in deciseconds, rounding to nearest deciseconds (100 ms).
+        # This is needed for three reasons:
+        # 1. Speed up the for loop
+        # 2. Avoid memory error in yasa.compare_detection
+        # 3. Make sure that max_distance works even when self and other have different sf.
+        # TODO: Only the Start of the event is currently supported. Add more flexibility?
+        detected["Start"] = (detected["Start"] * 10).round().astype(int)
+        max_distance = int(10 * max_distance_sec)
+
+        # Initialize output dataframe / dict
+        scores = pd.DataFrame(index=chan, columns=chan, dtype=float)
+        scores.index.name = "Channel"
+        scores.columns.name = "Channel"
+        pairs = list(product(chan, repeat=2))
+
+        # Loop across pair of channels
+        for c_index, c_col in pairs:
+            idx_chan1 = detected[detected["Channel"] == c_index]["Start"]
+            idx_chan2 = detected[detected["Channel"] == c_col]["Start"]
+            # DANGER: Note how we invert idx_chan2 and idx_chan1 here. This is because
+            # idx_chan1 (the index of the dataframe) should be the ground-truth.
+            res = compare_detection(idx_chan2, idx_chan1, max_distance)
+            scores.loc[c_index, c_col] = res[score]
+
+        return scores
+
+    def compare_detection(self, other, max_distance_sec=0, other_is_groundtruth=True):
+        """
+        Compare detected events between two detection methods, or against a ground-truth scoring.
+        See full documentation in the methods of SpindlesResults and SWResults.
+        """
+        detected = self.summary()
+        if isinstance(other, (SpindlesResults, SWResults, REMResults)):
+            groundtruth = other.summary()
+        elif isinstance(other, pd.DataFrame):
+            assert "Start" in other.columns
+            assert "Channel" in other.columns
+            groundtruth = other[["Start", "Channel"]].copy()
+        else:
+            raise ValueError(
+                f"Invalid argument other: {other}. It must be a YASA detection output, a Pandas "
+                f"DataFrame with the columns Start and Channels, or None.")
+
+        # Get indices of start in deciseconds, rounding to nearest deciseconds (100 ms).
+        # This is needed for three reasons:
+        # 1. Speed up the for loop
+        # 2. Avoid memory error in yasa.compare_detection
+        # 3. Make sure that max_distance works even when self and other have different sf.
+        # TODO: Only the Start of the event is currently supported. Add more flexibility?
+        detected["Start"] = (detected["Start"] * 10).round().astype(int)
+        groundtruth["Start"] = (groundtruth["Start"] * 10).round().astype(int)
+        max_distance = int(10 * max_distance_sec)
+
+        # Find channels that are present in both self and other
+        chan_detected = detected["Channel"].unique()
+        chan_groundtruth = groundtruth["Channel"].unique()
+        chan_both = np.intersect1d(chan_detected, chan_groundtruth)
+
+        if not len(chan_both):
+            raise ValueError(
+                f"No intersecting channel between self and other:\n"
+                f"{chan_detected}\n{chan_groundtruth}")
+
+        # The output is a pandas.DataFrame (n_chan, n_metrics).
+        scores = pd.DataFrame(
+            index=chan_both,
+            columns=["precision", "recall", "f1", "n_self", "n_other"],
+            dtype=float)
+
+        # Loop on each channel
+        for c_index in chan_both:
+            idx_detected = detected[detected["Channel"] == c_index]["Start"]
+            idx_groundtruth = groundtruth[groundtruth["Channel"] == c_index]["Start"]
+            if other_is_groundtruth:
+                res = compare_detection(idx_detected, idx_groundtruth, max_distance)
+            else:
+                res = compare_detection(idx_groundtruth, idx_detected, max_distance)
+            scores.loc[c_index, "precision"] = res["precision"]
+            scores.loc[c_index, "recall"] = res["recall"]
+            scores.loc[c_index, "f1"] = res["f1"]
+            scores.loc[c_index, "n_self"] = len(idx_detected)
+            scores.loc[c_index, "n_other"] = len(idx_groundtruth)
+
+        scores["n_self"] = scores["n_self"].astype(int)
+        scores["n_other"] = scores["n_other"].astype(int)
+
+        return scores
+
     def plot_average(self, event_type, center='Peak', hue='Channel', time_before=1,
                      time_after=1, filt=(None, None), mask=None, figsize=(6, 4.5), **kwargs):
         """Plot the average event (not for REM, spindles & SW only)"""
@@ -980,8 +1080,107 @@ class SpindlesResults(_DetectionResults):
         """
         return super().get_coincidence_matrix(scaled=scaled)
 
+    def compare_channels(self, score="f1", max_distance_sec=0):
+        """
+        Compare detected spindles across channels.
+
+        This is a wrapper around the :py:func:`yasa.compare_detection` function. Please
+        refer to the documentation of this function for more details.
+
+        Parameters
+        ----------
+        score : str
+            The performance metric to compute. Accepted values are "precision", "recall"
+            (aka sensitivity) and "f1" (default). The F1-score is the harmonic mean of precision
+            and recall, and is usually the preferred metric to evaluate the agreement between
+            two channels. All three metrics are bounded by 0 and 1, where 1 indicates perfect
+            agreement.
+        max_distance_sec : float
+            The maximum distance between spindles, in seconds, to consider as the same event.
+
+            .. warning:: To reduce computation cost, YASA rounds the start time of each spindle to
+                the nearest decisecond (= 100 ms). This means that the lowest possible resolution
+                is 100 ms, regardless of the sampling frequency of the data. Two spindles starting
+                at 500 ms and 540 ms on their respective channels will therefore always be
+                considered the same event, even when max_distance_sec=0.
+
+        Returns
+        -------
+        scores : :py:class:`pandas.DataFrame`
+            A Pandas DataFrame with the output scores, of shape (n_chan, n_chan).
+
+        Notes
+        -----
+        Some use cases of this function:
+
+        1. What proportion of spindles detected in one channel are also detected on
+           another channel (if using ``score="recall"``).
+        2. What is the overall agreement in the detected events between channels?
+        3. Is the agreement better in channels that are close to one another?
+        """
+        return super().compare_channels(score, max_distance_sec)
+
+    def compare_detection(self, other, max_distance_sec=0, other_is_groundtruth=True):
+        """
+        Compare the detected spindles against either another YASA detection or against custom
+        annotations (e.g. ground-truth human scoring).
+
+        This function is a wrapper around the :py:func:`yasa.compare_detection` function. Please
+        refer to the documentation of this function for more details.
+
+        Parameters
+        ----------
+        other : dataframe or detection results
+            This can be either a) the output of another YASA detection, for example if you want to
+            test the impact of tweaking some parameters on the detected events or b) a pandas
+            DataFrame with custom annotations, obtained by another detection method outside
+            of YASA, or with manual labelling. If b), the dataframe must contain the "Start" and
+            "Channel" columns, which contains the start of each event in seconds from the beginning
+            of the recording and the channel name, respectively. The channel names should match
+            the output of the summary() method.
+        max_distance_sec : float
+            The maximum distance between spindles, in seconds, to consider as the same event.
+
+            .. warning:: To reduce computation cost, YASA rounds the start time of each spindle to
+                the nearest decisecond (= 100 ms). This means that the lowest possible resolution
+                is 100 ms, regardless of the sampling frequency of the data. Two spindles starting
+                at 500 ms and 540 ms on their respective channels will therefore always be
+                considered the same event, even when max_distance_sec=0.
+        other_is_groundtruth : bool
+            If True (default), ``other`` will be considered as the ground-truth scoring. If False,
+            the current detection will be considered as the ground-truth, and the precision and
+            recall scores will be inverted. This parameter has no effect on the F1-score.
+
+            .. note:: when ``other`` is the ground-truth, the recall score is the fraction of
+                events in other that were succesfully detected by the current detection, and the
+                precision score is the proportion of detected events by the current detection
+                that are also present in other.
+
+        Returns
+        -------
+        scores : :py:class:`pandas.DataFrame`
+            A Pandas DataFrame with the channel names as index, and the following columns
+
+            * ``precision``: Precision score, aka positive predictive value
+            * ``recall``: Recall score, aka sensitivity
+            * ``f1``: F1-score
+            * ``n_self``: Number of detected events in ``self`` (current method).
+            * ``n_other``: Number of detected events in ``other``.
+
+        Notes
+        -----
+        Some use cases of this function:
+
+        1. How well does YASA events detection perform against ground-truth human scoring?
+        2. If I change the threshold(s) of the events detection, do the detected events match
+           those obtained with the default parameters?
+        3. Which detection thresholds give the highest agreement with the ground-truth scoring?
+        """
+        return super().compare_detection(other, max_distance_sec, other_is_groundtruth)
+
     def get_mask(self):
-        """Return a boolean array indicating for each sample in data if this
+        """
+        Return a boolean array indicating for each sample in data if this
         sample is part of a detected event (True) or not (False).
         """
         return super().get_mask()
@@ -1688,6 +1887,104 @@ class SWResults(_DetectionResults):
         self._events["CooccurringSpindle"] = ~np.isnan(distance_sp_to_sw_peak)
         self._events["CooccurringSpindlePeak"] = cooccurring_spindle_peaks
         self._events['DistanceSpindleToSW'] = distance_sp_to_sw_peak
+
+    def compare_channels(self, score="f1", max_distance_sec=0):
+        """
+        Compare detected slow-waves across channels.
+
+        This is a wrapper around the :py:func:`yasa.compare_detection` function. Please
+        refer to the documentation of this function for more details.
+
+        Parameters
+        ----------
+        score : str
+            The performance metric to compute. Accepted values are "precision", "recall"
+            (aka sensitivity) and "f1" (default). The F1-score is the harmonic mean of precision
+            and recall, and is usually the preferred metric to evaluate the agreement between
+            two channels. All three metrics are bounded by 0 and 1, where 1 indicates perfect
+            agreement.
+        max_distance_sec : float
+            The maximum distance between slow-waves, in seconds, to consider as the same event.
+
+            .. warning:: To reduce computation cost, YASA rounds the start time of each spindle to
+                the nearest decisecond (= 100 ms). This means that the lowest possible resolution
+                is 100 ms, regardless of the sampling frequency of the data. Two slow-waves
+                starting at 500 ms and 540 ms on their respective channels will therefore always be
+                considered the same event, even when max_distance_sec=0.
+
+        Returns
+        -------
+        scores : :py:class:`pandas.DataFrame`
+            A Pandas DataFrame with the output scores, of shape (n_chan, n_chan).
+
+        Notes
+        -----
+        Some use cases of this function:
+
+        1. What proportion of slow-waves detected in one channel are also detected on
+           another channel (if using ``score="recall"``).
+        2. What is the overall agreement in the detected events between channels?
+        3. Is the agreement better in channels that are close to one another?
+        """
+        return super().compare_channels(score, max_distance_sec)
+
+    def compare_detection(self, other, max_distance_sec=0, other_is_groundtruth=True):
+        """
+        Compare the detected slow-waves against either another YASA detection or against custom
+        annotations (e.g. ground-truth human scoring).
+
+        This function is a wrapper around the :py:func:`yasa.compare_detection` function. Please
+        refer to the documentation of this function for more details.
+
+        Parameters
+        ----------
+        other : dataframe or detection results
+            This can be either a) the output of another YASA detection, for example if you want to
+            test the impact of tweaking some parameters on the detected events or b) a pandas
+            DataFrame with custom annotations, obtained by another detection method outside
+            of YASA, or with manual labelling. If b), the dataframe must contain the "Start" and
+            "Channel" columns, which contains the start of each event in seconds from the beginning
+            of the recording and the channel name, respectively. The channel names should match
+            the output of the summary() method.
+        max_distance_sec : float
+            The maximum distance between slow-waves, in seconds, to consider as the same event.
+
+            .. warning:: To reduce computation cost, YASA rounds the start time of each spindle to
+                the nearest decisecond (= 100 ms). This means that the lowest possible resolution
+                is 100 ms, regardless of the sampling frequency of the data. Two slow-waves
+                starting at 500 ms and 540 ms on their respective channels will therefore always
+                be considered the same event, even when max_distance_sec=0.
+        other_is_groundtruth : bool
+            If True (default), ``other`` will be considered as the ground-truth scoring. If False,
+            the current detection will be considered as the ground-truth, and the precision and
+            recall scores will be inverted. This parameter has no effect on the F1-score.
+
+            .. note:: when ``other`` is the ground-truth, the recall score is the fraction of
+                events in other that were succesfully detected by the current detection, and the
+                precision score is the proportion of detected events by the current detection
+                that are also present in other.
+
+        Returns
+        -------
+        scores : :py:class:`pandas.DataFrame`
+            A Pandas DataFrame with the channel names as index, and the following columns
+
+            * ``precision``: Precision score, aka positive predictive value
+            * ``recall``: Recall score, aka sensitivity
+            * ``f1``: F1-score
+            * ``n_self``: Number of detected events in ``self`` (current method).
+            * ``n_other``: Number of detected events in ``other``.
+
+        Notes
+        -----
+        Some use cases of this function:
+
+        1. How well does YASA events detection perform against ground-truth human scoring?
+        2. If I change the threshold(s) of the events detection, do the detected events match
+           those obtained with the default parameters?
+        3. Which detection thresholds give the highest agreement with the ground-truth scoring?
+        """
+        return super().compare_detection(other, max_distance_sec, other_is_groundtruth)
 
     def get_coincidence_matrix(self, scaled=True):
         """Return the (scaled) coincidence matrix.
@@ -2641,6 +2938,8 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
         Indices of the ground-truth events, in samples.
     max_distance : int, optional
         Maximum distance between indices, in samples, to consider as the same event (default = 0).
+        For example, if the sampling frequency of the data is 100 Hz, using `max_distance=100` will
+        search for a matching event 1 second before or after the current event.
 
     Returns
     -------
@@ -2677,12 +2976,12 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
     {'tp': array([ 5, 12, 34, 41, 63]),
      'fp': array([20, 57]),
      'fn': array([18, 26, 55, 68]),
-     'precision': 0.5555555555555556,
-     'recall': 0.7142857142857143,
+     'precision': 0.7142857142857143,
+     'recall': 0.5555555555555556,
      'f1': 0.625}
 
     There are 4 true positives, 2 false positives and 4 false negatives. This gives a precision
-    score of ~0.55 (= 5 / (5 + 4)), a recall score of 0.71 (= 5 / (5 + 2)) and a F1-score of 0.625.
+    score of 0.71 (= 5 / (5 + 2)), a recall score of 0.55 (= 5 / (5 + 4)) and a F1-score of 0.625.
     The F1-score is the harmonic average of precision and recall, and should be the preferred
     metric when comparing the performance of a detection against a ground-truth.
 
@@ -2696,7 +2995,7 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
      'fp': array([18, 26, 55, 68]),
      'fn': array([20, 57]),
      'precision': 0.7142857142857143,
-     'recall': 0.5555555555555556,
+     'recall': 0.7142857142857143,
      'f1': 0.625}
 
     There might be some events that are very close to each other, and we would like to count them
@@ -2708,8 +3007,8 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
     {'tp': array([ 5, 12, 20, 34, 41, 57, 63]),
      'fp': array([], dtype=int64),
      'fn': array([26, 68]),
-     'precision': 0.7777777777777778,
-     'recall': 1.0,
+     'precision': 1.0,
+     'recall': 0.7777777777777778,
      'f1': 0.875}
 
     Finally, if detected is empty, all performance metrics will be set to zero, and a copy of
@@ -2773,7 +3072,7 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
     results['fn'] = np.where(~detection_mask_fuzzy & true_mask)[0]
 
     n_tp, n_fp, n_fn = len(results['tp']), len(results['fp']), len(results['fn'])
-    results["precision"] = n_tp / (n_tp + n_fn)
-    results["recall"] = n_tp / (n_tp + n_fp)
+    results["precision"] = n_tp / (n_tp + n_fp)
+    results["recall"] = n_tp / (n_tp + n_fn)
     results["f1"] = n_tp / (n_tp + 0.5 * (n_fp + n_fn))
     return results

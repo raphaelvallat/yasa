@@ -358,8 +358,8 @@ class TestDetection(unittest.TestCase):
         assert all(res["tp"] == [5, 12, 34, 41, 63])
         assert all(res["fp"] == [20, 57])
         assert all(res["fn"] == [18, 26, 55, 68])
-        assert np.isclose(res["precision"], 5 / 9)
-        assert np.isclose(res["recall"], 5 / 7)
+        assert np.isclose(res["precision"], 5 / 7)
+        assert np.isclose(res["recall"], 5 / 9)
         assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))
 
         # Changing the order: FN <--> FP, precision <--> recall No change in F1-score.
@@ -367,8 +367,8 @@ class TestDetection(unittest.TestCase):
         assert all(res["tp"] == [5, 12, 34, 41, 63])
         assert all(res["fn"] == [20, 57])
         assert all(res["fp"] == [18, 26, 55, 68])
-        assert np.isclose(res["recall"], 5 / 9)
-        assert np.isclose(res["precision"], 5 / 7)
+        assert np.isclose(res["precision"], 5 / 9)
+        assert np.isclose(res["recall"], 5 / 7)
         assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))
 
         # With max_distance
@@ -376,8 +376,8 @@ class TestDetection(unittest.TestCase):
         assert all(res["tp"] == [5, 12, 20, 34, 41, 57, 63])
         assert len(res["fp"]) == 0
         assert all(res["fn"] == [26, 68])
-        assert np.isclose(res["precision"], 7 / 9)
-        assert np.isclose(res["recall"], 1)
+        assert np.isclose(res["precision"], 1)
+        assert np.isclose(res["recall"], 7 / 9)
         assert np.isclose(res["f1"], hmean([1, 7 / 9]))
 
         # Special cases
