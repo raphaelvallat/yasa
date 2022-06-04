@@ -380,7 +380,7 @@ class _DetectionResults(object):
         # Find channels that are present in both self and other
         chan_detected = detected["Channel"].unique()
         chan_groundtruth = groundtruth["Channel"].unique()
-        chan_both = np.intersect1d(chan_detected, chan_groundtruth)
+        chan_both = np.intersect1d(chan_detected, chan_groundtruth)  # Sort
 
         if not len(chan_both):
             raise ValueError(
@@ -392,6 +392,7 @@ class _DetectionResults(object):
             index=chan_both,
             columns=["precision", "recall", "f1", "n_self", "n_other"],
             dtype=float)
+        scores.index.name = "Channel"
 
         # Loop on each channel
         for c_index in chan_both:
