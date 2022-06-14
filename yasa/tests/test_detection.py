@@ -75,6 +75,8 @@ class TestDetection(unittest.TestCase):
         sp.get_sync_events(time_before=10)  # Invalid time window
         sp.plot_average(ci=None, filt=(None, 30))  # Skip bootstrapping
         np.testing.assert_array_equal(np.squeeze(sp._data), data)
+        # Compare channels return dataframe with single cell
+        assert sp.compare_channels().shape == (1, 1)
         assert sp._sf == sf
         sp.summary(grp_chan=True, grp_stage=True, aggfunc='median', sort=False)
 
@@ -94,12 +96,18 @@ class TestDetection(unittest.TestCase):
         # Test with hypnogram
         spindles_detect(data, sf, hypno=np.ones(data.size))
 
-        # Single channel with Isolation Forest + hypnogram
-        sp = spindles_detect(data_full[1, :], sf, hypno=hypno_full, remove_outliers=True)
+        # Full night single channel with Isolation Forest + hypnogram
+        sp = spindles_detect(data_full[1, :], sf, hypno=hypno_full)
+        sp_no_out = spindles_detect(data_full[1, :], sf, hypno=hypno_full, remove_outliers=True)
+        assert sp.compare_detection(sp_no_out).shape[0] == 1
 
         # Calculate the coincidence matrix with only one channel
         with pytest.raises(ValueError):
             sp.get_coincidence_matrix()
+
+        # compare_detection with invalid other
+        with pytest.raises(ValueError):
+            sp.compare_detection(other="WRONG")
 
         with self.assertLogs('yasa', level='WARNING'):
             spindles_detect(data_n3, sf)
@@ -146,12 +154,27 @@ class TestDetection(unittest.TestCase):
         assert sp._data.shape == sp._data_filt.shape
         np.testing.assert_array_equal(sp._data, data_full)
         assert sp._sf == sf
-        sp_no_out = spindles_detect(data_full, sf, chan_full,
-                                    remove_outliers=True)
-        sp_multi = spindles_detect(data_full, sf, chan_full,
-                                   multi_only=True)
+        sp_no_out = spindles_detect(data_full, sf, chan_full, remove_outliers=True)
+        sp_multi = spindles_detect(data_full, sf, chan_full, multi_only=True)
         assert sp_multi.summary().shape[0] < sp.summary().shape[0]
         assert sp_no_out.summary().shape[0] < sp.summary().shape[0]
+
+        # Test compare_detection
+        assert (sp.compare_detection(sp)["f1"] == 1).all()  # self vs self, f1-score is 1
+        sp_vs_multi = sp.compare_detection(sp_multi)
+        # When comparing against sp_multi as the reference, we expect a perfect recall
+        assert (sp_vs_multi["n_self"] > sp_vs_multi["n_other"]).all()
+        assert (sp_vs_multi["recall"] == 1).all()
+        # Setting `other_is_groundtruth=False`` == other.compare(self)
+        sp_vs_multi_revert = sp.compare_detection(sp_multi, other_is_groundtruth=False)
+        multi_vs_sp = sp_multi.compare_detection(sp)
+        assert (sp_vs_multi_revert["recall"] == multi_vs_sp["recall"]).all()
+        # With a look around and using the summary
+        sp_vs_nout_1s = sp.compare_detection(sp_no_out.summary(), max_distance_sec=1)
+        sp_vs_nout_2s = sp.compare_detection(sp_no_out.summary(), max_distance_sec=2)
+        assert (sp_vs_nout_2s["f1"] > sp_vs_nout_1s["f1"]).all()
+        assert (sp_vs_nout_2s["recall"] == sp_vs_nout_1s["recall"]).all()
+        assert (sp_vs_nout_2s["n_self"] == sp_vs_nout_1s["n_self"]).all()
 
         # Test with hypnogram
         sp = spindles_detect(data_full, sf, hypno=hypno_full, include=2)
@@ -162,6 +185,20 @@ class TestDetection(unittest.TestCase):
         sp.plot_average(ci=None)
         sp.plot_average(hue="Stage", ci=None)
         sp.plot_detection()
+
+        # Test compare_channels function
+        # .. F1-score -- symmetric matrix
+        mat = sp.compare_channels()
+        assert mat.equals(mat.T)  # mat is a symmetric matrix
+        assert (np.diag(mat) == 1).all()  # diagonal is all 1
+        idx_triu = np.triu_indices_from(mat, k=1)
+        mat_2s = sp.compare_channels(max_distance_sec=2)
+        # Make sure that the overall scores are higher when using a lookaround
+        assert mat.to_numpy()[idx_triu].mean() < mat_2s.to_numpy()[idx_triu].mean()
+        # Precision / recall -- not symmetric
+        mat_prec = sp.compare_channels(score="precision")
+        mat_rec = sp.compare_channels(score="recall")
+        assert mat_prec.T.equals(mat_rec)  # tril precision == triu recall
 
         # Using a MNE raw object (and disabling one threshold)
         spindles_detect(data_mne, thresh={'corr': None, 'rms': 3})
@@ -223,6 +260,9 @@ class TestDetection(unittest.TestCase):
         # Test with outlier removal. There should be fewer events.
         sw_no_out = sw_detect(data_full, sf, chan_full, remove_outliers=True)
         assert sw_no_out._events.shape[0] < sw._events.shape[0]
+
+        # Test compare_detection
+        assert (sw.compare_detection(sw_no_out)["recall"] == 1).all()
 
         # Test with hypnogram
         sw = sw_detect(data_full, sf, chan_full, hypno=hypno_full, coupling=True)

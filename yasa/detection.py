@@ -364,15 +364,14 @@ class _DetectionResults(object):
             groundtruth = other[["Start", "Channel"]].copy()
         else:
             raise ValueError(
-                f"Invalid argument other: {other}. It must be a YASA detection output, a Pandas "
-                f"DataFrame with the columns Start and Channels, or None.")
+                f"Invalid argument other: {other}. It must be a YASA detection output or a Pandas "
+                f"DataFrame with the columns Start and Channels")
 
         # Get indices of start in deciseconds, rounding to nearest deciseconds (100 ms).
         # This is needed for three reasons:
         # 1. Speed up the for loop
         # 2. Avoid memory error in yasa.compare_detection
         # 3. Make sure that max_distance works even when self and other have different sf.
-        # TODO: Only the Start of the event is currently supported. Add more flexibility?
         detected["Start"] = (detected["Start"] * 10).round().astype(int)
         groundtruth["Start"] = (groundtruth["Start"] * 10).round().astype(int)
         max_distance = int(10 * max_distance_sec)
@@ -1136,7 +1135,7 @@ class SpindlesResults(_DetectionResults):
             test the impact of tweaking some parameters on the detected events or b) a pandas
             DataFrame with custom annotations, obtained by another detection method outside
             of YASA, or with manual labelling. If b), the dataframe must contain the "Start" and
-            "Channel" columns, which contains the start of each event in seconds from the beginning
+            "Channel" columns, with the start of each event in seconds from the beginning
             of the recording and the channel name, respectively. The channel names should match
             the output of the summary() method.
         max_distance_sec : float
@@ -1144,18 +1143,16 @@ class SpindlesResults(_DetectionResults):
 
             .. warning:: To reduce computation cost, YASA rounds the start time of each spindle to
                 the nearest decisecond (= 100 ms). This means that the lowest possible resolution
-                is 100 ms, regardless of the sampling frequency of the data. Two spindles starting
-                at 500 ms and 540 ms on their respective channels will therefore always be
-                considered the same event, even when max_distance_sec=0.
+                is 100 ms, regardless of the sampling frequency of the data.
         other_is_groundtruth : bool
             If True (default), ``other`` will be considered as the ground-truth scoring. If False,
             the current detection will be considered as the ground-truth, and the precision and
             recall scores will be inverted. This parameter has no effect on the F1-score.
 
-            .. note:: when ``other`` is the ground-truth, the recall score is the fraction of
-                events in other that were succesfully detected by the current detection, and the
-                precision score is the proportion of detected events by the current detection
-                that are also present in other.
+            .. note:: when ``other`` is the ground-truth (default), the recall score is the
+                fraction of events in other that were succesfully detected by the current
+                detection, and the precision score is the proportion of detected events by the
+                current detection that are also present in other.
 
         Returns
         -------
@@ -1172,7 +1169,7 @@ class SpindlesResults(_DetectionResults):
         -----
         Some use cases of this function:
 
-        1. How well does YASA events detection perform against ground-truth human scoring?
+        1. How well does YASA events detection perform against ground-truth human annotations?
         2. If I change the threshold(s) of the events detection, do the detected events match
            those obtained with the default parameters?
         3. Which detection thresholds give the highest agreement with the ground-truth scoring?
@@ -1944,26 +1941,24 @@ class SWResults(_DetectionResults):
             test the impact of tweaking some parameters on the detected events or b) a pandas
             DataFrame with custom annotations, obtained by another detection method outside
             of YASA, or with manual labelling. If b), the dataframe must contain the "Start" and
-            "Channel" columns, which contains the start of each event in seconds from the beginning
+            "Channel" columns, with the start of each event in seconds from the beginning
             of the recording and the channel name, respectively. The channel names should match
             the output of the summary() method.
         max_distance_sec : float
             The maximum distance between slow-waves, in seconds, to consider as the same event.
 
-            .. warning:: To reduce computation cost, YASA rounds the start time of each spindle to
-                the nearest decisecond (= 100 ms). This means that the lowest possible resolution
-                is 100 ms, regardless of the sampling frequency of the data. Two slow-waves
-                starting at 500 ms and 540 ms on their respective channels will therefore always
-                be considered the same event, even when max_distance_sec=0.
+            .. warning:: To reduce computation cost, YASA rounds the start time of each slow-wave
+                to the nearest decisecond (= 100 ms). This means that the lowest possible
+                resolution is 100 ms, regardless of the sampling frequency of the data.
         other_is_groundtruth : bool
             If True (default), ``other`` will be considered as the ground-truth scoring. If False,
             the current detection will be considered as the ground-truth, and the precision and
             recall scores will be inverted. This parameter has no effect on the F1-score.
 
-            .. note:: when ``other`` is the ground-truth, the recall score is the fraction of
-                events in other that were succesfully detected by the current detection, and the
-                precision score is the proportion of detected events by the current detection
-                that are also present in other.
+            .. note:: when ``other`` is the ground-truth (default), the recall score is the
+                fraction of events in other that were succesfully detected by the current
+                detection, and the precision score is the proportion of detected events by the
+                current detection that are also present in other.
 
         Returns
         -------
@@ -1980,7 +1975,7 @@ class SWResults(_DetectionResults):
         -----
         Some use cases of this function:
 
-        1. How well does YASA events detection perform against ground-truth human scoring?
+        1. How well does YASA events detection perform against ground-truth human annotations?
         2. If I change the threshold(s) of the events detection, do the detected events match
            those obtained with the default parameters?
         3. Which detection thresholds give the highest agreement with the ground-truth scoring?
