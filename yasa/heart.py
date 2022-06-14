@@ -80,11 +80,11 @@ def hrv_stage(data, sf, *, hypno=None, include=(2, 3, 4), threshold="2min", equa
         Output dataframe with values (= the sleep stages defined in ``include``) and
         epoch number as index. The columns are
 
-        * 'start' : The start of the epoch, in seconds from the beginning of the recording.
-        * 'duration' : The duration of the epoch, in seconds.
-        * 'hr_mean': The mean heart rate (HR) across the epoch, in beats per minute (bpm).
-        * 'hr_std': The standard deviation of the HR across the epoch, in bpm
-        * 'hrv_rmssd': Heart rate variability across the epoch (RMSSD), in milliseconds.
+        * ``start`` : The start of the epoch, in seconds from the beginning of the recording.
+        * ``duration`` : The duration of the epoch, in seconds.
+        * ``hr_mean``: The mean heart rate (HR) across the epoch, in beats per minute (bpm).
+        * ``hr_std``: The standard deviation of the HR across the epoch, in bpm
+        * ``hrv_rmssd``: Heart rate variability across the epoch (RMSSD), in milliseconds.
     rpeaks : dict
         A dictionary with the detected heartbeats (R-peaks) indices for each epoch of each stage.
         Indices are expressed as samples from the beginning of the epoch. This can be used to

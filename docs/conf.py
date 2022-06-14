@@ -19,6 +19,7 @@ extensions = ['sphinx.ext.mathjax',
               'sphinx.ext.intersphinx',
               'matplotlib.sphinxext.plot_directive',
               'sphinx_copybutton',
+              'sphinx_panels',
               'numpydoc']
 
 # Generate the API documentation when building

@@ -2951,9 +2951,9 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
 
     Notes
     -----`
-    * The precision score is calculated as :math:`TP / (TP + FP)`.
-    * The recall score is calculated as :math:`TP / (TP + FN)`.
-    * The F1-score is calculated as :math:`TP / (TP + 0.5 * (FP + FN))`.
+    * The precision score is calculated as TP / (TP + FP).
+    * The recall score is calculated as TP / (TP + FN).
+    * The F1-score is calculated as TP / (TP + 0.5 * (FP + FN)).
 
     This function is inspired by the `sleepecg.compare_heartbeats
     <https://sleepecg.readthedocs.io/en/stable/generated/sleepecg.compare_heartbeats.html>`_
