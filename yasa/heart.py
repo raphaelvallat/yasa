@@ -12,13 +12,22 @@ from .hypno import hypno_find_periods
 from .detection import _check_data_hypno
 from .io import set_log_level, is_sleepecg_installed
 
-logger = logging.getLogger('yasa')
+logger = logging.getLogger("yasa")
 
-__all__ = ['hrv_stage']
+__all__ = ["hrv_stage"]
 
 
-def hrv_stage(data, sf, *, hypno=None, include=(2, 3, 4), threshold="2min", equal_length=False,
-              rr_limit=(400, 2000), verbose=False):
+def hrv_stage(
+    data,
+    sf,
+    *,
+    hypno=None,
+    include=(2, 3, 4),
+    threshold="2min",
+    equal_length=False,
+    rr_limit=(400, 2000),
+    verbose=False,
+):
     """Calculate heart rate and heart rate variability (HRV) features from an ECG.
 
     By default, the cardiac features are calculated for each period of N2, N3 or REM sleep that
@@ -112,14 +121,16 @@ def hrv_stage(data, sf, *, hypno=None, include=(2, 3, 4), threshold="2min", equa
     if isinstance(hypno, type(None)):
         logger.warning(
             "No hypnogram was passed. The entire recording will be used, i.e. "
-            "hypno will be set to np.zeros(data.size) and include will be set to 0.")
+            "hypno will be set to np.zeros(data.size) and include will be set to 0."
+        )
         data = np.asarray(data, dtype=np.float64)
         hypno = np.zeros(max(data.shape), dtype=int)
         include = 0
 
     # Safety check
-    (data, sf, _, hypno, include, _, n_chan, n_samples, _
-     ) = _check_data_hypno(data, sf, None, hypno, include, check_amp=False)
+    (data, sf, _, hypno, include, _, n_chan, n_samples, _) = _check_data_hypno(
+        data, sf, None, hypno, include, check_amp=False
+    )
     assert n_chan == 1, "data must be a 1D ECG array."
     data = np.squeeze(data)
 
@@ -128,8 +139,8 @@ def hrv_stage(data, sf, *, hypno=None, include=(2, 3, 4), threshold="2min", equa
     assert epochs.shape[0] > 0, f"No epochs longer than {threshold} found in hypnogram."
     epochs = epochs[epochs["values"].isin(include)].reset_index(drop=True)
     # Sort by stage and add epoch number
-    epochs = epochs.sort_values(by=['values', 'start'])
-    epochs['epoch'] = epochs.groupby("values")["start"].transform(lambda x: range(len(x)))
+    epochs = epochs.sort_values(by=["values", "start"])
+    epochs["epoch"] = epochs.groupby("values")["start"].transform(lambda x: range(len(x)))
     epochs = epochs.set_index(["values", "epoch"])
 
     # Loop over epochs
@@ -170,11 +181,11 @@ def hrv_stage(data, sf, *, hypno=None, include=(2, 3, 4), threshold="2min", equa
         hr = 60000 / rri
         epochs.loc[idx, "hr_mean"] = np.mean(hr)
         epochs.loc[idx, "hr_std"] = np.std(hr, ddof=1)
-        epochs.loc[idx, "hrv_rmssd"] = np.sqrt(np.mean(np.diff(rri)**2))
+        epochs.loc[idx, "hrv_rmssd"] = np.sqrt(np.mean(np.diff(rri) ** 2))
 
     # Convert start and duration to seconds
-    epochs['start'] /= sf
-    epochs['length'] /= sf
+    epochs["start"] /= sf
+    epochs["length"] /= sf
     epochs = epochs.rename(columns={"length": "duration"})
 
     return epochs, rpeaks
