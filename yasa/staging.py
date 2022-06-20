@@ -16,7 +16,7 @@ from sklearn.preprocessing import robust_scale
 from .others import sliding_window
 from .spectral import bandpower_from_psd_ndarray
 
-logger = logging.getLogger('yasa')
+logger = logging.getLogger("yasa")
 
 
 class SleepStaging:
@@ -166,21 +166,21 @@ class SleepStaging:
 
         # Validate metadata
         if isinstance(metadata, dict):
-            if 'age' in metadata.keys():
-                assert 0 < metadata['age'] < 120, 'age must be between 0 and 120.'
-            if 'male' in metadata.keys():
-                metadata['male'] = int(metadata['male'])
-                assert metadata['male'] in [0, 1], 'male must be 0 or 1.'
+            if "age" in metadata.keys():
+                assert 0 < metadata["age"] < 120, "age must be between 0 and 120."
+            if "male" in metadata.keys():
+                metadata["male"] = int(metadata["male"])
+                assert metadata["male"] in [0, 1], "male must be 0 or 1."
 
         # Validate Raw instance and load data
-        assert isinstance(raw, mne.io.BaseRaw), 'raw must be a MNE Raw object.'
-        sf = raw.info['sfreq']
+        assert isinstance(raw, mne.io.BaseRaw), "raw must be a MNE Raw object."
+        sf = raw.info["sfreq"]
         ch_names = np.array([eeg_name, eog_name, emg_name])
-        ch_types = np.array(['eeg', 'eog', 'emg'])
+        ch_types = np.array(["eeg", "eog", "emg"])
         keep_chan = []
         for c in ch_names:
             if c is not None:
-                assert c in raw.ch_names, '%s does not exist' % c
+                assert c in raw.ch_names, "%s does not exist" % c
                 keep_chan.append(True)
             else:
                 keep_chan.append(False)
@@ -191,17 +191,17 @@ class SleepStaging:
         raw_pick = raw.copy().pick_channels(ch_names, ordered=True)
 
         # Downsample if sf != 100
-        assert sf > 80, 'Sampling frequency must be at least 80 Hz.'
+        assert sf > 80, "Sampling frequency must be at least 80 Hz."
         if sf != 100:
             raw_pick.resample(100, npad="auto")
-            sf = raw_pick.info['sfreq']
+            sf = raw_pick.info["sfreq"]
 
         # Get data and convert to microVolts
         data = raw_pick.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
 
         # Extract duration of recording in minutes
         duration_minutes = data.shape[1] / sf / 60
-        assert duration_minutes >= 5, 'At least 5 minutes of data is required.'
+        assert duration_minutes >= 5, "At least 5 minutes of data is required."
 
         # Add to self
         self.sf = sf
@@ -227,10 +227,14 @@ class SleepStaging:
         win_sec = 5  # = 2 / freq_broad[0]
         sf = self.sf
         win = int(win_sec * sf)
-        kwargs_welch = dict(window='hamming', nperseg=win, average='median')
+        kwargs_welch = dict(window="hamming", nperseg=win, average="median")
         bands = [
-            (0.4, 1, 'sdelta'), (1, 4, 'fdelta'), (4, 8, 'theta'),
-            (8, 12, 'alpha'), (12, 16, 'sigma'), (16, 30, 'beta')
+            (0.4, 1, "sdelta"),
+            (1, 4, "fdelta"),
+            (4, 8, "theta"),
+            (8, 12, "alpha"),
+            (12, 16, "sigma"),
+            (16, 30, "beta"),
         ]
 
         #######################################################################
@@ -243,7 +247,8 @@ class SleepStaging:
             # Preprocessing
             # - Filter the data
             dt_filt = filter_data(
-                self.data[i, :], sf, l_freq=freq_broad[0], h_freq=freq_broad[1], verbose=False)
+                self.data[i, :], sf, l_freq=freq_broad[0], h_freq=freq_broad[1], verbose=False
+            )
             # - Extract epochs. Data is now of shape (n_epochs, n_samples).
             times, epochs = sliding_window(dt_filt, sf=sf, window=30)
 
@@ -251,44 +256,42 @@ class SleepStaging:
             hmob, hcomp = ant.hjorth_params(epochs, axis=1)
 
             feat = {
-                'std': np.std(epochs, ddof=1, axis=1),
-                'iqr': sp_stats.iqr(epochs, rng=(25, 75), axis=1),
-                'skew': sp_stats.skew(epochs, axis=1),
-                'kurt': sp_stats.kurtosis(epochs, axis=1),
-                'nzc': ant.num_zerocross(epochs, axis=1),
-                'hmob': hmob,
-                'hcomp': hcomp
+                "std": np.std(epochs, ddof=1, axis=1),
+                "iqr": sp_stats.iqr(epochs, rng=(25, 75), axis=1),
+                "skew": sp_stats.skew(epochs, axis=1),
+                "kurt": sp_stats.kurtosis(epochs, axis=1),
+                "nzc": ant.num_zerocross(epochs, axis=1),
+                "hmob": hmob,
+                "hcomp": hcomp,
             }
 
             # Calculate spectral power features (for EEG + EOG)
             freqs, psd = sp_sig.welch(epochs, sf, **kwargs_welch)
-            if c != 'emg':
+            if c != "emg":
                 bp = bandpower_from_psd_ndarray(psd, freqs, bands=bands)
                 for j, (_, _, b) in enumerate(bands):
                     feat[b] = bp[j]
 
             # Add power ratios for EEG
-            if c == 'eeg':
-                delta = feat['sdelta'] + feat['fdelta']
-                feat['dt'] = delta / feat['theta']
-                feat['ds'] = delta / feat['sigma']
-                feat['db'] = delta / feat['beta']
-                feat['at'] = feat['alpha'] / feat['theta']
+            if c == "eeg":
+                delta = feat["sdelta"] + feat["fdelta"]
+                feat["dt"] = delta / feat["theta"]
+                feat["ds"] = delta / feat["sigma"]
+                feat["db"] = delta / feat["beta"]
+                feat["at"] = feat["alpha"] / feat["theta"]
 
             # Add total power
             idx_broad = np.logical_and(freqs >= freq_broad[0], freqs <= freq_broad[1])
             dx = freqs[1] - freqs[0]
-            feat['abspow'] = np.trapz(psd[:, idx_broad], dx=dx)
+            feat["abspow"] = np.trapz(psd[:, idx_broad], dx=dx)
 
             # Calculate entropy and fractal dimension features
-            feat['perm'] = np.apply_along_axis(
-                ant.perm_entropy, axis=1, arr=epochs, normalize=True)
-            feat['higuchi'] = np.apply_along_axis(
-                ant.higuchi_fd, axis=1, arr=epochs)
-            feat['petrosian'] = ant.petrosian_fd(epochs, axis=1)
+            feat["perm"] = np.apply_along_axis(ant.perm_entropy, axis=1, arr=epochs, normalize=True)
+            feat["higuchi"] = np.apply_along_axis(ant.higuchi_fd, axis=1, arr=epochs)
+            feat["petrosian"] = ant.petrosian_fd(epochs, axis=1)
 
             # Convert to dataframe
-            feat = pd.DataFrame(feat).add_prefix(c + '_')
+            feat = pd.DataFrame(feat).add_prefix(c + "_")
             features.append(feat)
 
         #######################################################################
@@ -297,20 +300,19 @@ class SleepStaging:
 
         # Save features to dataframe
         features = pd.concat(features, axis=1)
-        features.index.name = 'epoch'
+        features.index.name = "epoch"
 
         # Apply centered rolling average (15 epochs = 7 min 30)
         # Triang: [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.,
         #          0.875, 0.75, 0.625, 0.5, 0.375, 0.25, 0.125]
-        rollc = features.rolling(
-            window=15, center=True, min_periods=1, win_type='triang').mean()
+        rollc = features.rolling(window=15, center=True, min_periods=1, win_type="triang").mean()
         rollc[rollc.columns] = robust_scale(rollc, quantile_range=(5, 95))
-        rollc = rollc.add_suffix('_c7min_norm')
+        rollc = rollc.add_suffix("_c7min_norm")
 
         # Now look at the past 2 minutes
         rollp = features.rolling(window=4, min_periods=1).mean()
         rollp[rollp.columns] = robust_scale(rollp, quantile_range=(5, 95))
-        rollp = rollp.add_suffix('_p2min_norm')
+        rollp = rollp.add_suffix("_p2min_norm")
 
         # Add to current set of features
         features = features.join(rollc).join(rollp)
@@ -320,8 +322,8 @@ class SleepStaging:
         #######################################################################
 
         # Add temporal features
-        features['time_hour'] = times / 3600
-        features['time_norm'] = times / times[-1]
+        features["time_hour"] = times / 3600
+        features["time_norm"] = times / times[-1]
 
         # Add metadata if present
         if self.metadata is not None:
@@ -332,10 +334,10 @@ class SleepStaging:
         cols_float = features.select_dtypes(np.float64).columns.tolist()
         features[cols_float] = features[cols_float].astype(np.float32)
         # Make sure that age and sex are encoded as int
-        if 'age' in features.columns:
-            features['age'] = features['age'].astype(int)
-        if 'male' in features.columns:
-            features['male'] = features['male'].astype(int)
+        if "age" in features.columns:
+            features["age"] = features["age"].astype(int)
+        if "male" in features.columns:
+            features["male"] = features["male"].astype(int)
 
         # Sort the column names here (same behavior as lightGBM)
         features.sort_index(axis=1, inplace=True)
@@ -352,7 +354,7 @@ class SleepStaging:
         features : :py:class:`pandas.DataFrame`
             Feature dataframe.
         """
-        if not hasattr(self, '_features'):
+        if not hasattr(self, "_features"):
             self.fit()
         return self._features.copy()
 
@@ -362,22 +364,32 @@ class SleepStaging:
         # Note that clf.feature_name_ is only available in lightgbm>=3.0
         f_diff = np.setdiff1d(clf.feature_name_, self.feature_name_)
         if len(f_diff):
-            raise ValueError("The following features are present in the "
-                             "classifier but not in the current features set:", f_diff)
-        f_diff = np.setdiff1d(self.feature_name_, clf.feature_name_, )
+            raise ValueError(
+                "The following features are present in the "
+                "classifier but not in the current features set:",
+                f_diff,
+            )
+        f_diff = np.setdiff1d(
+            self.feature_name_,
+            clf.feature_name_,
+        )
         if len(f_diff):
-            raise ValueError("The following features are present in the "
-                             "current feature set but not in the classifier:", f_diff)
+            raise ValueError(
+                "The following features are present in the "
+                "current feature set but not in the classifier:",
+                f_diff,
+            )
 
     def _load_model(self, path_to_model):
         """Load the relevant trained classifier."""
         if path_to_model == "auto":
             from pathlib import Path
-            clf_dir = os.path.join(str(Path(__file__).parent), 'classifiers/')
-            name = 'clf_eeg'
-            name = name + '+eog' if 'eog' in self.ch_types else name
-            name = name + '+emg' if 'emg' in self.ch_types else name
-            name = name + '+demo' if self.metadata is not None else name
+
+            clf_dir = os.path.join(str(Path(__file__).parent), "classifiers/")
+            name = "clf_eeg"
+            name = name + "+eog" if "eog" in self.ch_types else name
+            name = name + "+emg" if "emg" in self.ch_types else name
+            name = name + "+demo" if self.metadata is not None else name
             # e.g. clf_eeg+eog+emg+demo_lgb_0.4.0.joblib
             all_matching_files = glob.glob(clf_dir + name + "*.joblib")
             # Find the latest file
@@ -410,7 +422,7 @@ class SleepStaging:
         pred : :py:class:`numpy.ndarray`
             The predicted sleep stages.
         """
-        if not hasattr(self, '_features'):
+        if not hasattr(self, "_features"):
             self.fit()
         # Load and validate pre-trained classifier
         clf = self._load_model(path_to_model)
@@ -419,7 +431,7 @@ class SleepStaging:
         # Predict the sleep stages and probabilities
         self._predicted = clf.predict(X)
         proba = pd.DataFrame(clf.predict_proba(X), columns=clf.classes_)
-        proba.index.name = 'epoch'
+        proba.index.name = "epoch"
         self._proba = proba
         return self._predicted.copy()
 
@@ -442,13 +454,16 @@ class SleepStaging:
         proba : :py:class:`pandas.DataFrame`
             The predicted probability for each sleep stage for each 30-sec epoch of data.
         """
-        if not hasattr(self, '_proba'):
+        if not hasattr(self, "_proba"):
             self.predict(path_to_model)
         return self._proba.copy()
 
-    def plot_predict_proba(self, proba=None, majority_only=False,
-                           palette=['#99d7f1', '#009DDC', 'xkcd:twilight blue',
-                                    'xkcd:rich purple', 'xkcd:sunflower']):
+    def plot_predict_proba(
+        self,
+        proba=None,
+        majority_only=False,
+        palette=["#99d7f1", "#009DDC", "xkcd:twilight blue", "xkcd:rich purple", "xkcd:sunflower"],
+    ):
         """
         Plot the predicted probability for each sleep stage for each 30-sec epoch of data.
 
@@ -459,16 +474,16 @@ class SleepStaging:
         majority_only : boolean
             If True, probabilities of the non-majority classes will be set to 0.
         """
-        if proba is None and not hasattr(self, '_features'):
+        if proba is None and not hasattr(self, "_features"):
             raise ValueError("Must call .predict_proba before this function")
         if proba is None:
             proba = self._proba.copy()
         else:
-            assert isinstance(proba, pd.DataFrame), 'proba must be a dataframe'
+            assert isinstance(proba, pd.DataFrame), "proba must be a dataframe"
         if majority_only:
             cond = proba.apply(lambda x: x == x.max(), axis=1)
             proba = proba.where(cond, other=0)
-        ax = proba.plot(kind='area', color=palette, figsize=(10, 5), alpha=.8, stacked=True, lw=0)
+        ax = proba.plot(kind="area", color=palette, figsize=(10, 5), alpha=0.8, stacked=True, lw=0)
         # Add confidence
         # confidence = proba.max(1)
         # ax.plot(confidence, lw=1, color='k', ls='-', alpha=0.5,

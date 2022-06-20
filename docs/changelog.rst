@@ -20,6 +20,7 @@ c. Added a new dataset containing 8 hours of ECG data. The dataset is in compres
 **Improvements**
 
 a. When using an MNE.Raw object, conversion of the data from Volts to micro-Volts is now performed within MNE. `PR 70 <https://github.com/raphaelvallat/yasa/pull/70>`_
+b. Use `black <https://black.readthedocs.io/en/stable/>`_ code formatting.
 
 **Dependencies**
 
