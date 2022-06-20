@@ -3,8 +3,13 @@
 import logging
 
 
-LOGGING_TYPES = dict(DEBUG=logging.DEBUG, INFO=logging.INFO, WARNING=logging.WARNING,
-                     ERROR=logging.ERROR, CRITICAL=logging.CRITICAL)
+LOGGING_TYPES = dict(
+    DEBUG=logging.DEBUG,
+    INFO=logging.INFO,
+    WARNING=logging.WARNING,
+    ERROR=logging.ERROR,
+    CRITICAL=logging.CRITICAL,
+)
 
 
 def set_log_level(verbose=None):
@@ -19,16 +24,16 @@ def set_log_level(verbose=None):
         The verbosity of messages to print. If a str, it can be either
         PROFILER, DEBUG, INFO, WARNING, ERROR, or CRITICAL.
     """
-    logger = logging.getLogger('yasa')
+    logger = logging.getLogger("yasa")
     if isinstance(verbose, bool):
-        verbose = 'INFO' if verbose else 'WARNING'
+        verbose = "INFO" if verbose else "WARNING"
     if isinstance(verbose, str):
-        if (verbose.upper() in LOGGING_TYPES):
+        if verbose.upper() in LOGGING_TYPES:
             verbose = verbose.upper()
             verbose = LOGGING_TYPES[verbose]
             logger.setLevel(verbose)
         else:
-            raise ValueError("verbose must be in %s" % ', '.join(LOGGING_TYPES))
+            raise ValueError("verbose must be in %s" % ", ".join(LOGGING_TYPES))
 
 
 def is_tensorpac_installed():

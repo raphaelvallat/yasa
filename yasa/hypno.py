@@ -33,21 +33,44 @@ import numpy as np
 import pandas as pd
 from .io import set_log_level
 
-__all__ = ['hypno_str_to_int', 'hypno_int_to_str', 'hypno_upsample_to_sf',
-           'hypno_upsample_to_data', 'hypno_find_periods', 'load_profusion_hypno']
+__all__ = [
+    "hypno_str_to_int",
+    "hypno_int_to_str",
+    "hypno_upsample_to_sf",
+    "hypno_upsample_to_data",
+    "hypno_find_periods",
+    "load_profusion_hypno",
+]
 
 
-logger = logging.getLogger('yasa')
+logger = logging.getLogger("yasa")
 
 
 #############################################################################
 # STR <--> INT CONVERSION
 #############################################################################
 
-def hypno_str_to_int(hypno, mapping_dict={'w': 0, 'wake': 0, 'n1': 1, 's1': 1,
-                                          'n2': 2, 's2': 2, 'n3': 3, 's3': 3,
-                                          's4': 3, 'r': 4, 'rem': 4, 'art': -1,
-                                          'mt': -1, 'uns': -2, 'nd': -2}):
+
+def hypno_str_to_int(
+    hypno,
+    mapping_dict={
+        "w": 0,
+        "wake": 0,
+        "n1": 1,
+        "s1": 1,
+        "n2": 2,
+        "s2": 2,
+        "n3": 3,
+        "s3": 3,
+        "s4": 3,
+        "r": 4,
+        "rem": 4,
+        "art": -1,
+        "mt": -1,
+        "uns": -2,
+        "nd": -2,
+    },
+):
     """Convert a string hypnogram array to integer.
 
     ['W', 'N2', 'N2', 'N3', 'R'] ==> [0, 2, 2, 3, 4]
@@ -67,14 +90,15 @@ def hypno_str_to_int(hypno, mapping_dict={'w': 0, 'wake': 0, 'n1': 1, 's1': 1,
     hypno : array_like
         The corresponding integer hypnogram.
     """
-    assert isinstance(hypno, (list, np.ndarray, pd.Series)), 'Not an array.'
+    assert isinstance(hypno, (list, np.ndarray, pd.Series)), "Not an array."
     hypno = pd.Series(np.asarray(hypno, dtype=str))
-    assert not hypno.str.isnumeric().any(), 'Hypno contains numeric values.'
+    assert not hypno.str.isnumeric().any(), "Hypno contains numeric values."
     return hypno.str.lower().map(mapping_dict).values
 
 
-def hypno_int_to_str(hypno, mapping_dict={0: 'W', 1: 'N1', 2: 'N2', 3: 'N3',
-                                          4: 'R', -1: 'Art', -2: 'Uns'}):
+def hypno_int_to_str(
+    hypno, mapping_dict={0: "W", 1: "N1", 2: "N2", 3: "N3", 4: "R", -1: "Art", -2: "Uns"}
+):
     """Convert an integer hypnogram array to a string array.
 
     [0, 2, 2, 3, 4] ==> ['W', 'N2', 'N2', 'N3', 'R']
@@ -94,9 +118,10 @@ def hypno_int_to_str(hypno, mapping_dict={0: 'W', 1: 'N1', 2: 'N2', 3: 'N3',
     hypno : array_like
         The corresponding integer hypnogram.
     """
-    assert isinstance(hypno, (list, np.ndarray, pd.Series)), 'Not an array.'
+    assert isinstance(hypno, (list, np.ndarray, pd.Series)), "Not an array."
     hypno = pd.Series(np.asarray(hypno, dtype=int))
     return hypno.map(mapping_dict).values
+
 
 #############################################################################
 # UPSAMPLING
@@ -126,8 +151,8 @@ def hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
         The hypnogram, upsampled to ``sf_data``.
     """
     repeats = sf_data / sf_hypno
-    assert sf_hypno <= sf_data, 'sf_hypno must be less than sf_data.'
-    assert repeats.is_integer(), 'sf_hypno / sf_data must be a whole number.'
+    assert sf_hypno <= sf_data, "sf_hypno must be less than sf_data."
+    assert repeats.is_integer(), "sf_hypno / sf_data must be a whole number."
     assert isinstance(hypno, (list, np.ndarray, pd.Series))
     return np.repeat(np.asarray(hypno), repeats)
 
@@ -156,11 +181,11 @@ def hypno_fit_to_data(hypno, data, sf=None):
     """
     # Check if data is an MNE raw object
     if isinstance(data, mne.io.BaseRaw):
-        sf = data.info['sfreq']
+        sf = data.info["sfreq"]
         data = data.times  # 1D array and does not require to preload data
     data = np.asarray(data)
     hypno = np.asarray(hypno)
-    assert hypno.ndim == 1, 'Hypno must be 1D.'
+    assert hypno.ndim == 1, "Hypno must be 1D."
     npts_hyp = hypno.size
     npts_data = max(data.shape)  # Support for 2D data
     if npts_hyp < npts_data:
@@ -168,22 +193,30 @@ def hypno_fit_to_data(hypno, data, sf=None):
         npts_diff = npts_data - npts_hyp
         if sf is not None:
             dur_diff = npts_diff / sf
-            logger.warning('Hypnogram is SHORTER than data by %.2f seconds. '
-                           'Padding hypnogram with last value to match data.size.' % dur_diff)
+            logger.warning(
+                "Hypnogram is SHORTER than data by %.2f seconds. "
+                "Padding hypnogram with last value to match data.size." % dur_diff
+            )
         else:
-            logger.warning('Hypnogram is SHORTER than data by %i samples. '
-                           'Padding hypnogram with last value to match data.size.' % npts_diff)
-        hypno = np.pad(hypno, (0, npts_diff), mode='edge')
+            logger.warning(
+                "Hypnogram is SHORTER than data by %i samples. "
+                "Padding hypnogram with last value to match data.size." % npts_diff
+            )
+        hypno = np.pad(hypno, (0, npts_diff), mode="edge")
     elif npts_hyp > npts_data:
         # Hypnogram is longer than data
         npts_diff = npts_hyp - npts_data
         if sf is not None:
             dur_diff = npts_diff / sf
-            logger.warning('Hypnogram is LONGER than data by %.2f seconds. '
-                           'Cropping hypnogram to match data.size.' % dur_diff)
+            logger.warning(
+                "Hypnogram is LONGER than data by %.2f seconds. "
+                "Cropping hypnogram to match data.size." % dur_diff
+            )
         else:
-            logger.warning('Hypnogram is LONGER than data by %i samples. '
-                           'Cropping hypnogram to match data.size.' % npts_diff)
+            logger.warning(
+                "Hypnogram is LONGER than data by %i samples. "
+                "Cropping hypnogram to match data.size." % npts_diff
+            )
         hypno = hypno[0:npts_data]
     return hypno
 
@@ -230,7 +263,7 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=True):
     """
     set_log_level(verbose)
     if isinstance(data, mne.io.BaseRaw):
-        sf_data = data.info['sfreq']
+        sf_data = data.info["sfreq"]
         data = data.times
     hypno_up = hypno_upsample_to_sf(hypno=hypno, sf_hypno=sf_hypno, sf_data=sf_data)
     return hypno_fit_to_data(hypno=hypno_up, data=data, sf=sf_data)
@@ -239,6 +272,7 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=True):
 #############################################################################
 # HYPNO LOADING
 #############################################################################
+
 
 def load_profusion_hypno(fname, replace=True):  # pragma: no cover
     """
@@ -277,6 +311,7 @@ def load_profusion_hypno(fname, replace=True):  # pragma: no cover
     # >>> annotations["Start"] = annotations["Start"].astype(float)
     # >>> annotations["Duration"] = annotations["Duration"].astype(float)
     import xml.etree.ElementTree as ET
+
     tree = ET.parse(fname)
     root = tree.getroot()
     epoch_length = float(root[0].text)
@@ -289,6 +324,7 @@ def load_profusion_hypno(fname, replace=True):  # pragma: no cover
         # Stage 4 --> 3 and REM --> 4
         hypno = pd.Series(hypno).replace({4: 3, 5: 4}).to_numpy()
     return hypno, sf_hyp
+
 
 #############################################################################
 # PERIODS & CYCLES
@@ -400,7 +436,7 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
 
     # Find run starts
     # https://gist.github.com/alimanfoo/c5977e87111abe8127453b21204c1065
-    assert isinstance(hypno, (list, np.ndarray, pd.Series)), 'hypno must be an array.'
+    assert isinstance(hypno, (list, np.ndarray, pd.Series)), "hypno must be an array."
     x = np.asarray(hypno)
     n = x.shape[0]
     loc_run_start = np.empty(n, dtype=bool)
@@ -411,10 +447,10 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     run_values = x[loc_run_start]
     # Find run lengths
     run_lengths = np.diff(np.append(run_starts, n))
-    seq = pd.DataFrame({'values': run_values, 'start': run_starts, 'length': run_lengths})
+    seq = pd.DataFrame({"values": run_values, "start": run_starts, "length": run_lengths})
 
     # Remove runs that are shorter than threshold
-    seq = seq[seq['length'] >= thr_samp].reset_index(drop=True)
+    seq = seq[seq["length"] >= thr_samp].reset_index(drop=True)
 
     if not equal_length:
         return seq
@@ -424,19 +460,19 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     new_seq = {"values": [], "start": [], "length": []}
 
     for i, row in seq.iterrows():
-        quotient, remainder = np.divmod(row['length'], thr_samp)
-        new_start = row['start']
+        quotient, remainder = np.divmod(row["length"], thr_samp)
+        new_start = row["start"]
         if quotient > 0:
             while quotient != 0:
-                new_seq["values"].append(row['values'])
+                new_seq["values"].append(row["values"])
                 new_seq["start"].append(new_start)
                 new_seq["length"].append(thr_samp)
                 new_start += thr_samp
                 quotient -= 1
         else:
-            new_seq["values"].append(row['values'])
-            new_seq["start"].append(row['start'])
-            new_seq["length"].append(row['length'])
+            new_seq["values"].append(row["values"])
+            new_seq["start"].append(row["start"])
+            new_seq["length"].append(row["length"])
 
     new_seq = pd.DataFrame(new_seq)
     return new_seq

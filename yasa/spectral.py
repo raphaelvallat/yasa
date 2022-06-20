@@ -11,17 +11,30 @@ from scipy.integrate import simps
 from scipy.interpolate import RectBivariateSpline
 from .io import set_log_level
 
-logger = logging.getLogger('yasa')
+logger = logging.getLogger("yasa")
 
-__all__ = ['bandpower', 'bandpower_from_psd', 'bandpower_from_psd_ndarray',
-           'irasa', 'stft_power']
+__all__ = ["bandpower", "bandpower_from_psd", "bandpower_from_psd_ndarray", "irasa", "stft_power"]
 
 
-def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
-              win_sec=4, relative=True, bandpass=False,
-              bands=[(0.5, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'),
-                     (12, 16, 'Sigma'), (16, 30, 'Beta'), (30, 40, 'Gamma')],
-              kwargs_welch=dict(average='median', window='hamming')):
+def bandpower(
+    data,
+    sf=None,
+    ch_names=None,
+    hypno=None,
+    include=(2, 3),
+    win_sec=4,
+    relative=True,
+    bandpass=False,
+    bands=[
+        (0.5, 4, "Delta"),
+        (4, 8, "Theta"),
+        (8, 12, "Alpha"),
+        (12, 16, "Sigma"),
+        (16, 30, "Beta"),
+        (30, 40, "Gamma"),
+    ],
+    kwargs_welch=dict(average="median", window="hamming"),
+):
     """
     Calculate the Welch bandpower for each channel and, if specified, for each sleep stage.
 
@@ -88,74 +101,85 @@ def bandpower(data, sf=None, ch_names=None, hypno=None, include=(2, 3),
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_bandpower.ipynb
     """
     # Type checks
-    assert isinstance(bands, list), 'bands must be a list of tuple(s)'
-    assert isinstance(relative, bool), 'relative must be a boolean'
-    assert isinstance(bandpass, bool), 'bandpass must be a boolean'
+    assert isinstance(bands, list), "bands must be a list of tuple(s)"
+    assert isinstance(relative, bool), "relative must be a boolean"
+    assert isinstance(bandpass, bool), "bandpass must be a boolean"
 
     # Check if input data is a MNE Raw object
     if isinstance(data, mne.io.BaseRaw):
-        sf = data.info['sfreq']  # Extract sampling frequency
+        sf = data.info["sfreq"]  # Extract sampling frequency
         ch_names = data.ch_names  # Extract channel names
         data = data.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
         _, npts = data.shape
     else:
         # Safety checks
-        assert isinstance(data, np.ndarray), 'Data must be a numpy array.'
+        assert isinstance(data, np.ndarray), "Data must be a numpy array."
         data = np.atleast_2d(data)
-        assert data.ndim == 2, 'Data must be of shape (nchan, n_samples).'
+        assert data.ndim == 2, "Data must be of shape (nchan, n_samples)."
         nchan, npts = data.shape
         # assert nchan < npts, 'Data must be of shape (nchan, n_samples).'
-        assert sf is not None, 'sf must be specified if passing a numpy array.'
+        assert sf is not None, "sf must be specified if passing a numpy array."
         assert isinstance(sf, (int, float))
         if ch_names is None:
-            ch_names = ['CHAN' + str(i).zfill(3) for i in range(nchan)]
+            ch_names = ["CHAN" + str(i).zfill(3) for i in range(nchan)]
         else:
             ch_names = np.atleast_1d(np.asarray(ch_names, dtype=str))
-            assert ch_names.ndim == 1, 'ch_names must be 1D.'
-            assert len(ch_names) == nchan, 'ch_names must match data.shape[0].'
+            assert ch_names.ndim == 1, "ch_names must be 1D."
+            assert len(ch_names) == nchan, "ch_names must match data.shape[0]."
 
     if bandpass:
         # Apply FIR bandpass filter
         all_freqs = np.hstack([[b[0], b[1]] for b in bands])
         fmin, fmax = min(all_freqs), max(all_freqs)
-        data = mne.filter.filter_data(data.astype('float64'), sf, fmin, fmax, verbose=0)
+        data = mne.filter.filter_data(data.astype("float64"), sf, fmin, fmax, verbose=0)
 
     win = int(win_sec * sf)  # nperseg
 
     if hypno is None:
         # Calculate the PSD over the whole data
         freqs, psd = signal.welch(data, sf, nperseg=win, **kwargs_welch)
-        return bandpower_from_psd(
-            psd, freqs, ch_names, bands=bands, relative=relative).set_index('Chan')
+        return bandpower_from_psd(psd, freqs, ch_names, bands=bands, relative=relative).set_index(
+            "Chan"
+        )
     else:
         # Per each sleep stage defined in ``include``.
         hypno = np.asarray(hypno)
-        assert include is not None, 'include cannot be None if hypno is given'
+        assert include is not None, "include cannot be None if hypno is given"
         include = np.atleast_1d(np.asarray(include))
-        assert hypno.ndim == 1, 'Hypno must be a 1D array.'
-        assert hypno.size == npts, 'Hypno must have same size as data.shape[1]'
-        assert include.size >= 1, '`include` must have at least one element.'
-        assert hypno.dtype.kind == include.dtype.kind, 'hypno and include must have same dtype'
-        assert np.in1d(hypno, include).any(), (
-            'None of the stages specified in `include` are present in hypno.')
+        assert hypno.ndim == 1, "Hypno must be a 1D array."
+        assert hypno.size == npts, "Hypno must have same size as data.shape[1]"
+        assert include.size >= 1, "`include` must have at least one element."
+        assert hypno.dtype.kind == include.dtype.kind, "hypno and include must have same dtype"
+        assert np.in1d(
+            hypno, include
+        ).any(), "None of the stages specified in `include` are present in hypno."
         # Initialize empty dataframe and loop over stages
         df_bp = pd.DataFrame([])
         for stage in include:
             if stage not in hypno:
                 continue
             data_stage = data[:, hypno == stage]
-            freqs, psd = signal.welch(data_stage, sf, nperseg=win,
-                                      **kwargs_welch)
-            bp_stage = bandpower_from_psd(psd, freqs, ch_names, bands=bands,
-                                          relative=relative)
-            bp_stage['Stage'] = stage
+            freqs, psd = signal.welch(data_stage, sf, nperseg=win, **kwargs_welch)
+            bp_stage = bandpower_from_psd(psd, freqs, ch_names, bands=bands, relative=relative)
+            bp_stage["Stage"] = stage
             df_bp = pd.concat([df_bp, bp_stage], axis=0)
-        return df_bp.set_index(['Stage', 'Chan'])
+        return df_bp.set_index(["Stage", "Chan"])
 
 
-def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
-                       (4, 8, 'Theta'), (8, 12, 'Alpha'), (12, 16, 'Sigma'),
-                       (16, 30, 'Beta'), (30, 40, 'Gamma')], relative=True):
+def bandpower_from_psd(
+    psd,
+    freqs,
+    ch_names=None,
+    bands=[
+        (0.5, 4, "Delta"),
+        (4, 8, "Theta"),
+        (8, 12, "Alpha"),
+        (12, 16, "Sigma"),
+        (16, 30, "Beta"),
+        (30, 40, "Gamma"),
+    ],
+    relative=True,
+):
     """Compute the average power of the EEG in specified frequency band(s)
     given a pre-computed PSD.
 
@@ -184,27 +208,27 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
         Bandpower dataframe, in which each row is a channel and each column a spectral band.
     """
     # Type checks
-    assert isinstance(bands, list), 'bands must be a list of tuple(s)'
-    assert isinstance(relative, bool), 'relative must be a boolean'
+    assert isinstance(bands, list), "bands must be a list of tuple(s)"
+    assert isinstance(relative, bool), "relative must be a boolean"
 
     # Safety checks
     freqs = np.asarray(freqs)
     assert freqs.ndim == 1
     psd = np.atleast_2d(psd)
-    assert psd.ndim == 2, 'PSD must be of shape (n_channels, n_freqs).'
+    assert psd.ndim == 2, "PSD must be of shape (n_channels, n_freqs)."
     all_freqs = np.hstack([[b[0], b[1]] for b in bands])
     fmin, fmax = min(all_freqs), max(all_freqs)
     idx_good_freq = np.logical_and(freqs >= fmin, freqs <= fmax)
     freqs = freqs[idx_good_freq]
     res = freqs[1] - freqs[0]
     nchan = psd.shape[0]
-    assert nchan < psd.shape[1], 'PSD must be of shape (n_channels, n_freqs).'
+    assert nchan < psd.shape[1], "PSD must be of shape (n_channels, n_freqs)."
     if ch_names is not None:
         ch_names = np.atleast_1d(np.asarray(ch_names, dtype=str))
-        assert ch_names.ndim == 1, 'ch_names must be 1D.'
-        assert len(ch_names) == nchan, 'ch_names must match psd.shape[0].'
+        assert ch_names.ndim == 1, "ch_names must be 1D."
+        assert len(ch_names) == nchan, "ch_names must match psd.shape[0]."
     else:
-        ch_names = ['CHAN' + str(i).zfill(3) for i in range(nchan)]
+        ch_names = ["CHAN" + str(i).zfill(3) for i in range(nchan)]
     bp = np.zeros((nchan, len(bands)), dtype=np.float64)
     psd = psd[:, idx_good_freq]
     total_power = simps(psd, dx=res)
@@ -216,7 +240,8 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
             "There are negative values in PSD. This will result in incorrect "
             "bandpower values. We highly recommend working with an "
             "all-positive PSD. For more details, please refer to: "
-            "https://github.com/raphaelvallat/yasa/issues/29")
+            "https://github.com/raphaelvallat/yasa/issues/29"
+        )
         logger.warning(msg)
 
     # Enumerate over the frequency bands
@@ -232,21 +257,30 @@ def bandpower_from_psd(psd, freqs, ch_names=None, bands=[(0.5, 4, 'Delta'),
 
     # Convert to DataFrame
     bp = pd.DataFrame(bp, columns=labels)
-    bp['TotalAbsPow'] = np.squeeze(total_power)
-    bp['FreqRes'] = res
+    bp["TotalAbsPow"] = np.squeeze(total_power)
+    bp["FreqRes"] = res
     # bp['WindowSec'] = 1 / res
-    bp['Relative'] = relative
-    bp['Chan'] = ch_names
-    bp = bp.set_index('Chan').reset_index()
+    bp["Relative"] = relative
+    bp["Chan"] = ch_names
+    bp = bp.set_index("Chan").reset_index()
     # Add hidden attributes
     bp.bands_ = str(bands)
     return bp
 
 
-def bandpower_from_psd_ndarray(psd, freqs, bands=[(0.5, 4, 'Delta'),
-                               (4, 8, 'Theta'), (8, 12, 'Alpha'),
-                               (12, 16, 'Sigma'), (16, 30, 'Beta'),
-                               (30, 40, 'Gamma')], relative=True):
+def bandpower_from_psd_ndarray(
+    psd,
+    freqs,
+    bands=[
+        (0.5, 4, "Delta"),
+        (4, 8, "Theta"),
+        (8, 12, "Alpha"),
+        (12, 16, "Sigma"),
+        (16, 30, "Beta"),
+        (30, 40, "Gamma"),
+    ],
+    relative=True,
+):
     """Compute bandpowers in N-dimensional PSD.
 
     This is a NumPy-only implementation of the :py:func:`yasa.bandpower_from_psd` function,
@@ -275,14 +309,14 @@ def bandpower_from_psd_ndarray(psd, freqs, bands=[(0.5, 4, 'Delta'),
         Bandpower array of shape *(n_bands, ...)*.
     """
     # Type checks
-    assert isinstance(bands, list), 'bands must be a list of tuple(s)'
-    assert isinstance(relative, bool), 'relative must be a boolean'
+    assert isinstance(bands, list), "bands must be a list of tuple(s)"
+    assert isinstance(relative, bool), "relative must be a boolean"
 
     # Safety checks
     freqs = np.asarray(freqs)
     psd = np.asarray(psd)
-    assert freqs.ndim == 1, 'freqs must be a 1-D array of shape (n_freqs,)'
-    assert psd.shape[-1] == freqs.shape[-1], 'n_freqs must be last axis of psd'
+    assert freqs.ndim == 1, "freqs must be a 1-D array of shape (n_freqs,)"
+    assert psd.shape[-1] == freqs.shape[-1], "n_freqs must be last axis of psd"
 
     # Extract frequencies of interest
     all_freqs = np.hstack([[b[0], b[1]] for b in bands])
@@ -300,7 +334,8 @@ def bandpower_from_psd_ndarray(psd, freqs, bands=[(0.5, 4, 'Delta'),
             "There are negative values in PSD. This will result in incorrect "
             "bandpower values. We highly recommend working with an "
             "all-positive PSD. For more details, please refer to: "
-            "https://github.com/raphaelvallat/yasa/issues/29")
+            "https://github.com/raphaelvallat/yasa/issues/29"
+        )
         logger.warning(msg)
 
     # Calculate total power
@@ -323,11 +358,35 @@ def bandpower_from_psd_ndarray(psd, freqs, bands=[(0.5, 4, 'Delta'),
     return bp
 
 
-def irasa(data, sf=None, ch_names=None, band=(1, 30),
-          hset=[1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4, 1.45, 1.5, 1.55, 1.6,
-          1.65, 1.7, 1.75, 1.8, 1.85, 1.9], return_fit=True, win_sec=4,
-          kwargs_welch=dict(average='median', window='hamming'),
-          verbose=True):
+def irasa(
+    data,
+    sf=None,
+    ch_names=None,
+    band=(1, 30),
+    hset=[
+        1.1,
+        1.15,
+        1.2,
+        1.25,
+        1.3,
+        1.35,
+        1.4,
+        1.45,
+        1.5,
+        1.55,
+        1.6,
+        1.65,
+        1.7,
+        1.75,
+        1.8,
+        1.85,
+        1.9,
+    ],
+    return_fit=True,
+    win_sec=4,
+    kwargs_welch=dict(average="median", window="hamming"),
+    verbose=True,
+):
     r"""
     Separate the aperiodic (= fractal, or 1/f) and oscillatory component
     of the power spectra of EEG data using the IRASA method.
@@ -440,40 +499,41 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
     [5] https://doi.org/10.1101/2021.10.15.464483
     """
     import fractions
+
     set_log_level(verbose)
     # Check if input data is a MNE Raw object
     if isinstance(data, mne.io.BaseRaw):
-        sf = data.info['sfreq']  # Extract sampling frequency
+        sf = data.info["sfreq"]  # Extract sampling frequency
         ch_names = data.ch_names  # Extract channel names
-        hp = data.info['highpass']  # Extract highpass filter
-        lp = data.info['lowpass']  # Extract lowpass filter
+        hp = data.info["highpass"]  # Extract highpass filter
+        lp = data.info["lowpass"]  # Extract lowpass filter
         data = data.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
     else:
         # Safety checks
-        assert isinstance(data, np.ndarray), 'Data must be a numpy array.'
+        assert isinstance(data, np.ndarray), "Data must be a numpy array."
         data = np.atleast_2d(data)
-        assert data.ndim == 2, 'Data must be of shape (nchan, n_samples).'
+        assert data.ndim == 2, "Data must be of shape (nchan, n_samples)."
         nchan, npts = data.shape
-        assert nchan < npts, 'Data must be of shape (nchan, n_samples).'
-        assert sf is not None, 'sf must be specified if passing a numpy array.'
+        assert nchan < npts, "Data must be of shape (nchan, n_samples)."
+        assert sf is not None, "sf must be specified if passing a numpy array."
         assert isinstance(sf, (int, float))
         if ch_names is None:
-            ch_names = ['CHAN' + str(i).zfill(3) for i in range(nchan)]
+            ch_names = ["CHAN" + str(i).zfill(3) for i in range(nchan)]
         else:
             ch_names = np.atleast_1d(np.asarray(ch_names, dtype=str))
-            assert ch_names.ndim == 1, 'ch_names must be 1D.'
-            assert len(ch_names) == nchan, 'ch_names must match data.shape[0].'
+            assert ch_names.ndim == 1, "ch_names must be 1D."
+            assert len(ch_names) == nchan, "ch_names must match data.shape[0]."
         hp = 0  # Highpass filter unknown -> set to 0 Hz
         lp = sf / 2  # Lowpass filter unknown -> set to Nyquist
 
     # Check the other arguments
     hset = np.asarray(hset)
-    assert hset.ndim == 1, 'hset must be 1D.'
-    assert hset.size > 1, '2 or more resampling fators are required.'
+    assert hset.ndim == 1, "hset must be 1D."
+    assert hset.size > 1, "2 or more resampling fators are required."
     hset = np.round(hset, 4)  # avoid float precision error with np.arange.
     band = sorted(band)
-    assert band[0] > 0, 'first element of band must be > 0.'
-    assert band[1] < (sf / 2), 'second element of band must be < (sf / 2).'
+    assert band[0] > 0, "first element of band must be > 0."
+    assert band[1] < (sf / 2), "second element of band must be < (sf / 2)."
     win = int(win_sec * sf)  # nperseg
 
     # Inform about maximum resampled fitting range
@@ -484,21 +544,27 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
     logging.info(f"Fitting range: {band[0]:.2f}Hz-{band[1]:.2f}Hz")
     logging.info(f"Evaluated frequency range: {band_evaluated[0]:.2f}Hz-{band_evaluated[1]:.2f}Hz")
     if band_evaluated[0] < hp:
-        logging.warning("The evaluated frequency range starts below the "
-                        f"highpass filter ({hp:.2f}Hz). Increase the lower band"
-                        f" ({band[0]:.2f}Hz) or decrease the maximum value of "
-                        f"the hset ({h_max:.2f}).")
+        logging.warning(
+            "The evaluated frequency range starts below the "
+            f"highpass filter ({hp:.2f}Hz). Increase the lower band"
+            f" ({band[0]:.2f}Hz) or decrease the maximum value of "
+            f"the hset ({h_max:.2f})."
+        )
     if band_evaluated[1] > lp and lp < freq_Nyq_res:
-        logging.warning("The evaluated frequency range ends after the "
-                        f"lowpass filter ({lp:.2f}Hz). Decrease the upper band"
-                        f" ({band[1]:.2f}Hz) or decrease the maximum value of "
-                        f"the hset ({h_max:.2f}).")
+        logging.warning(
+            "The evaluated frequency range ends after the "
+            f"lowpass filter ({lp:.2f}Hz). Decrease the upper band"
+            f" ({band[1]:.2f}Hz) or decrease the maximum value of "
+            f"the hset ({h_max:.2f})."
+        )
     if band_evaluated[1] > freq_Nyq_res:
-        logging.warning("The evaluated frequency range ends after the "
-                        "resampled Nyquist frequency "
-                        f"({freq_Nyq_res:.2f}Hz). Decrease the upper band "
-                        f"({band[1]:.2f}Hz) or decrease the maximum value "
-                        f"of the hset ({h_max:.2f}).")
+        logging.warning(
+            "The evaluated frequency range ends after the "
+            "resampled Nyquist frequency "
+            f"({freq_Nyq_res:.2f}Hz). Decrease the upper band "
+            f"({band[1]:.2f}Hz) or decrease the maximum value "
+            f"of the hset ({h_max:.2f})."
+        )
 
     # Calculate the original PSD over the whole data
     freqs, psd = signal.welch(data, sf, nperseg=win, **kwargs_welch)
@@ -535,6 +601,7 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
     if return_fit:
         # Aperiodic fit in semilog space for each channel
         from scipy.optimize import curve_fit
+
         intercepts, slopes, r_squared = [], [], []
 
         def func(t, a, b):
@@ -545,26 +612,31 @@ def irasa(data, sf=None, ch_names=None, band=(1, 30),
             y_log = np.log(y)
             # Note that here we define bounds for the slope but not for the
             # intercept.
-            popt, pcov = curve_fit(func, freqs, y_log, p0=(2, -1),
-                                   bounds=((-np.inf, -10), (np.inf, 2)))
+            popt, pcov = curve_fit(
+                func, freqs, y_log, p0=(2, -1), bounds=((-np.inf, -10), (np.inf, 2))
+            )
             intercepts.append(popt[0])
             slopes.append(popt[1])
             # Calculate R^2: https://stackoverflow.com/q/19189362/10581531
             residuals = y_log - func(freqs, *popt)
             ss_res = np.sum(residuals**2)
-            ss_tot = np.sum((y_log - np.mean(y_log))**2)
+            ss_tot = np.sum((y_log - np.mean(y_log)) ** 2)
             r_squared.append(1 - (ss_res / ss_tot))
 
         # Create fit parameters dataframe
-        fit_params = {'Chan': ch_names, 'Intercept': intercepts,
-                      'Slope': slopes, 'R^2': r_squared,
-                      'std(osc)': np.std(psd_osc, axis=-1, ddof=1)}
+        fit_params = {
+            "Chan": ch_names,
+            "Intercept": intercepts,
+            "Slope": slopes,
+            "R^2": r_squared,
+            "std(osc)": np.std(psd_osc, axis=-1, ddof=1),
+        }
         return freqs, psd_aperiodic, psd_osc, pd.DataFrame(fit_params)
     else:
         return freqs, psd_aperiodic, psd_osc
 
 
-def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True, norm=False):
+def stft_power(data, sf, window=2, step=0.2, band=(1, 30), interp=True, norm=False):
     """Compute the pointwise power via STFT and interpolation.
 
     Parameters
@@ -619,7 +691,8 @@ def stft_power(data, sf, window=2, step=.2, band=(1, 30), interp=True, norm=Fals
 
     # Compute STFT and remove the last epoch
     f, t, Sxx = signal.stft(
-        data, sf, nperseg=nperseg, noverlap=noverlap, detrend=False, padded=True)
+        data, sf, nperseg=nperseg, noverlap=noverlap, detrend=False, padded=True
+    )
 
     # Let's keep only the frequency of interest
     if band is not None:

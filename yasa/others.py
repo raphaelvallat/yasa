@@ -6,10 +6,9 @@ import numpy as np
 from scipy.interpolate import interp1d
 from .numba import _slope_lstsq, _covar, _corr, _rms
 
-logger = logging.getLogger('yasa')
+logger = logging.getLogger("yasa")
 
-__all__ = ['moving_transform', 'trimbothstd', 'sliding_window',
-           'get_centered_indices']
+__all__ = ["moving_transform", "trimbothstd", "sliding_window", "get_centered_indices"]
 
 
 def _merge_close(index, min_distance_ms, sf):
@@ -35,7 +34,7 @@ def _merge_close(index, min_distance_ms, sf):
     Original code imported from the Visbrain package.
     """
     # Convert min_distance_ms
-    min_distance = min_distance_ms / 1000. * sf
+    min_distance = min_distance_ms / 1000.0 * sf
     idx_diff = np.diff(index)
     condition = idx_diff > 1
     idx_distance = np.where(condition)[0]
@@ -43,8 +42,7 @@ def _merge_close(index, min_distance_ms, sf):
     bad = idx_distance[np.where(distance < min_distance)[0]]
     # Fill gap between events separated with less than min_distance_ms
     if len(bad) > 0:
-        fill = np.hstack([np.arange(index[j] + 1, index[j + 1])
-                          for i, j in enumerate(bad)])
+        fill = np.hstack([np.arange(index[j] + 1, index[j + 1]) for i, j in enumerate(bad)])
         f_index = np.sort(np.append(index, fill))
         return f_index
     else:
@@ -77,8 +75,7 @@ def _index_to_events(x):
     return index
 
 
-def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
-                     interp=False):
+def moving_transform(x, y=None, sf=100, window=0.3, step=0.1, method="corr", interp=False):
     """Moving transformation of one or two time-series.
 
     Parameters
@@ -127,8 +124,17 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
     Wonambi package (https://github.com/wonambi-python/wonambi).
     """
     # Safety checks
-    assert method in ['mean', 'min', 'max', 'ptp', 'rms',
-                      'prop_above_zero', 'slope', 'covar', 'corr']
+    assert method in [
+        "mean",
+        "min",
+        "max",
+        "ptp",
+        "rms",
+        "prop_above_zero",
+        "slope",
+        "covar",
+        "corr",
+    ]
     x = np.asarray(x, dtype=np.float64)
     if y is not None:
         y = np.asarray(y, dtype=np.float64)
@@ -154,55 +160,63 @@ def moving_transform(x, y=None, sf=100, window=.3, step=.1, method='corr',
     # beg, end = beg[mask], end[mask]
     t = np.column_stack((beg, end)).mean(1) / sf
 
-    if method == 'mean':
+    if method == "mean":
+
         def func(x):
             return np.mean(x)
 
-    elif method == 'min':
+    elif method == "min":
+
         def func(x):
             return np.min(x)
 
-    elif method == 'max':
+    elif method == "max":
+
         def func(x):
             return np.max(x)
 
-    elif method == 'ptp':
+    elif method == "ptp":
+
         def func(x):
             return np.ptp(x)
 
-    elif method == 'prop_above_zero':
+    elif method == "prop_above_zero":
+
         def func(x):
             return np.count_nonzero(x >= 0) / x.size
 
-    elif method == 'slope':
+    elif method == "slope":
+
         def func(x):
             times = np.arange(x.size, dtype=np.float64) / sf
             return _slope_lstsq(times, x)
 
-    elif method == 'covar':
+    elif method == "covar":
+
         def func(x, y):
             return _covar(x, y)
 
-    elif method == 'corr':
+    elif method == "corr":
+
         def func(x, y):
             return _corr(x, y)
 
     else:
+
         def func(x):
             return _rms(x)
 
     # Now loop over successive epochs
-    if method in ['covar', 'corr']:
+    if method in ["covar", "corr"]:
         for i in range(idx.size):
-            out[i] = func(x[beg[i]:end[i]], y[beg[i]:end[i]])
+            out[i] = func(x[beg[i] : end[i]], y[beg[i] : end[i]])
     else:
         for i in range(idx.size):
-            out[i] = func(x[beg[i]:end[i]])
+            out[i] = func(x[beg[i] : end[i]])
 
     # Finally interpolate
     if interp and step != 1 / sf:
-        f = interp1d(t, out, kind='cubic', bounds_error=False,
-                     fill_value=0, assume_sorted=True)
+        f = interp1d(t, out, kind="cubic", bounds_error=False, fill_value=0, assume_sorted=True)
         t = np.arange(n) / sf
         out = f(t)
 
@@ -353,36 +367,34 @@ def sliding_window(data, sf, window, step=None, axis=-1):
             [-51,   3,  31, -99,  33, -47,   5, -97, -47,  90]]])
     """
     from numpy.lib.stride_tricks import as_strided
+
     assert axis <= data.ndim, "Axis value out of range."
-    assert isinstance(sf, (int, float)), 'sf must be int or float'
-    assert isinstance(window, (int, float)), 'window must be int or float'
-    assert isinstance(step, (int, float, type(None))), ('step must be int, '
-                                                        'float or None.')
+    assert isinstance(sf, (int, float)), "sf must be int or float"
+    assert isinstance(window, (int, float)), "window must be int or float"
+    assert isinstance(step, (int, float, type(None))), "step must be int, " "float or None."
     if isinstance(sf, float):
-        assert sf.is_integer(), 'sf must be a whole number.'
+        assert sf.is_integer(), "sf must be a whole number."
         sf = int(sf)
-    assert isinstance(axis, int), 'axis must be int.'
+    assert isinstance(axis, int), "axis must be int."
 
     # window and step in samples instead of points
     window *= sf
     step = window if step is None else step * sf
 
     if isinstance(window, float):
-        assert window.is_integer(), 'window * sf must be a whole number.'
+        assert window.is_integer(), "window * sf must be a whole number."
         window = int(window)
 
     if isinstance(step, float):
-        assert step.is_integer(), 'step * sf must be a whole number.'
+        assert step.is_integer(), "step * sf must be a whole number."
         step = int(step)
 
     assert step >= 1, "Stepsize may not be zero or negative."
-    assert window < data.shape[axis], ("Sliding window size may not exceed "
-                                       "size of selected axis")
+    assert window < data.shape[axis], "Sliding window size may not exceed " "size of selected axis"
 
     # Define output shape
     shape = list(data.shape)
-    shape[axis] = np.floor(data.shape[axis] / step - window / step + 1
-                           ).astype(int)
+    shape[axis] = np.floor(data.shape[axis] / step - window / step + 1).astype(int)
     shape.append(window)
 
     # Calculate strides and time vector
@@ -453,13 +465,13 @@ def get_centered_indices(data, idx, npts_before, npts_after):
     npts_before = int(npts_before)
     npts_after = int(npts_after)
     data = np.asarray(data)
-    idx = np.asarray(idx, dtype='int')
+    idx = np.asarray(idx, dtype="int")
     assert idx.ndim == 1, "idx must be 1D."
     assert data.ndim == 1, "data must be 1D."
 
     def rng(x):
         """Create a range before and after a given value."""
-        return np.arange(x - npts_before, x + npts_after + 1, dtype='int')
+        return np.arange(x - npts_before, x + npts_after + 1, dtype="int")
 
     idx_ep = np.apply_along_axis(rng, 1, idx[..., np.newaxis])
     # We drop the events for which the indices exceed data

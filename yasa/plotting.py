@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 from lspopt import spectrogram_lspopt
 from matplotlib.colors import Normalize, ListedColormap
 
-__all__ = ['plot_hypnogram', 'plot_spectrogram', 'topoplot']
+__all__ = ["plot_hypnogram", "plot_spectrogram", "topoplot"]
 
 
-def plot_hypnogram(hypno, sf_hypno=1/30, lw=1.5, figsize=(9, 3)):
+def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
     """
     Plot a hypnogram.
 
@@ -58,15 +58,15 @@ def plot_hypnogram(hypno, sf_hypno=1/30, lw=1.5, figsize=(9, 3)):
         >>> ax = yasa.plot_hypnogram(hypno)
     """
     # Increase font size while preserving original
-    old_fontsize = plt.rcParams['font.size']
-    plt.rcParams.update({'font.size': 18})
+    old_fontsize = plt.rcParams["font.size"]
+    plt.rcParams.update({"font.size": 18})
 
     # Safety checks
-    assert isinstance(hypno, (np.ndarray, pd.Series, list)), 'hypno must be an array.'
+    assert isinstance(hypno, (np.ndarray, pd.Series, list)), "hypno must be an array."
     hypno = np.asarray(hypno).astype(int)
     assert (hypno >= -2).all() and (hypno <= 4).all(), "hypno values must be between -2 to 4."
-    assert hypno.ndim == 1, 'hypno must be a 1D array.'
-    assert isinstance(sf_hypno, (int, float)), 'sf must be int or float.'
+    assert hypno.ndim == 1, "hypno must be a 1D array."
+    assert isinstance(sf_hypno, (int, float)), "sf must be int or float."
 
     t_hyp = np.arange(hypno.size) / (sf_hypno * 3600)
     # Make sure that REM is displayed after Wake
@@ -77,37 +77,38 @@ def plot_hypnogram(hypno, sf_hypno=1/30, lw=1.5, figsize=(9, 3)):
     fig, ax0 = plt.subplots(nrows=1, figsize=figsize)
 
     # Hypnogram (top axis)
-    ax0.step(t_hyp, -1 * hypno, color='k', lw=lw)
-    ax0.step(t_hyp, -1 * hypno_rem, color='red', lw=lw)
-    ax0.step(t_hyp, -1 * hypno_art_uns, color='grey', lw=lw)
+    ax0.step(t_hyp, -1 * hypno, color="k", lw=lw)
+    ax0.step(t_hyp, -1 * hypno_rem, color="red", lw=lw)
+    ax0.step(t_hyp, -1 * hypno_art_uns, color="grey", lw=lw)
     if -2 in hypno and -1 in hypno:
         # Both Unscored and Artefacts are present
         ax0.set_yticks([2, 1, 0, -1, -2, -3, -4])
-        ax0.set_yticklabels(['Uns', 'Art', 'W', 'R', 'N1', 'N2', 'N3'])
+        ax0.set_yticklabels(["Uns", "Art", "W", "R", "N1", "N2", "N3"])
         ax0.set_ylim(-4.5, 2.5)
     elif -2 in hypno and -1 not in hypno:
         # Only Unscored are present
         ax0.set_yticks([2, 0, -1, -2, -3, -4])
-        ax0.set_yticklabels(['Uns', 'W', 'R', 'N1', 'N2', 'N3'])
+        ax0.set_yticklabels(["Uns", "W", "R", "N1", "N2", "N3"])
         ax0.set_ylim(-4.5, 2.5)
     elif -2 not in hypno and -1 in hypno:
         # Only Artefacts are present
         ax0.set_yticks([1, 0, -1, -2, -3, -4])
-        ax0.set_yticklabels(['Art', 'W', 'R', 'N1', 'N2', 'N3'])
+        ax0.set_yticklabels(["Art", "W", "R", "N1", "N2", "N3"])
         ax0.set_ylim(-4.5, 1.5)
     else:
         # No artefacts or Unscored
         ax0.set_yticks([0, -1, -2, -3, -4])
-        ax0.set_yticklabels(['W', 'R', 'N1', 'N2', 'N3'])
+        ax0.set_yticklabels(["W", "R", "N1", "N2", "N3"])
         ax0.set_ylim(-4.5, 0.5)
     ax0.set_xlim(0, t_hyp.max())
-    ax0.set_ylabel('Stage')
-    ax0.set_xlabel('Time [hrs]')
-    ax0.spines['right'].set_visible(False)
-    ax0.spines['top'].set_visible(False)
+    ax0.set_ylabel("Stage")
+    ax0.set_xlabel("Time [hrs]")
+    ax0.spines["right"].set_visible(False)
+    ax0.spines["top"].set_visible(False)
     # Revert font-size
-    plt.rcParams.update({'font.size': old_fontsize})
+    plt.rcParams.update({"font.size": old_fontsize})
     return ax0
+
 
 def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
                      trimperc=2.5, cmap='RdBu_r', vmin = None, vmax = None):
@@ -202,8 +203,8 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
         >>> fig = yasa.plot_spectrogram(data, sf, hypno, cmap='Spectral_r')
     """
     # Increase font size while preserving original
-    old_fontsize = plt.rcParams['font.size']
-    plt.rcParams.update({'font.size': 18})
+    old_fontsize = plt.rcParams["font.size"]
+    plt.rcParams.update({"font.size": 18})
 
     # Safety checks
     assert isinstance(data, np.ndarray), 'Data must be a 1D NumPy array.'
@@ -221,10 +222,9 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
     if vmax is not None:
       assert isinstance(vmin, (int, float)), 'vmin must be int or float if vmax is provided'
 
-
     # Calculate multi-taper spectrogram
     nperseg = int(win_sec * sf)
-    assert data.size > 2 * nperseg, 'Data length must be at least 2 * win_sec.'
+    assert data.size > 2 * nperseg, "Data length must be at least 2 * win_sec."
     f, t, Sxx = spectrogram_lspopt(data, sf, nperseg=nperseg, noverlap=0)
     Sxx = 10 * np.log10(Sxx)  # Convert uV^2 / Hz --> dB / Hz
 
@@ -245,70 +245,84 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
         fig, ax = plt.subplots(nrows=1, figsize=(12, 4))
         im = ax.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True, shading="auto")
         ax.set_xlim(0, t.max())
-        ax.set_ylabel('Frequency [Hz]')
-        ax.set_xlabel('Time [hrs]')
+        ax.set_ylabel("Frequency [Hz]")
+        ax.set_xlabel("Time [hrs]")
 
         # Add colorbar
         cbar = fig.colorbar(im, ax=ax, shrink=0.95, fraction=0.1, aspect=25)
-        cbar.ax.set_ylabel('Log Power (dB / Hz)', rotation=270, labelpad=20)
+        cbar.ax.set_ylabel("Log Power (dB / Hz)", rotation=270, labelpad=20)
         return fig
     else:
         hypno = np.asarray(hypno).astype(int)
-        assert hypno.ndim == 1, 'Hypno must be 1D.'
-        assert hypno.size == data.size, 'Hypno must have the same sf as data.'
+        assert hypno.ndim == 1, "Hypno must be 1D."
+        assert hypno.size == data.size, "Hypno must have the same sf as data."
         t_hyp = np.arange(hypno.size) / (sf * 3600)
         # Make sure that REM is displayed after Wake
         hypno = pd.Series(hypno).map({-2: -2, -1: -1, 0: 0, 1: 2, 2: 3, 3: 4, 4: 1}).values
         hypno_rem = np.ma.masked_not_equal(hypno, 1)
 
         fig, (ax0, ax1) = plt.subplots(
-            nrows=2, figsize=(12, 6), gridspec_kw={'height_ratios': [1, 2]})
+            nrows=2, figsize=(12, 6), gridspec_kw={"height_ratios": [1, 2]}
+        )
         plt.subplots_adjust(hspace=0.1)
 
         # Hypnogram (top axis)
-        ax0.step(t_hyp, -1 * hypno, color='k')
-        ax0.step(t_hyp, -1 * hypno_rem, color='r')
+        ax0.step(t_hyp, -1 * hypno, color="k")
+        ax0.step(t_hyp, -1 * hypno_rem, color="r")
         if -2 in hypno and -1 in hypno:
             # Both Unscored and Artefacts are present
             ax0.set_yticks([2, 1, 0, -1, -2, -3, -4])
-            ax0.set_yticklabels(['Uns', 'Art', 'W', 'R', 'N1', 'N2', 'N3'])
+            ax0.set_yticklabels(["Uns", "Art", "W", "R", "N1", "N2", "N3"])
             ax0.set_ylim(-4.5, 2.5)
         elif -2 in hypno and -1 not in hypno:
             # Only Unscored are present
             ax0.set_yticks([2, 0, -1, -2, -3, -4])
-            ax0.set_yticklabels(['Uns', 'W', 'R', 'N1', 'N2', 'N3'])
+            ax0.set_yticklabels(["Uns", "W", "R", "N1", "N2", "N3"])
             ax0.set_ylim(-4.5, 2.5)
 
         elif -2 not in hypno and -1 in hypno:
             # Only Artefacts are present
             ax0.set_yticks([1, 0, -1, -2, -3, -4])
-            ax0.set_yticklabels(['Art', 'W', 'R', 'N1', 'N2', 'N3'])
+            ax0.set_yticklabels(["Art", "W", "R", "N1", "N2", "N3"])
             ax0.set_ylim(-4.5, 1.5)
         else:
             # No artefacts or Unscored
             ax0.set_yticks([0, -1, -2, -3, -4])
-            ax0.set_yticklabels(['W', 'R', 'N1', 'N2', 'N3'])
+            ax0.set_yticklabels(["W", "R", "N1", "N2", "N3"])
             ax0.set_ylim(-4.5, 0.5)
         ax0.set_xlim(0, t_hyp.max())
-        ax0.set_ylabel('Stage')
+        ax0.set_ylabel("Stage")
         ax0.xaxis.set_visible(False)
-        ax0.spines['right'].set_visible(False)
-        ax0.spines['top'].set_visible(False)
+        ax0.spines["right"].set_visible(False)
+        ax0.spines["top"].set_visible(False)
 
         # Spectrogram (bottom axis)
         im = ax1.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True, shading="auto")
         ax1.set_xlim(0, t.max())
-        ax1.set_ylabel('Frequency [Hz]')
-        ax1.set_xlabel('Time [hrs]')
+        ax1.set_ylabel("Frequency [Hz]")
+        ax1.set_xlabel("Time [hrs]")
 
         # Revert font-size
-        plt.rcParams.update({'font.size': old_fontsize})
+        plt.rcParams.update({"font.size": old_fontsize})
         return fig
 
 
-def topoplot(data, montage="standard_1020", vmin=None, vmax=None, mask=None, title=None,
-             cmap=None, n_colors=100, cbar_title=None, cbar_ticks=None, figsize=(4, 4), dpi=80,
-             fontsize=14, **kwargs):
+def topoplot(
+    data,
+    montage="standard_1020",
+    vmin=None,
+    vmax=None,
+    mask=None,
+    title=None,
+    cmap=None,
+    n_colors=100,
+    cbar_title=None,
+    cbar_ticks=None,
+    figsize=(4, 4),
+    dpi=80,
+    fontsize=14,
+    **kwargs
+):
     """
     Topoplot.
 
@@ -384,19 +398,19 @@ def topoplot(data, montage="standard_1020", vmin=None, vmax=None, mask=None, tit
         ...                     cbar_title="Pearson correlation")
     """
     # Increase font size while preserving original
-    old_fontsize = plt.rcParams['font.size']
-    plt.rcParams.update({'font.size': fontsize})
-    plt.rcParams.update({'savefig.bbox': 'tight'})
-    plt.rcParams.update({'savefig.transparent': 'True'})
+    old_fontsize = plt.rcParams["font.size"]
+    plt.rcParams.update({"font.size": fontsize})
+    plt.rcParams.update({"savefig.bbox": "tight"})
+    plt.rcParams.update({"savefig.transparent": "True"})
 
     # Make sure we don't do any in-place modification
-    assert isinstance(data, pd.Series), 'Data must be a Pandas Series'
+    assert isinstance(data, pd.Series), "Data must be a Pandas Series"
     data = data.copy()
 
     # Add mask, if present
     if mask is not None:
-        assert isinstance(mask, pd.Series), 'mask must be a Pandas Series'
-        assert mask.dtype.kind in 'bi', "mask must be True/False or 0/1."
+        assert isinstance(mask, pd.Series), "mask must be a Pandas Series"
+        assert mask.dtype.kind in "bi", "mask must be True/False or 0/1."
     else:
         mask = pd.Series(1, index=data.index, name="mask")
 
@@ -404,11 +418,11 @@ def topoplot(data, montage="standard_1020", vmin=None, vmax=None, mask=None, tit
     data = data.to_frame().join(mask, how="left")
 
     # Preprocess channel names: C4-M1 --> C4
-    data.index = data.index.str.split('-').str.get(0)
+    data.index = data.index.str.split("-").str.get(0)
 
     # Define electrodes coordinates
-    Info = mne.create_info(data.index.tolist(), sfreq=100, ch_types='eeg')
-    Info.set_montage(montage, match_case=False, on_missing='ignore')
+    Info = mne.create_info(data.index.tolist(), sfreq=100, ch_types="eeg")
+    Info.set_montage(montage, match_case=False, on_missing="ignore")
     chan = Info.ch_names
 
     # Define vmin and vmax
@@ -420,36 +434,43 @@ def topoplot(data, montage="standard_1020", vmin=None, vmax=None, mask=None, tit
     # Choose and discretize colormap
     if cmap is None:
         if vmin < 0 and vmax <= 0:
-            cmap = 'mako'
+            cmap = "mako"
         elif vmin < 0 and vmax > 0:
-            cmap = 'Spectral_r'
+            cmap = "Spectral_r"
         elif vmin >= 0 and vmax > 0:
-            cmap = 'rocket_r'
+            cmap = "rocket_r"
 
     cmap = ListedColormap(sns.color_palette(cmap, n_colors).as_hex())
 
-    if 'sensors' not in kwargs:
-        kwargs['sensors'] = False
-    if 'res' not in kwargs:
-        kwargs['res'] = 256
-    if 'names' not in kwargs:
-        kwargs['names'] = chan
-    if 'show_names' not in kwargs:
-        kwargs['show_names'] = True
-    if 'mask_params' not in kwargs:
-        kwargs['mask_params'] = dict(marker=None)
+    if "sensors" not in kwargs:
+        kwargs["sensors"] = False
+    if "res" not in kwargs:
+        kwargs["res"] = 256
+    if "names" not in kwargs:
+        kwargs["names"] = chan
+    if "show_names" not in kwargs:
+        kwargs["show_names"] = True
+    if "mask_params" not in kwargs:
+        kwargs["mask_params"] = dict(marker=None)
 
     # Hidden feature: if names='values', show the actual values.
-    if kwargs['names'] == 'values':
-        kwargs['names'] = data.iloc[:, 0][chan].round(2).to_numpy()
+    if kwargs["names"] == "values":
+        kwargs["names"] = data.iloc[:, 0][chan].round(2).to_numpy()
 
     # Start the plot
     with sns.axes_style("white"):
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
         im, _ = mne.viz.plot_topomap(
-            data=data.iloc[:, 0][chan], pos=Info, vmin=vmin, vmax=vmax,
-            mask=data.iloc[:, 1][chan], cmap=cmap, show=False, axes=ax,
-            **kwargs)
+            data=data.iloc[:, 0][chan],
+            pos=Info,
+            vmin=vmin,
+            vmax=vmax,
+            mask=data.iloc[:, 1][chan],
+            cmap=cmap,
+            show=False,
+            axes=ax,
+            **kwargs
+        )
 
         if title is not None:
             ax.set_title(title)
@@ -463,5 +484,5 @@ def topoplot(data, montage="standard_1020", vmin=None, vmax=None, mask=None, tit
         cbar.set_label(cbar_title)
 
         # Revert font-size
-        plt.rcParams.update({'font.size': old_fontsize})
+        plt.rcParams.update({"font.size": old_fontsize})
     return fig

@@ -26,13 +26,14 @@ import scipy.signal as sp_sig
 import scipy.stats as sp_stats
 
 
-logger = logging.getLogger('yasa')
+logger = logging.getLogger("yasa")
 
-__all__ = ['compute_features_stage']
+__all__ = ["compute_features_stage"]
 
 
-def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
-                           sw_params=dict(), do_1f=True):
+def compute_features_stage(
+    raw, hypno, max_freq=35, spindles_params=dict(), sw_params=dict(), do_1f=True
+):
     """Calculate a set of features for each sleep stage from PSG data.
 
     Features are calculated for N2, N3, NREM (= N2 + N3) and REM sleep.
@@ -96,40 +97,45 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
         bands.append(tuple((b, freqs[i + 1], "%s-%s" % (b, freqs[i + 1]))))
     # Append traditional bands
     bands_classic = [
-        (0.5, 1, 'slowdelta'), (1, 4, 'fastdelta'), (0.5, 4, 'delta'),
-        (4, 8, 'theta'), (8, 12, 'alpha'), (12, 16, 'sigma'), (16, 30, 'beta'),
-        (30, max_freq, 'gamma')]
+        (0.5, 1, "slowdelta"),
+        (1, 4, "fastdelta"),
+        (0.5, 4, "delta"),
+        (4, 8, "theta"),
+        (8, 12, "alpha"),
+        (12, 16, "sigma"),
+        (16, 30, "beta"),
+        (30, max_freq, "gamma"),
+    ]
     bands = bands_classic + bands
 
     # Find min and maximum frequencies. These will be used for bandpass-filter
     # and 1/f adjustement of bandpower. l_freq = 0.5 / h_freq = 35 Hz.
-    all_freqs_sorted = np.sort(np.unique(
-        [b[0] for b in bands] + [b[1] for b in bands]))
+    all_freqs_sorted = np.sort(np.unique([b[0] for b in bands] + [b[1] for b in bands]))
     l_freq = all_freqs_sorted[0]
     h_freq = all_freqs_sorted[-1]
 
     # Mapping dictionnary integer to string for sleep stages (2 --> N2)
     stage_mapping = {
-        -2: 'Unscored',
-        -1: 'Artefact',
-        0: 'Wake',
-        1: 'N1',
-        2: 'N2',
-        3: 'N3',
-        4: 'REM',
-        6: 'NREM',
-        7: 'WN'  # Whole night = N2 + N3 + REM
+        -2: "Unscored",
+        -1: "Artefact",
+        0: "Wake",
+        1: "N1",
+        2: "N2",
+        3: "N3",
+        4: "REM",
+        6: "NREM",
+        7: "WN",  # Whole night = N2 + N3 + REM
     }
 
     # Hypnogram check + calculate NREM hypnogram
     hypno = np.asarray(hypno, dtype=int)
-    assert hypno.ndim == 1, 'Hypno must be one dimensional.'
+    assert hypno.ndim == 1, "Hypno must be one dimensional."
     unique_hypno = np.unique(hypno)
-    logger.info('Number of unique values in hypno = %i', unique_hypno.size)
+    logger.info("Number of unique values in hypno = %i", unique_hypno.size)
 
     # IMPORTANT: NREM is defined as N2 + N3, excluding N1 sleep.
     hypno_NREM = pd.Series(hypno).replace({2: 6, 3: 6}).to_numpy()
-    minutes_of_NREM = (hypno_NREM == 6).sum() / (60 * raw.info['sfreq'])
+    minutes_of_NREM = (hypno_NREM == 6).sum() / (60 * raw.info["sfreq"])
 
     # WN = Whole night = N2 + N3 + REM (excluding N1)
     hypno_WN = pd.Series(hypno).replace({2: 7, 3: 7, 4: 7}).to_numpy()
@@ -146,10 +152,10 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
     raw_eeg.drop_channels(chan_flat)
 
     # Remove suffix from channels: C4-M1 --> C4
-    chan_nosuffix = [c.split('-')[0] for c in raw_eeg.ch_names]
+    chan_nosuffix = [c.split("-")[0] for c in raw_eeg.ch_names]
     raw_eeg.rename_channels(dict(zip(raw_eeg.ch_names, chan_nosuffix)))
     # Rename P7/T5 --> P7
-    chan_noslash = [c.split('/')[0] for c in raw_eeg.ch_names]
+    chan_noslash = [c.split("/")[0] for c in raw_eeg.ch_names]
     raw_eeg.rename_channels(dict(zip(raw_eeg.ch_names, chan_noslash)))
     chan = raw_eeg.ch_names
 
@@ -159,9 +165,9 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
 
     # Extract data and sf
     data = raw_eeg.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
-    sf = raw_eeg.info['sfreq']
-    assert data.ndim == 2, 'data must be 2D (chan, times).'
-    assert hypno.size == data.shape[1], 'Hypno must have same size as data.'
+    sf = raw_eeg.info["sfreq"]
+    assert data.ndim == 2, "data must be 2D (chan, times)."
+    assert hypno.size == data.shape[1], "Hypno must have same size as data."
 
     # #########################################################################
     # 2) SPECTRAL POWER
@@ -176,10 +182,10 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
     df_bp_NREM = yasa.bandpower(raw_eeg, hypno=hypno_NREM, bands=bands, include=6)
     df_bp_WN = yasa.bandpower(raw_eeg, hypno=hypno_WN, bands=bands, include=7)
     df_bp = pd.concat([df_bp, df_bp_NREM, df_bp_WN], axis=0)
-    df_bp.drop(columns=['TotalAbsPow', 'FreqRes', 'Relative'], inplace=True)
-    df_bp = df_bp.add_prefix('bp_').reset_index()
+    df_bp.drop(columns=["TotalAbsPow", "FreqRes", "Relative"], inplace=True)
+    df_bp = df_bp.add_prefix("bp_").reset_index()
     # Replace 2 --> N2
-    df_bp['Stage'] = df_bp['Stage'].map(stage_mapping)
+    df_bp["Stage"] = df_bp["Stage"].map(stage_mapping)
     # Assert that there are no negative values (see below issue on 1/f)
     assert not (df_bp._get_numeric_data() < 0).any().any()
     df_bp.columns = df_bp.columns.str.lower()
@@ -203,26 +209,25 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
                 continue
             # Calculate aperiodic / oscillatory PSD + slope
             freqs, _, psd_osc, fit_params = yasa.irasa(
-                data_stage, sf, ch_names=chan, band=(l_freq, h_freq),
-                win_sec=4)
+                data_stage, sf, ch_names=chan, band=(l_freq, h_freq), win_sec=4
+            )
             # Make sure that we don't have any negative values in PSD
             # See https://github.com/raphaelvallat/yasa/issues/29
             psd_osc = psd_osc - psd_osc.min(axis=-1, keepdims=True)
             # Calculate bandpower
-            bp = yasa.bandpower_from_psd(psd_osc, freqs, ch_names=chan,
-                                         bands=bands)
+            bp = yasa.bandpower_from_psd(psd_osc, freqs, ch_names=chan, bands=bands)
             # Add 1/f slope to dataframe and sleep stage
-            bp['1f_slope'] = np.abs(fit_params['Slope'].to_numpy())
+            bp["1f_slope"] = np.abs(fit_params["Slope"].to_numpy())
             bp.insert(loc=0, column="Stage", value=stage_mapping[stage])
             df_bp_1f.append(bp)
 
         # Convert to a dataframe
         df_bp_1f = pd.concat(df_bp_1f)
         # Remove the TotalAbsPower column, incorrect because of negative values
-        df_bp_1f.drop(columns=['TotalAbsPow', 'FreqRes', 'Relative'],
-                      inplace=True)
-        df_bp_1f.columns = [c if c in ['Stage', 'Chan', '1f_slope']
-                            else 'bp_adj_' + c for c in df_bp_1f.columns]
+        df_bp_1f.drop(columns=["TotalAbsPow", "FreqRes", "Relative"], inplace=True)
+        df_bp_1f.columns = [
+            c if c in ["Stage", "Chan", "1f_slope"] else "bp_adj_" + c for c in df_bp_1f.columns
+        ]
         assert not (df_bp_1f._get_numeric_data() < 0).any().any()
         df_bp_1f.columns = df_bp_1f.columns.str.lower()
 
@@ -243,24 +248,25 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
     sp = yasa.spindles_detect(raw_eeg, hypno=hypno, **spindles_params)
 
     df_sp = sp.summary(grp_chan=True, grp_stage=True).reset_index()
-    df_sp['Stage'] = df_sp['Stage'].map(stage_mapping)
+    df_sp["Stage"] = df_sp["Stage"].map(stage_mapping)
 
     # Aggregate using the mean (adding NREM = N2 + N3)
     df_sp = sp.summary(grp_chan=True, grp_stage=True)
     df_sp_NREM = sp.summary(grp_chan=True).reset_index()
-    df_sp_NREM['Stage'] = 6
-    df_sp_NREM.set_index(['Stage', 'Channel'], inplace=True)
-    density_NREM = df_sp_NREM['Count'] / minutes_of_NREM
-    df_sp_NREM.insert(loc=1, column='Density', value=density_NREM.to_numpy())
+    df_sp_NREM["Stage"] = 6
+    df_sp_NREM.set_index(["Stage", "Channel"], inplace=True)
+    density_NREM = df_sp_NREM["Count"] / minutes_of_NREM
+    df_sp_NREM.insert(loc=1, column="Density", value=density_NREM.to_numpy())
     df_sp = pd.concat([df_sp, df_sp_NREM], axis=0)
-    df_sp.columns = ['sp_' + c if c in ['Count', 'Density'] else
-                     'sp_mean_' + c for c in df_sp.columns]
+    df_sp.columns = [
+        "sp_" + c if c in ["Count", "Density"] else "sp_mean_" + c for c in df_sp.columns
+    ]
 
     # Prepare to export
     df_sp.reset_index(inplace=True)
-    df_sp['Stage'] = df_sp['Stage'].map(stage_mapping)
+    df_sp["Stage"] = df_sp["Stage"].map(stage_mapping)
     df_sp.columns = df_sp.columns.str.lower()
-    df_sp.rename(columns={'channel': 'chan'}, inplace=True)
+    df_sp.rename(columns={"channel": "chan"}, inplace=True)
 
     # #########################################################################
     # 4) SLOW-WAVES DETECTION & SW-Sigma COUPLING
@@ -280,38 +286,39 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
     df_sw = sw.summary(grp_chan=True, grp_stage=True)
     # Add NREM
     df_sw_NREM = sw.summary(grp_chan=True).reset_index()
-    df_sw_NREM['Stage'] = 6
-    df_sw_NREM.set_index(['Stage', 'Channel'], inplace=True)
-    density_NREM = df_sw_NREM['Count'] / minutes_of_NREM
-    df_sw_NREM.insert(loc=1, column='Density', value=density_NREM.to_numpy())
+    df_sw_NREM["Stage"] = 6
+    df_sw_NREM.set_index(["Stage", "Channel"], inplace=True)
+    density_NREM = df_sw_NREM["Count"] / minutes_of_NREM
+    df_sw_NREM.insert(loc=1, column="Density", value=density_NREM.to_numpy())
     df_sw = pd.concat([df_sw, df_sw_NREM])
-    df_sw = df_sw[['Count', 'Density', 'Duration', 'PTP', 'Frequency', 'ndPAC']]
-    df_sw.columns = ['sw_' + c if c in ['Count', 'Density'] else
-                     'sw_mean_' + c for c in df_sw.columns]
+    df_sw = df_sw[["Count", "Density", "Duration", "PTP", "Frequency", "ndPAC"]]
+    df_sw.columns = [
+        "sw_" + c if c in ["Count", "Density"] else "sw_mean_" + c for c in df_sw.columns
+    ]
 
     # Aggregate using the coefficient of variation
     # The CV is a normalized (unitless) standard deviation. Lower
     # values mean that slow-waves are more similar to each other.
     # We keep only spefific columns of interest. Not duration because it
     # is highly correlated with frequency (r=0.99).
-    df_sw_cv = sw.summary(
-        grp_chan=True, grp_stage=True, aggfunc=sp_stats.variation
-    )[['PTP', 'Frequency', 'ndPAC']]
+    df_sw_cv = sw.summary(grp_chan=True, grp_stage=True, aggfunc=sp_stats.variation)[
+        ["PTP", "Frequency", "ndPAC"]
+    ]
 
     # Add NREM
-    df_sw_cv_NREM = sw.summary(
-        grp_chan=True, grp_stage=False, aggfunc=sp_stats.variation
-    )[['PTP', 'Frequency', 'ndPAC']].reset_index()
-    df_sw_cv_NREM['Stage'] = 6
-    df_sw_cv_NREM.set_index(['Stage', 'Channel'], inplace=True)
+    df_sw_cv_NREM = sw.summary(grp_chan=True, grp_stage=False, aggfunc=sp_stats.variation)[
+        ["PTP", "Frequency", "ndPAC"]
+    ].reset_index()
+    df_sw_cv_NREM["Stage"] = 6
+    df_sw_cv_NREM.set_index(["Stage", "Channel"], inplace=True)
     df_sw_cv = pd.concat([df_sw_cv, df_sw_cv_NREM], axis=0)
-    df_sw_cv.columns = ['sw_cv_' + c for c in df_sw_cv.columns]
+    df_sw_cv.columns = ["sw_cv_" + c for c in df_sw_cv.columns]
 
     # Combine the mean and CV into a single dataframe
     df_sw = df_sw.join(df_sw_cv).reset_index()
-    df_sw['Stage'] = df_sw['Stage'].map(stage_mapping)
+    df_sw["Stage"] = df_sw["Stage"].map(stage_mapping)
     df_sw.columns = df_sw.columns.str.lower()
-    df_sw.rename(columns={'channel': 'chan'}, inplace=True)
+    df_sw.rename(columns={"channel": "chan"}, inplace=True)
 
     # #########################################################################
     # 5) ENTROPY & FRACTAL DIMENSION
@@ -321,13 +328,18 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
 
     # Filter data in the delta band and calculate envelope for CVE
     data_delta = mne.filter.filter_data(
-        data, sfreq=sf, l_freq=0.5, h_freq=4, l_trans_bandwidth=0.2,
-        h_trans_bandwidth=0.2, verbose=False)
+        data,
+        sfreq=sf,
+        l_freq=0.5,
+        h_freq=4,
+        l_trans_bandwidth=0.2,
+        h_trans_bandwidth=0.2,
+        verbose=False,
+    )
     env_delta = np.abs(sp_sig.hilbert(data_delta))
 
     # Initialize dataframe
-    idx_ent = pd.MultiIndex.from_product(
-        [[2, 3, 4, 6, 7], chan], names=['stage', 'chan'])
+    idx_ent = pd.MultiIndex.from_product([[2, 3, 4, 6, 7], chan], names=["stage", "chan"])
     df_ent = pd.DataFrame(index=idx_ent)
 
     for stage in [2, 3, 4, 6, 7]:
@@ -356,15 +368,15 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
         # - Sample / app entropy not implemented because it is too slow to
         #   calculate.
         from numpy import apply_along_axis as aal
-        df_ent.loc[stage, 'ent_svd'] = aal(
-            ant.svd_entropy, axis=1, arr=data_stage, normalize=True)
-        df_ent.loc[stage, 'ent_perm'] = aal(
-            ant.perm_entropy, axis=1, arr=data_stage, normalize=True)
-        df_ent.loc[stage, 'ent_spec'] = ant.spectral_entropy(
-            data_stage, sf, method="welch", nperseg=(5 * int(sf)),
-            normalize=True, axis=1)
-        df_ent.loc[stage, 'ent_higuchi'] = aal(
-            ant.higuchi_fd, axis=1, arr=data_stage)
+
+        df_ent.loc[stage, "ent_svd"] = aal(ant.svd_entropy, axis=1, arr=data_stage, normalize=True)
+        df_ent.loc[stage, "ent_perm"] = aal(
+            ant.perm_entropy, axis=1, arr=data_stage, normalize=True
+        )
+        df_ent.loc[stage, "ent_spec"] = ant.spectral_entropy(
+            data_stage, sf, method="welch", nperseg=(5 * int(sf)), normalize=True, axis=1
+        )
+        df_ent.loc[stage, "ent_higuchi"] = aal(ant.higuchi_fd, axis=1, arr=data_stage)
 
         # We also add the coefficient of variation of the delta envelope
         # (CVE), a measure of "slow-wave stability".
@@ -372,22 +384,18 @@ def compute_features_stage(raw, hypno, max_freq=35, spindles_params=dict(),
         # Lower values = more stable slow-waves (= more sinusoidal)
         denom = np.sqrt(4 / np.pi - 1)  # approx 0.5227
         cve = sp_stats.variation(env_stage_delta, axis=1) / denom
-        df_ent.loc[stage, 'ent_cve_delta'] = cve
+        df_ent.loc[stage, "ent_cve_delta"] = cve
 
         # Other metrics of slow-wave (= delta) stability
-        df_ent.loc[stage, 'ent_higuchi_delta'] = aal(
-            ant.higuchi_fd, axis=1, arr=data_stage_delta)
+        df_ent.loc[stage, "ent_higuchi_delta"] = aal(ant.higuchi_fd, axis=1, arr=data_stage_delta)
 
     df_ent = df_ent.dropna(how="all").reset_index()
-    df_ent['stage'] = df_ent['stage'].map(stage_mapping)
+    df_ent["stage"] = df_ent["stage"].map(stage_mapping)
 
     # #########################################################################
     # 5) MERGE ALL DATAFRAMES
     # #########################################################################
 
-    df = (df_bp
-          .merge(df_sp, how='outer')
-          .merge(df_sw, how='outer')
-          .merge(df_ent, how='outer'))
+    df = df_bp.merge(df_sp, how="outer").merge(df_sw, how="outer").merge(df_ent, how="outer")
 
-    return df.set_index(['stage', 'chan'])
+    return df.set_index(["stage", "chan"])
