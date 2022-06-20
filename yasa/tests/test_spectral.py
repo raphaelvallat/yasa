@@ -1,5 +1,6 @@
 """Test the functions in the yasa/spectral.py file."""
 import mne
+import pytest
 import unittest
 import numpy as np
 from itertools import product
@@ -152,6 +153,7 @@ class TestSpectral(unittest.TestCase):
         """Test function plot_spectrogram"""
         plot_spectrogram(data_full[0, :], sf_full, fmin=0.5, fmax=30)
         plot_spectrogram(data_full[0, :], sf_full, hypno_full, trimperc=5)
+        plot_spectrogram(data_full[0, :], sf_full, fmin=0.5, fmax=30, vmin=-50, vmax=100)
         hypno_full_art = np.copy(hypno_full)
         hypno_full_art[hypno_full_art == 3.0] = -1
         # Replace N3 by Artefact
@@ -160,3 +162,8 @@ class TestSpectral(unittest.TestCase):
         hypno_full_art[hypno_full_art == 4.0] = -2
         plot_spectrogram(data_full[0, :], sf_full, hypno_full_art)
         plt.close("all")
+        # Errors
+        with pytest.raises(AssertionError):
+            plot_spectrogram(data_full[0, :], sf_full, fmin=0.5, fmax=30, vmin=-50)
+        with pytest.raises(AssertionError):
+            plot_spectrogram(data_full[0, :], sf_full, fmin=0.5, fmax=30, vmax=100)
