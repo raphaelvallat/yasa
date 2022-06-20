@@ -110,8 +110,18 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
     return ax0
 
 
-def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
-                     trimperc=2.5, cmap='RdBu_r', vmin = None, vmax = None):
+def plot_spectrogram(
+    data,
+    sf,
+    hypno=None,
+    win_sec=30,
+    fmin=0.5,
+    fmax=25,
+    trimperc=2.5,
+    cmap="RdBu_r",
+    vmin=None,
+    vmax=None,
+):
     """
     Plot a full-night multi-taper spectrogram, optionally with the hypnogram on top.
 
@@ -207,20 +217,20 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
     plt.rcParams.update({"font.size": 18})
 
     # Safety checks
-    assert isinstance(data, np.ndarray), 'Data must be a 1D NumPy array.'
-    assert isinstance(sf, (int, float)), 'sf must be int or float.'
-    assert data.ndim == 1, 'Data must be a 1D (single-channel) NumPy array.'
-    assert isinstance(win_sec, (int, float)), 'win_sec must be int or float.'
-    assert isinstance(fmin, (int, float)), 'fmin must be int or float.'
-    assert isinstance(fmax, (int, float)), 'fmax must be int or float.'
-    assert fmin < fmax, 'fmin must be strictly inferior to fmax.'
-    assert fmax < sf / 2, 'fmax must be less than Nyquist (sf / 2).'
-    assert isinstance(vmin, (int, float, type(None))), 'vmin must be int, float, or None.'
-    assert isinstance(vmax, (int, float, type(None))), 'vmax must be int, float, or None.'
+    assert isinstance(data, np.ndarray), "Data must be a 1D NumPy array."
+    assert isinstance(sf, (int, float)), "sf must be int or float."
+    assert data.ndim == 1, "Data must be a 1D (single-channel) NumPy array."
+    assert isinstance(win_sec, (int, float)), "win_sec must be int or float."
+    assert isinstance(fmin, (int, float)), "fmin must be int or float."
+    assert isinstance(fmax, (int, float)), "fmax must be int or float."
+    assert fmin < fmax, "fmin must be strictly inferior to fmax."
+    assert fmax < sf / 2, "fmax must be less than Nyquist (sf / 2)."
+    assert isinstance(vmin, (int, float, type(None))), "vmin must be int, float, or None."
+    assert isinstance(vmax, (int, float, type(None))), "vmax must be int, float, or None."
     if vmin is not None:
-      assert isinstance(vmax, (int, float)), 'vmax must be int or float if vmin is provided'
+        assert isinstance(vmax, (int, float)), "vmax must be int or float if vmin is provided"
     if vmax is not None:
-      assert isinstance(vmin, (int, float)), 'vmin must be int or float if vmax is provided'
+        assert isinstance(vmin, (int, float)), "vmin must be int or float if vmax is provided"
 
     # Calculate multi-taper spectrogram
     nperseg = int(win_sec * sf)
@@ -236,11 +246,11 @@ def plot_spectrogram(data, sf, hypno=None, win_sec=30, fmin=0.5, fmax=25,
 
     # Normalization
     if vmin is None:
-      vmin, vmax = np.percentile(Sxx, [0 + trimperc, 100 - trimperc])
-      norm = Normalize(vmin=vmin, vmax=vmax)
+        vmin, vmax = np.percentile(Sxx, [0 + trimperc, 100 - trimperc])
+        norm = Normalize(vmin=vmin, vmax=vmax)
     else:
-      norm = Normalize(vmin=vmin, vmax=vmax)
-      
+        norm = Normalize(vmin=vmin, vmax=vmax)
+
     if hypno is None:
         fig, ax = plt.subplots(nrows=1, figsize=(12, 4))
         im = ax.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True, shading="auto")
