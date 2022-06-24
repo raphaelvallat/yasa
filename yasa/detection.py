@@ -20,11 +20,17 @@ from sklearn.ensemble import IsolationForest
 from .spectral import stft_power
 from .numba import _detrend, _rms
 from .io import set_log_level, is_tensorpac_installed, is_pyriemann_installed
-from .others import (moving_transform, trimbothstd, get_centered_indices,
-                     sliding_window, _merge_close, _zerocrossings)
+from .others import (
+    moving_transform,
+    trimbothstd,
+    get_centered_indices,
+    sliding_window,
+    _merge_close,
+    _zerocrossings,
+)
 
 
-logger = logging.getLogger('yasa')
+logger = logging.getLogger("yasa")
 
 __all__ = ['art_detect', 'spindles_detect', 'SpindlesResults', 'sw_detect', 'SWResults',
            'rem_detect', 'REMResults', 'compare_detection']
@@ -34,20 +40,21 @@ __all__ = ['art_detect', 'spindles_detect', 'SpindlesResults', 'sw_detect', 'SWR
 # DATA PREPROCESSING
 #############################################################################
 
+
 def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, check_amp=True):
     """Helper functions for preprocessing of data and hypnogram."""
     # 1) Extract data as a 2D NumPy array
     if isinstance(data, mne.io.BaseRaw):
-        sf = data.info['sfreq']  # Extract sampling frequency
+        sf = data.info["sfreq"]  # Extract sampling frequency
         ch_names = data.ch_names  # Extract channel names
         data = data.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
     else:
-        assert sf is not None, 'sf must be specified if not using MNE Raw.'
+        assert sf is not None, "sf must be specified if not using MNE Raw."
         if isinstance(sf, np.ndarray):  # Deal with sf = array(100.) --> 100
             sf = float(sf)
         assert isinstance(sf, (int, float)), "sf must be int or float."
     data = np.asarray(data, dtype=np.float64)
-    assert data.ndim in [1, 2], 'data must be 1D (times) or 2D (chan, times).'
+    assert data.ndim in [1, 2], "data must be 1D (times) or 2D (chan, times)."
     if data.ndim == 1:
         # Force to 2D array: (n_chan, n_samples)
         data = data[None, ...]
@@ -55,40 +62,41 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
 
     # 2) Check channel names
     if ch_names is None:
-        ch_names = ['CHAN' + str(i).zfill(3) for i in range(n_chan)]
+        ch_names = ["CHAN" + str(i).zfill(3) for i in range(n_chan)]
     else:
         assert len(ch_names) == n_chan
 
     # 3) Check hypnogram
     if hypno is not None:
         hypno = np.asarray(hypno, dtype=int)
-        assert hypno.ndim == 1, 'Hypno must be one dimensional.'
-        assert hypno.size == n_samples, 'Hypno must have same size as data.'
+        assert hypno.ndim == 1, "Hypno must be one dimensional."
+        assert hypno.size == n_samples, "Hypno must have same size as data."
         unique_hypno = np.unique(hypno)
-        logger.info('Number of unique values in hypno = %i', unique_hypno.size)
-        assert include is not None, 'include cannot be None if hypno is given'
+        logger.info("Number of unique values in hypno = %i", unique_hypno.size)
+        assert include is not None, "include cannot be None if hypno is given"
         include = np.atleast_1d(np.asarray(include))
-        assert include.size >= 1, '`include` must have at least one element.'
-        assert hypno.dtype.kind == include.dtype.kind, ('hypno and include must have same dtype')
-        assert np.in1d(hypno, include).any(), ('None of the stages specified '
-                                               'in `include` are present in '
-                                               'hypno.')
+        assert include.size >= 1, "`include` must have at least one element."
+        assert hypno.dtype.kind == include.dtype.kind, "hypno and include must have same dtype"
+        assert np.in1d(hypno, include).any(), (
+            "None of the stages specified " "in `include` are present in " "hypno."
+        )
 
     # 4) Check data amplitude
-    logger.info('Number of samples in data = %i', n_samples)
-    logger.info('Sampling frequency = %.2f Hz', sf)
-    logger.info('Data duration = %.2f seconds', n_samples / sf)
+    logger.info("Number of samples in data = %i", n_samples)
+    logger.info("Sampling frequency = %.2f Hz", sf)
+    logger.info("Data duration = %.2f seconds", n_samples / sf)
     all_ptp = np.ptp(data, axis=-1)
     all_trimstd = trimbothstd(data, cut=0.05)
     bad_chan = np.zeros(n_chan, dtype=bool)
     for i in range(n_chan):
-        logger.info('Trimmed standard deviation of %s = %.4f uV' % (ch_names[i], all_trimstd[i]))
-        logger.info('Peak-to-peak amplitude of %s = %.4f uV' % (ch_names[i], all_ptp[i]))
-        if check_amp and not(0.1 < all_trimstd[i] < 1e3):
-            logger.error('Wrong data amplitude for %s '
-                         '(trimmed STD = %.3f). Unit of data MUST be uV! '
-                         'Channel will be skipped.'
-                         % (ch_names[i], all_trimstd[i]))
+        logger.info("Trimmed standard deviation of %s = %.4f uV" % (ch_names[i], all_trimstd[i]))
+        logger.info("Peak-to-peak amplitude of %s = %.4f uV" % (ch_names[i], all_ptp[i]))
+        if check_amp and not (0.1 < all_trimstd[i] < 1e3):
+            logger.error(
+                "Wrong data amplitude for %s "
+                "(trimmed STD = %.3f). Unit of data MUST be uV! "
+                "Channel will be skipped." % (ch_names[i], all_trimstd[i])
+            )
             bad_chan[i] = True
 
     # 5) Create sleep stage vector mask
@@ -128,50 +136,56 @@ class _DetectionResults(object):
             assert mask.size == n_events, "Mask.size must be the number of detected events."
         return mask
 
-    def summary(self, event_type, grp_chan=False, grp_stage=False, aggfunc='mean', sort=True,
-                mask=None):
+    def summary(
+        self, event_type, grp_chan=False, grp_stage=False, aggfunc="mean", sort=True, mask=None
+    ):
         """Summary"""
         # Check masking
         mask = self._check_mask(mask)
 
         # Define grouping
         grouper = []
-        if grp_stage is True and 'Stage' in self._events:
-            grouper.append('Stage')
-        if grp_chan is True and 'Channel' in self._events:
-            grouper.append('Channel')
+        if grp_stage is True and "Stage" in self._events:
+            grouper.append("Stage")
+        if grp_chan is True and "Channel" in self._events:
+            grouper.append("Channel")
         if not len(grouper):
             # Return a copy of self._events after masking, without grouping
             return self._events.loc[mask, :].copy()
 
-        if event_type == 'spindles':
-            aggdict = {'Start': 'count',
-                       'Duration': aggfunc,
-                       'Amplitude': aggfunc,
-                       'RMS': aggfunc,
-                       'AbsPower': aggfunc,
-                       'RelPower': aggfunc,
-                       'Frequency': aggfunc,
-                       'Oscillations': aggfunc,
-                       'Symmetry': aggfunc}
+        if event_type == "spindles":
+            aggdict = {
+                "Start": "count",
+                "Duration": aggfunc,
+                "Amplitude": aggfunc,
+                "RMS": aggfunc,
+                "AbsPower": aggfunc,
+                "RelPower": aggfunc,
+                "Frequency": aggfunc,
+                "Oscillations": aggfunc,
+                "Symmetry": aggfunc,
+            }
 
             # if 'SOPhase' in self._events:
             #     from scipy.stats import circmean
             #     aggdict['SOPhase'] = lambda x: circmean(x, low=-np.pi, high=np.pi)
 
-        elif event_type == 'sw':
-            aggdict = {'Start': 'count',
-                       'Duration': aggfunc,
-                       'ValNegPeak': aggfunc,
-                       'ValPosPeak': aggfunc,
-                       'PTP': aggfunc,
-                       'Slope': aggfunc,
-                       'Frequency': aggfunc}
+        elif event_type == "sw":
+            aggdict = {
+                "Start": "count",
+                "Duration": aggfunc,
+                "ValNegPeak": aggfunc,
+                "ValPosPeak": aggfunc,
+                "PTP": aggfunc,
+                "Slope": aggfunc,
+                "Frequency": aggfunc,
+            }
 
-            if 'PhaseAtSigmaPeak' in self._events:
+            if "PhaseAtSigmaPeak" in self._events:
                 from scipy.stats import circmean
-                aggdict['PhaseAtSigmaPeak'] = lambda x: circmean(x, low=-np.pi, high=np.pi)
-                aggdict['ndPAC'] = aggfunc
+
+                aggdict["PhaseAtSigmaPeak"] = lambda x: circmean(x, low=-np.pi, high=np.pi)
+                aggdict["ndPAC"] = aggfunc
 
             if "CooccurringSpindle" in self._events:
                 # We do not average "CooccurringSpindlePeak"
@@ -179,22 +193,24 @@ class _DetectionResults(object):
                 aggdict["DistanceSpindleToSW"] = aggfunc
 
         else:  # REM
-            aggdict = {'Start': 'count',
-                       'Duration': aggfunc,
-                       'LOCAbsValPeak': aggfunc,
-                       'ROCAbsValPeak': aggfunc,
-                       'LOCAbsRiseSlope': aggfunc,
-                       'ROCAbsRiseSlope': aggfunc,
-                       'LOCAbsFallSlope': aggfunc,
-                       'ROCAbsFallSlope': aggfunc}
+            aggdict = {
+                "Start": "count",
+                "Duration": aggfunc,
+                "LOCAbsValPeak": aggfunc,
+                "ROCAbsValPeak": aggfunc,
+                "LOCAbsRiseSlope": aggfunc,
+                "ROCAbsRiseSlope": aggfunc,
+                "LOCAbsFallSlope": aggfunc,
+                "ROCAbsFallSlope": aggfunc,
+            }
 
         # Apply grouping, after masking
         df_grp = self._events.loc[mask, :].groupby(grouper, sort=sort, as_index=False).agg(aggdict)
-        df_grp = df_grp.rename(columns={'Start': 'Count'})
+        df_grp = df_grp.rename(columns={"Start": "Count"})
 
         # Calculate density (= number per min of each stage)
         if self._hypno is not None and grp_stage is True:
-            stages = np.unique(self._events['Stage'])
+            stages = np.unique(self._events["Stage"])
             dur = {}
             for st in stages:
                 # Get duration in minutes of each stage present in dataframe
@@ -202,37 +218,42 @@ class _DetectionResults(object):
 
             # Insert new density column in grouped dataframe after count
             df_grp.insert(
-                loc=df_grp.columns.get_loc('Count') + 1, column='Density',
-                value=df_grp.apply(lambda rw: rw['Count'] / dur[rw['Stage']], axis=1))
+                loc=df_grp.columns.get_loc("Count") + 1,
+                column="Density",
+                value=df_grp.apply(lambda rw: rw["Count"] / dur[rw["Stage"]], axis=1),
+            )
 
         return df_grp.set_index(grouper)
 
     def get_mask(self):
         """get_mask"""
         from yasa.others import _index_to_events
+
         mask = np.zeros(self._data.shape, dtype=int)
-        for i in self._events['IdxChannel'].unique():
-            ev_chan = self._events[self._events['IdxChannel'] == i]
-            idx_ev = _index_to_events(
-                ev_chan[['Start', 'End']].to_numpy() * self._sf)
+        for i in self._events["IdxChannel"].unique():
+            ev_chan = self._events[self._events["IdxChannel"] == i]
+            idx_ev = _index_to_events(ev_chan[["Start", "End"]].to_numpy() * self._sf)
             mask[i, idx_ev] = 1
         return np.squeeze(mask)
 
-    def get_sync_events(self, center, time_before, time_after, filt=(None, None), mask=None,
-                        as_dataframe=True):
+    def get_sync_events(
+        self, center, time_before, time_after, filt=(None, None), mask=None, as_dataframe=True
+    ):
         """Get_sync_events (not for REM, spindles & SW only)"""
         from yasa.others import get_centered_indices
+
         assert time_before >= 0
         assert time_after >= 0
         bef = int(self._sf * time_before)
         aft = int(self._sf * time_after)
         # TODO: Step size is determined by sf: 0.01 sec at 100 Hz, 0.002 sec at
         # 500 Hz, 0.00390625 sec at 256 Hz. Should we add resample=100 (Hz) or step_size=0.01?
-        time = np.arange(-bef, aft + 1, dtype='int') / self._sf
+        time = np.arange(-bef, aft + 1, dtype="int") / self._sf
 
         if any(filt):
             data = mne.filter.filter_data(
-                self._data, self._sf, l_freq=filt[0], h_freq=filt[1], method='fir', verbose=False)
+                self._data, self._sf, l_freq=filt[0], h_freq=filt[1], method="fir", verbose=False
+            )
         else:
             data = self._data
 
@@ -242,18 +263,19 @@ class _DetectionResults(object):
 
         output = []
 
-        for i in masked_events['IdxChannel'].unique():
+        for i in masked_events["IdxChannel"].unique():
             # Copy is required to merge with the stage later on
-            ev_chan = masked_events[masked_events['IdxChannel'] == i].copy()
-            ev_chan['Event'] = np.arange(ev_chan.shape[0])
+            ev_chan = masked_events[masked_events["IdxChannel"] == i].copy()
+            ev_chan["Event"] = np.arange(ev_chan.shape[0])
             peaks = (ev_chan[center] * self._sf).astype(int).to_numpy()
             # Get centered indices
             idx, idx_valid = get_centered_indices(data[i, :], peaks, bef, aft)
             # If no good epochs are returned raise a warning
             if len(idx_valid) == 0:
                 logger.error(
-                    'Time before and/or time after exceed data bounds, please '
-                    'lower the temporal window around center. Skipping channel.')
+                    "Time before and/or time after exceed data bounds, please "
+                    "lower the temporal window around center. Skipping channel."
+                )
                 continue
 
             # Get data at indices and time vector
@@ -266,15 +288,15 @@ class _DetectionResults(object):
 
             # Convert to long-format dataframe
             df_chan = pd.DataFrame(amps.T)
-            df_chan['Time'] = time
+            df_chan["Time"] = time
             # Convert to long-format
-            df_chan = df_chan.melt(id_vars='Time', var_name='Event', value_name='Amplitude')
+            df_chan = df_chan.melt(id_vars="Time", var_name="Event", value_name="Amplitude")
             # Append stage
-            if 'Stage' in masked_events:
-                df_chan = df_chan.merge(ev_chan[['Event', 'Stage']].iloc[idx_valid])
+            if "Stage" in masked_events:
+                df_chan = df_chan.merge(ev_chan[["Event", "Stage"]].iloc[idx_valid])
             # Append channel name
-            df_chan['Channel'] = ev_chan['Channel'].iloc[0]
-            df_chan['IdxChannel'] = i
+            df_chan["Channel"] = ev_chan["Channel"].iloc[0]
+            df_chan["IdxChannel"] = i
             # Append to master dataframe
             output.append(df_chan)
 
@@ -296,7 +318,7 @@ class _DetectionResults(object):
             coincidence = (x * y).sum()
             if scaled:
                 # Handle division by zero error
-                denom = (x.sum() * y.sum())
+                denom = x.sum() * y.sum()
                 if denom == 0:
                     coincidence = np.nan
                 else:
@@ -418,25 +440,26 @@ class _DetectionResults(object):
         import seaborn as sns
         import matplotlib.pyplot as plt
 
-        df_sync = self.get_sync_events(center=center, time_before=time_before,
-                                       time_after=time_after, filt=filt, mask=mask)
+        df_sync = self.get_sync_events(
+            center=center, time_before=time_before, time_after=time_after, filt=filt, mask=mask
+        )
         assert not df_sync.empty, "Could not calculate event-locked data."
-        assert hue in ['Stage', 'Channel'], "hue must be 'Channel' or 'Stage'"
+        assert hue in ["Stage", "Channel"], "hue must be 'Channel' or 'Stage'"
         assert hue in df_sync.columns, "%s is not present in data." % hue
 
-        if event_type == 'spindles':
+        if event_type == "spindles":
             title = "Average spindle"
         else:  # "sw":
             title = "Average SW"
 
         # Start figure
         fig, ax = plt.subplots(1, 1, figsize=figsize)
-        sns.lineplot(data=df_sync, x='Time', y='Amplitude', hue=hue, ax=ax, **kwargs)
+        sns.lineplot(data=df_sync, x="Time", y="Amplitude", hue=hue, ax=ax, **kwargs)
         # ax.legend(frameon=False, loc='lower right')
-        ax.set_xlim(df_sync['Time'].min(), df_sync['Time'].max())
+        ax.set_xlim(df_sync["Time"].min(), df_sync["Time"].max())
         ax.set_title(title)
-        ax.set_xlabel('Time (sec)')
-        ax.set_ylabel('Amplitude (uV)')
+        ax.set_xlabel("Time (sec)")
+        ax.set_ylabel("Amplitude (uV)")
         return ax
 
     def plot_detection(self):
@@ -462,19 +485,15 @@ class _DetectionResults(object):
 
         # Plot
         fig, ax = plt.subplots(figsize=(12, 4))
-        plt.plot(times[xrng], self._data[0, xrng], 'k', lw=1)
-        plt.plot(times[xrng], highlight[0, xrng], 'indianred')
-        plt.xlabel('Time (seconds)')
-        plt.ylabel('Amplitude (uV)')
+        plt.plot(times[xrng], self._data[0, xrng], "k", lw=1)
+        plt.plot(times[xrng], highlight[0, xrng], "indianred")
+        plt.xlabel("Time (seconds)")
+        plt.ylabel("Amplitude (uV)")
         fig.canvas.header_visible = False
         fig.tight_layout()
 
         # WIDGETS
-        layout = ipy.Layout(
-            width="50%",
-            justify_content='center',
-            align_items='center'
-        )
+        layout = ipy.Layout(width="50%", justify_content="center", align_items="center")
 
         sl_ep = ipy.IntSlider(
             min=0,
@@ -491,24 +510,23 @@ class _DetectionResults(object):
             step=25,
             value=150,
             layout=layout,
-            orientation='horizontal',
-            description="Amplitude:"
+            orientation="horizontal",
+            description="Amplitude:",
         )
 
         dd_ch = ipy.Dropdown(
-            options=self._ch_names, value=self._ch_names[0],
-            description='Channel:'
+            options=self._ch_names, value=self._ch_names[0], description="Channel:"
         )
 
         dd_win = ipy.Dropdown(
             options=[1, 5, 10, 30, 60],
             value=win_size,
-            description='Window size:',
+            description="Window size:",
         )
 
         dd_check = ipy.Checkbox(
             value=False,
-            description='Filtered',
+            description="Filtered",
         )
 
         def update(epoch, amplitude, channel, win_size, filt):
@@ -528,8 +546,9 @@ class _DetectionResults(object):
                 pass
             ax.set_ylim([-amplitude, amplitude])
 
-        return ipy.interact(update, epoch=sl_ep, amplitude=sl_amp,
-                            channel=dd_ch, win_size=dd_win, filt=dd_check)
+        return ipy.interact(
+            update, epoch=sl_ep, amplitude=sl_amp, channel=dd_ch, win_size=dd_win, filt=dd_check
+        )
 
 
 #############################################################################
@@ -537,11 +556,21 @@ class _DetectionResults(object):
 #############################################################################
 
 
-def spindles_detect(data, sf=None, ch_names=None, hypno=None,
-                    include=(1, 2, 3), freq_sp=(12, 15), freq_broad=(1, 30),
-                    duration=(0.5, 2), min_distance=500,
-                    thresh={'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5},
-                    multi_only=False, remove_outliers=False, verbose=False):
+def spindles_detect(
+    data,
+    sf=None,
+    ch_names=None,
+    hypno=None,
+    include=(1, 2, 3),
+    freq_sp=(12, 15),
+    freq_broad=(1, 30),
+    duration=(0.5, 2),
+    min_distance=500,
+    thresh={"rel_pow": 0.2, "corr": 0.65, "rms": 1.5},
+    multi_only=False,
+    remove_outliers=False,
+    verbose=False,
+):
     """Spindles detection.
 
     Parameters
@@ -714,44 +743,52 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
     """
     set_log_level(verbose)
 
-    (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan
-     ) = _check_data_hypno(data, sf, ch_names, hypno, include)
+    (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan) = _check_data_hypno(
+        data, sf, ch_names, hypno, include
+    )
 
     # If all channels are bad
     if sum(bad_chan) == n_chan:
-        logger.warning('All channels have bad amplitude. Returning None.')
+        logger.warning("All channels have bad amplitude. Returning None.")
         return None
 
     # Check detection thresholds
-    if 'rel_pow' not in thresh.keys():
-        thresh['rel_pow'] = 0.20
-    if 'corr' not in thresh.keys():
-        thresh['corr'] = 0.65
-    if 'rms' not in thresh.keys():
-        thresh['rms'] = 1.5
-    do_rel_pow = thresh['rel_pow'] not in [None, "none", "None"]
-    do_corr = thresh['corr'] not in [None, "none", "None"]
-    do_rms = thresh['rms'] not in [None, "none", "None"]
+    if "rel_pow" not in thresh.keys():
+        thresh["rel_pow"] = 0.20
+    if "corr" not in thresh.keys():
+        thresh["corr"] = 0.65
+    if "rms" not in thresh.keys():
+        thresh["rms"] = 1.5
+    do_rel_pow = thresh["rel_pow"] not in [None, "none", "None"]
+    do_corr = thresh["corr"] not in [None, "none", "None"]
+    do_rms = thresh["rms"] not in [None, "none", "None"]
     n_thresh = sum([do_rel_pow, do_corr, do_rms])
-    assert n_thresh >= 1, 'At least one threshold must be defined.'
+    assert n_thresh >= 1, "At least one threshold must be defined."
 
     # Filtering
     nfast = next_fast_len(n_samples)
     # 1) Broadband bandpass filter (optional -- careful of lower freq for PAC)
-    data_broad = filter_data(data, sf, freq_broad[0], freq_broad[1], method='fir', verbose=0)
+    data_broad = filter_data(data, sf, freq_broad[0], freq_broad[1], method="fir", verbose=0)
     # 2) Sigma bandpass filter
     # The width of the transition band is set to 1.5 Hz on each side,
     # meaning that for freq_sp = (12, 15 Hz), the -6 dB points are located at
     # 11.25 and 15.75 Hz.
     data_sigma = filter_data(
-        data, sf, freq_sp[0], freq_sp[1], l_trans_bandwidth=1.5, h_trans_bandwidth=1.5,
-        method='fir', verbose=0)
+        data,
+        sf,
+        freq_sp[0],
+        freq_sp[1],
+        l_trans_bandwidth=1.5,
+        h_trans_bandwidth=1.5,
+        method="fir",
+        verbose=0,
+    )
 
     # Hilbert power (to define the instantaneous frequency / power)
     analytic = signal.hilbert(data_sigma, N=nfast)[:, :n_samples]
     inst_phase = np.angle(analytic)
     inst_pow = np.square(np.abs(analytic))
-    inst_freq = (sf / (2 * np.pi) * np.diff(inst_phase, axis=-1))
+    inst_freq = sf / (2 * np.pi) * np.diff(inst_phase, axis=-1)
 
     # Extract the SO signal for coupling
     # if coupling:
@@ -780,7 +817,8 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         # Note that even if the threshold is None we still need to calculate it
         # for the individual spindles parameter (RelPow).
         f, t, Sxx = stft_power(
-            data_broad[i, :], sf, window=2, step=.2, band=freq_broad, interp=False, norm=True)
+            data_broad[i, :], sf, window=2, step=0.2, band=freq_broad, interp=False, norm=True
+        )
         idx_sigma = np.logical_and(f >= freq_sp[0], f <= freq_sp[1])
         rel_pow = Sxx[idx_sigma].sum(0)
 
@@ -788,39 +826,47 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         # Note that we could also have use the `interp=True` in the
         # `stft_power` function, however 2D interpolation is much slower than
         # 1D interpolation.
-        func = interp1d(t, rel_pow, kind='cubic', bounds_error=False, fill_value=0)
+        func = interp1d(t, rel_pow, kind="cubic", bounds_error=False, fill_value=0)
         t = np.arange(n_samples) / sf
         rel_pow = func(t)
 
         if do_corr:
-            _, mcorr = moving_transform(x=data_sigma[i, :], y=data_broad[i, :], sf=sf, window=.3,
-                                        step=.1, method='corr', interp=True)
+            _, mcorr = moving_transform(
+                x=data_sigma[i, :],
+                y=data_broad[i, :],
+                sf=sf,
+                window=0.3,
+                step=0.1,
+                method="corr",
+                interp=True,
+            )
         if do_rms:
-            _, mrms = moving_transform(x=data_sigma[i, :], sf=sf, window=.3, step=.1, method='rms',
-                                       interp=True)
+            _, mrms = moving_transform(
+                x=data_sigma[i, :], sf=sf, window=0.3, step=0.1, method="rms", interp=True
+            )
             # Let's define the thresholds
             if hypno is None:
-                thresh_rms = mrms.mean() + thresh['rms'] * trimbothstd(mrms, cut=0.10)
+                thresh_rms = mrms.mean() + thresh["rms"] * trimbothstd(mrms, cut=0.10)
             else:
-                thresh_rms = mrms[mask].mean() + thresh['rms'] * trimbothstd(mrms[mask], cut=0.10)
+                thresh_rms = mrms[mask].mean() + thresh["rms"] * trimbothstd(mrms[mask], cut=0.10)
             # Avoid too high threshold caused by Artefacts / Motion during Wake
             thresh_rms = min(thresh_rms, 10)
-            logger.info('Moving RMS threshold = %.3f', thresh_rms)
+            logger.info("Moving RMS threshold = %.3f", thresh_rms)
 
         # Boolean vector of supra-threshold indices
         idx_sum = np.zeros(n_samples)
         if do_rel_pow:
-            idx_rel_pow = (rel_pow >= thresh['rel_pow']).astype(int)
+            idx_rel_pow = (rel_pow >= thresh["rel_pow"]).astype(int)
             idx_sum += idx_rel_pow
-            logger.info('N supra-theshold relative power = %i', idx_rel_pow.sum())
+            logger.info("N supra-theshold relative power = %i", idx_rel_pow.sum())
         if do_corr:
-            idx_mcorr = (mcorr >= thresh['corr']).astype(int)
+            idx_mcorr = (mcorr >= thresh["corr"]).astype(int)
             idx_sum += idx_mcorr
-            logger.info('N supra-theshold moving corr = %i', idx_mcorr.sum())
+            logger.info("N supra-theshold moving corr = %i", idx_mcorr.sum())
         if do_rms:
             idx_mrms = (mrms >= thresh_rms).astype(int)
             idx_sum += idx_mrms
-            logger.info('N supra-theshold moving RMS = %i', idx_mrms.sum())
+            logger.info("N supra-theshold moving RMS = %i", idx_mrms.sum())
 
         # Make sure that we do not detect spindles outside mask
         if hypno is not None:
@@ -833,7 +879,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
         # Sampling frequecy = 256 Hz --> w = 25 samples = 97 ms
         w = int(0.1 * sf)
         # Critical bugfix March 2022, see https://github.com/raphaelvallat/yasa/pull/55
-        idx_sum = np.convolve(idx_sum, np.ones(w), mode='same') / w
+        idx_sum = np.convolve(idx_sum, np.ones(w), mode="same") / w
         # And we then find indices that are strictly greater than 2, i.e. we
         # find the 'true' beginning and 'true' end of the events by finding
         # where at least two out of the three treshold were crossed.
@@ -841,7 +887,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
 
         # If no events are found, skip to next channel
         if not len(where_sp):
-            logger.warning('No spindle were found in channel %s.', ch_names[i])
+            logger.warning("No spindle were found in channel %s.", ch_names[i])
             continue
 
         # Merge events that are too close
@@ -859,7 +905,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
 
         # If no events of good duration are found, skip to next channel
         if all(~good_dur):
-            logger.warning('No spindle were found in channel %s.', ch_names[i])
+            logger.warning("No spindle were found in channel %s.", ch_names[i])
             continue
 
         # Initialize empty variables
@@ -896,7 +942,8 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
 
             # Number of oscillations
             peaks, peaks_params = signal.find_peaks(
-                sp_det, distance=distance, prominence=(None, None))
+                sp_det, distance=distance, prominence=(None, None)
+            )
             sp_osc[j] = len(peaks)
 
             # For frequency and amplitude, we can also optionally use these
@@ -907,7 +954,7 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
 
             # Peak location & symmetry index
             # pk is expressed in sample since the beginning of the spindle
-            pk = peaks[peaks_params['prominences'].argmax()]
+            pk = peaks[peaks_params["prominences"].argmax()]
             sp_pro[j] = sp_start[j] + pk / sf
             sp_sym[j] = pk / sp_det.size
 
@@ -920,70 +967,82 @@ def spindles_detect(data, sf=None, ch_names=None, hypno=None,
                 sp_sta[j] = hypno[sp[j]][0]
 
         # Create a dataframe
-        sp_params = {'Start': sp_start,
-                     'Peak': sp_pro,
-                     'End': sp_end,
-                     'Duration': sp_dur,
-                     'Amplitude': sp_amp,
-                     'RMS': sp_rms,
-                     'AbsPower': sp_abs,
-                     'RelPower': sp_rel,
-                     'Frequency': sp_freq,
-                     'Oscillations': sp_osc,
-                     'Symmetry': sp_sym,
-                     # 'SOPhase': sp_cou,
-                     'Stage': sp_sta}
+        sp_params = {
+            "Start": sp_start,
+            "Peak": sp_pro,
+            "End": sp_end,
+            "Duration": sp_dur,
+            "Amplitude": sp_amp,
+            "RMS": sp_rms,
+            "AbsPower": sp_abs,
+            "RelPower": sp_rel,
+            "Frequency": sp_freq,
+            "Oscillations": sp_osc,
+            "Symmetry": sp_sym,
+            # 'SOPhase': sp_cou,
+            "Stage": sp_sta,
+        }
 
         df_chan = pd.DataFrame(sp_params)[good_dur]
 
         # We need at least 50 detected spindles to apply the Isolation Forest.
         if remove_outliers and df_chan.shape[0] >= 50:
-            col_keep = ['Duration', 'Amplitude', 'RMS', 'AbsPower', 'RelPower',
-                        'Frequency', 'Oscillations', 'Symmetry']
+            col_keep = [
+                "Duration",
+                "Amplitude",
+                "RMS",
+                "AbsPower",
+                "RelPower",
+                "Frequency",
+                "Oscillations",
+                "Symmetry",
+            ]
             ilf = IsolationForest(
-                contamination='auto', max_samples='auto', verbose=0, random_state=42)
+                contamination="auto", max_samples="auto", verbose=0, random_state=42
+            )
             good = ilf.fit_predict(df_chan[col_keep])
             good[good == -1] = 0
-            logger.info('%i outliers were removed in channel %s.'
-                        % ((good == 0).sum(), ch_names[i]))
+            logger.info(
+                "%i outliers were removed in channel %s." % ((good == 0).sum(), ch_names[i])
+            )
             # Remove outliers from DataFrame
             df_chan = df_chan[good.astype(bool)]
-            logger.info('%i spindles were found in channel %s.'
-                        % (df_chan.shape[0], ch_names[i]))
+            logger.info("%i spindles were found in channel %s." % (df_chan.shape[0], ch_names[i]))
 
         # ####################################################################
         # END SINGLE CHANNEL DETECTION
         # ####################################################################
-        df_chan['Channel'] = ch_names[i]
-        df_chan['IdxChannel'] = i
+        df_chan["Channel"] = ch_names[i]
+        df_chan["IdxChannel"] = i
         df = pd.concat([df, df_chan], axis=0, ignore_index=True)
 
     # If no spindles were detected, return None
     if df.empty:
-        logger.warning('No spindles were found in data. Returning None.')
+        logger.warning("No spindles were found in data. Returning None.")
         return None
 
     # Remove useless columns
     to_drop = []
     if hypno is None:
-        to_drop.append('Stage')
+        to_drop.append("Stage")
     else:
-        df['Stage'] = df['Stage'].astype(int)
+        df["Stage"] = df["Stage"].astype(int)
     # if not coupling:
     #     to_drop.append('SOPhase')
     if len(to_drop):
         df = df.drop(columns=to_drop)
 
     # Find spindles that are present on at least two channels
-    if multi_only and df['Channel'].nunique() > 1:
+    if multi_only and df["Channel"].nunique() > 1:
         # We round to the nearest second
         idx_good = np.logical_or(
-            df['Start'].round(0).duplicated(keep=False),
-            df['End'].round(0).duplicated(keep=False)).to_list()
+            df["Start"].round(0).duplicated(keep=False), df["End"].round(0).duplicated(keep=False)
+        ).to_list()
         df = df[idx_good].reset_index(drop=True)
 
-    return SpindlesResults(events=df, data=data, sf=sf, ch_names=ch_names,
-                           hypno=hypno, data_filt=data_sigma)
+    return SpindlesResults(
+        events=df, data=data, sf=sf, ch_names=ch_names, hypno=hypno, data_filt=data_sigma
+    )
 
 
 class SpindlesResults(_DetectionResults):
@@ -1008,7 +1067,7 @@ class SpindlesResults(_DetectionResults):
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         super().__init__(events, data, sf, ch_names, hypno, data_filt)
 
-    def summary(self, grp_chan=False, grp_stage=False, mask=None, aggfunc='mean', sort=True):
+    def summary(self, grp_chan=False, grp_stage=False, mask=None, aggfunc="mean", sort=True):
         """Return a summary of the spindles detection, optionally grouped
         across channels and/or stage.
 
@@ -1028,8 +1087,14 @@ class SpindlesResults(_DetectionResults):
         sort : bool
             If True, sort group keys when grouping.
         """
-        return super().summary(event_type='spindles', grp_chan=grp_chan, grp_stage=grp_stage,
-                               aggfunc=aggfunc, sort=sort, mask=mask)
+        return super().summary(
+            event_type="spindles",
+            grp_chan=grp_chan,
+            grp_stage=grp_stage,
+            aggfunc=aggfunc,
+            sort=sort,
+            mask=mask,
+        )
 
     def get_coincidence_matrix(self, scaled=True):
         """Return the (scaled) coincidence matrix.
@@ -1183,8 +1248,15 @@ class SpindlesResults(_DetectionResults):
         """
         return super().get_mask()
 
-    def get_sync_events(self, center='Peak', time_before=1, time_after=1, filt=(None, None),
-                        mask=None, as_dataframe=True):
+    def get_sync_events(
+        self,
+        center="Peak",
+        time_before=1,
+        time_after=1,
+        filt=(None, None),
+        mask=None,
+        as_dataframe=True,
+    ):
         """
         Return the raw or filtered data of each detected event after
         centering to a specific timepoint.
@@ -1223,12 +1295,26 @@ class SpindlesResults(_DetectionResults):
             'IdxChannel' : Index of channel in data
             'Stage': Sleep stage in which the events occured (if available)
         """
-        return super().get_sync_events(center=center, time_before=time_before,
-                                       time_after=time_after, filt=filt, mask=mask,
-                                       as_dataframe=as_dataframe)
+        return super().get_sync_events(
+            center=center,
+            time_before=time_before,
+            time_after=time_after,
+            filt=filt,
+            mask=mask,
+            as_dataframe=as_dataframe,
+        )
 
-    def plot_average(self, center='Peak', hue='Channel', time_before=1,
-                     time_after=1, filt=(None, None), mask=None, figsize=(6, 4.5), **kwargs):
+    def plot_average(
+        self,
+        center="Peak",
+        hue="Channel",
+        time_before=1,
+        time_after=1,
+        filt=(None, None),
+        mask=None,
+        figsize=(6, 4.5),
+        **kwargs,
+    ):
         """
         Plot the average spindle.
 
@@ -1257,10 +1343,17 @@ class SpindlesResults(_DetectionResults):
         **kwargs : dict
             Optional argument that are passed to :py:func:`seaborn.lineplot`.
         """
-        return super().plot_average(event_type='spindles', center=center,
-                                    hue=hue, time_before=time_before,
-                                    time_after=time_after, filt=filt, mask=mask,
-                                    figsize=figsize, **kwargs)
+        return super().plot_average(
+            event_type="spindles",
+            center=center,
+            hue=hue,
+            time_before=time_before,
+            time_after=time_after,
+            filt=filt,
+            mask=mask,
+            figsize=figsize,
+            **kwargs,
+        )
 
     def plot_detection(self):
         """Plot an overlay of the detected spindles on the EEG signal.
@@ -1282,11 +1375,23 @@ class SpindlesResults(_DetectionResults):
 #############################################################################
 
 
-def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=(0.3, 1.5),
-              dur_neg=(0.3, 1.5), dur_pos=(0.1, 1), amp_neg=(40, 200), amp_pos=(10, 150),
-              amp_ptp=(75, 350), coupling=False,
-              coupling_params={"freq_sp": (12, 16), "time": 1, "p": 0.05},
-              remove_outliers=False, verbose=False):
+def sw_detect(
+    data,
+    sf=None,
+    ch_names=None,
+    hypno=None,
+    include=(2, 3),
+    freq_sw=(0.3, 1.5),
+    dur_neg=(0.3, 1.5),
+    dur_pos=(0.1, 1),
+    amp_neg=(40, 200),
+    amp_pos=(10, 150),
+    amp_ptp=(75, 350),
+    coupling=False,
+    coupling_params={"freq_sp": (12, 16), "time": 1, "p": 0.05},
+    remove_outliers=False,
+    verbose=False,
+):
     """Slow-waves detection.
 
     Parameters
@@ -1494,12 +1599,13 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
     """
     set_log_level(verbose)
 
-    (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan
-     ) = _check_data_hypno(data, sf, ch_names, hypno, include)
+    (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan) = _check_data_hypno(
+        data, sf, ch_names, hypno, include
+    )
 
     # If all channels are bad
     if sum(bad_chan) == n_chan:
-        logger.warning('All channels have bad amplitude. Returning None.')
+        logger.warning("All channels have bad amplitude. Returning None.")
         return None
 
     # Define time vector
@@ -1509,13 +1615,21 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
     # Bandpass filter
     nfast = next_fast_len(n_samples)
     data_filt = filter_data(
-        data, sf, freq_sw[0], freq_sw[1], method='fir', verbose=0, l_trans_bandwidth=0.2,
-        h_trans_bandwidth=0.2)
+        data,
+        sf,
+        freq_sw[0],
+        freq_sw[1],
+        method="fir",
+        verbose=0,
+        l_trans_bandwidth=0.2,
+        h_trans_bandwidth=0.2,
+    )
 
     # Extract the spindles-related sigma signal for coupling
     if coupling:
         is_tensorpac_installed()
         import tensorpac.methods as tpm
+
         # The width of the transition band is set to 1.5 Hz on each side,
         # meaning that for freq_sp = (12, 15 Hz), the -6 dB points are located
         # at 11.25 and 15.75 Hz. The frequency band for the amplitude signal
@@ -1526,10 +1640,17 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
         assert "freq_sp" in coupling_params.keys()
         assert "time" in coupling_params.keys()
         assert "p" in coupling_params.keys()
-        freq_sp = coupling_params['freq_sp']
+        freq_sp = coupling_params["freq_sp"]
         data_sp = filter_data(
-            data, sf, freq_sp[0], freq_sp[1], method='fir', l_trans_bandwidth=1.5,
-            h_trans_bandwidth=1.5, verbose=0)
+            data,
+            sf,
+            freq_sp[0],
+            freq_sp[1],
+            method="fir",
+            l_trans_bandwidth=1.5,
+            h_trans_bandwidth=1.5,
+            verbose=0,
+        )
         # Now extract the instantaneous phase/amplitude using Hilbert transform
         sw_pha = np.angle(signal.hilbert(data_filt, N=nfast)[:, :n_samples])
         sp_amp = np.abs(signal.hilbert(data_sp, N=nfast)[:, :n_samples])
@@ -1556,7 +1677,7 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
 
         # If no peaks are detected, return None
         if len(idx_neg_peaks) == 0 or len(idx_pos_peaks) == 0:
-            logger.warning('No SW were found in channel %s.', ch_names[i])
+            logger.warning("No SW were found in channel %s.", ch_names[i])
             continue
 
         # Make sure that the last detected peak is a positive one
@@ -1571,12 +1692,12 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
         idx_pos_peaks = idx_neg_peaks + closest_pos_peaks
 
         # Now we compute the PTP amplitude and keep only the good peaks
-        sw_ptp = (np.abs(data_filt[i, idx_neg_peaks]) + data_filt[i, idx_pos_peaks])
+        sw_ptp = np.abs(data_filt[i, idx_neg_peaks]) + data_filt[i, idx_pos_peaks]
         good_ptp = np.logical_and(sw_ptp > amp_ptp[0], sw_ptp < amp_ptp[1])
 
         # If good_ptp is all False
         if all(~good_ptp):
-            logger.warning('No SW were found in channel %s.', ch_names[i])
+            logger.warning("No SW were found in channel %s.", ch_names[i])
             continue
 
         sw_ptp = sw_ptp[good_ptp]
@@ -1625,28 +1746,30 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
             sw_sta = np.zeros(sw_dur.shape)
 
         # And we apply a set of thresholds to remove bad slow waves
-        good_sw = np.logical_and.reduce((
-            # Data edges
-            previous_neg_zc != 0,
-            following_neg_zc != 0,
-            previous_pos_zc != 0,
-            following_pos_zc != 0,
-            # Duration criteria
-            sw_dur == sw_dur_both_phase,  # dur = negative + positive
-            sw_dur <= dur_neg[1] + dur_pos[1],  # dur < max(neg) + max(pos)
-            sw_dur >= dur_neg[0] + dur_pos[0],  # dur > min(neg) + min(pos)
-            neg_phase_dur > dur_neg[0],
-            neg_phase_dur < dur_neg[1],
-            pos_phase_dur > dur_pos[0],
-            pos_phase_dur < dur_pos[1],
-            # Sanity checks
-            sw_midcrossing > sw_start,
-            sw_midcrossing < sw_end,
-            sw_slope > 0,
-        ))
+        good_sw = np.logical_and.reduce(
+            (
+                # Data edges
+                previous_neg_zc != 0,
+                following_neg_zc != 0,
+                previous_pos_zc != 0,
+                following_pos_zc != 0,
+                # Duration criteria
+                sw_dur == sw_dur_both_phase,  # dur = negative + positive
+                sw_dur <= dur_neg[1] + dur_pos[1],  # dur < max(neg) + max(pos)
+                sw_dur >= dur_neg[0] + dur_pos[0],  # dur > min(neg) + min(pos)
+                neg_phase_dur > dur_neg[0],
+                neg_phase_dur < dur_neg[1],
+                pos_phase_dur > dur_pos[0],
+                pos_phase_dur < dur_pos[1],
+                # Sanity checks
+                sw_midcrossing > sw_start,
+                sw_midcrossing < sw_end,
+                sw_slope > 0,
+            )
+        )
 
         if all(~good_sw):
-            logger.warning('No SW were found in channel %s.', ch_names[i])
+            logger.warning("No SW were found in channel %s.", ch_names[i])
             continue
 
         # Filter good events
@@ -1663,28 +1786,33 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
         sw_sta = sw_sta[good_sw]
 
         # Create a dictionnary
-        sw_params = OrderedDict({
-            'Start': sw_start,
-            'NegPeak': sw_idx_neg,
-            'MidCrossing': sw_midcrossing,
-            'PosPeak': sw_idx_pos,
-            'End': sw_end,
-            'Duration': sw_dur,
-            'ValNegPeak': data_filt[i, idx_neg_peaks],
-            'ValPosPeak': data_filt[i, idx_pos_peaks],
-            'PTP': sw_ptp,
-            'Slope': sw_slope,
-            'Frequency': 1 / sw_dur,
-            'Stage': sw_sta,
-        })
+        sw_params = OrderedDict(
+            {
+                "Start": sw_start,
+                "NegPeak": sw_idx_neg,
+                "MidCrossing": sw_midcrossing,
+                "PosPeak": sw_idx_pos,
+                "End": sw_end,
+                "Duration": sw_dur,
+                "ValNegPeak": data_filt[i, idx_neg_peaks],
+                "ValPosPeak": data_filt[i, idx_pos_peaks],
+                "PTP": sw_ptp,
+                "Slope": sw_slope,
+                "Frequency": 1 / sw_dur,
+                "Stage": sw_sta,
+            }
+        )
 
         # Add phase (in radians) of slow-oscillation signal at maximum
         # spindles-related sigma amplitude within a XX-seconds centered epochs.
         if coupling:
             # Get phase and amplitude for each centered epoch
-            time_before = time_after = coupling_params['time']
-            assert float(sf * time_before).is_integer(), (
-                "Invalid time parameter for coupling. Must be a whole number of samples.")
+            time_before = time_after = coupling_params["time"]
+            assert float(
+                sf * time_before
+            ).is_integer(), (
+                "Invalid time parameter for coupling. Must be a whole number of samples."
+            )
             bef = int(sf * time_before)
             aft = int(sf * time_after)
             # Center of each epoch is defined as the negative peak of the SW
@@ -1698,69 +1826,74 @@ def sw_detect(data, sf=None, ch_names=None, hypno=None, include=(2, 3), freq_sw=
             # Now we need to append it back to the original unmasked shape
             # to avoid error when idx.shape[0] != idx_valid.shape, i.e.
             # some epochs were out of data bounds.
-            sw_params['SigmaPeak'] = np.ones(n_peaks) * np.nan
+            sw_params["SigmaPeak"] = np.ones(n_peaks) * np.nan
             # Timestamp at sigma peak, expressed in seconds from negative peak
             # e.g. -0.39, 0.5, 1, 2 -- limits are [time_before, time_after]
             time_sigpk = (idx_max_amp - bef) / sf
             # convert to absolute time from beginning of the recording
             # time_sigpk only includes valid epoch
             time_sigpk_abs = sw_idx_neg[idx_valid] + time_sigpk
-            sw_params['SigmaPeak'][idx_valid] = time_sigpk_abs
+            sw_params["SigmaPeak"][idx_valid] = time_sigpk_abs
             # 2) PhaseAtSigmaPeak
             # Find SW phase at max sigma amplitude in epoch
             pha_at_max = np.squeeze(np.take_along_axis(sw_pha_ev, idx_max_amp[..., None], axis=1))
-            sw_params['PhaseAtSigmaPeak'] = np.ones(n_peaks) * np.nan
-            sw_params['PhaseAtSigmaPeak'][idx_valid] = pha_at_max
+            sw_params["PhaseAtSigmaPeak"] = np.ones(n_peaks) * np.nan
+            sw_params["PhaseAtSigmaPeak"][idx_valid] = pha_at_max
             # 3) Normalized Direct PAC, with thresholding
             # Unreliable values are set to 0
-            ndp = np.squeeze(tpm.norm_direct_pac(
-                sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=coupling_params['p']))
-            sw_params['ndPAC'] = np.ones(n_peaks) * np.nan
-            sw_params['ndPAC'][idx_valid] = ndp
+            ndp = np.squeeze(
+                tpm.norm_direct_pac(
+                    sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=coupling_params["p"]
+                )
+            )
+            sw_params["ndPAC"] = np.ones(n_peaks) * np.nan
+            sw_params["ndPAC"][idx_valid] = ndp
             # Make sure that Stage is the last column of the dataframe
-            sw_params.move_to_end('Stage')
+            sw_params.move_to_end("Stage")
 
         # Convert to dataframe, keeping only good events
         df_chan = pd.DataFrame(sw_params)
 
         # Remove all duplicates
-        df_chan = df_chan.drop_duplicates(subset=['Start'], keep=False)
-        df_chan = df_chan.drop_duplicates(subset=['End'], keep=False)
+        df_chan = df_chan.drop_duplicates(subset=["Start"], keep=False)
+        df_chan = df_chan.drop_duplicates(subset=["End"], keep=False)
 
         # We need at least 50 detected slow waves to apply the Isolation Forest
         if remove_outliers and df_chan.shape[0] >= 50:
-            col_keep = ['Duration', 'ValNegPeak', 'ValPosPeak', 'PTP', 'Slope', 'Frequency']
-            ilf = IsolationForest(contamination='auto', max_samples='auto',
-                                  verbose=0, random_state=42)
+            col_keep = ["Duration", "ValNegPeak", "ValPosPeak", "PTP", "Slope", "Frequency"]
+            ilf = IsolationForest(
+                contamination="auto", max_samples="auto", verbose=0, random_state=42
+            )
             good = ilf.fit_predict(df_chan[col_keep])
             good[good == -1] = 0
-            logger.info('%i outliers were removed in channel %s.'
-                        % ((good == 0).sum(), ch_names[i]))
+            logger.info(
+                "%i outliers were removed in channel %s." % ((good == 0).sum(), ch_names[i])
+            )
             # Remove outliers from DataFrame
             df_chan = df_chan[good.astype(bool)]
-            logger.info('%i slow-waves were found in channel %s.'
-                        % (df_chan.shape[0], ch_names[i]))
+            logger.info("%i slow-waves were found in channel %s." % (df_chan.shape[0], ch_names[i]))
 
         # ####################################################################
         # END SINGLE CHANNEL DETECTION
         # ####################################################################
 
-        df_chan['Channel'] = ch_names[i]
-        df_chan['IdxChannel'] = i
+        df_chan["Channel"] = ch_names[i]
+        df_chan["IdxChannel"] = i
         df = pd.concat([df, df_chan], axis=0, ignore_index=True)
 
     # If no SW were detected, return None
     if df.empty:
-        logger.warning('No SW were found in data. Returning None.')
+        logger.warning("No SW were found in data. Returning None.")
         return None
 
     if hypno is None:
-        df = df.drop(columns=['Stage'])
+        df = df.drop(columns=["Stage"])
     else:
-        df['Stage'] = df['Stage'].astype(int)
+        df["Stage"] = df["Stage"].astype(int)
 
-    return SWResults(events=df, data=data, sf=sf, ch_names=ch_names,
-                     hypno=hypno, data_filt=data_filt)
+    return SWResults(
+        events=df, data=data, sf=sf, ch_names=ch_names, hypno=hypno, data_filt=data_filt
+    )
 
 
 class SWResults(_DetectionResults):
@@ -1785,7 +1918,7 @@ class SWResults(_DetectionResults):
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         super().__init__(events, data, sf, ch_names, hypno, data_filt)
 
-    def summary(self, grp_chan=False, grp_stage=False, mask=None, aggfunc='mean', sort=True):
+    def summary(self, grp_chan=False, grp_stage=False, mask=None, aggfunc="mean", sort=True):
         """Return a summary of the SW detection, optionally grouped across
         channels and/or stage.
 
@@ -1803,8 +1936,14 @@ class SWResults(_DetectionResults):
         sort : bool
             If True, sort group keys when grouping.
         """
-        return super().summary(event_type='sw', grp_chan=grp_chan, grp_stage=grp_stage,
-                               aggfunc=aggfunc, sort=sort, mask=mask)
+        return super().summary(
+            event_type="sw",
+            grp_chan=grp_chan,
+            grp_stage=grp_stage,
+            aggfunc=aggfunc,
+            sort=sort,
+            mask=mask,
+        )
 
     def find_cooccurring_spindles(self, spindles, lookaround=1.2):
         """Given a spindles detection summary dataframe, find slow-waves that co-occur with
@@ -1860,13 +1999,13 @@ class SWResults(_DetectionResults):
         cooccurring_spindle_peaks = []
 
         # Find intersecting channels
-        common_ch = np.intersect1d(self._events['Channel'].unique(), spindles['Channel'].unique())
+        common_ch = np.intersect1d(self._events["Channel"].unique(), spindles["Channel"].unique())
         assert len(common_ch), "No common channel(s) were found."
 
         # Loop across channels
-        for chan in self._events['Channel'].unique():
+        for chan in self._events["Channel"].unique():
             sw_chan_peaks = self._events[self._events["Channel"] == chan]["NegPeak"].to_numpy()
-            sp_chan_peaks = spindles[spindles["Channel"] == chan]['Peak'].to_numpy()
+            sp_chan_peaks = spindles[spindles["Channel"] == chan]["Peak"].to_numpy()
             # Loop across individual slow-waves
             for sw_negpeak in sw_chan_peaks:
                 start = sw_negpeak - lookaround
@@ -1884,7 +2023,7 @@ class SWResults(_DetectionResults):
         # Add columns to self._events: IN-PLACE MODIFICATION!
         self._events["CooccurringSpindle"] = ~np.isnan(distance_sp_to_sw_peak)
         self._events["CooccurringSpindlePeak"] = cooccurring_spindle_peaks
-        self._events['DistanceSpindleToSW'] = distance_sp_to_sw_peak
+        self._events["DistanceSpindleToSW"] = distance_sp_to_sw_peak
 
     def compare_channels(self, score="f1", max_distance_sec=0):
         """
@@ -2037,8 +2176,15 @@ class SWResults(_DetectionResults):
         """
         return super().get_mask()
 
-    def get_sync_events(self, center='NegPeak', time_before=0.4, time_after=0.8, filt=(None, None),
-                        mask=None, as_dataframe=True):
+    def get_sync_events(
+        self,
+        center="NegPeak",
+        time_before=0.4,
+        time_after=0.8,
+        filt=(None, None),
+        mask=None,
+        as_dataframe=True,
+    ):
         """
         Return the raw data of each detected event after centering to a specific timepoint.
 
@@ -2077,11 +2223,25 @@ class SWResults(_DetectionResults):
             'Stage': Sleep stage in which the events occured (if available)
         """
         return super().get_sync_events(
-            center=center, time_before=time_before, time_after=time_after, filt=filt, mask=mask,
-            as_dataframe=as_dataframe)
+            center=center,
+            time_before=time_before,
+            time_after=time_after,
+            filt=filt,
+            mask=mask,
+            as_dataframe=as_dataframe,
+        )
 
-    def plot_average(self, center='NegPeak', hue='Channel', time_before=0.4, time_after=0.8,
-                     filt=(None, None), mask=None, figsize=(6, 4.5), **kwargs):
+    def plot_average(
+        self,
+        center="NegPeak",
+        hue="Channel",
+        time_before=0.4,
+        time_after=0.8,
+        filt=(None, None),
+        mask=None,
+        figsize=(6, 4.5),
+        **kwargs,
+    ):
         """
         Plot the average slow-wave.
 
@@ -2111,8 +2271,16 @@ class SWResults(_DetectionResults):
             Optional argument that are passed to :py:func:`seaborn.lineplot`.
         """
         return super().plot_average(
-            event_type='sw', center=center, hue=hue, time_before=time_before,
-            time_after=time_after, filt=filt, mask=mask, figsize=figsize, **kwargs)
+            event_type="sw",
+            center=center,
+            hue=hue,
+            time_before=time_before,
+            time_after=time_after,
+            filt=filt,
+            mask=mask,
+            figsize=figsize,
+            **kwargs,
+        )
 
     def plot_detection(self):
         """Plot an overlay of the detected slow-waves on the EEG signal.
@@ -2134,8 +2302,18 @@ class SWResults(_DetectionResults):
 #############################################################################
 
 
-def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325), duration=(0.3, 1.2),
-               freq_rem=(0.5, 5), remove_outliers=False, verbose=False):
+def rem_detect(
+    loc,
+    roc,
+    sf,
+    hypno=None,
+    include=4,
+    amplitude=(50, 325),
+    duration=(0.3, 1.2),
+    freq_rem=(0.5, 5),
+    remove_outliers=False,
+    verbose=False,
+):
     """Rapid eye movements (REMs) detection.
 
     This detection requires both the left EOG (LOC) and right EOG (LOC).
@@ -2265,18 +2443,18 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325), duratio
     # Safety checks
     loc = np.squeeze(np.asarray(loc, dtype=np.float64))
     roc = np.squeeze(np.asarray(roc, dtype=np.float64))
-    assert loc.ndim == 1, 'LOC must be 1D.'
-    assert roc.ndim == 1, 'ROC must be 1D.'
-    assert loc.size == roc.size, 'LOC and ROC must have the same size.'
+    assert loc.ndim == 1, "LOC must be 1D."
+    assert roc.ndim == 1, "ROC must be 1D."
+    assert loc.size == roc.size, "LOC and ROC must have the same size."
     data = np.vstack((loc, roc))
 
-    (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan
-     ) = _check_data_hypno(data, sf, ['LOC', 'ROC'], hypno, include)
+    (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan) = _check_data_hypno(
+        data, sf, ["LOC", "ROC"], hypno, include
+    )
 
     # If all channels are bad
     if any(bad_chan):
-        logger.warning('At least one channel has bad amplitude. '
-                       'Returning None.')
+        logger.warning("At least one channel has bad amplitude. " "Returning None.")
         return None
 
     # Bandpass filter
@@ -2290,9 +2468,14 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325), duratio
     # - distance: required distance in samples between neighboring peaks.
     # - prominence: required prominence of peaks.
     # - wlen: limit search for bases to a specific window.
-    hmin, hmax = amplitude[0]**2, amplitude[1]**2
-    pks, pks_params = signal.find_peaks(negp, height=(hmin, hmax), distance=(duration[0] * sf),
-                                        prominence=(0.8 * hmin), wlen=(duration[1] * sf))
+    hmin, hmax = amplitude[0] ** 2, amplitude[1] ** 2
+    pks, pks_params = signal.find_peaks(
+        negp,
+        height=(hmin, hmax),
+        distance=(duration[0] * sf),
+        prominence=(0.8 * hmin),
+        wlen=(duration[1] * sf),
+    )
 
     # Intersect with sleep stage vector
     # We do that before calculating the features in order to gain some time
@@ -2303,78 +2486,98 @@ def rem_detect(loc, roc, sf, hypno=None, include=4, amplitude=(50, 325), duratio
 
     # If no peaks are detected, return None
     if len(pks) == 0:
-        logger.warning('No REMs were found in data. Returning None.')
+        logger.warning("No REMs were found in data. Returning None.")
         return None
 
     # Hypnogram
     if hypno is not None:
         # The sleep stage at the beginning of the REM is considered.
-        rem_sta = hypno[pks_params['left_bases']]
+        rem_sta = hypno[pks_params["left_bases"]]
     else:
         rem_sta = np.zeros(pks.shape)
 
     # Calculate time features
-    pks_params['Start'] = pks_params['left_bases'] / sf
-    pks_params['Peak'] = pks / sf
-    pks_params['End'] = pks_params['right_bases'] / sf
-    pks_params['Duration'] = pks_params['End'] - pks_params['Start']
+    pks_params["Start"] = pks_params["left_bases"] / sf
+    pks_params["Peak"] = pks / sf
+    pks_params["End"] = pks_params["right_bases"] / sf
+    pks_params["Duration"] = pks_params["End"] - pks_params["Start"]
     # Time points in minutes (HH:MM:SS)
     # pks_params['StartMin'] = pd.to_timedelta(pks_params['Start'], unit='s').dt.round('s')  # noqa
     # pks_params['PeakMin'] = pd.to_timedelta(pks_params['Peak'], unit='s').dt.round('s')  # noqa
     # pks_params['EndMin'] = pd.to_timedelta(pks_params['End'], unit='s').dt.round('s')  # noqa
     # Absolute LOC / ROC value at peak (filtered)
-    pks_params['LOCAbsValPeak'] = abs(data_filt[0, pks])
-    pks_params['ROCAbsValPeak'] = abs(data_filt[1, pks])
+    pks_params["LOCAbsValPeak"] = abs(data_filt[0, pks])
+    pks_params["ROCAbsValPeak"] = abs(data_filt[1, pks])
     # Absolute rising and falling slope
-    dist_pk_left = (pks - pks_params['left_bases']) / sf
-    dist_pk_right = (pks_params['right_bases'] - pks) / sf
-    locrs = (data_filt[0, pks] - data_filt[0, pks_params['left_bases']]) / dist_pk_left
-    rocrs = (data_filt[1, pks] - data_filt[1, pks_params['left_bases']]) / dist_pk_left
-    locfs = (data_filt[0, pks_params['right_bases']] - data_filt[0, pks]) / dist_pk_right
-    rocfs = (data_filt[1, pks_params['right_bases']] - data_filt[1, pks]) / dist_pk_right
-    pks_params['LOCAbsRiseSlope'] = abs(locrs)
-    pks_params['ROCAbsRiseSlope'] = abs(rocrs)
-    pks_params['LOCAbsFallSlope'] = abs(locfs)
-    pks_params['ROCAbsFallSlope'] = abs(rocfs)
-    pks_params['Stage'] = rem_sta  # Sleep stage
+    dist_pk_left = (pks - pks_params["left_bases"]) / sf
+    dist_pk_right = (pks_params["right_bases"] - pks) / sf
+    locrs = (data_filt[0, pks] - data_filt[0, pks_params["left_bases"]]) / dist_pk_left
+    rocrs = (data_filt[1, pks] - data_filt[1, pks_params["left_bases"]]) / dist_pk_left
+    locfs = (data_filt[0, pks_params["right_bases"]] - data_filt[0, pks]) / dist_pk_right
+    rocfs = (data_filt[1, pks_params["right_bases"]] - data_filt[1, pks]) / dist_pk_right
+    pks_params["LOCAbsRiseSlope"] = abs(locrs)
+    pks_params["ROCAbsRiseSlope"] = abs(rocrs)
+    pks_params["LOCAbsFallSlope"] = abs(locfs)
+    pks_params["ROCAbsFallSlope"] = abs(rocfs)
+    pks_params["Stage"] = rem_sta  # Sleep stage
 
     # Convert to Pandas DataFrame
     df = pd.DataFrame(pks_params)
 
     # Make sure that the sign of ROC and LOC is opposite
-    df['IsOppositeSign'] = (np.sign(data_filt[1, pks]) != np.sign(data_filt[0, pks]))
+    df["IsOppositeSign"] = np.sign(data_filt[1, pks]) != np.sign(data_filt[0, pks])
     df = df[np.sign(data_filt[1, pks]) != np.sign(data_filt[0, pks])]
 
     # Remove bad duration
     tmin, tmax = duration
-    good_dur = np.logical_and(pks_params['Duration'] >= tmin, pks_params['Duration'] < tmax)
+    good_dur = np.logical_and(pks_params["Duration"] >= tmin, pks_params["Duration"] < tmax)
     df = df[good_dur]
 
     # Keep only useful channels
-    df = df[['Start', 'Peak', 'End', 'Duration', 'LOCAbsValPeak', 'ROCAbsValPeak',
-             'LOCAbsRiseSlope', 'ROCAbsRiseSlope', 'LOCAbsFallSlope', 'ROCAbsFallSlope', 'Stage']]
+    df = df[
+        [
+            "Start",
+            "Peak",
+            "End",
+            "Duration",
+            "LOCAbsValPeak",
+            "ROCAbsValPeak",
+            "LOCAbsRiseSlope",
+            "ROCAbsRiseSlope",
+            "LOCAbsFallSlope",
+            "ROCAbsFallSlope",
+            "Stage",
+        ]
+    ]
 
     if hypno is None:
-        df = df.drop(columns=['Stage'])
+        df = df.drop(columns=["Stage"])
     else:
-        df['Stage'] = df['Stage'].astype(int)
+        df["Stage"] = df["Stage"].astype(int)
 
     # We need at least 50 detected REMs to apply the Isolation Forest.
     if remove_outliers and df.shape[0] >= 50:
-        col_keep = ['Duration', 'LOCAbsValPeak', 'ROCAbsValPeak', 'LOCAbsRiseSlope',
-                    'ROCAbsRiseSlope', 'LOCAbsFallSlope', 'ROCAbsFallSlope']
-        ilf = IsolationForest(contamination='auto', max_samples='auto',
-                              verbose=0, random_state=42)
+        col_keep = [
+            "Duration",
+            "LOCAbsValPeak",
+            "ROCAbsValPeak",
+            "LOCAbsRiseSlope",
+            "ROCAbsRiseSlope",
+            "LOCAbsFallSlope",
+            "ROCAbsFallSlope",
+        ]
+        ilf = IsolationForest(contamination="auto", max_samples="auto", verbose=0, random_state=42)
         good = ilf.fit_predict(df[col_keep])
         good[good == -1] = 0
-        logger.info('%i outliers were removed.', (good == 0).sum())
+        logger.info("%i outliers were removed.", (good == 0).sum())
         # Remove outliers from DataFrame
         df = df[good.astype(bool)]
 
-    logger.info('%i REMs were found in data.', df.shape[0])
+    logger.info("%i REMs were found in data.", df.shape[0])
     df = df.reset_index(drop=True)
-    return REMResults(events=df, data=data, sf=sf, ch_names=ch_names,
-                      hypno=hypno, data_filt=data_filt)
+    return REMResults(
+        events=df, data=data, sf=sf, ch_names=ch_names, hypno=hypno, data_filt=data_filt
+    )
 
 
 class REMResults(_DetectionResults):
@@ -2401,7 +2604,7 @@ class REMResults(_DetectionResults):
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         super().__init__(events, data, sf, ch_names, hypno, data_filt)
 
-    def summary(self, grp_stage=False, mask=None, aggfunc='mean', sort=True):
+    def summary(self, grp_stage=False, mask=None, aggfunc="mean", sort=True):
         """Return a summary of the REM detection, optionally grouped across stage.
 
         Parameters
@@ -2419,8 +2622,14 @@ class REMResults(_DetectionResults):
         """
         # ``grp_chan`` is always False for REM detection because the
         # REMs are always detected on a combination of LOC and ROC.
-        return super().summary(event_type='rem', grp_chan=False, grp_stage=grp_stage,
-                               aggfunc=aggfunc, sort=sort, mask=mask)
+        return super().summary(
+            event_type="rem",
+            grp_chan=False,
+            grp_stage=grp_stage,
+            aggfunc=aggfunc,
+            sort=sort,
+            mask=mask,
+        )
 
     def get_mask(self):
         """Return a boolean array indicating for each sample in data if this
@@ -2428,14 +2637,15 @@ class REMResults(_DetectionResults):
         """
         # We cannot use super() because "Channel" is not present in _events.
         from yasa.others import _index_to_events
+
         mask = np.zeros(self._data.shape, dtype=int)
-        idx_ev = _index_to_events(
-            self._events[['Start', 'End']].to_numpy() * self._sf)
+        idx_ev = _index_to_events(self._events[["Start", "End"]].to_numpy() * self._sf)
         mask[:, idx_ev] = 1
         return mask
 
-    def get_sync_events(self, center='Peak', time_before=0.4, time_after=0.4,
-                        filt=(None, None), mask=None):
+    def get_sync_events(
+        self, center="Peak", time_before=0.4, time_after=0.4, filt=(None, None), mask=None
+    ):
         """
         Return the raw or filtered data of each detected event after centering to a specific
         timepoint.
@@ -2470,6 +2680,7 @@ class REMResults(_DetectionResults):
             'IdxChannel' : Index of channel in data
         """
         from yasa.others import get_centered_indices
+
         assert time_before >= 0
         assert time_after >= 0
         bef = int(self._sf * time_before)
@@ -2477,7 +2688,8 @@ class REMResults(_DetectionResults):
 
         if any(filt):
             data = mne.filter.filter_data(
-                self._data, self._sf, l_freq=filt[0], h_freq=filt[1], method='fir', verbose=False)
+                self._data, self._sf, l_freq=filt[0], h_freq=filt[1], method="fir", verbose=False
+            )
         else:
             data = self._data
 
@@ -2485,15 +2697,16 @@ class REMResults(_DetectionResults):
         mask = self._check_mask(mask)
         masked_events = self._events.loc[mask, :]
 
-        time = np.arange(-bef, aft + 1, dtype='int') / self._sf
+        time = np.arange(-bef, aft + 1, dtype="int") / self._sf
         # Get location of peaks in data
         peaks = (masked_events[center] * self._sf).astype(int).to_numpy()
         # Get centered indices (here we could use second channel as well).
         idx, idx_valid = get_centered_indices(data[0, :], peaks, bef, aft)
         # If no good epochs are returned raise a warning
         assert len(idx_valid), (
-            'Time before and/or time after exceed data bounds, please '
-            'lower the temporal window around center.')
+            "Time before and/or time after exceed data bounds, please "
+            "lower the temporal window around center."
+        )
 
         # Initialize empty dataframe
         df_sync = pd.DataFrame()
@@ -2502,16 +2715,24 @@ class REMResults(_DetectionResults):
         for i, ch in enumerate(self._ch_names):
             amps = data[i, idx]
             df_chan = pd.DataFrame(amps.T)
-            df_chan['Time'] = time
-            df_chan = df_chan.melt(id_vars='Time', var_name='Event', value_name='Amplitude')
-            df_chan['Channel'] = ch
-            df_chan['IdxChannel'] = i
+            df_chan["Time"] = time
+            df_chan = df_chan.melt(id_vars="Time", var_name="Event", value_name="Amplitude")
+            df_chan["Channel"] = ch
+            df_chan["IdxChannel"] = i
             df_sync = pd.concat([df_sync, df_chan], axis=0, ignore_index=True)
 
         return df_sync
 
-    def plot_average(self, center='Peak', time_before=0.4, time_after=0.4, filt=(None, None),
-                     mask=None, figsize=(6, 4.5), **kwargs):
+    def plot_average(
+        self,
+        center="Peak",
+        time_before=0.4,
+        time_after=0.4,
+        filt=(None, None),
+        mask=None,
+        figsize=(6, 4.5),
+        **kwargs,
+    ):
         """
         Plot the average REM.
 
@@ -2540,17 +2761,18 @@ class REMResults(_DetectionResults):
         import seaborn as sns
         import matplotlib.pyplot as plt
 
-        df_sync = self.get_sync_events(center=center, time_before=time_before,
-                                       time_after=time_after, filt=filt, mask=mask)
+        df_sync = self.get_sync_events(
+            center=center, time_before=time_before, time_after=time_after, filt=filt, mask=mask
+        )
 
         # Start figure
         fig, ax = plt.subplots(1, 1, figsize=figsize)
-        sns.lineplot(data=df_sync, x='Time', y='Amplitude', hue='Channel', ax=ax, **kwargs)
+        sns.lineplot(data=df_sync, x="Time", y="Amplitude", hue="Channel", ax=ax, **kwargs)
         # ax.legend(frameon=False, loc='lower right')
-        ax.set_xlim(df_sync['Time'].min(), df_sync['Time'].max())
+        ax.set_xlim(df_sync["Time"].min(), df_sync["Time"].max())
         ax.set_title("Average REM")
-        ax.set_xlabel('Time (sec)')
-        ax.set_ylabel('Amplitude (uV)')
+        ax.set_xlabel("Time (sec)")
+        ax.set_ylabel("Amplitude (uV)")
         return ax
 
 
@@ -2559,8 +2781,17 @@ class REMResults(_DetectionResults):
 #############################################################################
 
 
-def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
-               method='covar', threshold=3, n_chan_reject=1, verbose=False):
+def art_detect(
+    data,
+    sf=None,
+    window=5,
+    hypno=None,
+    include=(1, 2, 3, 4),
+    method="covar",
+    threshold=3,
+    n_chan_reject=1,
+    verbose=False,
+):
     r"""
     Automatic artifact rejection.
 
@@ -2739,23 +2970,24 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     ###########################################################################
     set_log_level(verbose)
 
-    (data, sf, _, hypno, include, _, n_chan, n_samples, _
-     ) = _check_data_hypno(data, sf, ch_names=None, hypno=hypno, include=include, check_amp=False)
+    (data, sf, _, hypno, include, _, n_chan, n_samples, _) = _check_data_hypno(
+        data, sf, ch_names=None, hypno=hypno, include=include, check_amp=False
+    )
 
-    assert isinstance(n_chan_reject, int), 'n_chan_reject must be int.'
-    assert n_chan_reject >= 1, 'n_chan_reject must be >= 1.'
-    assert n_chan_reject <= n_chan, 'n_chan_reject must be <= n_chan.'
+    assert isinstance(n_chan_reject, int), "n_chan_reject must be int."
+    assert n_chan_reject >= 1, "n_chan_reject must be >= 1."
+    assert n_chan_reject <= n_chan, "n_chan_reject must be <= n_chan."
 
     # Safety check: sampling frequency and window
-    assert isinstance(sf, (int, float)), 'sf must be int or float'
-    assert isinstance(window, (int, float)), 'window must be int or float'
+    assert isinstance(sf, (int, float)), "sf must be int or float"
+    assert isinstance(window, (int, float)), "window must be int or float"
     if isinstance(sf, float):
-        assert sf.is_integer(), 'sf must be a whole number.'
+        assert sf.is_integer(), "sf must be a whole number."
         sf = int(sf)
     win_sec = window
     window = win_sec * sf  # Convert window to samples
     if isinstance(window, float):
-        assert window.is_integer(), 'window * sf must be a whole number.'
+        assert window.is_integer(), "window * sf must be a whole number."
         window = int(window)
 
     # Safety check: hypnogram
@@ -2767,24 +2999,27 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     # Safety checks: methods
     assert isinstance(method, str), "method must be a string."
     method = method.lower()
-    if method in ['cov', 'covar', 'covariance', 'riemann', 'potato']:
-        method = 'covar'
+    if method in ["cov", "covar", "covariance", "riemann", "potato"]:
+        method = "covar"
         is_pyriemann_installed()
         from pyriemann.estimation import Covariances, Shrinkage
         from pyriemann.clustering import Potato
+
         # Must have at least 4 channels to use method='covar'
         if n_chan <= 4:
-            logger.warning("Must have at least 4 channels for method='covar'. "
-                           "Automatically switching to method='std'.")
-            method = 'std'
+            logger.warning(
+                "Must have at least 4 channels for method='covar'. "
+                "Automatically switching to method='std'."
+            )
+            method = "std"
 
     ###########################################################################
     # START THE REJECTION
     ###########################################################################
     # Remove flat channels
-    isflat = (np.nanstd(data, axis=-1) == 0)
+    isflat = np.nanstd(data, axis=-1) == 0
     if isflat.any():
-        logger.warning('Flat channel(s) were found and removed in data.')
+        logger.warning("Flat channel(s) were found and removed in data.")
         data = data[~isflat]
         n_chan = data.shape[0]
 
@@ -2802,13 +3037,13 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
     n_flat_epochs = where_flat_epochs.size
 
     # Now let's make sure that we have an hypnogram and an include variable
-    if 'hypno_win' not in locals():
+    if "hypno_win" not in locals():
         # [-2, -2, -2, -2, ...], where -2 stands for unscored
-        hypno_win = -2 * np.ones(n_epochs, dtype='float')
-        include = np.array([-2], dtype='float')
+        hypno_win = -2 * np.ones(n_epochs, dtype="float")
+        include = np.array([-2], dtype="float")
 
     # We want to make sure that hypno-win and n_epochs have EXACTLY same shape
-    assert n_epochs == hypno_win.shape[-1], 'Hypno and epochs do not match.'
+    assert n_epochs == hypno_win.shape[-1], "Hypno and epochs do not match."
 
     # Finally, we make sure not to include any flat epochs in calculation
     # just using a random number that is unlikely to be picked by users
@@ -2816,19 +3051,19 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
         hypno_win[where_flat_epochs] = -111991
 
     # Add logger info
-    logger.info('Number of channels in data = %i', n_chan)
-    logger.info('Number of samples in data = %i', n_samples)
-    logger.info('Sampling frequency = %.2f Hz', sf)
-    logger.info('Data duration = %.2f seconds', n_samples / sf)
-    logger.info('Number of epochs = %i' % n_epochs)
-    logger.info('Artifact window = %.2f seconds' % win_sec)
-    logger.info('Method = %s' % method)
-    logger.info('Threshold = %.2f standard deviations' % threshold)
+    logger.info("Number of channels in data = %i", n_chan)
+    logger.info("Number of samples in data = %i", n_samples)
+    logger.info("Sampling frequency = %.2f Hz", sf)
+    logger.info("Data duration = %.2f seconds", n_samples / sf)
+    logger.info("Number of epochs = %i" % n_epochs)
+    logger.info("Artifact window = %.2f seconds" % win_sec)
+    logger.info("Method = %s" % method)
+    logger.info("Threshold = %.2f standard deviations" % threshold)
 
     # Create empty `hypno_art` vector (1 sample = 1 epoch)
-    epoch_is_art = np.zeros(n_epochs, dtype='int')
+    epoch_is_art = np.zeros(n_epochs, dtype="int")
 
-    if method == 'covar':
+    if method == "covar":
         # Calculate the covariance matrices,
         # shape (n_epochs, n_chan, n_chan)
         covmats = Covariances().fit_transform(epochs)
@@ -2836,10 +3071,11 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
         covmats = Shrinkage().fit_transform(covmats)
         # Define Potato instance: 0 = clean, 1 = art
         # To increase speed we set the max number of iterations from 10 to 100
-        potato = Potato(metric='riemann', threshold=threshold, pos_label=0,
-                        neg_label=1, n_iter_max=10)
+        potato = Potato(
+            metric="riemann", threshold=threshold, pos_label=0, neg_label=1, n_iter_max=10
+        )
         # Create empty z-scores output (n_epochs)
-        zscores = np.zeros(n_epochs, dtype='float') * np.nan
+        zscores = np.zeros(n_epochs, dtype="float") * np.nan
 
         for stage in include:
             where_stage = np.where(hypno_win == stage)[0]
@@ -2848,9 +3084,11 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
             if where_stage.size < 30:
                 if hypno is not None:
                     # Only show warnig if user actually pass an hypnogram
-                    logger.warning(f"At least 30 epochs are required to "
-                                   f"calculate z-score. Skipping "
-                                   f"stage {stage}")
+                    logger.warning(
+                        f"At least 30 epochs are required to "
+                        f"calculate z-score. Skipping "
+                        f"stage {stage}"
+                    )
                 continue
             # Apply Potato algorithm, extract z-scores and labels
             zs = potato.fit_transform(covmats[where_stage])
@@ -2858,20 +3096,22 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
             if hypno is not None:
                 # Only shows if user actually pass an hypnogram
                 perc_reject = 100 * (art.sum() / art.size)
-                text = (f"Stage {stage}: {art.sum()} / {art.size} "
-                        f"epochs rejected ({perc_reject:.2f}%)")
+                text = (
+                    f"Stage {stage}: {art.sum()} / {art.size} "
+                    f"epochs rejected ({perc_reject:.2f}%)"
+                )
                 logger.info(text)
             # Append to global vector
             epoch_is_art[where_stage] = art
             zscores[where_stage] = zs
 
-    elif method in ['std', 'sd']:
+    elif method in ["std", "sd"]:
         # Calculate log-transformed standard dev in each epoch
         # We add 1 to avoid log warning id std is zero (e.g. flat line)
         # (n_epochs, n_chan)
         std_epochs = np.log(np.nanstd(epochs, axis=-1) + 1)
         # Create empty zscores output (n_epochs, n_chan)
-        zscores = np.zeros((n_epochs, n_chan), dtype='float') * np.nan
+        zscores = np.zeros((n_epochs, n_chan), dtype="float") * np.nan
         for stage in include:
             where_stage = np.where(hypno_win == stage)[0]
             # At least 30 epochs are required to calculate z-scores
@@ -2879,9 +3119,11 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
             if where_stage.size < 30:
                 if hypno is not None:
                     # Only show warnig if user actually pass an hypnogram
-                    logger.warning(f"At least 30 epochs are required to "
-                                   f"calculate z-score. Skipping "
-                                   f"stage {stage}")
+                    logger.warning(
+                        f"At least 30 epochs are required to "
+                        f"calculate z-score. Skipping "
+                        f"stage {stage}"
+                    )
                 continue
             # Calculate z-scores of STD for each channel x stage
             c_mean = np.nanmean(std_epochs[where_stage], axis=0, keepdims=True)
@@ -2893,8 +3135,10 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
             if hypno is not None:
                 # Only shows if user actually pass an hypnogram
                 perc_reject = 100 * (art.sum() / art.size)
-                text = (f"Stage {stage}: {art.sum()} / {art.size} "
-                        f"epochs rejected ({perc_reject:.2f}%)")
+                text = (
+                    f"Stage {stage}: {art.sum()} / {art.size} "
+                    f"epochs rejected ({perc_reject:.2f}%)"
+                )
                 logger.info(text)
             # Append to global vector
             epoch_is_art[where_stage] = art
@@ -2902,13 +3146,15 @@ def art_detect(data, sf=None, window=5, hypno=None, include=(1, 2, 3, 4),
 
     # Mark flat epochs as artefacts
     if n_flat_epochs > 0:
-        logger.info(f"Rejecting {n_flat_epochs} epochs with >=50% of channels "
-                    f"that are flat. Z-scores set to np.nan for these epochs.")
+        logger.info(
+            f"Rejecting {n_flat_epochs} epochs with >=50% of channels "
+            f"that are flat. Z-scores set to np.nan for these epochs."
+        )
         epoch_is_art[where_flat_epochs] = 1
 
     # Log total percentage of epochs rejected
     perc_reject = 100 * (epoch_is_art.sum() / n_epochs)
-    text = (f"TOTAL: {epoch_is_art.sum()} / {n_epochs} epochs rejected ({perc_reject:.2f}%)")
+    text = f"TOTAL: {epoch_is_art.sum()} / {n_epochs} epochs rejected ({perc_reject:.2f}%)"
     logger.info(text)
 
     # Convert epoch_is_art to boolean [0, 0, 1] -- > [False, False, True]

@@ -10,9 +10,8 @@ from yasa.staging import SleepStaging
 ##############################################################################
 
 # MNE Raw
-raw = mne.io.read_raw_fif('notebooks/sub-02_mne_raw.fif', preload=True,
-                          verbose=0)
-hypno = np.loadtxt('notebooks/sub-02_hypno_30s.txt', dtype=str)
+raw = mne.io.read_raw_fif("notebooks/sub-02_mne_raw.fif", preload=True, verbose=0)
+hypno = np.loadtxt("notebooks/sub-02_hypno_30s.txt", dtype=str)
 
 
 class TestStaging(unittest.TestCase):
@@ -20,8 +19,9 @@ class TestStaging(unittest.TestCase):
 
     def test_sleep_staging(self):
         """Test sleep staging"""
-        sls = SleepStaging(raw, eeg_name="C4", eog_name="EOG1",
-                           emg_name="EMG1", metadata=dict(age=21, male=False))
+        sls = SleepStaging(
+            raw, eeg_name="C4", eog_name="EOG1", emg_name="EMG1", metadata=dict(age=21, male=False)
+        )
         sls.get_features()
         y_pred = sls.predict()
         proba = sls.predict_proba()
@@ -33,12 +33,11 @@ class TestStaging(unittest.TestCase):
         # Plot
         sls.plot_predict_proba()
         sls.plot_predict_proba(proba, majority_only=True)
-        plt.close('all')
+        plt.close("all")
 
         # Same with different combinations of predictors
         # .. without metadata
-        SleepStaging(raw, eeg_name="C4", eog_name="EOG1",
-                     emg_name="EMG1").fit()
+        SleepStaging(raw, eeg_name="C4", eog_name="EOG1", emg_name="EMG1").fit()
         # .. without EMG
         SleepStaging(raw, eeg_name="C4", eog_name="EOG1").fit()
         # .. just the EEG

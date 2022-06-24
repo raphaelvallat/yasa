@@ -2,11 +2,15 @@
 import pytest
 import logging
 import unittest
-from yasa.io import (is_sleepecg_installed, set_log_level, is_tensorpac_installed,
-                     is_pyriemann_installed)
+from yasa.io import (
+    is_sleepecg_installed,
+    set_log_level,
+    is_tensorpac_installed,
+    is_pyriemann_installed,
+)
 
-logger = logging.getLogger('yasa')
-levels = ['debug', 'info', 'warning', 'error', 'critical']
+logger = logging.getLogger("yasa")
+levels = ["debug", "info", "warning", "error", "critical"]
 
 
 class TestIO(unittest.TestCase):
@@ -20,7 +24,7 @@ class TestIO(unittest.TestCase):
         set_log_level(True)
         set_log_level(None)
         with pytest.raises(ValueError):
-            set_log_level('WRONG')
+            set_log_level("WRONG")
 
     def test_logger(self):
         """Test logger levels."""

@@ -40,6 +40,14 @@ To install YASA, simply open a terminal or Anaconda command prompt and enter:
 
   pip install --upgrade yasa
 
+Alternatively, YASA can be installed with conda:
+
+.. code-block:: shell
+
+  conda config --add channels conda-forge
+  conda config --set channel_priority strict
+  conda install yasa
+
 **What are the prerequisites for using YASA?**
 
 To use YASA, all you need is:
