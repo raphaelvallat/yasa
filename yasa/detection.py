@@ -32,8 +32,16 @@ from .others import (
 
 logger = logging.getLogger("yasa")
 
-__all__ = ['art_detect', 'spindles_detect', 'SpindlesResults', 'sw_detect', 'SWResults',
-           'rem_detect', 'REMResults', 'compare_detection']
+__all__ = [
+    "art_detect",
+    "spindles_detect",
+    "SpindlesResults",
+    "sw_detect",
+    "SWResults",
+    "rem_detect",
+    "REMResults",
+    "compare_detection",
+]
 
 
 #############################################################################
@@ -340,6 +348,7 @@ class _DetectionResults(object):
         See full documentation in the methods of SpindlesResults and SWResults.
         """
         from itertools import product
+
         assert score in ["f1", "precision", "recall"], f"Invalid scoring metric: {score}"
 
         # Extract events and channel
@@ -387,7 +396,8 @@ class _DetectionResults(object):
         else:
             raise ValueError(
                 f"Invalid argument other: {other}. It must be a YASA detection output or a Pandas "
-                f"DataFrame with the columns Start and Channels")
+                f"DataFrame with the columns Start and Channels"
+            )
 
         # Get indices of start in deciseconds, rounding to nearest deciseconds (100 ms).
         # This is needed for three reasons:
@@ -406,13 +416,13 @@ class _DetectionResults(object):
         if not len(chan_both):
             raise ValueError(
                 f"No intersecting channel between self and other:\n"
-                f"{chan_detected}\n{chan_groundtruth}")
+                f"{chan_detected}\n{chan_groundtruth}"
+            )
 
         # The output is a pandas.DataFrame (n_chan, n_metrics).
         scores = pd.DataFrame(
-            index=chan_both,
-            columns=["precision", "recall", "f1", "n_self", "n_other"],
-            dtype=float)
+            index=chan_both, columns=["precision", "recall", "f1", "n_self", "n_other"], dtype=float
+        )
         scores.index.name = "Channel"
 
         # Loop on each channel
@@ -434,8 +444,18 @@ class _DetectionResults(object):
 
         return scores
 
-    def plot_average(self, event_type, center='Peak', hue='Channel', time_before=1,
-                     time_after=1, filt=(None, None), mask=None, figsize=(6, 4.5), **kwargs):
+    def plot_average(
+        self,
+        event_type,
+        center="Peak",
+        hue="Channel",
+        time_before=1,
+        time_after=1,
+        filt=(None, None),
+        mask=None,
+        figsize=(6, 4.5),
+        **kwargs,
+    ):
         """Plot the average event (not for REM, spindles & SW only)"""
         import seaborn as sns
         import matplotlib.pyplot as plt
@@ -3166,6 +3186,7 @@ def art_detect(
 # COMPARE DETECTION
 #############################################################################
 
+
 def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
     """
     Determine correctness of detected events against ground-truth events.
@@ -3280,7 +3301,10 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
             tp=np.array([], dtype=int),
             fp=np.array([], dtype=int),
             fn=indices_groundtruth.copy(),
-            precision=0, recall=0, f1=0)
+            precision=0,
+            recall=0,
+            f1=0,
+        )
         return results
 
     if indices_groundtruth.size == 0:
@@ -3288,7 +3312,10 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
             tp=np.array([], dtype=int),
             fp=indices_detection.copy(),
             fn=np.array([], dtype=int),
-            precision=0, recall=0, f1=0)
+            precision=0,
+            recall=0,
+            f1=0,
+        )
         return results
 
     # Create boolean masks
@@ -3303,17 +3330,18 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
     if len(fuzzy_filter) >= max_len:
         raise ValueError(
             f"The convolution window is larger than the signal. `max_distance` should be between "
-            f"0 and {int(max_len / 2 - 1)} samples.")
-    detection_mask_fuzzy = np.convolve(detection_mask, fuzzy_filter, mode='same')
-    true_mask_fuzzy = np.convolve(true_mask, fuzzy_filter, mode='same')
+            f"0 and {int(max_len / 2 - 1)} samples."
+        )
+    detection_mask_fuzzy = np.convolve(detection_mask, fuzzy_filter, mode="same")
+    true_mask_fuzzy = np.convolve(true_mask, fuzzy_filter, mode="same")
 
     # Confusion matrix and performance metrics
     results = {}
-    results['tp'] = np.where(detection_mask & true_mask_fuzzy)[0]
-    results['fp'] = np.where(detection_mask & ~true_mask_fuzzy)[0]
-    results['fn'] = np.where(~detection_mask_fuzzy & true_mask)[0]
+    results["tp"] = np.where(detection_mask & true_mask_fuzzy)[0]
+    results["fp"] = np.where(detection_mask & ~true_mask_fuzzy)[0]
+    results["fn"] = np.where(~detection_mask_fuzzy & true_mask)[0]
 
-    n_tp, n_fp, n_fn = len(results['tp']), len(results['fp']), len(results['fn'])
+    n_tp, n_fp, n_fn = len(results["tp"]), len(results["fp"]), len(results["fn"])
     results["precision"] = n_tp / (n_tp + n_fp)
     results["recall"] = n_tp / (n_tp + n_fn)
     results["f1"] = n_tp / (n_tp + 0.5 * (n_fp + n_fn))

@@ -109,7 +109,7 @@ class TestDetection(unittest.TestCase):
         with pytest.raises(ValueError):
             sp.compare_detection(other="WRONG")
 
-        with self.assertLogs('yasa', level='WARNING'):
+        with self.assertLogs("yasa", level="WARNING"):
             spindles_detect(data_n3, sf)
         # assert sp is None --> Fails?
 
@@ -412,7 +412,7 @@ class TestDetection(unittest.TestCase):
 
         with pytest.raises(AssertionError):
             # None of include in hypno
-            art_detect(data_mne, window=10., hypno=hypno_mne, include=[7, 8])
+            art_detect(data_mne, window=10.0, hypno=hypno_mne, include=[7, 8])
 
     def test_compare_detect(self):
         """Test compare_detect function."""
@@ -476,7 +476,7 @@ class TestDetection(unittest.TestCase):
         grndtrth = np.array([5, 12, 18, 26, 34, 41, 55, 63, 68], dtype=int)
         res = compare_detection(detected, grndtrth)
         assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))
-        detected = [5., 12, 20., 34, 41., 57., 63]
+        detected = [5.0, 12, 20.0, 34, 41.0, 57.0, 63]
         grndtrth = pd.Series([5, 12, 18, 26, 34, 41, 55, 63, 68])
         res = compare_detection(detected, grndtrth)
         assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))
