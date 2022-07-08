@@ -21,6 +21,7 @@ c. Added a new dataset containing 8 hours of ECG data. The dataset is in compres
 
 a. When using an MNE.Raw object, conversion of the data from Volts to micro-Volts is now performed within MNE. `PR 70 <https://github.com/raphaelvallat/yasa/pull/70>`_
 b. Use `black <https://black.readthedocs.io/en/stable/>`_ code formatting.
+c. Better handling of flat data in :py:func:`yasa.spindles_detect`. The function previously returned a division by zero error if part of the data was flat. See `issue 85 <https://github.com/raphaelvallat/yasa/issues/85>`_
 
 **Dependencies**
 

@@ -91,6 +91,12 @@ class TestDetection(unittest.TestCase):
         # Test with hypnogram
         spindles_detect(data, sf, hypno=np.ones(data.size))
 
+        # Test with 1-sec of flat data -- we should still have 2 detected spindles
+        data_flat = data.copy()
+        data_flat[100:200] = 1
+        sp = spindles_detect(data_flat, sf).summary()
+        assert sp.shape[0] == 2
+
         # Single channel with Isolation Forest + hypnogram
         sp = spindles_detect(data_full[1, :], sf, hypno=hypno_full, remove_outliers=True)
 
