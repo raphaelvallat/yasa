@@ -96,15 +96,16 @@ class TestDetection(unittest.TestCase):
         # Test with hypnogram
         spindles_detect(data, sf, hypno=np.ones(data.size))
 
-        # Full night single channel with Isolation Forest + hypnogram
-        sp = spindles_detect(data_full[1, :], sf, hypno=hypno_full)
-        sp_no_out = spindles_detect(data_full[1, :], sf, hypno=hypno_full, remove_outliers=True)
-        assert sp.compare_detection(sp_no_out).shape[0] == 1
         # Test with 1-sec of flat data -- we should still have 2 detected spindles
         data_flat = data.copy()
         data_flat[100:200] = 1
         sp = spindles_detect(data_flat, sf).summary()
         assert sp.shape[0] == 2
+
+        # Full night single channel with Isolation Forest + hypnogram
+        sp = spindles_detect(data_full[1, :], sf, hypno=hypno_full)
+        sp_no_out = spindles_detect(data_full[1, :], sf, hypno=hypno_full, remove_outliers=True)
+        assert sp.compare_detection(sp_no_out).shape[0] == 1
 
         # Calculate the coincidence matrix with only one channel
         with pytest.raises(ValueError):
