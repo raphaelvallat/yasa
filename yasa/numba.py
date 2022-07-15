@@ -27,6 +27,8 @@ def _corr(x, y):
     r_d1 = np.sqrt(xm2s)
     r_d2 = np.sqrt(ym2s)
     r_den = r_d1 * r_d2
+    if r_den == 0:
+        return np.nan
     return r_num / r_den
 
 
@@ -69,6 +71,8 @@ def _slope_lstsq(x, y):
         sy += y[j]
     den = n_times * sx2 - (sx**2)
     num = n_times * sxy - sx * sy
+    if den == 0:
+        return np.nan
     return num / den
 
 
