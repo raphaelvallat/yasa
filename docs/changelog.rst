@@ -11,23 +11,29 @@ What's new
 v0.6.2.dev
 ----------
 
-**New functions**
+**ECG analysis** - `PR 68 <https://github.com/raphaelvallat/yasa/pull/68>`_
 
-a. Added the :py:func:`yasa.hypno_find_periods` function to find sequences of consecutive values in hypnogram that are longer than a certain duration. This is a flexible function that can be used to detect NREM/REM periods. `PR 68 <https://github.com/raphaelvallat/yasa/pull/68>`_
-b. Added the :py:func:`yasa.hrv_stage` function, which calculates heart rate (HR) and heart rate variability (HRV) by stage and periods. The epochs are found using the newly-added :py:func:`yasa.hypno_find_periods` function. `PR 68 <https://github.com/raphaelvallat/yasa/pull/68>`_
+a. Added the :py:func:`yasa.hypno_find_periods` function to find sequences of consecutive values in hypnogram that are longer than a certain duration. This is a flexible function that can be used to detect NREM/REM periods.
+b. Added the :py:func:`yasa.hrv_stage` function, which calculates heart rate (HR) and heart rate variability (HRV) by stage and periods.
 c. Added a new dataset containing 8 hours of ECG data. The dataset is in compressed NumPy format and can be found in notebooks/data_ECG_8hrs_200Hz.npz. The dataset also includes an upsampled hypnogram.
 
-**Improvements**
+**Spindles & slow-waves detection** - `PR 71 <https://github.com/raphaelvallat/yasa/pull/71>`_
+
+a. Added the :py:func:`yasa.compare_detection` function to determine the correctness of detected events against ground-truth events. It calculates the true positive, false positives and false negatives, and from those, the precision, recall and F1-scores. The input should be the indices of the onset of the event, in samples. It includes a max_distance argument which specifies the tolerance window (in number of samples) for two events to be considered the same.
+b. Added the :py:meth:`yasa.SpindlesResults.compare_detection` and :py:meth:`yasa.SWResults.compare_detection` method. This is a powerful and flexible function that allows to calculate the performance of the current detection against a) another detection or b) ground-truth annotations. For example, we can compare the output of the spindles detection with different thresholds.
+c. Added the :py:meth:`yasa.SpindlesResults.compare_channels` and :py:meth:`yasa.SWResults.compare_channels` methods to compare the overlap of the detected events between channels. Agreement is calculated using the F1-score (default), precision or recall.
+d. Add ``vmin`` and ``vmax`` parameters to :py:func:`yasa.plot_spectrogram`. `PR 75 <https://github.com/raphaelvallat/yasa/pull/75>`_
+e. Better handling of flat data in :py:func:`yasa.spindles_detect`. The function previously returned a division by zero error if part of the data was flat. See `issue 85 <https://github.com/raphaelvallat/yasa/issues/85>`_
+f. When using an MNE.Raw object, conversion of the data from Volts to micro-Volts is now performed within MNE. `PR 70 <https://github.com/raphaelvallat/yasa/pull/70>`_
+g. Use `black <https://black.readthedocs.io/en/stable/>`_ code formatting.
+
+**Others**
 
 a. When using an MNE.Raw object, conversion of the data from Volts to micro-Volts is now performed within MNE. `PR 70 <https://github.com/raphaelvallat/yasa/pull/70>`_
-b. Use `black <https://black.readthedocs.io/en/stable/>`_ code formatting. `PR 83 <https://github.com/raphaelvallat/yasa/pull/83>`_
-c. Add ``vmin`` and ``vmax`` parameters to :py:func:`yasa.plot_spectrogram`. `PR 75 <https://github.com/raphaelvallat/yasa/pull/75>`_
-d. Better handling of flat data in :py:func:`yasa.spindles_detect`. The function previously returned a division by zero error if part of the data was flat. See `issue 85 <https://github.com/raphaelvallat/yasa/issues/85>`_
+b. Added `SleepECG <https://sleepecg.readthedocs.io/en/stable/>`_ to the dependencies. SleepECG is used for the heartbeats detection in :py:func:`yasa.hrv_stage`.
+c. YASA now requires MNE>0.23
 
-**Dependencies**
-
-a. Added `SleepECG <https://sleepecg.readthedocs.io/en/stable/>`_ to the dependencies. SleepECG is used for the heartbeats detection in :py:func:`yasa.hrv_stage`.
-b. YASA now requires MNE>0.23
+----------------------------------------------------------------------------------------
 
 v0.6.1 (March 2022)
 -------------------
@@ -37,6 +43,8 @@ For example, downsampling the data from 256 Hz to 128 Hz may have significantly 
 in :py:func:`numpy.convolve` when calculating the soft spindle threshold. Tests seem to indicate that only certain sampling frequencies were impacted, such as 200 Hz, 256 Hz or 400 Hz. Other sampling frequencies such as 100 Hz and 500 Hz were seemingly not affected by this bug. Please double-check any results obtained with :py:func:`yasa.spindles_detect`!
 
 .. warning:: We recommend all users to upgrade to this new version ASAP and check any results obtained with the :py:func:`yasa.spindles_detect` function!
+
+----------------------------------------------------------------------------------------
 
 v0.6.0 (February 2022)
 ----------------------
@@ -91,6 +99,8 @@ v0.5.1 (August 2021)
 --------------------
 
 This is a bugfix release. The latest pre-trained classifiers for :py:class:`yasa.SleepStaging` were accidentally missing from the previous release. They have now been included in this release.
+
+----------------------------------------------------------------------------------------
 
 v0.5.0 (August 2021)
 --------------------
@@ -208,141 +218,113 @@ d. Filtering and Hilbert transform are now applied at once on all channels (inst
 
 ----------------------------------------------------------------------------------------
 
-v0.2.0 (April 2020)
--------------------
+Older versions
+--------------
 
-This is a major release with several new functions, bugfixes and miscellaneous enhancements in existing functions.
+.. dropdown:: **v0.2.0 (April 2020)**
 
-**Bugfixes**
+  This is a major release with several new functions, bugfixes and miscellaneous enhancements in existing functions.
 
-a. Sleep efficiency in the :py:func:`yasa.sleep_statistics` is now calculated using time in bed (TIB) as the denominator instead of sleep period time (SPT), in agreement with the AASM guidelines. The old way of computing the efficiency (TST / SPT) has now been renamed Sleep Maintenance Efficiency (SME).
-b. The :py:func:`yasa.sliding_window` now always return an array of shape (n_epochs, ..., n_samples), i.e. the epochs are now always the first dimension of the epoched array. This is consistent with MNE default shape of :py:class:`mne.Epochs` objects.
+  **Bugfixes**
 
-**New functions**
+  a. Sleep efficiency in the :py:func:`yasa.sleep_statistics` is now calculated using time in bed (TIB) as the denominator instead of sleep period time (SPT), in agreement with the AASM guidelines. The old way of computing the efficiency (TST / SPT) has now been renamed Sleep Maintenance Efficiency (SME).
+  b. The :py:func:`yasa.sliding_window` now always return an array of shape (n_epochs, ..., n_samples), i.e. the epochs are now always the first dimension of the epoched array. This is consistent with MNE default shape of :py:class:`mne.Epochs` objects.
 
-a. Added :py:func:`yasa.art_detect` to automatically detect artefacts on single or multi-channel EEG data.
-b. Added :py:func:`yasa.bandpower_from_psd_ndarray` to calculate band power from a multi-dimensional PSD. This is a NumPy-only implementation and this function will return a np.array and not a pandas DataFrame. This function is useful if you need to calculate the bandpower from a 3-D PSD array, e.g. of shape *(n_epochs, n_chan, n_freqs)*.
-c. Added :py:func:`yasa.get_centered_indices` to extract indices in data centered around specific events or peaks.
-d. Added :py:func:`yasa.load_profusion_hypno` to load a Compumedics Profusion hypnogram (.xml), as found on the `National Sleep Research Resource (NSRR) <https://sleepdata.org/>`_ website.
+  **New functions**
 
-**Enhancements**
+  a. Added :py:func:`yasa.art_detect` to automatically detect artefacts on single or multi-channel EEG data.
+  b. Added :py:func:`yasa.bandpower_from_psd_ndarray` to calculate band power from a multi-dimensional PSD. This is a NumPy-only implementation and this function will return a np.array and not a pandas DataFrame. This function is useful if you need to calculate the bandpower from a 3-D PSD array, e.g. of shape *(n_epochs, n_chan, n_freqs)*.
+  c. Added :py:func:`yasa.get_centered_indices` to extract indices in data centered around specific events or peaks.
+  d. Added :py:func:`yasa.load_profusion_hypno` to load a Compumedics Profusion hypnogram (.xml), as found on the `National Sleep Research Resource (NSRR) <https://sleepdata.org/>`_ website.
 
-a. :py:func:`yasa.sleep_statistics` now also returns the sleep onset latency, i.e. the latency to the first epoch of any sleep.
-b. Added the `bandpass` argument to :py:func:`yasa.bandpower` to apply a FIR bandpass filter using the lowest and highest frequencies defined in `bands`. This is useful if you work with absolute power and want to remove contributions from frequency bands of non-interests.
-c. The :py:func:`yasa.bandpower_from_psd` now always return the total absolute physical power (`TotalAbsPow`) of the signal, in units of uV^2 / Hz. This allows to quickly calculate the absolute bandpower from the relative bandpower.
-d. Added sigma (12-16Hz) to the default frequency bands (`bands`) in :py:func:`yasa.bandpower` and :py:func:`yasa.bandpower_from_psd`.
-e. Added the ``coupling`` and ``freq_sp`` keyword-arguments to the :py:func:`yasa.sw_detect` function. If ``coupling=True``, the function will return the phase of the slow-waves (in radians) at the most prominent peak of sigma-filtered band (``PhaseAtSigmaPeak``), as well as the normalized mean vector length (``ndPAC``).
-f. Added an section in the `06_sw_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb>`_ notebooks on how to use relative amplitude thresholds (e.g. z-scores or percentiles) instead of absolute thresholds in slow-waves detection.
-g. The upper frequency band for :py:func:`yasa.sw_detect` has been changed from ``freq_sw=(0.3, 3.5)`` to ``freq_sw=(0.3, 2)`` Hz to comply with AASM guidelines.
-h. ``Stage`` is no longer taken into account when finding outliers with :py:class:`sklearn.ensemble.IsolationForest` in :py:func:`yasa.spindles_detect`.
-i. To be consistent with :py:func:`yasa.spindles_detect`, automatic outlier removal now requires at least 50 (instead of 100) detected events in :py:func:`yasa.sw_detect` and :py:func:`yasa.rem_detect`.
-j. Added the ``verbose`` parameter to all detection functions.
-k. Added -2 to the default hypnogram format to denote unscored data.
+  **Enhancements**
 
-**Dependencies**
+  a. :py:func:`yasa.sleep_statistics` now also returns the sleep onset latency, i.e. the latency to the first epoch of any sleep.
+  b. Added the `bandpass` argument to :py:func:`yasa.bandpower` to apply a FIR bandpass filter using the lowest and highest frequencies defined in `bands`. This is useful if you work with absolute power and want to remove contributions from frequency bands of non-interests.
+  c. The :py:func:`yasa.bandpower_from_psd` now always return the total absolute physical power (`TotalAbsPow`) of the signal, in units of uV^2 / Hz. This allows to quickly calculate the absolute bandpower from the relative bandpower.
+  d. Added sigma (12-16Hz) to the default frequency bands (`bands`) in :py:func:`yasa.bandpower` and :py:func:`yasa.bandpower_from_psd`.
+  e. Added the ``coupling`` and ``freq_sp`` keyword-arguments to the :py:func:`yasa.sw_detect` function. If ``coupling=True``, the function will return the phase of the slow-waves (in radians) at the most prominent peak of sigma-filtered band (``PhaseAtSigmaPeak``), as well as the normalized mean vector length (``ndPAC``).
+  f. Added an section in the `06_sw_detection.ipynb <https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb>`_ notebooks on how to use relative amplitude thresholds (e.g. z-scores or percentiles) instead of absolute thresholds in slow-waves detection.
+  g. The upper frequency band for :py:func:`yasa.sw_detect` has been changed from ``freq_sw=(0.3, 3.5)`` to ``freq_sw=(0.3, 2)`` Hz to comply with AASM guidelines.
+  h. ``Stage`` is no longer taken into account when finding outliers with :py:class:`sklearn.ensemble.IsolationForest` in :py:func:`yasa.spindles_detect`.
+  i. To be consistent with :py:func:`yasa.spindles_detect`, automatic outlier removal now requires at least 50 (instead of 100) detected events in :py:func:`yasa.sw_detect` and :py:func:`yasa.rem_detect`.
+  j. Added the ``verbose`` parameter to all detection functions.
+  k. Added -2 to the default hypnogram format to denote unscored data.
 
-a. Removed deprecated ``behavior`` argument to avoid warning when calling :py:class:`sklearn.ensemble.IsolationForest`.
-b. Added `TensorPAC <https://etiennecmb.github.io/tensorpac/index.html>`_ and `pyRiemann <https://pyriemann.readthedocs.io/en/latest/api.html>`_ to dependencies.
-c. Updated dependencies version for MNE and scikit-learn.
+  **Dependencies**
 
-----------------------------------------------------------------------------------------
+  a. Removed deprecated ``behavior`` argument to avoid warning when calling :py:class:`sklearn.ensemble.IsolationForest`.
+  b. Added `TensorPAC <https://etiennecmb.github.io/tensorpac/index.html>`_ and `pyRiemann <https://pyriemann.readthedocs.io/en/latest/api.html>`_ to dependencies.
+  c. Updated dependencies version for MNE and scikit-learn.
 
-v0.1.9 (February 2020)
-----------------------
+.. dropdown:: **v0.1.9 (February 2020)**
 
-**New functions**
+  **New functions**
 
-a. Added :py:func:`yasa.transition_matrix` to calculate the state-transition matrix of an hypnogram.
-b. Added :py:func:`yasa.sleep_statistics` to extract the sleep statistics from an hypnogram.
-c. Added the ``coupling`` and ``freq_so`` keyword-arguments to the :py:func:`yasa.spindles_detect` function. If ``coupling=True``, the function will also returns the phase of the slow-waves (in radians) at the most prominent peak of the spindles. This can be used to perform spindles-SO coupling, as explained in the new Jupyter notebooks on PAC and spindles-SO coupling.
+  a. Added :py:func:`yasa.transition_matrix` to calculate the state-transition matrix of an hypnogram.
+  b. Added :py:func:`yasa.sleep_statistics` to extract the sleep statistics from an hypnogram.
+  c. Added the ``coupling`` and ``freq_so`` keyword-arguments to the :py:func:`yasa.spindles_detect` function. If ``coupling=True``, the function will also returns the phase of the slow-waves (in radians) at the most prominent peak of the spindles. This can be used to perform spindles-SO coupling, as explained in the new Jupyter notebooks on PAC and spindles-SO coupling.
 
-**Enhancements**
+  **Enhancements**
 
-a. It is now possible to disable one or two out of the three thresholds in the :py:func:`yasa.spindles_detect`. This allows the users to run a simpler detection (for example focusing exclusively on the moving root mean square signal).
-b. The :py:func:`yasa.spindles_detect` now returns the timing (in seconds) of the most prominent peak of each spindles (``Peak``).
-c. The yasa.get_sync_sw has been renamed to :py:func:`yasa.get_sync_events` and is now compatible with spindles detection. This can be used for instance to plot the peak-locked grand averaged spindle.
+  a. It is now possible to disable one or two out of the three thresholds in the :py:func:`yasa.spindles_detect`. This allows the users to run a simpler detection (for example focusing exclusively on the moving root mean square signal).
+  b. The :py:func:`yasa.spindles_detect` now returns the timing (in seconds) of the most prominent peak of each spindles (``Peak``).
+  c. The yasa.get_sync_sw has been renamed to :py:func:`yasa.get_sync_events` and is now compatible with spindles detection. This can be used for instance to plot the peak-locked grand averaged spindle.
 
-**Code testing**
+  **Code testing**
 
-a. Removed Travis and AppVeyor testing for Python 3.5.
+  a. Removed Travis and AppVeyor testing for Python 3.5.
 
-----------------------------------------------------------------------------------------
+.. dropdown:: **v0.1.8 (October 2019)**
 
-v0.1.8 (October 2019)
----------------------
+  a. Added :py:func:`yasa.plot_spectrogram` function.
+  b. Added `lspopt <https://github.com/hbldh/lspopt>`_ in the dependencies.
+  c. YASA now requires `MNE <https://mne.tools/stable/index.html>`_>0.19.
+  d. Added a notebook on non-linear features.
 
-a. Added :py:func:`yasa.plot_spectrogram` function.
-b. Added `lspopt <https://github.com/hbldh/lspopt>`_ in the dependencies.
-c. YASA now requires `MNE <https://mne.tools/stable/index.html>`_>0.19.
-d. Added a notebook on non-linear features.
+.. dropdown:: **v0.1.7 (August 2019)**
 
-----------------------------------------------------------------------------------------
+  a. Added :py:func:`yasa.sliding_window` function.
+  b. Added :py:func:`yasa.irasa` function.
+  c. Reorganized code into several sub-files for readability (internal changes with no effect on user experience).
 
-v0.1.7 (August 2019)
---------------------
+.. dropdown:: **v0.1.6 (August 2019)**
 
-a. Added :py:func:`yasa.sliding_window` function.
-b. Added :py:func:`yasa.irasa` function.
-c. Reorganized code into several sub-files for readability (internal changes with no effect on user experience).
+  a. Added bandpower function
+  b. One can now directly pass a raw MNE object in several multi-channel functions of YASA, instead of manually passing data, sf, and ch_names. YASA will automatically convert MNE data from Volts to uV, and extract the sampling frequency and channel names. Examples of this can be found in the Jupyter notebooks examples.
 
-----------------------------------------------------------------------------------------
+.. dropdown:: **v0.1.5 (August 2019)**
 
-v0.1.6 (August 2019)
---------------------
+  a. Added REM detection (rem_detect) on LOC and ROC EOG channels + example notebook
+  b. Added yasa/hypno.py file, with several functions to load and upsample sleep stage vector (hypnogram).
+  c. Added yasa/spectral.py file, which includes the bandpower_from_psd function to calculate the single or multi-channel spectral power in specified bands from a pre-computed PSD (see example notebook at notebooks/10_bandpower.ipynb)
 
-a. Added bandpower function
-b. One can now directly pass a raw MNE object in several multi-channel functions of YASA, instead of manually passing data, sf, and ch_names. YASA will automatically convert MNE data from Volts to uV, and extract the sampling frequency and channel names. Examples of this can be found in the Jupyter notebooks examples.
+.. dropdown:: **v0.1.4 (May 2019)**
 
-----------------------------------------------------------------------------------------
+  a. Added get_sync_sw function to get the synchronized timings of landmarks timepoints in slow-wave sleep. This can be used in combination with seaborn.lineplot to plot an average template of the detected slow-wave, per channel.
 
-v0.1.5 (August 2019)
---------------------
+.. dropdown:: **v0.1.3 (March 2019)**
 
-a. Added REM detection (rem_detect) on LOC and ROC EOG channels + example notebook
-b. Added yasa/hypno.py file, with several functions to load and upsample sleep stage vector (hypnogram).
-c. Added yasa/spectral.py file, which includes the bandpower_from_psd function to calculate the single or multi-channel spectral power in specified bands from a pre-computed PSD (see example notebook at notebooks/10_bandpower.ipynb)
+  a. Added slow-waves detection for single and multi channel
+  b. Added include argument to select which values of hypno should be used as a mask.
+  c. New examples notebooks + changes in README
+  d. Minor improvements in performance (e.g. faster detrending)
+  e. Added html API (/html)
+  f. Travis and AppVeyor test for Python 3.5, 3.6 and 3.7
 
-----------------------------------------------------------------------------------------
+.. dropdown:: **v0.1.2 (February 2019)**
 
-v0.1.4 (May 2019)
------------------
+  a. Added support for multi-channel detection via spindles_detect_multi function.
+  b. Added support for hypnogram mask
+  c. Added several notebook examples
+  d. Changed some default parameters to optimize behavior
 
-a. Added get_sync_sw function to get the synchronized timings of landmarks timepoints in slow-wave sleep. This can be used in combination with seaborn.lineplot to plot an average template of the detected slow-wave, per channel.
+.. dropdown:: **v0.1.1 (January 2019)**
 
-----------------------------------------------------------------------------------------
+  a. Added post-processing Isolation Forest
+  b. Updated Readme and added support with Visbrain
+  c. Added Cz full night in notebooks/
 
-v0.1.3 (March 2019)
--------------------
+.. dropdown:: **v0.1 (December 2018)**
 
-a. Added slow-waves detection for single and multi channel
-b. Added include argument to select which values of hypno should be used as a mask.
-c. New examples notebooks + changes in README
-d. Minor improvements in performance (e.g. faster detrending)
-e. Added html API (/html)
-f. Travis and AppVeyor test for Python 3.5, 3.6 and 3.7
-
-----------------------------------------------------------------------------------------
-
-v0.1.2 (February 2019)
-----------------------
-
-a. Added support for multi-channel detection via spindles_detect_multi function.
-b. Added support for hypnogram mask
-c. Added several notebook examples
-d. Changed some default parameters to optimize behavior
-
-----------------------------------------------------------------------------------------
-
-v0.1.1 (January 2019)
-----------------------
-
-a. Added post-processing Isolation Forest
-b. Updated Readme and added support with Visbrain
-c. Added Cz full night in notebooks/
-
-----------------------------------------------------------------------------------------
-
-v0.1 (December 2018)
---------------------
-
-Initial release of YASA: basic spindles detection.
+  Initial release of YASA: basic spindles detection.

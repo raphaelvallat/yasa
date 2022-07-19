@@ -3,11 +3,12 @@ import mne
 import pytest
 import unittest
 import numpy as np
+import pandas as pd
 from itertools import product
 import matplotlib.pyplot as plt
 from mne.filter import filter_data
 from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
-from yasa.detection import spindles_detect, sw_detect, rem_detect, art_detect
+from yasa.detection import spindles_detect, sw_detect, rem_detect, art_detect, compare_detection
 
 ##############################################################################
 # DATA LOADING
@@ -47,6 +48,8 @@ hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30), data=data
 
 
 class TestDetection(unittest.TestCase):
+    """Unit tests for detection.py"""
+
     def test_check_data_hypno(self):
         """Test preprocessing of data and hypno."""
         pass
@@ -72,6 +75,8 @@ class TestDetection(unittest.TestCase):
         sp.get_sync_events(time_before=10)  # Invalid time window
         sp.plot_average(ci=None, filt=(None, 30))  # Skip bootstrapping
         np.testing.assert_array_equal(np.squeeze(sp._data), data)
+        # Compare channels return dataframe with single cell
+        assert sp.compare_channels().shape == (1, 1)
         assert sp._sf == sf
         sp.summary(grp_chan=True, grp_stage=True, aggfunc="median", sort=False)
 
@@ -97,12 +102,18 @@ class TestDetection(unittest.TestCase):
         sp = spindles_detect(data_flat, sf).summary()
         assert sp.shape[0] == 2
 
-        # Single channel with Isolation Forest + hypnogram
-        sp = spindles_detect(data_full[1, :], sf, hypno=hypno_full, remove_outliers=True)
+        # Full night single channel with Isolation Forest + hypnogram
+        sp = spindles_detect(data_full[1, :], sf, hypno=hypno_full)
+        sp_no_out = spindles_detect(data_full[1, :], sf, hypno=hypno_full, remove_outliers=True)
+        assert sp.compare_detection(sp_no_out).shape[0] == 1
 
         # Calculate the coincidence matrix with only one channel
         with pytest.raises(ValueError):
             sp.get_coincidence_matrix()
+
+        # compare_detection with invalid other
+        with pytest.raises(ValueError):
+            sp.compare_detection(other="WRONG")
 
         with self.assertLogs("yasa", level="WARNING"):
             spindles_detect(data_n3, sf)
@@ -154,6 +165,23 @@ class TestDetection(unittest.TestCase):
         assert sp_multi.summary().shape[0] < sp.summary().shape[0]
         assert sp_no_out.summary().shape[0] < sp.summary().shape[0]
 
+        # Test compare_detection
+        assert (sp.compare_detection(sp)["f1"] == 1).all()  # self vs self, f1-score is 1
+        sp_vs_multi = sp.compare_detection(sp_multi)
+        # When comparing against sp_multi as the reference, we expect a perfect recall
+        assert (sp_vs_multi["n_self"] > sp_vs_multi["n_other"]).all()
+        assert (sp_vs_multi["recall"] == 1).all()
+        # Setting `other_is_groundtruth=False`` == other.compare(self)
+        sp_vs_multi_revert = sp.compare_detection(sp_multi, other_is_groundtruth=False)
+        multi_vs_sp = sp_multi.compare_detection(sp)
+        assert (sp_vs_multi_revert["recall"] == multi_vs_sp["recall"]).all()
+        # With a look around and using the summary
+        sp_vs_nout_1s = sp.compare_detection(sp_no_out.summary(), max_distance_sec=1)
+        sp_vs_nout_2s = sp.compare_detection(sp_no_out.summary(), max_distance_sec=2)
+        assert (sp_vs_nout_2s["f1"] > sp_vs_nout_1s["f1"]).all()
+        assert (sp_vs_nout_2s["recall"] == sp_vs_nout_1s["recall"]).all()
+        assert (sp_vs_nout_2s["n_self"] == sp_vs_nout_1s["n_self"]).all()
+
         # Test with hypnogram
         sp = spindles_detect(data_full, sf, hypno=hypno_full, include=2)
         sp.summary(grp_chan=False, grp_stage=False)
@@ -163,6 +191,20 @@ class TestDetection(unittest.TestCase):
         sp.plot_average(ci=None)
         sp.plot_average(hue="Stage", ci=None)
         sp.plot_detection()
+
+        # Test compare_channels function
+        # .. F1-score -- symmetric matrix
+        mat = sp.compare_channels()
+        assert mat.equals(mat.T)  # mat is a symmetric matrix
+        assert (np.diag(mat) == 1).all()  # diagonal is all 1
+        idx_triu = np.triu_indices_from(mat, k=1)
+        mat_2s = sp.compare_channels(max_distance_sec=2)
+        # Make sure that the overall scores are higher when using a lookaround
+        assert mat.to_numpy()[idx_triu].mean() < mat_2s.to_numpy()[idx_triu].mean()
+        # Precision / recall -- not symmetric
+        mat_prec = sp.compare_channels(score="precision")
+        mat_rec = sp.compare_channels(score="recall")
+        assert mat_prec.T.equals(mat_rec)  # tril precision == triu recall
 
         # Using a MNE raw object (and disabling one threshold)
         spindles_detect(data_mne, thresh={"corr": None, "rms": 3})
@@ -223,6 +265,9 @@ class TestDetection(unittest.TestCase):
         # Test with outlier removal. There should be fewer events.
         sw_no_out = sw_detect(data_full, sf, chan_full, remove_outliers=True)
         assert sw_no_out._events.shape[0] < sw._events.shape[0]
+
+        # Test compare_detection
+        assert (sw.compare_detection(sw_no_out)["recall"] == 1).all()
 
         # Test with hypnogram
         sw = sw_detect(data_full, sf, chan_full, hypno=hypno_full, coupling=True)
@@ -374,3 +419,79 @@ class TestDetection(unittest.TestCase):
         with pytest.raises(AssertionError):
             # None of include in hypno
             art_detect(data_mne, window=10.0, hypno=hypno_mne, include=[7, 8])
+
+    def test_compare_detect(self):
+        """Test compare_detect function."""
+        from scipy.stats import hmean
+
+        # Default
+        detected = [5, 12, 20, 34, 41, 57, 63]
+        grndtrth = [5, 12, 18, 26, 34, 41, 55, 63, 68]
+        res = compare_detection(detected, grndtrth)
+        assert all(res["tp"] == [5, 12, 34, 41, 63])
+        assert all(res["fp"] == [20, 57])
+        assert all(res["fn"] == [18, 26, 55, 68])
+        assert np.isclose(res["precision"], 5 / 7)
+        assert np.isclose(res["recall"], 5 / 9)
+        assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))
+
+        # Changing the order: FN <--> FP, precision <--> recall No change in F1-score.
+        res = compare_detection(grndtrth, detected)
+        assert all(res["tp"] == [5, 12, 34, 41, 63])
+        assert all(res["fn"] == [20, 57])
+        assert all(res["fp"] == [18, 26, 55, 68])
+        assert np.isclose(res["precision"], 5 / 9)
+        assert np.isclose(res["recall"], 5 / 7)
+        assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))
+
+        # With max_distance
+        res = compare_detection(detected, grndtrth, max_distance=2)
+        assert all(res["tp"] == [5, 12, 20, 34, 41, 57, 63])
+        assert len(res["fp"]) == 0
+        assert all(res["fn"] == [26, 68])
+        assert np.isclose(res["precision"], 1)
+        assert np.isclose(res["recall"], 7 / 9)
+        assert np.isclose(res["f1"], hmean([1, 7 / 9]))
+
+        # Special cases
+        # ..detected is empty
+        res = compare_detection([], grndtrth)
+        assert len(res["tp"]) == 0
+        assert len(res["fp"]) == 0
+        assert all(res["fn"] == grndtrth)
+
+        # ..ground-truth is empty
+        res = compare_detection(detected, [])
+        assert len(res["tp"]) == 0
+        assert all(res["fp"] == detected)
+        assert len(res["fn"]) == 0
+
+        # ..detected is not sorted
+        np.random.seed(42)
+        np.random.shuffle(detected)
+        res = compare_detection(detected, grndtrth)
+        assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))  # Same as first example
+
+        # ..detected has duplicate values
+        detected = [5, 12, 12, 20, 34, 41, 41, 57, 63]
+        res = compare_detection(detected, grndtrth)
+        assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))  # Same as first example
+
+        # Handle dtypes
+        detected = np.array([5, 12, 20, 34, 41, 57, 63], dtype=float)
+        grndtrth = np.array([5, 12, 18, 26, 34, 41, 55, 63, 68], dtype=int)
+        res = compare_detection(detected, grndtrth)
+        assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))
+        detected = [5.0, 12, 20.0, 34, 41.0, 57.0, 63]
+        grndtrth = pd.Series([5, 12, 18, 26, 34, 41, 55, 63, 68])
+        res = compare_detection(detected, grndtrth)
+        assert np.isclose(res["f1"], hmean([5 / 7, 5 / 9]))
+
+        # Errors
+        with pytest.raises(AssertionError):
+            # Arrays contain non-integer floats
+            compare_detection([5.4, 12.2, 20], [5, 12.3, 18])
+
+        with pytest.raises(ValueError):
+            # Arrays contain non-integer floats
+            compare_detection(detected, grndtrth, max_distance=100)
