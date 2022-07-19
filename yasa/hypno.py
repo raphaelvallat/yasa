@@ -343,10 +343,8 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
         More generally, this can be any vector for which you wish to find runs of
         consecutive items.
     sf_hypno : float
-        The current sampling frequency of ``hypno``, in Hz, e.g.
-
-        * 1/30 = 1 value per each 30 seconds of EEG data,
-        * 1 = 1 value per second of EEG data
+        The current sampling frequency of ``hypno``, in Hz, e.g. 1/30 = 1 value per each 30 seconds
+        of EEG data, 1 = 1 value per second of EEG data.
     threshold : str
         This function will only keep periods that exceed a certain duration (default '5min'), e.g.
         '5min', '15min', '30sec', '1hour'. To disable thresholding, use '0sec'.
@@ -360,9 +358,9 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     periods : :py:class:`pandas.DataFrame`
         Output dataframe
 
-        * 'values' : The value in hypno of the current period
-        * 'start' : The index of the start of the period in hypno
-        * 'length' : The duration of the period, in number of samples
+        * ``values`` : The value in hypno of the current period
+        * ``start`` : The index of the start of the period in hypno
+        * ``length`` : The duration of the period, in number of samples
 
     Examples
     --------

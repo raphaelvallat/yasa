@@ -21,6 +21,7 @@ Automatic sleep staging & events detection
     SpindlesResults
     sw_detect
     SWResults
+    compare_detection
 
 Hypnogram & sleep statistics
 ----------------------------
