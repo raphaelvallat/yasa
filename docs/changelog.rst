@@ -22,16 +22,16 @@ c. Added a new dataset containing 8 hours of ECG data. The dataset is in compres
 a. Added the :py:func:`yasa.compare_detection` function to determine the correctness of detected events against ground-truth events. It calculates the true positive, false positives and false negatives, and from those, the precision, recall and F1-scores. The input should be the indices of the onset of the event, in samples. It includes a max_distance argument which specifies the tolerance window (in number of samples) for two events to be considered the same.
 b. Added the :py:meth:`yasa.SpindlesResults.compare_detection` and :py:meth:`yasa.SWResults.compare_detection` method. This is a powerful and flexible function that allows to calculate the performance of the current detection against a) another detection or b) ground-truth annotations. For example, we can compare the output of the spindles detection with different thresholds.
 c. Added the :py:meth:`yasa.SpindlesResults.compare_channels` and :py:meth:`yasa.SWResults.compare_channels` methods to compare the overlap of the detected events between channels. Agreement is calculated using the F1-score (default), precision or recall.
-d. Add ``vmin`` and ``vmax`` parameters to :py:func:`yasa.plot_spectrogram`. `PR 75 <https://github.com/raphaelvallat/yasa/pull/75>`_
-e. Better handling of flat data in :py:func:`yasa.spindles_detect`. The function previously returned a division by zero error if part of the data was flat. See `issue 85 <https://github.com/raphaelvallat/yasa/issues/85>`_
-f. When using an MNE.Raw object, conversion of the data from Volts to micro-Volts is now performed within MNE. `PR 70 <https://github.com/raphaelvallat/yasa/pull/70>`_
-g. Use `black <https://black.readthedocs.io/en/stable/>`_ code formatting.
+d. Better handling of flat data in :py:func:`yasa.spindles_detect`. The function previously returned a division by zero error if part of the data was flat. See `issue 85 <https://github.com/raphaelvallat/yasa/issues/85>`_
 
 **Others**
 
-a. When using an MNE.Raw object, conversion of the data from Volts to micro-Volts is now performed within MNE. `PR 70 <https://github.com/raphaelvallat/yasa/pull/70>`_
-b. Added `SleepECG <https://sleepecg.readthedocs.io/en/stable/>`_ to the dependencies. SleepECG is used for the heartbeats detection in :py:func:`yasa.hrv_stage`.
-c. YASA now requires MNE>0.23
+a. Add ``vmin`` and ``vmax`` parameters to :py:func:`yasa.plot_spectrogram`. `PR 75 <https://github.com/raphaelvallat/yasa/pull/75>`_
+b. When using an MNE.Raw object, conversion of the data from Volts to micro-Volts is now performed within MNE. `PR 70 <https://github.com/raphaelvallat/yasa/pull/70>`_
+c. Add support for 2D data (n_chan, n_samples) in :py:func:`yasa.stft_power` + minor speed improvements if ``interp=True``.
+d. Added `SleepECG <https://sleepecg.readthedocs.io/en/stable/>`_ to the dependencies. SleepECG is used for the heartbeats detection in :py:func:`yasa.hrv_stage`.
+e. YASA now requires MNE>0.23
+f. Use `black <https://black.readthedocs.io/en/stable/>`_ code formatting.
 
 ----------------------------------------------------------------------------------------
 

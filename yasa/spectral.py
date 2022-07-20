@@ -642,7 +642,7 @@ def stft_power(data, sf, window=2, step=0.2, band=(1, 30), interp=True, norm=Fal
     Parameters
     ----------
     data : array_like
-        Single-channel data.
+        Data, of shape (n_samples) or (n_channels, n_samples).
     sf : float
         Sampling frequency of the data.
     window : int
@@ -672,7 +672,8 @@ def stft_power(data, sf, window=2, step=0.2, band=(1, 30), interp=True, norm=Fal
     t : :py:class:`numpy.ndarray`
         Time vector
     Sxx : :py:class:`numpy.ndarray`
-        Power in the specified frequency bins of shape (f, t)
+        Power in the specified frequency bins of shape (f, t) for 1D input and (n_chan, f, t) for
+        2D input.
 
     Notes
     -----
@@ -682,6 +683,9 @@ def stft_power(data, sf, window=2, step=0.2, band=(1, 30), interp=True, norm=Fal
     """
     # Safety check
     data = np.asarray(data)
+    data = np.atleast_2d(data)  # shape (n_channels, n_samples)
+    n_chan, n_samples = data.shape
+    assert data.ndim <= 2, "data must be 1D or 2D"
     assert step <= window
     step = 1 / sf if step == 0 else step
 
@@ -691,24 +695,33 @@ def stft_power(data, sf, window=2, step=0.2, band=(1, 30), interp=True, norm=Fal
 
     # Compute STFT and remove the last epoch
     f, t, Sxx = signal.stft(
-        data, sf, nperseg=nperseg, noverlap=noverlap, detrend=False, padded=True
+        data, sf, nperseg=nperseg, noverlap=noverlap, detrend=False, padded=True, axis=-1
     )
 
     # Let's keep only the frequency of interest
     if band is not None:
         idx_band = np.logical_and(f >= band[0], f <= band[1])
         f = f[idx_band]
-        Sxx = Sxx[idx_band, :]
+        Sxx = Sxx[:, idx_band, :]
 
-    # Compute power and interpolate
+    # Compute power
     Sxx = np.square(np.abs(Sxx))
+    n_freq = f.size
+
+    # 2D interpolation
     if interp:
-        func = RectBivariateSpline(f, t, Sxx)
-        t = np.arange(data.size) / sf
-        Sxx = func(f, t)
+        t_new = np.arange(n_samples) / sf
+        Sxx_new = np.empty((n_chan, n_freq, n_samples))
+        for i in range(n_chan):
+            # We cannot avoid a for loop here. Spline or order 1 for x (frequencies) and order 3
+            # for time (y). We only interpolate over the time axis.
+            func = RectBivariateSpline(f, t, Sxx[i], kx=1, ky=3)
+            Sxx_new[i] = func(f, t_new)
+        t = t_new
+        Sxx = Sxx_new
 
     # Normalize
     if norm:
-        sum_pow = Sxx.sum(0).reshape(1, -1)
+        sum_pow = Sxx.sum(1, keepdims=True)
         np.divide(Sxx, sum_pow, out=Sxx)
-    return f, t, Sxx
+    return f, t, np.squeeze(Sxx)
