@@ -819,6 +819,24 @@ def spindles_detect(
     #     # Now extract the instantaneous phase using Hilbert transform
     #     so_phase = np.angle(signal.hilbert(data_so, N=nfast)[:, :n_samples])
 
+    # Compute the pointwise relative power using interpolated STFT
+    # Here we use a step of 200 ms to speed up the computation.
+    # Note that even if the threshold is None we still need to calculate it
+    # for the individual spindles parameter (RelPow).
+    f, t, Sxx = stft_power(
+        data_broad, sf, window=2, step=0.2, band=freq_broad, interp=False, norm=True
+    )
+    idx_sigma = np.logical_and(f >= freq_sp[0], f <= freq_sp[1])
+    rel_pow = Sxx[:, idx_sigma, :].sum(1)  # (chan, freqs, samples) -- > (chan, samples)
+
+    # Let's interpolate `rel_pow` to get one value per sample
+    # Note that we could also have use the `interp=True` in the
+    # `stft_power` function, however 2D interpolation is much slower than
+    # 1D interpolation.
+    func = interp1d(t, rel_pow, kind="cubic", bounds_error=False, fill_value=0, assume_sorted=True)
+    t = np.arange(n_samples) / sf
+    rel_pow = func(t)
+
     # Initialize empty output dataframe
     df = pd.DataFrame()
 
@@ -831,24 +849,6 @@ def spindles_detect(
         # First, skip channels with bad data amplitude
         if bad_chan[i]:
             continue
-
-        # Compute the pointwise relative power using interpolated STFT
-        # Here we use a step of 200 ms to speed up the computation.
-        # Note that even if the threshold is None we still need to calculate it
-        # for the individual spindles parameter (RelPow).
-        f, t, Sxx = stft_power(
-            data_broad[i, :], sf, window=2, step=0.2, band=freq_broad, interp=False, norm=True
-        )
-        idx_sigma = np.logical_and(f >= freq_sp[0], f <= freq_sp[1])
-        rel_pow = Sxx[idx_sigma].sum(0)
-
-        # Let's interpolate `rel_pow` to get one value per sample
-        # Note that we could also have use the `interp=True` in the
-        # `stft_power` function, however 2D interpolation is much slower than
-        # 1D interpolation.
-        func = interp1d(t, rel_pow, kind="cubic", bounds_error=False, fill_value=0)
-        t = np.arange(n_samples) / sf
-        rel_pow = func(t)
 
         if do_corr:
             _, mcorr = moving_transform(
@@ -876,7 +876,7 @@ def spindles_detect(
         # Boolean vector of supra-threshold indices
         idx_sum = np.zeros(n_samples)
         if do_rel_pow:
-            idx_rel_pow = (rel_pow >= thresh["rel_pow"]).astype(int)
+            idx_rel_pow = (rel_pow[i] >= thresh["rel_pow"]).astype(int)
             idx_sum += idx_rel_pow
             logger.info("N supra-theshold relative power = %i", idx_rel_pow.sum())
         if do_corr:
@@ -952,7 +952,7 @@ def spindles_detect(
             # sp_det = signal.detrend(data_broad[i, sp[i]], type='linear')
             sp_amp[j] = np.ptp(sp_det)  # Peak-to-peak amplitude
             sp_rms[j] = _rms(sp_det)  # Root mean square
-            sp_rel[j] = np.median(rel_pow[sp[j]])  # Median relative power
+            sp_rel[j] = np.median(rel_pow[i, sp[j]])  # Median relative power
 
             # Hilbert-based instantaneous properties
             sp_inst_freq = inst_freq[i, sp[j]]
