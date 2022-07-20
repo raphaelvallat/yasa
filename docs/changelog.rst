@@ -16,6 +16,7 @@ v0.6.2.dev
 a. Added the :py:func:`yasa.hypno_find_periods` function to find sequences of consecutive values in hypnogram that are longer than a certain duration. This is a flexible function that can be used to detect NREM/REM periods.
 b. Added the :py:func:`yasa.hrv_stage` function, which calculates heart rate (HR) and heart rate variability (HRV) by stage and periods.
 c. Added a new dataset containing 8 hours of ECG data. The dataset is in compressed NumPy format and can be found in notebooks/data_ECG_8hrs_200Hz.npz. The dataset also includes an upsampled hypnogram.
+d. Added a new Jupyter notebook to calculate EEG-HRV overnight coupling based on the :py:func:`yasa.hrv_stage` function. https://github.com/raphaelvallat/yasa/blob/master/notebooks/16_EEG-HRV_coupling.ipynb
 
 **Spindles & slow-waves detection** - `PR 71 <https://github.com/raphaelvallat/yasa/pull/71>`_
 

@@ -103,6 +103,7 @@ The notebooks and datasets can be found on `GitHub <https://github.com/raphaelva
 * `spectrogram <notebooks/10_spectrogram.ipynb>`_: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.
 * `nonlinear_features <notebooks/11_nonlinear_features.ipynb>`_: calculate non-linear EEG features on 30-seconds epochs and perform a naive sleep stage classification.
 * `SO-sigma_coupling <notebooks/12_SO-sigma_coupling.ipynb>`_: slow-oscillations/spindles phase-amplitude coupling and data-driven comodulogram.
+* `EEG-HRV coupling <notebooks/16_EEG-HRV_coupling.ipynb>`_: overnight coupling between EEG bandpower and heart rate variability.
 * `topoplot <notebooks/15_topoplot.ipynb>`_: topoplot.
 
 Gallery
