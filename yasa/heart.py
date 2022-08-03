@@ -109,6 +109,9 @@ def hrv_stage(
 
     Heartbeat detection is performed with the SleepECG library: https://github.com/cbrnr/sleepecg
 
+    For an example of this function, please see the `Jupyter notebook
+    <https://github.com/raphaelvallat/yasa/blob/master/notebooks/16_EEG-HRV_coupling.ipynb>`_
+
     References
     ----------
     * Shaffer, F., & Ginsberg, J. P. (2017). An overview of heart rate variability metrics and
