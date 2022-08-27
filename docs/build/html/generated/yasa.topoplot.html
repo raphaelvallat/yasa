@@ -3,11 +3,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.topoplot &#8212; yasa 0.6.1 documentation</title>
+    <title>yasa.topoplot &#8212; yasa 0.6.2 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -41,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.2</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -96,7 +99,7 @@
 <dt id="yasa.topoplot">
 <code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">topoplot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">montage</span><span class="o">=</span><span class="default_value">'standard_1020'</span></em>, <em class="sig-param"><span class="n">vmin</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">vmax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mask</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cmap</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">n_colors</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">cbar_title</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cbar_ticks</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">figsize</span><span class="o">=</span><span class="default_value">4, 4</span></em>, <em class="sig-param"><span class="n">dpi</span><span class="o">=</span><span class="default_value">80</span></em>, <em class="sig-param"><span class="n">fontsize</span><span class="o">=</span><span class="default_value">14</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/plotting.html#topoplot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.topoplot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Topoplot.</p>
-<p>This is a wrapper around <a class="reference external" href="https://mne.tools/stable/generated/mne.viz.plot_topomap.html#mne.viz.plot_topomap" title="(in MNE v0.24)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.viz.plot_topomap()</span></code></a>.</p>
+<p>This is a wrapper around <a class="reference external" href="https://mne.tools/stable/generated/mne.viz.plot_topomap.html#mne.viz.plot_topomap" title="(in MNE v1.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.viz.plot_topomap()</span></code></a>.</p>
 <p>For more details, please refer to this <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/15_topoplot.ipynb">example notebook</a>.</p>
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 0.4.1.</span></p>
@@ -104,16 +107,16 @@
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>data</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v1.4.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code></a></span></dt><dd><p>A pandas Series with the values to plot. The index MUST be the channel
+<dt><strong>data</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v1.4.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code></a></span></dt><dd><p>A pandas Series with the values to plot. The index MUST be the channel
 names (e.g. [‘C4’, ‘F4’] or [‘C4-M1’, ‘C3-M2’]).</p>
 </dd>
 <dt><strong>montage</strong><span class="classifier">str</span></dt><dd><p>The name of the montage to use. Valid montages can be found at
-<a class="reference external" href="https://mne.tools/stable/generated/mne.channels.make_standard_montage.html#mne.channels.make_standard_montage" title="(in MNE v0.24)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.channels.make_standard_montage()</span></code></a>.</p>
+<a class="reference external" href="https://mne.tools/stable/generated/mne.channels.make_standard_montage.html#mne.channels.make_standard_montage" title="(in MNE v1.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.channels.make_standard_montage()</span></code></a>.</p>
 </dd>
 <dt><strong>vmin, vmax</strong><span class="classifier">float</span></dt><dd><p>The minimum and maximum values of the colormap. If None, these will be
 defined based on the min / max values of <code class="docutils literal notranslate"><span class="pre">data</span></code>.</p>
 </dd>
-<dt><strong>mask</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v1.4.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code></a></span></dt><dd><p>A pandas Series indicating the significant electrodes. The index MUST
+<dt><strong>mask</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v1.4.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code></a></span></dt><dd><p>A pandas Series indicating the significant electrodes. The index MUST
 be the channel names (e.g. [‘C4’, ‘F4’] or [‘C4-M1’, ‘C3-M2’]).</p>
 </dd>
 <dt><strong>title</strong><span class="classifier">str</span></dt><dd><p>The plot title.</p>
@@ -133,13 +136,13 @@ be the channel names (e.g. [‘C4’, ‘F4’] or [‘C4-M1’, ‘C3-M2’]).<
 </dd>
 <dt><strong>fontsize</strong><span class="classifier">int</span></dt><dd><p>Global font size of all the elements of the plot.</p>
 </dd>
-<dt><strong>**kwargs</strong><span class="classifier">dict</span></dt><dd><p>Other arguments that are passed to <a class="reference external" href="https://mne.tools/stable/generated/mne.viz.plot_topomap.html#mne.viz.plot_topomap" title="(in MNE v0.24)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.viz.plot_topomap()</span></code></a>.</p>
+<dt><strong>**kwargs</strong><span class="classifier">dict</span></dt><dd><p>Other arguments that are passed to <a class="reference external" href="https://mne.tools/stable/generated/mne.viz.plot_topomap.html#mne.viz.plot_topomap" title="(in MNE v1.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.viz.plot_topomap()</span></code></a>.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>fig</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure" title="(in Matplotlib v3.5.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.figure.Figure</span></code></a></span></dt><dd><p>Matplotlib Figure</p>
+<dt><strong>fig</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure" title="(in Matplotlib v3.5.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.figure.Figure</span></code></a></span></dt><dd><p>Matplotlib Figure</p>
 </dd>
 </dl>
 </dd>

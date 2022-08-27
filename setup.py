@@ -2,8 +2,8 @@
 #
 # Copyright (C) 2018 Raphael Vallat
 
-DESCRIPTION = "Yet Another Spindle Algorithm"
-LONG_DESCRIPTION = """YASA (Yet Another Spindle Algorithm) : fast and robust detection of spindles, slow-waves, and rapid eye movements from sleep EEG recordings..
+DESCRIPTION = "YASA: Analysis of polysomnography recordings."
+LONG_DESCRIPTION = """YASA (Yet Another Spindle Algorithm) : an open-source Python package to analyze polysomnographic sleep recordings.
 """
 
 DISTNAME = "yasa"
@@ -12,16 +12,16 @@ MAINTAINER_EMAIL = "raphaelvallat9@gmail.com"
 URL = "https://github.com/raphaelvallat/yasa/"
 LICENSE = "BSD (3-clause)"
 DOWNLOAD_URL = "https://github.com/raphaelvallat/yasa/"
-VERSION = "0.6.1"
+VERSION = "0.6.2"
 PACKAGE_DATA = {"yasa.data.icons": ["*.svg"]}
 
 INSTALL_REQUIRES = [
-    "numpy",
+    "numpy>=1.16.5",
     "scipy",
     "pandas",
     "matplotlib",
     "seaborn",
-    "mne>=0.20.0",
+    "mne>=0.23",
     "numba",
     "outdated",
     "antropy",

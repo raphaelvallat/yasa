@@ -15,7 +15,7 @@ from outdated import warn_if_outdated
 logging.basicConfig(format="%(asctime)s | %(levelname)s | %(message)s", datefmt="%d-%b-%y %H:%M:%S")
 
 __author__ = "Raphael Vallat <raphaelvallat9@gmail.com>"
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 
 # Warn if a newer version of YASA is available
 warn_if_outdated("yasa", __version__)

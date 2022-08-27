@@ -3,11 +3,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.REMResults &#8212; yasa 0.6.1 documentation</title>
+    <title>yasa.REMResults &#8212; yasa 0.6.2 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
     <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
@@ -41,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.2</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -99,7 +102,7 @@
 <dl class="field-list">
 <dt class="field-odd">Attributes</dt>
 <dd class="field-odd"><dl>
-<dt><strong>_events</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.4.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output detection dataframe</p>
+<dt><strong>_events</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.4.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output detection dataframe</p>
 </dd>
 <dt><strong>_data</strong><span class="classifier">array_like</span></dt><dd><p>EOG data of shape <em>(n_chan, n_samples)</em>, where the two channels are
 LOC and ROC.</p>
@@ -131,6 +134,12 @@ channels are LOC and ROC.</p>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#yasa.REMResults.__init__" title="yasa.REMResults.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(events, data, sf, ch_names, hypno, …)</p></td>
 <td><p>Initialize self.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_channels</span></code>([score, max_distance_sec])</p></td>
+<td><p>Compare detected events across channels.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_detection</span></code>(other[, max_distance_sec, …])</p></td>
+<td><p>Compare detected events between two detection methods, or against a ground-truth scoring.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_coincidence_matrix</span></code>([scaled])</p></td>
 <td><p></p></td>
@@ -177,7 +186,7 @@ Default is to use the peak of the REM.</p>
 <dt><strong>filt</strong><span class="classifier">tuple</span></dt><dd><p>Optional filtering to apply to data. For instance, <code class="docutils literal notranslate"><span class="pre">filt=(1,</span> <span class="pre">30)</span></code>
 will apply a 1 to 30 Hz bandpass filter, and <code class="docutils literal notranslate"><span class="pre">filt=(None,</span> <span class="pre">40)</span></code>
 will apply a 40 Hz lowpass filter. Filtering is done using default
-parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v0.24)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
+parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
 </dd>
 <dt><strong>mask</strong><span class="classifier">array_like or None</span></dt><dd><p>Custom boolean mask. Only the detected events for which mask is True will be
 included. Default is None, i.e. no masking (all events are included).</p>
@@ -186,7 +195,7 @@ included. Default is None, i.e. no masking (all events are included).</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>df_sync</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.4.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput long-format dataframe:</p>
+<dt><strong>df_sync</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.4.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput long-format dataframe:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Event&#39;</span> <span class="p">:</span> <span class="n">Event</span> <span class="n">number</span>
 <span class="s1">&#39;Time&#39;</span> <span class="p">:</span> <span class="n">Timing</span> <span class="n">of</span> <span class="n">the</span> <span class="n">events</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;Amplitude&#39;</span> <span class="p">:</span> <span class="n">Raw</span> <span class="ow">or</span> <span class="n">filtered</span> <span class="n">data</span> <span class="k">for</span> <span class="n">event</span>
@@ -217,7 +226,7 @@ Default is to use the peak of the REM.</p>
 <dt><strong>filt</strong><span class="classifier">tuple</span></dt><dd><p>Optional filtering to apply to data. For instance, <code class="docutils literal notranslate"><span class="pre">filt=(1,</span> <span class="pre">30)</span></code>
 will apply a 1 to 30 Hz bandpass filter, and <code class="docutils literal notranslate"><span class="pre">filt=(None,</span> <span class="pre">40)</span></code>
 will apply a 40 Hz lowpass filter. Filtering is done using default
-parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v0.24)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
+parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
 </dd>
 <dt><strong>mask</strong><span class="classifier">array_like or None</span></dt><dd><p>Custom boolean mask. Only the detected events for which mask is True will be
 included. Default is None, i.e. no masking (all events are included).</p>
