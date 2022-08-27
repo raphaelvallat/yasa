@@ -21,11 +21,11 @@
 
 **YASA** (*Yet Another Spindle Algorithm*) is a command-line sleep analysis toolbox in Python. The main functions of YASA are:
 
-* Automatic sleep staging of polysomnography data (see `preprint article <https://doi.org/10.1101/2021.05.28.446165>`_).
+* Automatic sleep staging of polysomnography data (see `eLife article <https://elifesciences.org/articles/70092>`_).
 * Event detection: sleep spindles, slow-waves and rapid eye movements, on single or multi-channel EEG data.
 * Artefact rejection, on single or multi-channel EEG data.
 * Spectral analyses: bandpower, phase-amplitude coupling, 1/f slope, and more!
-* Hypnogram analysis: sleep statistics and stage tranisitions.
+* Hypnogram analysis: sleep statistics and stage transitions.
 
 For more details, try the `quickstart <https://raphaelvallat.com/yasa/build/html/quickstart.html>`_ or read the `FAQ <https://raphaelvallat.com/yasa/build/html/faq.html>`_.
 

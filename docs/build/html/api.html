@@ -3,11 +3,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>API reference &#8212; yasa 0.6.1 documentation</title>
+    <title>API reference &#8212; yasa 0.6.2 documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
+    <link rel="stylesheet" type="text/css" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
@@ -41,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="index.html"><span><img src="_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.2</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -124,6 +127,9 @@
 <tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.SWResults.html#yasa.SWResults" title="yasa.SWResults"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SWResults</span></code></a>(events, data, sf, ch_names, hypno, …)</p></td>
 <td><p>Output class for slow-waves detection.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.compare_detection.html#yasa.compare_detection" title="yasa.compare_detection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_detection</span></code></a>(indices_detection, …[, …])</p></td>
+<td><p>Determine correctness of detected events against ground-truth events.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -147,19 +153,22 @@
 <tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.hypno_int_to_str.html#yasa.hypno_int_to_str" title="yasa.hypno_int_to_str"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hypno_int_to_str</span></code></a>(hypno[, mapping_dict])</p></td>
 <td><p>Convert an integer hypnogram array to a string array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.load_profusion_hypno.html#yasa.load_profusion_hypno" title="yasa.load_profusion_hypno"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_profusion_hypno</span></code></a>(fname[, replace])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.hypno_find_periods.html#yasa.hypno_find_periods" title="yasa.hypno_find_periods"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hypno_find_periods</span></code></a>(hypno, sf_hypno[, …])</p></td>
+<td><p>Find sequences of consecutive values exceeding a certain duration in hypnogram.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.load_profusion_hypno.html#yasa.load_profusion_hypno" title="yasa.load_profusion_hypno"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_profusion_hypno</span></code></a>(fname[, replace])</p></td>
 <td><p>Load a Compumedics Profusion hypnogram (.xml).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.plot_hypnogram.html#yasa.plot_hypnogram" title="yasa.plot_hypnogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_hypnogram</span></code></a>(hypno[, sf_hypno, lw, figsize])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.plot_hypnogram.html#yasa.plot_hypnogram" title="yasa.plot_hypnogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_hypnogram</span></code></a>(hypno[, sf_hypno, lw, figsize])</p></td>
 <td><p>Plot a hypnogram.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_spectrogram</span></code></a>(data, sf[, hypno, win_sec, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_spectrogram</span></code></a>(data, sf[, hypno, win_sec, …])</p></td>
 <td><p>Plot a full-night multi-taper spectrogram, optionally with the hypnogram on top.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.transition_matrix.html#yasa.transition_matrix" title="yasa.transition_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transition_matrix</span></code></a>(hypno)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.transition_matrix.html#yasa.transition_matrix" title="yasa.transition_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transition_matrix</span></code></a>(hypno)</p></td>
 <td><p>Create a state-transition matrix from an hypnogram.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sleep_statistics</span></code></a>(hypno, sf_hyp)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sleep_statistics</span></code></a>(hypno, sf_hyp)</p></td>
 <td><p>Compute standard sleep statistics from an hypnogram.</p></td>
 </tr>
 </tbody>
@@ -199,6 +208,20 @@
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.topoplot.html#yasa.topoplot" title="yasa.topoplot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">topoplot</span></code></a>(data[, montage, vmin, vmax, mask, …])</p></td>
 <td><p>Topoplot.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="heart-rate-analysis">
+<h2>Heart rate analysis<a class="headerlink" href="#heart-rate-analysis" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/yasa.hrv_stage.html#yasa.hrv_stage" title="yasa.hrv_stage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hrv_stage</span></code></a>(data, sf, *[, hypno, include, …])</p></td>
+<td><p>Calculate heart rate and heart rate variability (HRV) features from an ECG.</p></td>
 </tr>
 </tbody>
 </table>

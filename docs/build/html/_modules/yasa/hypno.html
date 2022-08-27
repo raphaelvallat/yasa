@@ -3,11 +3,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.hypno &#8212; yasa 0.6.1 documentation</title>
+    <title>yasa.hypno &#8212; yasa 0.6.2 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
     <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
@@ -41,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.2</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -126,21 +129,44 @@
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">from</span> <span class="nn">.io</span> <span class="kn">import</span> <span class="n">set_log_level</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;hypno_str_to_int&#39;</span><span class="p">,</span> <span class="s1">&#39;hypno_int_to_str&#39;</span><span class="p">,</span> <span class="s1">&#39;hypno_upsample_to_sf&#39;</span><span class="p">,</span>
-           <span class="s1">&#39;hypno_upsample_to_data&#39;</span><span class="p">,</span> <span class="s1">&#39;load_profusion_hypno&#39;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;hypno_str_to_int&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hypno_int_to_str&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hypno_upsample_to_sf&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hypno_upsample_to_data&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hypno_find_periods&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;load_profusion_hypno&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 
 
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;yasa&#39;</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;yasa&quot;</span><span class="p">)</span>
 
 
 <span class="c1">#############################################################################</span>
 <span class="c1"># STR &lt;--&gt; INT CONVERSION</span>
 <span class="c1">#############################################################################</span>
 
-<div class="viewcode-block" id="hypno_str_to_int"><a class="viewcode-back" href="../../generated/yasa.hypno_str_to_int.html#yasa.hypno_str_to_int">[docs]</a><span class="k">def</span> <span class="nf">hypno_str_to_int</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">mapping_dict</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;w&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;wake&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;n1&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;s1&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-                                          <span class="s1">&#39;n2&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;s2&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;n3&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;s3&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
-                                          <span class="s1">&#39;s4&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;rem&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;art&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-                                          <span class="s1">&#39;mt&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;uns&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;nd&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">}):</span>
+
+<div class="viewcode-block" id="hypno_str_to_int"><a class="viewcode-back" href="../../generated/yasa.hypno_str_to_int.html#yasa.hypno_str_to_int">[docs]</a><span class="k">def</span> <span class="nf">hypno_str_to_int</span><span class="p">(</span>
+    <span class="n">hypno</span><span class="p">,</span>
+    <span class="n">mapping_dict</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;w&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;wake&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;n1&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;s1&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;n2&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">&quot;s2&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">&quot;n3&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="s2">&quot;s3&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="s2">&quot;s4&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="s2">&quot;r&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="s2">&quot;rem&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="s2">&quot;art&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;mt&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;uns&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span>
+        <span class="s2">&quot;nd&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Convert a string hypnogram array to integer.</span>
 
 <span class="sd">    [&#39;W&#39;, &#39;N2&#39;, &#39;N2&#39;, &#39;N3&#39;, &#39;R&#39;] ==&gt; [0, 2, 2, 3, 4]</span>
@@ -160,14 +186,15 @@
 <span class="sd">    hypno : array_like</span>
 <span class="sd">        The corresponding integer hypnogram.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)),</span> <span class="s1">&#39;Not an array.&#39;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)),</span> <span class="s2">&quot;Not an array.&quot;</span>
     <span class="n">hypno</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">))</span>
-    <span class="k">assert</span> <span class="ow">not</span> <span class="n">hypno</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">(),</span> <span class="s1">&#39;Hypno contains numeric values.&#39;</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">hypno</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">(),</span> <span class="s2">&quot;Hypno contains numeric values.&quot;</span>
     <span class="k">return</span> <span class="n">hypno</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">mapping_dict</span><span class="p">)</span><span class="o">.</span><span class="n">values</span></div>
 
 
-<div class="viewcode-block" id="hypno_int_to_str"><a class="viewcode-back" href="../../generated/yasa.hypno_int_to_str.html#yasa.hypno_int_to_str">[docs]</a><span class="k">def</span> <span class="nf">hypno_int_to_str</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">mapping_dict</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s1">&#39;W&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s1">&#39;N1&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s1">&#39;N2&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s1">&#39;N3&#39;</span><span class="p">,</span>
-                                          <span class="mi">4</span><span class="p">:</span> <span class="s1">&#39;R&#39;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span> <span class="s1">&#39;Art&#39;</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">:</span> <span class="s1">&#39;Uns&#39;</span><span class="p">}):</span>
+<div class="viewcode-block" id="hypno_int_to_str"><a class="viewcode-back" href="../../generated/yasa.hypno_int_to_str.html#yasa.hypno_int_to_str">[docs]</a><span class="k">def</span> <span class="nf">hypno_int_to_str</span><span class="p">(</span>
+    <span class="n">hypno</span><span class="p">,</span> <span class="n">mapping_dict</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s2">&quot;W&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s2">&quot;N1&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s2">&quot;N2&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s2">&quot;N3&quot;</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="s2">&quot;R&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span> <span class="s2">&quot;Art&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">:</span> <span class="s2">&quot;Uns&quot;</span><span class="p">}</span>
+<span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Convert an integer hypnogram array to a string array.</span>
 
 <span class="sd">    [0, 2, 2, 3, 4] ==&gt; [&#39;W&#39;, &#39;N2&#39;, &#39;N2&#39;, &#39;N3&#39;, &#39;R&#39;]</span>
@@ -187,9 +214,10 @@
 <span class="sd">    hypno : array_like</span>
 <span class="sd">        The corresponding integer hypnogram.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)),</span> <span class="s1">&#39;Not an array.&#39;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)),</span> <span class="s2">&quot;Not an array.&quot;</span>
     <span class="n">hypno</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">hypno</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">mapping_dict</span><span class="p">)</span><span class="o">.</span><span class="n">values</span></div>
+
 
 <span class="c1">#############################################################################</span>
 <span class="c1"># UPSAMPLING</span>
@@ -219,8 +247,8 @@
 <span class="sd">        The hypnogram, upsampled to ``sf_data``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">repeats</span> <span class="o">=</span> <span class="n">sf_data</span> <span class="o">/</span> <span class="n">sf_hypno</span>
-    <span class="k">assert</span> <span class="n">sf_hypno</span> <span class="o">&lt;=</span> <span class="n">sf_data</span><span class="p">,</span> <span class="s1">&#39;sf_hypno must be less than sf_data.&#39;</span>
-    <span class="k">assert</span> <span class="n">repeats</span><span class="o">.</span><span class="n">is_integer</span><span class="p">(),</span> <span class="s1">&#39;sf_hypno / sf_data must be a whole number.&#39;</span>
+    <span class="k">assert</span> <span class="n">sf_hypno</span> <span class="o">&lt;=</span> <span class="n">sf_data</span><span class="p">,</span> <span class="s2">&quot;sf_hypno must be less than sf_data.&quot;</span>
+    <span class="k">assert</span> <span class="n">repeats</span><span class="o">.</span><span class="n">is_integer</span><span class="p">(),</span> <span class="s2">&quot;sf_hypno / sf_data must be a whole number.&quot;</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypno</span><span class="p">),</span> <span class="n">repeats</span><span class="p">)</span></div>
 
@@ -249,11 +277,11 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Check if data is an MNE raw object</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">BaseRaw</span><span class="p">):</span>
-        <span class="n">sf</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;sfreq&#39;</span><span class="p">]</span>
+        <span class="n">sf</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;sfreq&quot;</span><span class="p">]</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">times</span>  <span class="c1"># 1D array and does not require to preload data</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">hypno</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">hypno</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Hypno must be 1D.&#39;</span>
+    <span class="k">assert</span> <span class="n">hypno</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Hypno must be 1D.&quot;</span>
     <span class="n">npts_hyp</span> <span class="o">=</span> <span class="n">hypno</span><span class="o">.</span><span class="n">size</span>
     <span class="n">npts_data</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>  <span class="c1"># Support for 2D data</span>
     <span class="k">if</span> <span class="n">npts_hyp</span> <span class="o">&lt;</span> <span class="n">npts_data</span><span class="p">:</span>
@@ -261,22 +289,30 @@
         <span class="n">npts_diff</span> <span class="o">=</span> <span class="n">npts_data</span> <span class="o">-</span> <span class="n">npts_hyp</span>
         <span class="k">if</span> <span class="n">sf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">dur_diff</span> <span class="o">=</span> <span class="n">npts_diff</span> <span class="o">/</span> <span class="n">sf</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Hypnogram is SHORTER than data by </span><span class="si">%.2f</span><span class="s1"> seconds. &#39;</span>
-                           <span class="s1">&#39;Padding hypnogram with last value to match data.size.&#39;</span> <span class="o">%</span> <span class="n">dur_diff</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Hypnogram is SHORTER than data by </span><span class="si">%.2f</span><span class="s2"> seconds. &quot;</span>
+                <span class="s2">&quot;Padding hypnogram with last value to match data.size.&quot;</span> <span class="o">%</span> <span class="n">dur_diff</span>
+            <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Hypnogram is SHORTER than data by </span><span class="si">%i</span><span class="s1"> samples. &#39;</span>
-                           <span class="s1">&#39;Padding hypnogram with last value to match data.size.&#39;</span> <span class="o">%</span> <span class="n">npts_diff</span><span class="p">)</span>
-        <span class="n">hypno</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">npts_diff</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;edge&#39;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Hypnogram is SHORTER than data by </span><span class="si">%i</span><span class="s2"> samples. &quot;</span>
+                <span class="s2">&quot;Padding hypnogram with last value to match data.size.&quot;</span> <span class="o">%</span> <span class="n">npts_diff</span>
+            <span class="p">)</span>
+        <span class="n">hypno</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">npts_diff</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;edge&quot;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">npts_hyp</span> <span class="o">&gt;</span> <span class="n">npts_data</span><span class="p">:</span>
         <span class="c1"># Hypnogram is longer than data</span>
         <span class="n">npts_diff</span> <span class="o">=</span> <span class="n">npts_hyp</span> <span class="o">-</span> <span class="n">npts_data</span>
         <span class="k">if</span> <span class="n">sf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">dur_diff</span> <span class="o">=</span> <span class="n">npts_diff</span> <span class="o">/</span> <span class="n">sf</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Hypnogram is LONGER than data by </span><span class="si">%.2f</span><span class="s1"> seconds. &#39;</span>
-                           <span class="s1">&#39;Cropping hypnogram to match data.size.&#39;</span> <span class="o">%</span> <span class="n">dur_diff</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Hypnogram is LONGER than data by </span><span class="si">%.2f</span><span class="s2"> seconds. &quot;</span>
+                <span class="s2">&quot;Cropping hypnogram to match data.size.&quot;</span> <span class="o">%</span> <span class="n">dur_diff</span>
+            <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Hypnogram is LONGER than data by </span><span class="si">%i</span><span class="s1"> samples. &#39;</span>
-                           <span class="s1">&#39;Cropping hypnogram to match data.size.&#39;</span> <span class="o">%</span> <span class="n">npts_diff</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Hypnogram is LONGER than data by </span><span class="si">%i</span><span class="s2"> samples. &quot;</span>
+                <span class="s2">&quot;Cropping hypnogram to match data.size.&quot;</span> <span class="o">%</span> <span class="n">npts_diff</span>
+            <span class="p">)</span>
         <span class="n">hypno</span> <span class="o">=</span> <span class="n">hypno</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">npts_data</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">hypno</span>
 
@@ -323,7 +359,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">set_log_level</span><span class="p">(</span><span class="n">verbose</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">BaseRaw</span><span class="p">):</span>
-        <span class="n">sf_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;sfreq&#39;</span><span class="p">]</span>
+        <span class="n">sf_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;sfreq&quot;</span><span class="p">]</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">times</span>
     <span class="n">hypno_up</span> <span class="o">=</span> <span class="n">hypno_upsample_to_sf</span><span class="p">(</span><span class="n">hypno</span><span class="o">=</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hypno</span><span class="o">=</span><span class="n">sf_hypno</span><span class="p">,</span> <span class="n">sf_data</span><span class="o">=</span><span class="n">sf_data</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">hypno_fit_to_data</span><span class="p">(</span><span class="n">hypno</span><span class="o">=</span><span class="n">hypno_up</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="n">sf_data</span><span class="p">)</span></div>
@@ -332,6 +368,7 @@
 <span class="c1">#############################################################################</span>
 <span class="c1"># HYPNO LOADING</span>
 <span class="c1">#############################################################################</span>
+
 
 <div class="viewcode-block" id="load_profusion_hypno"><a class="viewcode-back" href="../../generated/yasa.load_profusion_hypno.html#yasa.load_profusion_hypno">[docs]</a><span class="k">def</span> <span class="nf">load_profusion_hypno</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>  <span class="c1"># pragma: no cover</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -370,6 +407,7 @@
     <span class="c1"># &gt;&gt;&gt; annotations[&quot;Start&quot;] = annotations[&quot;Start&quot;].astype(float)</span>
     <span class="c1"># &gt;&gt;&gt; annotations[&quot;Duration&quot;] = annotations[&quot;Duration&quot;].astype(float)</span>
     <span class="kn">import</span> <span class="nn">xml.etree.ElementTree</span> <span class="k">as</span> <span class="nn">ET</span>
+
     <span class="n">tree</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
     <span class="n">root</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
     <span class="n">epoch_length</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
@@ -382,6 +420,156 @@
         <span class="c1"># Stage 4 --&gt; 3 and REM --&gt; 4</span>
         <span class="n">hypno</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">({</span><span class="mi">4</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span> <span class="mi">4</span><span class="p">})</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hyp</span></div>
+
+
+<span class="c1">#############################################################################</span>
+<span class="c1"># PERIODS &amp; CYCLES</span>
+<span class="c1">#############################################################################</span>
+
+
+<div class="viewcode-block" id="hypno_find_periods"><a class="viewcode-back" href="../../generated/yasa.hypno_find_periods.html#yasa.hypno_find_periods">[docs]</a><span class="k">def</span> <span class="nf">hypno_find_periods</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hypno</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="s2">&quot;5min&quot;</span><span class="p">,</span> <span class="n">equal_length</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find sequences of consecutive values exceeding a certain duration in hypnogram.</span>
+
+<span class="sd">    .. versionadded:: 0.6.2</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        A 1D array with the sleep stages (= hypnogram). The dtype can be anything (int, bool, str).</span>
+<span class="sd">        More generally, this can be any vector for which you wish to find runs of</span>
+<span class="sd">        consecutive items.</span>
+<span class="sd">    sf_hypno : float</span>
+<span class="sd">        The current sampling frequency of ``hypno``, in Hz, e.g. 1/30 = 1 value per each 30 seconds</span>
+<span class="sd">        of EEG data, 1 = 1 value per second of EEG data.</span>
+<span class="sd">    threshold : str</span>
+<span class="sd">        This function will only keep periods that exceed a certain duration (default &#39;5min&#39;), e.g.</span>
+<span class="sd">        &#39;5min&#39;, &#39;15min&#39;, &#39;30sec&#39;, &#39;1hour&#39;. To disable thresholding, use &#39;0sec&#39;.</span>
+<span class="sd">    equal_length : bool</span>
+<span class="sd">        If True, the periods will all have the exact duration defined</span>
+<span class="sd">        in threshold. That is, periods that are longer than the duration threshold will be divided</span>
+<span class="sd">        into sub-periods of exactly the length of ``threshold``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    periods : :py:class:`pandas.DataFrame`</span>
+<span class="sd">        Output dataframe</span>
+
+<span class="sd">        * ``values`` : The value in hypno of the current period</span>
+<span class="sd">        * ``start`` : The index of the start of the period in hypno</span>
+<span class="sd">        * ``length`` : The duration of the period, in number of samples</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Let&#39;s assume that we have an hypnogram where sleep = 1 and wake = 0. There is one value per</span>
+<span class="sd">    minute, and therefore the sampling frequency of the hypnogram is 1 / 60 sec (~0.016 Hz).</span>
+
+<span class="sd">    &gt;&gt;&gt; import yasa</span>
+<span class="sd">    &gt;&gt;&gt; hypno = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0]</span>
+<span class="sd">    &gt;&gt;&gt; yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold=&quot;0min&quot;)</span>
+<span class="sd">       values  start  length</span>
+<span class="sd">    0       0      0      11</span>
+<span class="sd">    1       1     11       3</span>
+<span class="sd">    2       0     14       2</span>
+<span class="sd">    3       1     16       9</span>
+<span class="sd">    4       0     25       2</span>
+
+<span class="sd">    This gives us the start and duration of each sequence of consecutive values in the hypnogram.</span>
+<span class="sd">    For example, the first row tells us that there is a sequence of 11 consecutive 0 starting at</span>
+<span class="sd">    the first index of hypno.</span>
+
+<span class="sd">    Now, we may want to keep only periods that are longer than a specific threshold,</span>
+<span class="sd">    for example 5 minutes:</span>
+
+<span class="sd">    &gt;&gt;&gt; yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold=&quot;5min&quot;)</span>
+<span class="sd">       values  start  length</span>
+<span class="sd">    0       0      0      11</span>
+<span class="sd">    1       1     16       9</span>
+
+<span class="sd">    Only the two sequences that are longer than 5 minutes (11 minutes and 9 minutes respectively)</span>
+<span class="sd">    are kept. Feel free to play around with different values of threshold!</span>
+
+<span class="sd">    This function is not limited to binary arrays, e.g.</span>
+
+<span class="sd">    &gt;&gt;&gt; hypno = [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 0, 1]</span>
+<span class="sd">    &gt;&gt;&gt; yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold=&quot;2min&quot;)</span>
+<span class="sd">       values  start  length</span>
+<span class="sd">    0       0      0       4</span>
+<span class="sd">    1       2      5       6</span>
+<span class="sd">    2       0     11       3</span>
+
+<span class="sd">    Lastly, using ``equal_length=True`` will further divide the periods into segments of the</span>
+<span class="sd">    same duration, i.e. the duration defined in ``threshold``:</span>
+
+<span class="sd">    &gt;&gt;&gt; hypno = [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 0, 1]</span>
+<span class="sd">    &gt;&gt;&gt; yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold=&quot;2min&quot;, equal_length=True)</span>
+<span class="sd">       values  start  length</span>
+<span class="sd">    0       0      0       2</span>
+<span class="sd">    1       0      2       2</span>
+<span class="sd">    2       2      5       2</span>
+<span class="sd">    3       2      7       2</span>
+<span class="sd">    4       2      9       2</span>
+<span class="sd">    5       0     11       2</span>
+
+<span class="sd">    Here, the first period of 4 minutes of consecutive 0 is further divided into 2 periods of</span>
+<span class="sd">    exactly 2 minutes. Next, the sequence of 6 consecutive 2 is further divided into 3 periods of</span>
+<span class="sd">    2 minutes. Lastly, the last value in the sequence of 3 consecutive 0 at the end of the array is</span>
+<span class="sd">    removed to keep only a segment of 2 exactly minutes. In other words, the remainder of the</span>
+<span class="sd">    division of a given segment by the desired duration is discarded.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Convert the threshold to number of samples</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">threshold</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="s2">&quot;Threshold must be a string, e.g. &#39;5min&#39;, &#39;30sec&#39;, &#39;15min&#39;&quot;</span>
+    <span class="n">thr_sec</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+    <span class="n">thr_samp</span> <span class="o">=</span> <span class="n">sf_hypno</span> <span class="o">*</span> <span class="n">thr_sec</span>
+    <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">thr_samp</span><span class="p">)</span><span class="o">.</span><span class="n">is_integer</span><span class="p">():</span>
+        <span class="n">thr_samp</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">thr_samp</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The selected threshold does not result in an whole number of samples (&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">thr_sec</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> seconds * </span><span class="si">{</span><span class="n">sf_hypno</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> Hz = </span><span class="si">{</span><span class="n">thr_samp</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> samples)&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Find run starts</span>
+    <span class="c1"># https://gist.github.com/alimanfoo/c5977e87111abe8127453b21204c1065</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)),</span> <span class="s2">&quot;hypno must be an array.&quot;</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">loc_run_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="n">loc_run_start</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">loc_run_start</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">run_starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">loc_run_start</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="c1"># Find run values</span>
+    <span class="n">run_values</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">loc_run_start</span><span class="p">]</span>
+    <span class="c1"># Find run lengths</span>
+    <span class="n">run_lengths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">run_starts</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+    <span class="n">seq</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="n">run_values</span><span class="p">,</span> <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="n">run_starts</span><span class="p">,</span> <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="n">run_lengths</span><span class="p">})</span>
+
+    <span class="c1"># Remove runs that are shorter than threshold</span>
+    <span class="n">seq</span> <span class="o">=</span> <span class="n">seq</span><span class="p">[</span><span class="n">seq</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">thr_samp</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">equal_length</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">seq</span>
+
+    <span class="c1"># Divide into epochs of equal length</span>
+    <span class="k">assert</span> <span class="n">thr_samp</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Threshold must be non-zero if using equal_length=True.&quot;</span>
+    <span class="n">new_seq</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">seq</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">quotient</span><span class="p">,</span> <span class="n">remainder</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divmod</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">],</span> <span class="n">thr_samp</span><span class="p">)</span>
+        <span class="n">new_start</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">quotient</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">while</span> <span class="n">quotient</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">new_seq</span><span class="p">[</span><span class="s2">&quot;values&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;values&quot;</span><span class="p">])</span>
+                <span class="n">new_seq</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_start</span><span class="p">)</span>
+                <span class="n">new_seq</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">thr_samp</span><span class="p">)</span>
+                <span class="n">new_start</span> <span class="o">+=</span> <span class="n">thr_samp</span>
+                <span class="n">quotient</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_seq</span><span class="p">[</span><span class="s2">&quot;values&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;values&quot;</span><span class="p">])</span>
+            <span class="n">new_seq</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">])</span>
+            <span class="n">new_seq</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">])</span>
+
+    <span class="n">new_seq</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">new_seq</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new_seq</span></div>
 </pre></div>
 
     </div>

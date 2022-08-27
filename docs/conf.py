@@ -20,6 +20,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "matplotlib.sphinxext.plot_directive",
     "sphinx_copybutton",
+    "sphinx_panels",
     "numpydoc",
 ]
 

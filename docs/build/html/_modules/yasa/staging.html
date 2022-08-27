@@ -3,11 +3,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.staging &#8212; yasa 0.6.1 documentation</title>
+    <title>yasa.staging &#8212; yasa 0.6.2 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
     <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
@@ -41,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.2</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -109,7 +112,7 @@
 <span class="kn">from</span> <span class="nn">.others</span> <span class="kn">import</span> <span class="n">sliding_window</span>
 <span class="kn">from</span> <span class="nn">.spectral</span> <span class="kn">import</span> <span class="n">bandpower_from_psd_ndarray</span>
 
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;yasa&#39;</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;yasa&quot;</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="SleepStaging"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging">[docs]</a><span class="k">class</span> <span class="nc">SleepStaging</span><span class="p">:</span>
@@ -259,21 +262,21 @@
 
         <span class="c1"># Validate metadata</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-            <span class="k">if</span> <span class="s1">&#39;age&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">120</span><span class="p">,</span> <span class="s1">&#39;age must be between 0 and 120.&#39;</span>
-            <span class="k">if</span> <span class="s1">&#39;male&#39;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;male&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;male&#39;</span><span class="p">])</span>
-                <span class="k">assert</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;male&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;male must be 0 or 1.&#39;</span>
+            <span class="k">if</span> <span class="s2">&quot;age&quot;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;age&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">120</span><span class="p">,</span> <span class="s2">&quot;age must be between 0 and 120.&quot;</span>
+            <span class="k">if</span> <span class="s2">&quot;male&quot;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;male&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;male&quot;</span><span class="p">])</span>
+                <span class="k">assert</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;male&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;male must be 0 or 1.&quot;</span>
 
         <span class="c1"># Validate Raw instance and load data</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">BaseRaw</span><span class="p">),</span> <span class="s1">&#39;raw must be a MNE Raw object.&#39;</span>
-        <span class="n">sf</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;sfreq&#39;</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">BaseRaw</span><span class="p">),</span> <span class="s2">&quot;raw must be a MNE Raw object.&quot;</span>
+        <span class="n">sf</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;sfreq&quot;</span><span class="p">]</span>
         <span class="n">ch_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">eeg_name</span><span class="p">,</span> <span class="n">eog_name</span><span class="p">,</span> <span class="n">emg_name</span><span class="p">])</span>
-        <span class="n">ch_types</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s1">&#39;eeg&#39;</span><span class="p">,</span> <span class="s1">&#39;eog&#39;</span><span class="p">,</span> <span class="s1">&#39;emg&#39;</span><span class="p">])</span>
+        <span class="n">ch_types</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s2">&quot;eeg&quot;</span><span class="p">,</span> <span class="s2">&quot;eog&quot;</span><span class="p">,</span> <span class="s2">&quot;emg&quot;</span><span class="p">])</span>
         <span class="n">keep_chan</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">ch_names</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">assert</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">raw</span><span class="o">.</span><span class="n">ch_names</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> does not exist&#39;</span> <span class="o">%</span> <span class="n">c</span>
+                <span class="k">assert</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">raw</span><span class="o">.</span><span class="n">ch_names</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> does not exist&quot;</span> <span class="o">%</span> <span class="n">c</span>
                 <span class="n">keep_chan</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">keep_chan</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
@@ -284,17 +287,17 @@
         <span class="n">raw_pick</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">pick_channels</span><span class="p">(</span><span class="n">ch_names</span><span class="p">,</span> <span class="n">ordered</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="c1"># Downsample if sf != 100</span>
-        <span class="k">assert</span> <span class="n">sf</span> <span class="o">&gt;</span> <span class="mi">80</span><span class="p">,</span> <span class="s1">&#39;Sampling frequency must be at least 80 Hz.&#39;</span>
+        <span class="k">assert</span> <span class="n">sf</span> <span class="o">&gt;</span> <span class="mi">80</span><span class="p">,</span> <span class="s2">&quot;Sampling frequency must be at least 80 Hz.&quot;</span>
         <span class="k">if</span> <span class="n">sf</span> <span class="o">!=</span> <span class="mi">100</span><span class="p">:</span>
             <span class="n">raw_pick</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">npad</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
-            <span class="n">sf</span> <span class="o">=</span> <span class="n">raw_pick</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;sfreq&#39;</span><span class="p">]</span>
+            <span class="n">sf</span> <span class="o">=</span> <span class="n">raw_pick</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;sfreq&quot;</span><span class="p">]</span>
 
         <span class="c1"># Get data and convert to microVolts</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">raw_pick</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span> <span class="o">*</span> <span class="mf">1e6</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">raw_pick</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">eeg</span><span class="o">=</span><span class="s2">&quot;uV&quot;</span><span class="p">,</span> <span class="n">emg</span><span class="o">=</span><span class="s2">&quot;uV&quot;</span><span class="p">,</span> <span class="n">eog</span><span class="o">=</span><span class="s2">&quot;uV&quot;</span><span class="p">,</span> <span class="n">ecg</span><span class="o">=</span><span class="s2">&quot;uV&quot;</span><span class="p">))</span>
 
         <span class="c1"># Extract duration of recording in minutes</span>
         <span class="n">duration_minutes</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">sf</span> <span class="o">/</span> <span class="mi">60</span>
-        <span class="k">assert</span> <span class="n">duration_minutes</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;At least 5 minutes of data is required.&#39;</span>
+        <span class="k">assert</span> <span class="n">duration_minutes</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">&quot;At least 5 minutes of data is required.&quot;</span>
 
         <span class="c1"># Add to self</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sf</span> <span class="o">=</span> <span class="n">sf</span>
@@ -320,10 +323,14 @@
         <span class="n">win_sec</span> <span class="o">=</span> <span class="mi">5</span>  <span class="c1"># = 2 / freq_broad[0]</span>
         <span class="n">sf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sf</span>
         <span class="n">win</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">win_sec</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span>
-        <span class="n">kwargs_welch</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="s1">&#39;hamming&#39;</span><span class="p">,</span> <span class="n">nperseg</span><span class="o">=</span><span class="n">win</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">)</span>
+        <span class="n">kwargs_welch</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="s2">&quot;hamming&quot;</span><span class="p">,</span> <span class="n">nperseg</span><span class="o">=</span><span class="n">win</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="s2">&quot;median&quot;</span><span class="p">)</span>
         <span class="n">bands</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="p">(</span><span class="mf">0.4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;sdelta&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;fdelta&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="s1">&#39;theta&#39;</span><span class="p">),</span>
-            <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="s1">&#39;alpha&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="s1">&#39;sigma&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="s1">&#39;beta&#39;</span><span class="p">)</span>
+            <span class="p">(</span><span class="mf">0.4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;sdelta&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;fdelta&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="s2">&quot;theta&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="s2">&quot;alpha&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="s2">&quot;sigma&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">),</span>
         <span class="p">]</span>
 
         <span class="c1">#######################################################################</span>
@@ -336,7 +343,8 @@
             <span class="c1"># Preprocessing</span>
             <span class="c1"># - Filter the data</span>
             <span class="n">dt_filt</span> <span class="o">=</span> <span class="n">filter_data</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">sf</span><span class="p">,</span> <span class="n">l_freq</span><span class="o">=</span><span class="n">freq_broad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">h_freq</span><span class="o">=</span><span class="n">freq_broad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">sf</span><span class="p">,</span> <span class="n">l_freq</span><span class="o">=</span><span class="n">freq_broad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">h_freq</span><span class="o">=</span><span class="n">freq_broad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
             <span class="c1"># - Extract epochs. Data is now of shape (n_epochs, n_samples).</span>
             <span class="n">times</span><span class="p">,</span> <span class="n">epochs</span> <span class="o">=</span> <span class="n">sliding_window</span><span class="p">(</span><span class="n">dt_filt</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="n">sf</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 
@@ -344,44 +352,42 @@
             <span class="n">hmob</span><span class="p">,</span> <span class="n">hcomp</span> <span class="o">=</span> <span class="n">ant</span><span class="o">.</span><span class="n">hjorth_params</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
             <span class="n">feat</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s1">&#39;std&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
-                <span class="s1">&#39;iqr&#39;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">iqr</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="mi">75</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
-                <span class="s1">&#39;skew&#39;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">skew</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
-                <span class="s1">&#39;kurt&#39;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">kurtosis</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
-                <span class="s1">&#39;nzc&#39;</span><span class="p">:</span> <span class="n">ant</span><span class="o">.</span><span class="n">num_zerocross</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
-                <span class="s1">&#39;hmob&#39;</span><span class="p">:</span> <span class="n">hmob</span><span class="p">,</span>
-                <span class="s1">&#39;hcomp&#39;</span><span class="p">:</span> <span class="n">hcomp</span>
+                <span class="s2">&quot;std&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                <span class="s2">&quot;iqr&quot;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">iqr</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="mi">75</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                <span class="s2">&quot;skew&quot;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">skew</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                <span class="s2">&quot;kurt&quot;</span><span class="p">:</span> <span class="n">sp_stats</span><span class="o">.</span><span class="n">kurtosis</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                <span class="s2">&quot;nzc&quot;</span><span class="p">:</span> <span class="n">ant</span><span class="o">.</span><span class="n">num_zerocross</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                <span class="s2">&quot;hmob&quot;</span><span class="p">:</span> <span class="n">hmob</span><span class="p">,</span>
+                <span class="s2">&quot;hcomp&quot;</span><span class="p">:</span> <span class="n">hcomp</span><span class="p">,</span>
             <span class="p">}</span>
 
             <span class="c1"># Calculate spectral power features (for EEG + EOG)</span>
             <span class="n">freqs</span><span class="p">,</span> <span class="n">psd</span> <span class="o">=</span> <span class="n">sp_sig</span><span class="o">.</span><span class="n">welch</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs_welch</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">c</span> <span class="o">!=</span> <span class="s1">&#39;emg&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="o">!=</span> <span class="s2">&quot;emg&quot;</span><span class="p">:</span>
                 <span class="n">bp</span> <span class="o">=</span> <span class="n">bandpower_from_psd_ndarray</span><span class="p">(</span><span class="n">psd</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">bands</span><span class="o">=</span><span class="n">bands</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bands</span><span class="p">):</span>
                     <span class="n">feat</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">bp</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
 
             <span class="c1"># Add power ratios for EEG</span>
-            <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39;eeg&#39;</span><span class="p">:</span>
-                <span class="n">delta</span> <span class="o">=</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;sdelta&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;fdelta&#39;</span><span class="p">]</span>
-                <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">/</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;theta&#39;</span><span class="p">]</span>
-                <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;ds&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">/</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span>
-                <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;db&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">/</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;beta&#39;</span><span class="p">]</span>
-                <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;at&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;theta&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="s2">&quot;eeg&quot;</span><span class="p">:</span>
+                <span class="n">delta</span> <span class="o">=</span> <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;sdelta&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;fdelta&quot;</span><span class="p">]</span>
+                <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;dt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">/</span> <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;theta&quot;</span><span class="p">]</span>
+                <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;ds&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">/</span> <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;sigma&quot;</span><span class="p">]</span>
+                <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">/</span> <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;beta&quot;</span><span class="p">]</span>
+                <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;at&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;theta&quot;</span><span class="p">]</span>
 
             <span class="c1"># Add total power</span>
             <span class="n">idx_broad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">freqs</span> <span class="o">&gt;=</span> <span class="n">freq_broad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">freqs</span> <span class="o">&lt;=</span> <span class="n">freq_broad</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
             <span class="n">dx</span> <span class="o">=</span> <span class="n">freqs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">freqs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;abspow&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">psd</span><span class="p">[:,</span> <span class="n">idx_broad</span><span class="p">],</span> <span class="n">dx</span><span class="o">=</span><span class="n">dx</span><span class="p">)</span>
+            <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;abspow&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">psd</span><span class="p">[:,</span> <span class="n">idx_broad</span><span class="p">],</span> <span class="n">dx</span><span class="o">=</span><span class="n">dx</span><span class="p">)</span>
 
             <span class="c1"># Calculate entropy and fractal dimension features</span>
-            <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;perm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span>
-                <span class="n">ant</span><span class="o">.</span><span class="n">perm_entropy</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;higuchi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span>
-                <span class="n">ant</span><span class="o">.</span><span class="n">higuchi_fd</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">)</span>
-            <span class="n">feat</span><span class="p">[</span><span class="s1">&#39;petrosian&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ant</span><span class="o">.</span><span class="n">petrosian_fd</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;perm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">ant</span><span class="o">.</span><span class="n">perm_entropy</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;higuchi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">ant</span><span class="o">.</span><span class="n">higuchi_fd</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">epochs</span><span class="p">)</span>
+            <span class="n">feat</span><span class="p">[</span><span class="s2">&quot;petrosian&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ant</span><span class="o">.</span><span class="n">petrosian_fd</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
             <span class="c1"># Convert to dataframe</span>
-            <span class="n">feat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span><span class="o">.</span><span class="n">add_prefix</span><span class="p">(</span><span class="n">c</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span>
+            <span class="n">feat</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span><span class="o">.</span><span class="n">add_prefix</span><span class="p">(</span><span class="n">c</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
             <span class="n">features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span>
 
         <span class="c1">#######################################################################</span>
@@ -390,20 +396,19 @@
 
         <span class="c1"># Save features to dataframe</span>
         <span class="n">features</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">features</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;epoch&#39;</span>
+        <span class="n">features</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;epoch&quot;</span>
 
         <span class="c1"># Apply centered rolling average (15 epochs = 7 min 30)</span>
         <span class="c1"># Triang: [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.,</span>
         <span class="c1">#          0.875, 0.75, 0.625, 0.5, 0.375, 0.25, 0.125]</span>
-        <span class="n">rollc</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span>
-            <span class="n">window</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">win_type</span><span class="o">=</span><span class="s1">&#39;triang&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">rollc</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">win_type</span><span class="o">=</span><span class="s2">&quot;triang&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
         <span class="n">rollc</span><span class="p">[</span><span class="n">rollc</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span> <span class="o">=</span> <span class="n">robust_scale</span><span class="p">(</span><span class="n">rollc</span><span class="p">,</span> <span class="n">quantile_range</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">95</span><span class="p">))</span>
-        <span class="n">rollc</span> <span class="o">=</span> <span class="n">rollc</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s1">&#39;_c7min_norm&#39;</span><span class="p">)</span>
+        <span class="n">rollc</span> <span class="o">=</span> <span class="n">rollc</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s2">&quot;_c7min_norm&quot;</span><span class="p">)</span>
 
         <span class="c1"># Now look at the past 2 minutes</span>
         <span class="n">rollp</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
         <span class="n">rollp</span><span class="p">[</span><span class="n">rollp</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span> <span class="o">=</span> <span class="n">robust_scale</span><span class="p">(</span><span class="n">rollp</span><span class="p">,</span> <span class="n">quantile_range</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">95</span><span class="p">))</span>
-        <span class="n">rollp</span> <span class="o">=</span> <span class="n">rollp</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s1">&#39;_p2min_norm&#39;</span><span class="p">)</span>
+        <span class="n">rollp</span> <span class="o">=</span> <span class="n">rollp</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s2">&quot;_p2min_norm&quot;</span><span class="p">)</span>
 
         <span class="c1"># Add to current set of features</span>
         <span class="n">features</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rollc</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rollp</span><span class="p">)</span>
@@ -413,8 +418,8 @@
         <span class="c1">#######################################################################</span>
 
         <span class="c1"># Add temporal features</span>
-        <span class="n">features</span><span class="p">[</span><span class="s1">&#39;time_hour&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">times</span> <span class="o">/</span> <span class="mi">3600</span>
-        <span class="n">features</span><span class="p">[</span><span class="s1">&#39;time_norm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">times</span> <span class="o">/</span> <span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;time_hour&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">times</span> <span class="o">/</span> <span class="mi">3600</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;time_norm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">times</span> <span class="o">/</span> <span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="c1"># Add metadata if present</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -425,10 +430,10 @@
         <span class="n">cols_float</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="n">features</span><span class="p">[</span><span class="n">cols_float</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="n">cols_float</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="c1"># Make sure that age and sex are encoded as int</span>
-        <span class="k">if</span> <span class="s1">&#39;age&#39;</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
-            <span class="n">features</span><span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s1">&#39;male&#39;</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
-            <span class="n">features</span><span class="p">[</span><span class="s1">&#39;male&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s1">&#39;male&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;age&quot;</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">features</span><span class="p">[</span><span class="s2">&quot;age&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;age&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;male&quot;</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">features</span><span class="p">[</span><span class="s2">&quot;male&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;male&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
 
         <span class="c1"># Sort the column names here (same behavior as lightGBM)</span>
         <span class="n">features</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -445,7 +450,7 @@
 <span class="sd">        features : :py:class:`pandas.DataFrame`</span>
 <span class="sd">            Feature dataframe.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_features&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_features&quot;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_features</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
 
@@ -455,22 +460,32 @@
         <span class="c1"># Note that clf.feature_name_ is only available in lightgbm&gt;=3.0</span>
         <span class="n">f_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">clf</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f_diff</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The following features are present in the &quot;</span>
-                             <span class="s2">&quot;classifier but not in the current features set:&quot;</span><span class="p">,</span> <span class="n">f_diff</span><span class="p">)</span>
-        <span class="n">f_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">,</span> <span class="n">clf</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">,</span> <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The following features are present in the &quot;</span>
+                <span class="s2">&quot;classifier but not in the current features set:&quot;</span><span class="p">,</span>
+                <span class="n">f_diff</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">f_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">,</span>
+            <span class="n">clf</span><span class="o">.</span><span class="n">feature_name_</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f_diff</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The following features are present in the &quot;</span>
-                             <span class="s2">&quot;current feature set but not in the classifier:&quot;</span><span class="p">,</span> <span class="n">f_diff</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The following features are present in the &quot;</span>
+                <span class="s2">&quot;current feature set but not in the classifier:&quot;</span><span class="p">,</span>
+                <span class="n">f_diff</span><span class="p">,</span>
+            <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_load_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_model</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Load the relevant trained classifier.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">path_to_model</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
             <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-            <span class="n">clf_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="p">),</span> <span class="s1">&#39;classifiers/&#39;</span><span class="p">)</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;clf_eeg&#39;</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;+eog&#39;</span> <span class="k">if</span> <span class="s1">&#39;eog&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_types</span> <span class="k">else</span> <span class="n">name</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;+emg&#39;</span> <span class="k">if</span> <span class="s1">&#39;emg&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_types</span> <span class="k">else</span> <span class="n">name</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;+demo&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">name</span>
+
+            <span class="n">clf_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="p">),</span> <span class="s2">&quot;classifiers/&quot;</span><span class="p">)</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;clf_eeg&quot;</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;+eog&quot;</span> <span class="k">if</span> <span class="s2">&quot;eog&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_types</span> <span class="k">else</span> <span class="n">name</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;+emg&quot;</span> <span class="k">if</span> <span class="s2">&quot;emg&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ch_types</span> <span class="k">else</span> <span class="n">name</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;+demo&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">name</span>
             <span class="c1"># e.g. clf_eeg+eog+emg+demo_lgb_0.4.0.joblib</span>
             <span class="n">all_matching_files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">clf_dir</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;*.joblib&quot;</span><span class="p">)</span>
             <span class="c1"># Find the latest file</span>
@@ -503,7 +518,7 @@
 <span class="sd">        pred : :py:class:`numpy.ndarray`</span>
 <span class="sd">            The predicted sleep stages.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_features&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_features&quot;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
         <span class="c1"># Load and validate pre-trained classifier</span>
         <span class="n">clf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_model</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">)</span>
@@ -512,7 +527,7 @@
         <span class="c1"># Predict the sleep stages and probabilities</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_predicted</span> <span class="o">=</span> <span class="n">clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
         <span class="n">proba</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">clf</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">columns</span><span class="o">=</span><span class="n">clf</span><span class="o">.</span><span class="n">classes_</span><span class="p">)</span>
-        <span class="n">proba</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;epoch&#39;</span>
+        <span class="n">proba</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;epoch&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_proba</span> <span class="o">=</span> <span class="n">proba</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predicted</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
 
@@ -535,13 +550,16 @@
 <span class="sd">        proba : :py:class:`pandas.DataFrame`</span>
 <span class="sd">            The predicted probability for each sleep stage for each 30-sec epoch of data.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_proba&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_proba&quot;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proba</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="SleepStaging.plot_predict_proba"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.plot_predict_proba">[docs]</a>    <span class="k">def</span> <span class="nf">plot_predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proba</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">majority_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                           <span class="n">palette</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;#99d7f1&#39;</span><span class="p">,</span> <span class="s1">&#39;#009DDC&#39;</span><span class="p">,</span> <span class="s1">&#39;xkcd:twilight blue&#39;</span><span class="p">,</span>
-                                    <span class="s1">&#39;xkcd:rich purple&#39;</span><span class="p">,</span> <span class="s1">&#39;xkcd:sunflower&#39;</span><span class="p">]):</span>
+<div class="viewcode-block" id="SleepStaging.plot_predict_proba"><a class="viewcode-back" href="../../generated/yasa.SleepStaging.html#yasa.SleepStaging.plot_predict_proba">[docs]</a>    <span class="k">def</span> <span class="nf">plot_predict_proba</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">proba</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">majority_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">palette</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;#99d7f1&quot;</span><span class="p">,</span> <span class="s2">&quot;#009DDC&quot;</span><span class="p">,</span> <span class="s2">&quot;xkcd:twilight blue&quot;</span><span class="p">,</span> <span class="s2">&quot;xkcd:rich purple&quot;</span><span class="p">,</span> <span class="s2">&quot;xkcd:sunflower&quot;</span><span class="p">],</span>
+    <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Plot the predicted probability for each sleep stage for each 30-sec epoch of data.</span>
 
@@ -552,16 +570,16 @@
 <span class="sd">        majority_only : boolean</span>
 <span class="sd">            If True, probabilities of the non-majority classes will be set to 0.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">proba</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_features&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">proba</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_features&quot;</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must call .predict_proba before this function&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">proba</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">proba</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proba</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">proba</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">),</span> <span class="s1">&#39;proba must be a dataframe&#39;</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">proba</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">),</span> <span class="s2">&quot;proba must be a dataframe&quot;</span>
         <span class="k">if</span> <span class="n">majority_only</span><span class="p">:</span>
             <span class="n">cond</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">==</span> <span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="n">proba</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">other</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">ax</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;area&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=.</span><span class="mi">8</span><span class="p">,</span> <span class="n">stacked</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">proba</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">stacked</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="c1"># Add confidence</span>
         <span class="c1"># confidence = proba.max(1)</span>
         <span class="c1"># ax.plot(confidence, lw=1, color=&#39;k&#39;, ls=&#39;-&#39;, alpha=0.5,</span>

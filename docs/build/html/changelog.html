@@ -3,11 +3,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>What’s new &#8212; yasa 0.6.1 documentation</title>
+    <title>What’s new &#8212; yasa 0.6.2 documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
+    <link rel="stylesheet" type="text/css" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
@@ -41,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="index.html"><span><img src="_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.1</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.2</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -91,47 +94,66 @@
     <div class="body col-md-12 content" role="main">
       
   <div class="section" id="what-s-new">
-<span id="changelog"></span><h1><a class="toc-backref" href="#id7">What’s new</a><a class="headerlink" href="#what-s-new" title="Permalink to this headline">¶</a></h1>
+<span id="changelog"></span><h1><a class="toc-backref" href="#id8">What’s new</a><a class="headerlink" href="#what-s-new" title="Permalink to this headline">¶</a></h1>
 <div class="contents topic" id="table-of-contents">
 <p class="topic-title">Table of Contents</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="#what-s-new" id="id7">What’s new</a></p>
+<li><p><a class="reference internal" href="#what-s-new" id="id8">What’s new</a></p>
 <ul>
-<li><p><a class="reference internal" href="#v0-6-1-march-2022" id="id8">v0.6.1 (March 2022)</a></p></li>
-<li><p><a class="reference internal" href="#v0-6-0-february-2022" id="id9">v0.6.0 (February 2022)</a></p></li>
-<li><p><a class="reference internal" href="#v0-5-1-august-2021" id="id10">v0.5.1 (August 2021)</a></p></li>
-<li><p><a class="reference internal" href="#v0-5-0-august-2021" id="id11">v0.5.0 (August 2021)</a></p></li>
-<li><p><a class="reference internal" href="#v0-4-1-march-2021" id="id12">v0.4.1 (March 2021)</a></p></li>
-<li><p><a class="reference internal" href="#v0-4-0-november-2020" id="id13">v0.4.0 (November 2020)</a></p></li>
-<li><p><a class="reference internal" href="#v0-3-0-may-2020" id="id14">v0.3.0 (May 2020)</a></p></li>
-<li><p><a class="reference internal" href="#v0-2-0-april-2020" id="id15">v0.2.0 (April 2020)</a></p></li>
-<li><p><a class="reference internal" href="#v0-1-9-february-2020" id="id16">v0.1.9 (February 2020)</a></p></li>
-<li><p><a class="reference internal" href="#v0-1-8-october-2019" id="id17">v0.1.8 (October 2019)</a></p></li>
-<li><p><a class="reference internal" href="#v0-1-7-august-2019" id="id18">v0.1.7 (August 2019)</a></p></li>
-<li><p><a class="reference internal" href="#v0-1-6-august-2019" id="id19">v0.1.6 (August 2019)</a></p></li>
-<li><p><a class="reference internal" href="#v0-1-5-august-2019" id="id20">v0.1.5 (August 2019)</a></p></li>
-<li><p><a class="reference internal" href="#v0-1-4-may-2019" id="id21">v0.1.4 (May 2019)</a></p></li>
-<li><p><a class="reference internal" href="#v0-1-3-march-2019" id="id22">v0.1.3 (March 2019)</a></p></li>
-<li><p><a class="reference internal" href="#v0-1-2-february-2019" id="id23">v0.1.2 (February 2019)</a></p></li>
-<li><p><a class="reference internal" href="#v0-1-1-january-2019" id="id24">v0.1.1 (January 2019)</a></p></li>
-<li><p><a class="reference internal" href="#v0-1-december-2018" id="id25">v0.1 (December 2018)</a></p></li>
+<li><p><a class="reference internal" href="#v0-6-2-august-2022" id="id9">v0.6.2 (August 2022)</a></p></li>
+<li><p><a class="reference internal" href="#v0-6-1-march-2022" id="id10">v0.6.1 (March 2022)</a></p></li>
+<li><p><a class="reference internal" href="#v0-6-0-february-2022" id="id11">v0.6.0 (February 2022)</a></p></li>
+<li><p><a class="reference internal" href="#v0-5-1-august-2021" id="id12">v0.5.1 (August 2021)</a></p></li>
+<li><p><a class="reference internal" href="#v0-5-0-august-2021" id="id13">v0.5.0 (August 2021)</a></p></li>
+<li><p><a class="reference internal" href="#v0-4-1-march-2021" id="id14">v0.4.1 (March 2021)</a></p></li>
+<li><p><a class="reference internal" href="#v0-4-0-november-2020" id="id15">v0.4.0 (November 2020)</a></p></li>
+<li><p><a class="reference internal" href="#v0-3-0-may-2020" id="id16">v0.3.0 (May 2020)</a></p></li>
+<li><p><a class="reference internal" href="#older-versions" id="id17">Older versions</a></p></li>
 </ul>
 </li>
 </ul>
 </div>
 <hr class="docutils" />
+<div class="section" id="v0-6-2-august-2022">
+<h2><a class="toc-backref" href="#id9">v0.6.2 (August 2022)</a><a class="headerlink" href="#v0-6-2-august-2022" title="Permalink to this headline">¶</a></h2>
+<p><strong>ECG analysis</strong> - <a class="reference external" href="https://github.com/raphaelvallat/yasa/pull/68">PR 68</a></p>
+<ol class="loweralpha simple">
+<li><p>Added the <a class="reference internal" href="generated/yasa.hypno_find_periods.html#yasa.hypno_find_periods" title="yasa.hypno_find_periods"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.hypno_find_periods()</span></code></a> function to find sequences of consecutive values in hypnogram that are longer than a certain duration. This is a flexible function that can be used to detect NREM/REM periods.</p></li>
+<li><p>Added the <a class="reference internal" href="generated/yasa.hrv_stage.html#yasa.hrv_stage" title="yasa.hrv_stage"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.hrv_stage()</span></code></a> function, which calculates heart rate (HR) and heart rate variability (HRV) by stage and periods.</p></li>
+<li><p>Added a new dataset containing 8 hours of ECG data. The dataset is in compressed NumPy format and can be found in notebooks/data_ECG_8hrs_200Hz.npz. The dataset also includes an upsampled hypnogram.</p></li>
+<li><p>Added a new Jupyter notebook to calculate EEG-HRV overnight coupling based on the <a class="reference internal" href="generated/yasa.hrv_stage.html#yasa.hrv_stage" title="yasa.hrv_stage"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.hrv_stage()</span></code></a> function. <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/16_EEG-HRV_coupling.ipynb">https://github.com/raphaelvallat/yasa/blob/master/notebooks/16_EEG-HRV_coupling.ipynb</a></p></li>
+</ol>
+<p><strong>Spindles &amp; slow-waves detection</strong> - <a class="reference external" href="https://github.com/raphaelvallat/yasa/pull/71">PR 71</a></p>
+<ol class="loweralpha simple">
+<li><p>Added the <a class="reference internal" href="generated/yasa.compare_detection.html#yasa.compare_detection" title="yasa.compare_detection"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.compare_detection()</span></code></a> function to determine the correctness of detected events against ground-truth events. It calculates the true positive, false positives and false negatives, and from those, the precision, recall and F1-scores. The input should be the indices of the onset of the event, in samples. It includes a max_distance argument which specifies the tolerance window (in number of samples) for two events to be considered the same.</p></li>
+<li><p>Added the <a class="reference internal" href="generated/yasa.SpindlesResults.html#yasa.SpindlesResults.compare_detection" title="yasa.SpindlesResults.compare_detection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">yasa.SpindlesResults.compare_detection()</span></code></a> and <a class="reference internal" href="generated/yasa.SWResults.html#yasa.SWResults.compare_detection" title="yasa.SWResults.compare_detection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">yasa.SWResults.compare_detection()</span></code></a> method. This is a powerful and flexible function that allows to calculate the performance of the current detection against a) another detection or b) ground-truth annotations. For example, we can compare the output of the spindles detection with different thresholds.</p></li>
+<li><p>Added the <a class="reference internal" href="generated/yasa.SpindlesResults.html#yasa.SpindlesResults.compare_channels" title="yasa.SpindlesResults.compare_channels"><code class="xref py py-meth docutils literal notranslate"><span class="pre">yasa.SpindlesResults.compare_channels()</span></code></a> and <a class="reference internal" href="generated/yasa.SWResults.html#yasa.SWResults.compare_channels" title="yasa.SWResults.compare_channels"><code class="xref py py-meth docutils literal notranslate"><span class="pre">yasa.SWResults.compare_channels()</span></code></a> methods to compare the overlap of the detected events between channels. Agreement is calculated using the F1-score (default), precision or recall.</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">vmin</span></code> and <code class="docutils literal notranslate"><span class="pre">vmax</span></code> parameters to <a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.plot_spectrogram()</span></code></a>. <a class="reference external" href="https://github.com/raphaelvallat/yasa/pull/75">PR 75</a></p></li>
+<li><p>Better handling of flat data in <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>. The function previously returned a division by zero error if part of the data was flat. See <a class="reference external" href="https://github.com/raphaelvallat/yasa/issues/85">issue 85</a></p></li>
+<li><p>When using an MNE.Raw object, conversion of the data from Volts to micro-Volts is now performed within MNE. <a class="reference external" href="https://github.com/raphaelvallat/yasa/pull/70">PR 70</a></p></li>
+<li><p>Use <a class="reference external" href="https://black.readthedocs.io/en/stable/">black</a> code formatting.</p></li>
+</ol>
+<p><strong>Others</strong></p>
+<ol class="loweralpha simple">
+<li><p>When using an MNE.Raw object, conversion of the data from Volts to micro-Volts is now performed within MNE. <a class="reference external" href="https://github.com/raphaelvallat/yasa/pull/70">PR 70</a></p></li>
+<li><p>Added <a class="reference external" href="https://sleepecg.readthedocs.io/en/stable/">SleepECG</a> to the dependencies. SleepECG is used for the heartbeats detection in <a class="reference internal" href="generated/yasa.hrv_stage.html#yasa.hrv_stage" title="yasa.hrv_stage"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.hrv_stage()</span></code></a>.</p></li>
+<li><p>YASA now requires MNE&gt;0.23</p></li>
+</ol>
+</div>
+<hr class="docutils" />
 <div class="section" id="v0-6-1-march-2022">
-<h2><a class="toc-backref" href="#id8">v0.6.1 (March 2022)</a><a class="headerlink" href="#v0-6-1-march-2022" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id10">v0.6.1 (March 2022)</a><a class="headerlink" href="#v0-6-1-march-2022" title="Permalink to this headline">¶</a></h2>
 <p>This release fixes a CRITICAL BUG with the spindles detection. Specifically, the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> could return different results depending on the sampling rate of the data.
 For example, downsampling the data from 256 Hz to 128 Hz may have significantly reduced the number of detected spindles. As explained in <a class="reference external" href="https://github.com/raphaelvallat/yasa/issues/54">issue 54</a>, this bug was caused by a floating-point error
-in <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.convolve.html#numpy.convolve" title="(in NumPy v1.22)"><code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.convolve()</span></code></a> when calculating the soft spindle threshold. Tests seem to indicate that only certain sampling frequencies were impacted, such as 200 Hz, 256 Hz or 400 Hz. Other sampling frequencies such as 100 Hz and 500 Hz were seemingly not affected by this bug. Please double-check any results obtained with <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>!</p>
+in <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.convolve.html#numpy.convolve" title="(in NumPy v1.23)"><code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.convolve()</span></code></a> when calculating the soft spindle threshold. Tests seem to indicate that only certain sampling frequencies were impacted, such as 200 Hz, 256 Hz or 400 Hz. Other sampling frequencies such as 100 Hz and 500 Hz were seemingly not affected by this bug. Please double-check any results obtained with <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>!</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>We recommend all users to upgrade to this new version ASAP and check any results obtained with the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> function!</p>
 </div>
 </div>
+<hr class="docutils" />
 <div class="section" id="v0-6-0-february-2022">
-<h2><a class="toc-backref" href="#id9">v0.6.0 (February 2022)</a><a class="headerlink" href="#v0-6-0-february-2022" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id11">v0.6.0 (February 2022)</a><a class="headerlink" href="#v0-6-0-february-2022" title="Permalink to this headline">¶</a></h2>
 <p>This is a MAJOR release with several API-breaking changes, new functions, bugfixes and a new section in the documentation.</p>
 <p><strong>Documentation</strong></p>
 <ul class="simple">
@@ -170,11 +192,12 @@ in <a class="reference external" href="https://numpy.org/doc/stable/reference/ge
 </div>
 <hr class="docutils" />
 <div class="section" id="v0-5-1-august-2021">
-<h2><a class="toc-backref" href="#id10">v0.5.1 (August 2021)</a><a class="headerlink" href="#v0-5-1-august-2021" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id12">v0.5.1 (August 2021)</a><a class="headerlink" href="#v0-5-1-august-2021" title="Permalink to this headline">¶</a></h2>
 <p>This is a bugfix release. The latest pre-trained classifiers for <a class="reference internal" href="generated/yasa.SleepStaging.html#yasa.SleepStaging" title="yasa.SleepStaging"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.SleepStaging</span></code></a> were accidentally missing from the previous release. They have now been included in this release.</p>
 </div>
+<hr class="docutils" />
 <div class="section" id="v0-5-0-august-2021">
-<h2><a class="toc-backref" href="#id11">v0.5.0 (August 2021)</a><a class="headerlink" href="#v0-5-0-august-2021" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id13">v0.5.0 (August 2021)</a><a class="headerlink" href="#v0-5-0-august-2021" title="Permalink to this headline">¶</a></h2>
 <p>This is a major release with an important bugfix for the slow-waves detection as well as API-breaking changes in the automatic sleep staging module. We recommend all users to upgrade to this version with <cite>pip install –upgrade yasa</cite>.</p>
 <p><strong>Slow-waves detection</strong></p>
 <p>We have fixed a critical bug in <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> in which the detection could keep slow-waves with invalid duration (e.g. several tens of seconds). We have now added extra safety checks to make sure that the total duration of the slow-waves does not exceed the maximum duration allowed by the <code class="docutils literal notranslate"><span class="pre">dur_neg</span></code> and <code class="docutils literal notranslate"><span class="pre">dur_pos</span></code> parameters (default = 2.5 seconds).</p>
@@ -203,10 +226,10 @@ The scaled version of the coincidence matrix can then be used to define function
 </div>
 <hr class="docutils" />
 <div class="section" id="v0-4-1-march-2021">
-<h2><a class="toc-backref" href="#id12">v0.4.1 (March 2021)</a><a class="headerlink" href="#v0-4-1-march-2021" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id14">v0.4.1 (March 2021)</a><a class="headerlink" href="#v0-4-1-march-2021" title="Permalink to this headline">¶</a></h2>
 <p><strong>New functions</strong></p>
 <ol class="loweralpha simple">
-<li><p>Added <a class="reference internal" href="generated/yasa.topoplot.html#yasa.topoplot" title="yasa.topoplot"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.topoplot()</span></code></a>, a wrapper around <a class="reference external" href="https://mne.tools/stable/generated/mne.viz.plot_topomap.html#mne.viz.plot_topomap" title="(in MNE v0.24)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.viz.plot_topomap()</span></code></a>. See <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/15_topoplot.ipynb">15_topoplot.ipynb</a></p></li>
+<li><p>Added <a class="reference internal" href="generated/yasa.topoplot.html#yasa.topoplot" title="yasa.topoplot"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.topoplot()</span></code></a>, a wrapper around <a class="reference external" href="https://mne.tools/stable/generated/mne.viz.plot_topomap.html#mne.viz.plot_topomap" title="(in MNE v1.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.viz.plot_topomap()</span></code></a>. See <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/15_topoplot.ipynb">15_topoplot.ipynb</a></p></li>
 </ol>
 <p><strong>Enhancements</strong></p>
 <ol class="loweralpha simple">
@@ -219,7 +242,7 @@ The scaled version of the coincidence matrix can then be used to define function
 </div>
 <hr class="docutils" />
 <div class="section" id="v0-4-0-november-2020">
-<h2><a class="toc-backref" href="#id13">v0.4.0 (November 2020)</a><a class="headerlink" href="#v0-4-0-november-2020" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id15">v0.4.0 (November 2020)</a><a class="headerlink" href="#v0-4-0-november-2020" title="Permalink to this headline">¶</a></h2>
 <p>This is a major release with several new functions, the biggest of which is the addition of an <strong>automatic sleep staging module</strong> (<a class="reference internal" href="generated/yasa.SleepStaging.html#yasa.SleepStaging" title="yasa.SleepStaging"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.SleepStaging</span></code></a>). This means that YASA can now automatically score the sleep stages of your raw EEG data. The classifier was trained and validated on more than 3000 nights from the <a class="reference external" href="https://sleepdata.org/">National Sleep Research Resource (NSRR)</a> website.</p>
 <p>Briefly, the algorithm works by calculating a set of features for each 30-sec epochs from a central EEG channel (required), as well as an EOG channel (optional) and an EMG channel (optional). For best performance, users can also specify the age and the sex of the participants. Pre-trained classifiers are already included in YASA. The automatic sleep staging algorithm requires the <a class="reference external" href="https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html">LightGBM</a> and <a class="reference external" href="https://github.com/raphaelvallat/antropy">antropy</a> package.</p>
 <p><strong>Other changes</strong></p>
@@ -237,7 +260,7 @@ The scaled version of the coincidence matrix can then be used to define function
 </div>
 <hr class="docutils" />
 <div class="section" id="v0-3-0-may-2020">
-<h2><a class="toc-backref" href="#id14">v0.3.0 (May 2020)</a><a class="headerlink" href="#v0-3-0-may-2020" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id16">v0.3.0 (May 2020)</a><a class="headerlink" href="#v0-3-0-may-2020" title="Permalink to this headline">¶</a></h2>
 <p>This is a major release with several API-breaking changes in the spindles, slow-waves and REMs detection.</p>
 <p>First, the <code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect_multi()</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect_multi()</span></code> have been removed. Instead, the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> and <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> functions can now handle both single and multi-channel data.</p>
 <p>Second, I was getting some feedback that it was difficult to get summary statistics from the detection dataframe. For instance, how can you get the average duration of the detected spindles, per channel and/or per stage? Similarly, how can you get the slow-waves count and density per stage and channel? To address these issues, I’ve now modified the output of the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>, <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> and <a class="reference internal" href="generated/yasa.rem_detect.html#yasa.rem_detect" title="yasa.rem_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.rem_detect()</span></code></a> functions, which is now a class (= object) and not a simple Pandas DataFrame. The advantage is that the new output allows you to quickly get the raw data or summary statistics grouped by channel and/or sleep stage using the <code class="docutils literal notranslate"><span class="pre">.summary()</span></code> method.</p>
@@ -265,147 +288,195 @@ The scaled version of the coincidence matrix can then be used to define function
 <p><strong>Other changes</strong></p>
 <ol class="loweralpha simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">coupling</span></code> argument has been removed from the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> function. Instead, slow-oscillations / sigma coupling can only be calculated from the slow-waves detection, which is 1) the most standard way, 2) better because PAC assumptions require a strong oscillatory component in the lower frequency range (slow-oscillations). This also avoids unecessary confusion between spindles-derived coupling and slow-waves-derived coupling. For more details, refer to the Jupyter notebooks.</p></li>
-<li><p>Downsampling of data in detection functions has been removed. In other words, YASA will no longer downsample the data to 100 / 128 Hz before applying the events detection. If the detection is too slow, we recommend that you manually downsample your data before applying the detection. See for example <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.resample.html#mne.filter.resample" title="(in MNE v0.24)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.resample()</span></code></a>.</p></li>
+<li><p>Downsampling of data in detection functions has been removed. In other words, YASA will no longer downsample the data to 100 / 128 Hz before applying the events detection. If the detection is too slow, we recommend that you manually downsample your data before applying the detection. See for example <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.resample.html#mne.filter.resample" title="(in MNE v1.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.resample()</span></code></a>.</p></li>
 <li><p><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.trimbothstd()</span></code> can now work with multi-dimensional arrays. The trimmed standard deviation will always be calculated on the last axis of the array.</p></li>
 <li><p>Filtering and Hilbert transform are now applied at once on all channels (instead of looping across individual channels) in the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> and <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> functions. This should lead to some improvements in computation time.</p></li>
 </ol>
 </div>
 <hr class="docutils" />
-<div class="section" id="v0-2-0-april-2020">
-<h2><a class="toc-backref" href="#id15">v0.2.0 (April 2020)</a><a class="headerlink" href="#v0-2-0-april-2020" title="Permalink to this headline">¶</a></h2>
-<p>This is a major release with several new functions, bugfixes and miscellaneous enhancements in existing functions.</p>
-<p><strong>Bugfixes</strong></p>
+<div class="section" id="older-versions">
+<h2><a class="toc-backref" href="#id17">Older versions</a><a class="headerlink" href="#older-versions" title="Permalink to this headline">¶</a></h2>
+<details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+<strong>v0.2.0 (April 2020)</strong><div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
+<p class="card-text">This is a major release with several new functions, bugfixes and miscellaneous enhancements in existing functions.</p>
+<p class="card-text"><strong>Bugfixes</strong></p>
 <ol class="loweralpha simple">
-<li><p>Sleep efficiency in the <a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sleep_statistics()</span></code></a> is now calculated using time in bed (TIB) as the denominator instead of sleep period time (SPT), in agreement with the AASM guidelines. The old way of computing the efficiency (TST / SPT) has now been renamed Sleep Maintenance Efficiency (SME).</p></li>
-<li><p>The <a class="reference internal" href="generated/yasa.sliding_window.html#yasa.sliding_window" title="yasa.sliding_window"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sliding_window()</span></code></a> now always return an array of shape (n_epochs, …, n_samples), i.e. the epochs are now always the first dimension of the epoched array. This is consistent with MNE default shape of <a class="reference external" href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="(in MNE v0.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Epochs</span></code></a> objects.</p></li>
+<li><p class="card-text">Sleep efficiency in the <a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sleep_statistics()</span></code></a> is now calculated using time in bed (TIB) as the denominator instead of sleep period time (SPT), in agreement with the AASM guidelines. The old way of computing the efficiency (TST / SPT) has now been renamed Sleep Maintenance Efficiency (SME).</p></li>
+<li><p class="card-text">The <a class="reference internal" href="generated/yasa.sliding_window.html#yasa.sliding_window" title="yasa.sliding_window"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sliding_window()</span></code></a> now always return an array of shape (n_epochs, …, n_samples), i.e. the epochs are now always the first dimension of the epoched array. This is consistent with MNE default shape of <a class="reference external" href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="(in MNE v1.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Epochs</span></code></a> objects.</p></li>
 </ol>
-<p><strong>New functions</strong></p>
+<p class="card-text"><strong>New functions</strong></p>
 <ol class="loweralpha simple">
-<li><p>Added <a class="reference internal" href="generated/yasa.art_detect.html#yasa.art_detect" title="yasa.art_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.art_detect()</span></code></a> to automatically detect artefacts on single or multi-channel EEG data.</p></li>
-<li><p>Added <a class="reference internal" href="generated/yasa.bandpower_from_psd_ndarray.html#yasa.bandpower_from_psd_ndarray" title="yasa.bandpower_from_psd_ndarray"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower_from_psd_ndarray()</span></code></a> to calculate band power from a multi-dimensional PSD. This is a NumPy-only implementation and this function will return a np.array and not a pandas DataFrame. This function is useful if you need to calculate the bandpower from a 3-D PSD array, e.g. of shape <em>(n_epochs, n_chan, n_freqs)</em>.</p></li>
-<li><p>Added <code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.get_centered_indices()</span></code> to extract indices in data centered around specific events or peaks.</p></li>
-<li><p>Added <a class="reference internal" href="generated/yasa.load_profusion_hypno.html#yasa.load_profusion_hypno" title="yasa.load_profusion_hypno"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.load_profusion_hypno()</span></code></a> to load a Compumedics Profusion hypnogram (.xml), as found on the <a class="reference external" href="https://sleepdata.org/">National Sleep Research Resource (NSRR)</a> website.</p></li>
+<li><p class="card-text">Added <a class="reference internal" href="generated/yasa.art_detect.html#yasa.art_detect" title="yasa.art_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.art_detect()</span></code></a> to automatically detect artefacts on single or multi-channel EEG data.</p></li>
+<li><p class="card-text">Added <a class="reference internal" href="generated/yasa.bandpower_from_psd_ndarray.html#yasa.bandpower_from_psd_ndarray" title="yasa.bandpower_from_psd_ndarray"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower_from_psd_ndarray()</span></code></a> to calculate band power from a multi-dimensional PSD. This is a NumPy-only implementation and this function will return a np.array and not a pandas DataFrame. This function is useful if you need to calculate the bandpower from a 3-D PSD array, e.g. of shape <em>(n_epochs, n_chan, n_freqs)</em>.</p></li>
+<li><p class="card-text">Added <code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.get_centered_indices()</span></code> to extract indices in data centered around specific events or peaks.</p></li>
+<li><p class="card-text">Added <a class="reference internal" href="generated/yasa.load_profusion_hypno.html#yasa.load_profusion_hypno" title="yasa.load_profusion_hypno"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.load_profusion_hypno()</span></code></a> to load a Compumedics Profusion hypnogram (.xml), as found on the <a class="reference external" href="https://sleepdata.org/">National Sleep Research Resource (NSRR)</a> website.</p></li>
 </ol>
-<p><strong>Enhancements</strong></p>
+<p class="card-text"><strong>Enhancements</strong></p>
 <ol class="loweralpha simple">
-<li><p><a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sleep_statistics()</span></code></a> now also returns the sleep onset latency, i.e. the latency to the first epoch of any sleep.</p></li>
-<li><p>Added the <cite>bandpass</cite> argument to <a class="reference internal" href="generated/yasa.bandpower.html#yasa.bandpower" title="yasa.bandpower"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower()</span></code></a> to apply a FIR bandpass filter using the lowest and highest frequencies defined in <cite>bands</cite>. This is useful if you work with absolute power and want to remove contributions from frequency bands of non-interests.</p></li>
-<li><p>The <a class="reference internal" href="generated/yasa.bandpower_from_psd.html#yasa.bandpower_from_psd" title="yasa.bandpower_from_psd"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower_from_psd()</span></code></a> now always return the total absolute physical power (<cite>TotalAbsPow</cite>) of the signal, in units of uV^2 / Hz. This allows to quickly calculate the absolute bandpower from the relative bandpower.</p></li>
-<li><p>Added sigma (12-16Hz) to the default frequency bands (<cite>bands</cite>) in <a class="reference internal" href="generated/yasa.bandpower.html#yasa.bandpower" title="yasa.bandpower"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower()</span></code></a> and <a class="reference internal" href="generated/yasa.bandpower_from_psd.html#yasa.bandpower_from_psd" title="yasa.bandpower_from_psd"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower_from_psd()</span></code></a>.</p></li>
-<li><p>Added the <code class="docutils literal notranslate"><span class="pre">coupling</span></code> and <code class="docutils literal notranslate"><span class="pre">freq_sp</span></code> keyword-arguments to the <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> function. If <code class="docutils literal notranslate"><span class="pre">coupling=True</span></code>, the function will return the phase of the slow-waves (in radians) at the most prominent peak of sigma-filtered band (<code class="docutils literal notranslate"><span class="pre">PhaseAtSigmaPeak</span></code>), as well as the normalized mean vector length (<code class="docutils literal notranslate"><span class="pre">ndPAC</span></code>).</p></li>
-<li><p>Added an section in the <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb">06_sw_detection.ipynb</a> notebooks on how to use relative amplitude thresholds (e.g. z-scores or percentiles) instead of absolute thresholds in slow-waves detection.</p></li>
-<li><p>The upper frequency band for <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> has been changed from <code class="docutils literal notranslate"><span class="pre">freq_sw=(0.3,</span> <span class="pre">3.5)</span></code> to <code class="docutils literal notranslate"><span class="pre">freq_sw=(0.3,</span> <span class="pre">2)</span></code> Hz to comply with AASM guidelines.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Stage</span></code> is no longer taken into account when finding outliers with <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v1.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a> in <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>.</p></li>
-<li><p>To be consistent with <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>, automatic outlier removal now requires at least 50 (instead of 100) detected events in <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> and <a class="reference internal" href="generated/yasa.rem_detect.html#yasa.rem_detect" title="yasa.rem_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.rem_detect()</span></code></a>.</p></li>
-<li><p>Added the <code class="docutils literal notranslate"><span class="pre">verbose</span></code> parameter to all detection functions.</p></li>
-<li><p>Added -2 to the default hypnogram format to denote unscored data.</p></li>
+<li><p class="card-text"><a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sleep_statistics()</span></code></a> now also returns the sleep onset latency, i.e. the latency to the first epoch of any sleep.</p></li>
+<li><p class="card-text">Added the <cite>bandpass</cite> argument to <a class="reference internal" href="generated/yasa.bandpower.html#yasa.bandpower" title="yasa.bandpower"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower()</span></code></a> to apply a FIR bandpass filter using the lowest and highest frequencies defined in <cite>bands</cite>. This is useful if you work with absolute power and want to remove contributions from frequency bands of non-interests.</p></li>
+<li><p class="card-text">The <a class="reference internal" href="generated/yasa.bandpower_from_psd.html#yasa.bandpower_from_psd" title="yasa.bandpower_from_psd"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower_from_psd()</span></code></a> now always return the total absolute physical power (<cite>TotalAbsPow</cite>) of the signal, in units of uV^2 / Hz. This allows to quickly calculate the absolute bandpower from the relative bandpower.</p></li>
+<li><p class="card-text">Added sigma (12-16Hz) to the default frequency bands (<cite>bands</cite>) in <a class="reference internal" href="generated/yasa.bandpower.html#yasa.bandpower" title="yasa.bandpower"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower()</span></code></a> and <a class="reference internal" href="generated/yasa.bandpower_from_psd.html#yasa.bandpower_from_psd" title="yasa.bandpower_from_psd"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.bandpower_from_psd()</span></code></a>.</p></li>
+<li><p class="card-text">Added the <code class="docutils literal notranslate"><span class="pre">coupling</span></code> and <code class="docutils literal notranslate"><span class="pre">freq_sp</span></code> keyword-arguments to the <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> function. If <code class="docutils literal notranslate"><span class="pre">coupling=True</span></code>, the function will return the phase of the slow-waves (in radians) at the most prominent peak of sigma-filtered band (<code class="docutils literal notranslate"><span class="pre">PhaseAtSigmaPeak</span></code>), as well as the normalized mean vector length (<code class="docutils literal notranslate"><span class="pre">ndPAC</span></code>).</p></li>
+<li><p class="card-text">Added an section in the <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/06_sw_detection.ipynb">06_sw_detection.ipynb</a> notebooks on how to use relative amplitude thresholds (e.g. z-scores or percentiles) instead of absolute thresholds in slow-waves detection.</p></li>
+<li><p class="card-text">The upper frequency band for <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> has been changed from <code class="docutils literal notranslate"><span class="pre">freq_sw=(0.3,</span> <span class="pre">3.5)</span></code> to <code class="docutils literal notranslate"><span class="pre">freq_sw=(0.3,</span> <span class="pre">2)</span></code> Hz to comply with AASM guidelines.</p></li>
+<li><p class="card-text"><code class="docutils literal notranslate"><span class="pre">Stage</span></code> is no longer taken into account when finding outliers with <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v1.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a> in <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>.</p></li>
+<li><p class="card-text">To be consistent with <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>, automatic outlier removal now requires at least 50 (instead of 100) detected events in <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> and <a class="reference internal" href="generated/yasa.rem_detect.html#yasa.rem_detect" title="yasa.rem_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.rem_detect()</span></code></a>.</p></li>
+<li><p class="card-text">Added the <code class="docutils literal notranslate"><span class="pre">verbose</span></code> parameter to all detection functions.</p></li>
+<li><p class="card-text">Added -2 to the default hypnogram format to denote unscored data.</p></li>
 </ol>
-<p><strong>Dependencies</strong></p>
+<p class="card-text"><strong>Dependencies</strong></p>
 <ol class="loweralpha simple">
-<li><p>Removed deprecated <code class="docutils literal notranslate"><span class="pre">behavior</span></code> argument to avoid warning when calling <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v1.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.</p></li>
-<li><p>Added <a class="reference external" href="https://etiennecmb.github.io/tensorpac/index.html">TensorPAC</a> and <a class="reference external" href="https://pyriemann.readthedocs.io/en/latest/api.html">pyRiemann</a> to dependencies.</p></li>
-<li><p>Updated dependencies version for MNE and scikit-learn.</p></li>
-</ol>
-</div>
-<hr class="docutils" />
-<div class="section" id="v0-1-9-february-2020">
-<h2><a class="toc-backref" href="#id16">v0.1.9 (February 2020)</a><a class="headerlink" href="#v0-1-9-february-2020" title="Permalink to this headline">¶</a></h2>
-<p><strong>New functions</strong></p>
-<ol class="loweralpha simple">
-<li><p>Added <a class="reference internal" href="generated/yasa.transition_matrix.html#yasa.transition_matrix" title="yasa.transition_matrix"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.transition_matrix()</span></code></a> to calculate the state-transition matrix of an hypnogram.</p></li>
-<li><p>Added <a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sleep_statistics()</span></code></a> to extract the sleep statistics from an hypnogram.</p></li>
-<li><p>Added the <code class="docutils literal notranslate"><span class="pre">coupling</span></code> and <code class="docutils literal notranslate"><span class="pre">freq_so</span></code> keyword-arguments to the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> function. If <code class="docutils literal notranslate"><span class="pre">coupling=True</span></code>, the function will also returns the phase of the slow-waves (in radians) at the most prominent peak of the spindles. This can be used to perform spindles-SO coupling, as explained in the new Jupyter notebooks on PAC and spindles-SO coupling.</p></li>
-</ol>
-<p><strong>Enhancements</strong></p>
-<ol class="loweralpha simple">
-<li><p>It is now possible to disable one or two out of the three thresholds in the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>. This allows the users to run a simpler detection (for example focusing exclusively on the moving root mean square signal).</p></li>
-<li><p>The <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> now returns the timing (in seconds) of the most prominent peak of each spindles (<code class="docutils literal notranslate"><span class="pre">Peak</span></code>).</p></li>
-<li><p>The yasa.get_sync_sw has been renamed to <code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.get_sync_events()</span></code> and is now compatible with spindles detection. This can be used for instance to plot the peak-locked grand averaged spindle.</p></li>
-</ol>
-<p><strong>Code testing</strong></p>
-<ol class="loweralpha simple">
-<li><p>Removed Travis and AppVeyor testing for Python 3.5.</p></li>
+<li><p class="card-text">Removed deprecated <code class="docutils literal notranslate"><span class="pre">behavior</span></code> argument to avoid warning when calling <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v1.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.</p></li>
+<li><p class="card-text">Added <a class="reference external" href="https://etiennecmb.github.io/tensorpac/index.html">TensorPAC</a> and <a class="reference external" href="https://pyriemann.readthedocs.io/en/latest/api.html">pyRiemann</a> to dependencies.</p></li>
+<li><p class="card-text">Updated dependencies version for MNE and scikit-learn.</p></li>
 </ol>
 </div>
-<hr class="docutils" />
-<div class="section" id="v0-1-8-october-2019">
-<h2><a class="toc-backref" href="#id17">v0.1.8 (October 2019)</a><a class="headerlink" href="#v0-1-8-october-2019" title="Permalink to this headline">¶</a></h2>
+</details><details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+<strong>v0.1.9 (February 2020)</strong><div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
+<p class="card-text"><strong>New functions</strong></p>
 <ol class="loweralpha simple">
-<li><p>Added <a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.plot_spectrogram()</span></code></a> function.</p></li>
-<li><p>Added <a class="reference external" href="https://github.com/hbldh/lspopt">lspopt</a> in the dependencies.</p></li>
-<li><p>YASA now requires <a class="reference external" href="https://mne.tools/stable/index.html">MNE</a>&gt;0.19.</p></li>
-<li><p>Added a notebook on non-linear features.</p></li>
+<li><p class="card-text">Added <a class="reference internal" href="generated/yasa.transition_matrix.html#yasa.transition_matrix" title="yasa.transition_matrix"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.transition_matrix()</span></code></a> to calculate the state-transition matrix of an hypnogram.</p></li>
+<li><p class="card-text">Added <a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sleep_statistics()</span></code></a> to extract the sleep statistics from an hypnogram.</p></li>
+<li><p class="card-text">Added the <code class="docutils literal notranslate"><span class="pre">coupling</span></code> and <code class="docutils literal notranslate"><span class="pre">freq_so</span></code> keyword-arguments to the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> function. If <code class="docutils literal notranslate"><span class="pre">coupling=True</span></code>, the function will also returns the phase of the slow-waves (in radians) at the most prominent peak of the spindles. This can be used to perform spindles-SO coupling, as explained in the new Jupyter notebooks on PAC and spindles-SO coupling.</p></li>
+</ol>
+<p class="card-text"><strong>Enhancements</strong></p>
+<ol class="loweralpha simple">
+<li><p class="card-text">It is now possible to disable one or two out of the three thresholds in the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a>. This allows the users to run a simpler detection (for example focusing exclusively on the moving root mean square signal).</p></li>
+<li><p class="card-text">The <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> now returns the timing (in seconds) of the most prominent peak of each spindles (<code class="docutils literal notranslate"><span class="pre">Peak</span></code>).</p></li>
+<li><p class="card-text">The yasa.get_sync_sw has been renamed to <code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.get_sync_events()</span></code> and is now compatible with spindles detection. This can be used for instance to plot the peak-locked grand averaged spindle.</p></li>
+</ol>
+<p class="card-text"><strong>Code testing</strong></p>
+<ol class="loweralpha simple">
+<li><p class="card-text">Removed Travis and AppVeyor testing for Python 3.5.</p></li>
 </ol>
 </div>
-<hr class="docutils" />
-<div class="section" id="v0-1-7-august-2019">
-<h2><a class="toc-backref" href="#id18">v0.1.7 (August 2019)</a><a class="headerlink" href="#v0-1-7-august-2019" title="Permalink to this headline">¶</a></h2>
+</details><details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+<strong>v0.1.8 (October 2019)</strong><div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
 <ol class="loweralpha simple">
-<li><p>Added <a class="reference internal" href="generated/yasa.sliding_window.html#yasa.sliding_window" title="yasa.sliding_window"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sliding_window()</span></code></a> function.</p></li>
-<li><p>Added <a class="reference internal" href="generated/yasa.irasa.html#yasa.irasa" title="yasa.irasa"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.irasa()</span></code></a> function.</p></li>
-<li><p>Reorganized code into several sub-files for readability (internal changes with no effect on user experience).</p></li>
+<li><p class="card-text">Added <a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.plot_spectrogram()</span></code></a> function.</p></li>
+<li><p class="card-text">Added <a class="reference external" href="https://github.com/hbldh/lspopt">lspopt</a> in the dependencies.</p></li>
+<li><p class="card-text">YASA now requires <a class="reference external" href="https://mne.tools/stable/index.html">MNE</a>&gt;0.19.</p></li>
+<li><p class="card-text">Added a notebook on non-linear features.</p></li>
 </ol>
 </div>
-<hr class="docutils" />
-<div class="section" id="v0-1-6-august-2019">
-<h2><a class="toc-backref" href="#id19">v0.1.6 (August 2019)</a><a class="headerlink" href="#v0-1-6-august-2019" title="Permalink to this headline">¶</a></h2>
+</details><details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+<strong>v0.1.7 (August 2019)</strong><div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
 <ol class="loweralpha simple">
-<li><p>Added bandpower function</p></li>
-<li><p>One can now directly pass a raw MNE object in several multi-channel functions of YASA, instead of manually passing data, sf, and ch_names. YASA will automatically convert MNE data from Volts to uV, and extract the sampling frequency and channel names. Examples of this can be found in the Jupyter notebooks examples.</p></li>
+<li><p class="card-text">Added <a class="reference internal" href="generated/yasa.sliding_window.html#yasa.sliding_window" title="yasa.sliding_window"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sliding_window()</span></code></a> function.</p></li>
+<li><p class="card-text">Added <a class="reference internal" href="generated/yasa.irasa.html#yasa.irasa" title="yasa.irasa"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.irasa()</span></code></a> function.</p></li>
+<li><p class="card-text">Reorganized code into several sub-files for readability (internal changes with no effect on user experience).</p></li>
 </ol>
 </div>
-<hr class="docutils" />
-<div class="section" id="v0-1-5-august-2019">
-<h2><a class="toc-backref" href="#id20">v0.1.5 (August 2019)</a><a class="headerlink" href="#v0-1-5-august-2019" title="Permalink to this headline">¶</a></h2>
+</details><details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+<strong>v0.1.6 (August 2019)</strong><div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
 <ol class="loweralpha simple">
-<li><p>Added REM detection (rem_detect) on LOC and ROC EOG channels + example notebook</p></li>
-<li><p>Added yasa/hypno.py file, with several functions to load and upsample sleep stage vector (hypnogram).</p></li>
-<li><p>Added yasa/spectral.py file, which includes the bandpower_from_psd function to calculate the single or multi-channel spectral power in specified bands from a pre-computed PSD (see example notebook at notebooks/10_bandpower.ipynb)</p></li>
+<li><p class="card-text">Added bandpower function</p></li>
+<li><p class="card-text">One can now directly pass a raw MNE object in several multi-channel functions of YASA, instead of manually passing data, sf, and ch_names. YASA will automatically convert MNE data from Volts to uV, and extract the sampling frequency and channel names. Examples of this can be found in the Jupyter notebooks examples.</p></li>
 </ol>
 </div>
-<hr class="docutils" />
-<div class="section" id="v0-1-4-may-2019">
-<h2><a class="toc-backref" href="#id21">v0.1.4 (May 2019)</a><a class="headerlink" href="#v0-1-4-may-2019" title="Permalink to this headline">¶</a></h2>
+</details><details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+<strong>v0.1.5 (August 2019)</strong><div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
 <ol class="loweralpha simple">
-<li><p>Added get_sync_sw function to get the synchronized timings of landmarks timepoints in slow-wave sleep. This can be used in combination with seaborn.lineplot to plot an average template of the detected slow-wave, per channel.</p></li>
+<li><p class="card-text">Added REM detection (rem_detect) on LOC and ROC EOG channels + example notebook</p></li>
+<li><p class="card-text">Added yasa/hypno.py file, with several functions to load and upsample sleep stage vector (hypnogram).</p></li>
+<li><p class="card-text">Added yasa/spectral.py file, which includes the bandpower_from_psd function to calculate the single or multi-channel spectral power in specified bands from a pre-computed PSD (see example notebook at notebooks/10_bandpower.ipynb)</p></li>
 </ol>
 </div>
-<hr class="docutils" />
-<div class="section" id="v0-1-3-march-2019">
-<h2><a class="toc-backref" href="#id22">v0.1.3 (March 2019)</a><a class="headerlink" href="#v0-1-3-march-2019" title="Permalink to this headline">¶</a></h2>
+</details><details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+<strong>v0.1.4 (May 2019)</strong><div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
 <ol class="loweralpha simple">
-<li><p>Added slow-waves detection for single and multi channel</p></li>
-<li><p>Added include argument to select which values of hypno should be used as a mask.</p></li>
-<li><p>New examples notebooks + changes in README</p></li>
-<li><p>Minor improvements in performance (e.g. faster detrending)</p></li>
-<li><p>Added html API (/html)</p></li>
-<li><p>Travis and AppVeyor test for Python 3.5, 3.6 and 3.7</p></li>
+<li><p class="card-text">Added get_sync_sw function to get the synchronized timings of landmarks timepoints in slow-wave sleep. This can be used in combination with seaborn.lineplot to plot an average template of the detected slow-wave, per channel.</p></li>
 </ol>
 </div>
-<hr class="docutils" />
-<div class="section" id="v0-1-2-february-2019">
-<h2><a class="toc-backref" href="#id23">v0.1.2 (February 2019)</a><a class="headerlink" href="#v0-1-2-february-2019" title="Permalink to this headline">¶</a></h2>
+</details><details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+<strong>v0.1.3 (March 2019)</strong><div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
 <ol class="loweralpha simple">
-<li><p>Added support for multi-channel detection via spindles_detect_multi function.</p></li>
-<li><p>Added support for hypnogram mask</p></li>
-<li><p>Added several notebook examples</p></li>
-<li><p>Changed some default parameters to optimize behavior</p></li>
+<li><p class="card-text">Added slow-waves detection for single and multi channel</p></li>
+<li><p class="card-text">Added include argument to select which values of hypno should be used as a mask.</p></li>
+<li><p class="card-text">New examples notebooks + changes in README</p></li>
+<li><p class="card-text">Minor improvements in performance (e.g. faster detrending)</p></li>
+<li><p class="card-text">Added html API (/html)</p></li>
+<li><p class="card-text">Travis and AppVeyor test for Python 3.5, 3.6 and 3.7</p></li>
 </ol>
 </div>
-<hr class="docutils" />
-<div class="section" id="v0-1-1-january-2019">
-<h2><a class="toc-backref" href="#id24">v0.1.1 (January 2019)</a><a class="headerlink" href="#v0-1-1-january-2019" title="Permalink to this headline">¶</a></h2>
+</details><details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+<strong>v0.1.2 (February 2019)</strong><div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
 <ol class="loweralpha simple">
-<li><p>Added post-processing Isolation Forest</p></li>
-<li><p>Updated Readme and added support with Visbrain</p></li>
-<li><p>Added Cz full night in notebooks/</p></li>
+<li><p class="card-text">Added support for multi-channel detection via spindles_detect_multi function.</p></li>
+<li><p class="card-text">Added support for hypnogram mask</p></li>
+<li><p class="card-text">Added several notebook examples</p></li>
+<li><p class="card-text">Changed some default parameters to optimize behavior</p></li>
 </ol>
 </div>
-<hr class="docutils" />
-<div class="section" id="v0-1-december-2018">
-<h2><a class="toc-backref" href="#id25">v0.1 (December 2018)</a><a class="headerlink" href="#v0-1-december-2018" title="Permalink to this headline">¶</a></h2>
-<p>Initial release of YASA: basic spindles detection.</p>
+</details><details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+<strong>v0.1.1 (January 2019)</strong><div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
+<ol class="loweralpha simple">
+<li><p class="card-text">Added post-processing Isolation Forest</p></li>
+<li><p class="card-text">Updated Readme and added support with Visbrain</p></li>
+<li><p class="card-text">Added Cz full night in notebooks/</p></li>
+</ol>
 </div>
+</details><details class="sphinx-bs dropdown card mb-3">
+<summary class="summary-title card-header">
+<strong>v0.1 (December 2018)</strong><div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
+<p class="card-text">Initial release of YASA: basic spindles detection.</p>
+</div>
+</details></div>
 </div>
 
 
