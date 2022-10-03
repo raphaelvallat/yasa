@@ -32,6 +32,7 @@ INSTALL_REQUIRES = [
     "lspopt",
     "ipywidgets",
     "joblib",
+    "lightgbm",
 ]
 
 PACKAGES = [
