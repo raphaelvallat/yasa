@@ -23,7 +23,7 @@ class SleepStaging:
     """
     Automatic sleep staging of polysomnography data.
 
-    To run the automatic sleep staging, you must install the
+    The automatic sleep staging requires the
     `LightGBM <https://lightgbm.readthedocs.io/>`_ and
     `antropy <https://github.com/raphaelvallat/antropy>`_ packages.
 
