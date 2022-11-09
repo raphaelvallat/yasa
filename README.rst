@@ -25,7 +25,7 @@
 * Event detection: sleep spindles, slow-waves and rapid eye movements, on single or multi-channel EEG data.
 * Artefact rejection, on single or multi-channel EEG data.
 * Spectral analyses: bandpower, phase-amplitude coupling, 1/f slope, and more!
-* Hypnogram analysis: sleep statistics and stage tranisitions.
+* Hypnogram analysis: sleep statistics and stage transitions.
 
 For more details, try the `quickstart <https://raphaelvallat.com/yasa/build/html/quickstart.html>`_ or read the `FAQ <https://raphaelvallat.com/yasa/build/html/faq.html>`_.
 
