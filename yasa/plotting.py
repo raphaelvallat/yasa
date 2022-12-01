@@ -12,7 +12,7 @@ from matplotlib.colors import Normalize, ListedColormap
 __all__ = ["plot_hypnogram", "plot_spectrogram", "topoplot"]
 
 
-def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
+def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, figsize=(9, 3)):
     """
     Plot a hypnogram.
 
@@ -40,6 +40,8 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
         * 1 = 1 value per second of EEG data
     lw : float
         Linewidth.
+    fill_color : str
+        Color to fill space above hypnogram line, optional.
     figsize : tuple
        Width, height in inches.
 
@@ -55,7 +57,7 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
         >>> import yasa
         >>> import numpy as np
         >>> hypno = np.loadtxt("https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt")
-        >>> ax = yasa.plot_hypnogram(hypno)
+        >>> ax = yasa.plot_hypnogram(hypno, fill_color="gainsboro")
     """
     # Increase font size while preserving original
     old_fontsize = plt.rcParams["font.size"]
@@ -76,12 +78,17 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
 
     fig, ax0 = plt.subplots(nrows=1, figsize=figsize)
 
-    # Hypnogram (top axis)
+    # Draw background filling
+    if fill_color is not None:
+        ax0.stairs(-1 * hypno, bins, fill=True, color=fill_color, lw=0)
+    # Draw main hypnogram line
     ax0.stairs(-1 * hypno, bins, baseline=None, color="k", lw=lw)
+    # Draw REM and Artefact/Unscored highlighting
     if 1 in hypno:
         ax0.hlines(-1 * hypno_rem, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
     if -2 in hypno or -1 in hypno:
         ax0.hlines(-1 * hypno_art_uns, xmin=bins[:-1], xmax=bins[1:], color="grey", lw=lw)
+    # Determine y-axis labels and limits
     if -2 in hypno and -1 in hypno:
         # Both Unscored and Artefacts are present
         ax0.set_yticks([2, 1, 0, -1, -2, -3, -4])
