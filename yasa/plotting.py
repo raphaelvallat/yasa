@@ -68,7 +68,7 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
     assert hypno.ndim == 1, "hypno must be a 1D array."
     assert isinstance(sf_hypno, (int, float)), "sf must be int or float."
 
-    t_hyp = np.arange(hypno.size) / (sf_hypno * 3600)
+    bins = np.arange(hypno.size + 1) / (sf_hypno * 3600)
     # Make sure that REM is displayed after Wake
     hypno = pd.Series(hypno).map({-2: -2, -1: -1, 0: 0, 1: 2, 2: 3, 3: 4, 4: 1}).values
     hypno_rem = np.ma.masked_not_equal(hypno, 1)
@@ -77,9 +77,9 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
     fig, ax0 = plt.subplots(nrows=1, figsize=figsize)
 
     # Hypnogram (top axis)
-    ax0.step(t_hyp, -1 * hypno, color="k", lw=lw)
-    ax0.step(t_hyp, -1 * hypno_rem, color="red", lw=lw)
-    ax0.step(t_hyp, -1 * hypno_art_uns, color="grey", lw=lw)
+    ax0.stairs(-1 * hypno, bins, baseline=None, color="k", lw=lw)
+    ax0.hlines(-1 * hypno_rem, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
+    ax0.hlines(-1 * hypno_art_uns, xmin=bins[:-1], xmax=bins[1:], color="grey", lw=lw)
     if -2 in hypno and -1 in hypno:
         # Both Unscored and Artefacts are present
         ax0.set_yticks([2, 1, 0, -1, -2, -3, -4])
@@ -100,7 +100,7 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
         ax0.set_yticks([0, -1, -2, -3, -4])
         ax0.set_yticklabels(["W", "R", "N1", "N2", "N3"])
         ax0.set_ylim(-4.5, 0.5)
-    ax0.set_xlim(0, t_hyp.max())
+    ax0.set_xlim(0, bins.max())
     ax0.set_ylabel("Stage")
     ax0.set_xlabel("Time [hrs]")
     ax0.spines["right"].set_visible(False)
