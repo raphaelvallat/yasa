@@ -78,8 +78,10 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
 
     # Hypnogram (top axis)
     ax0.stairs(-1 * hypno, bins, baseline=None, color="k", lw=lw)
-    ax0.hlines(-1 * hypno_rem, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
-    ax0.hlines(-1 * hypno_art_uns, xmin=bins[:-1], xmax=bins[1:], color="grey", lw=lw)
+    if 1 in hypno:
+        ax0.hlines(-1 * hypno_rem, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
+    if -2 in hypno or -1 in hypno:
+        ax0.hlines(-1 * hypno_art_uns, xmin=bins[:-1], xmax=bins[1:], color="grey", lw=lw)
     if -2 in hypno and -1 in hypno:
         # Both Unscored and Artefacts are present
         ax0.set_yticks([2, 1, 0, -1, -2, -3, -4])
