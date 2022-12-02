@@ -1,31 +1,6 @@
 """
 This file contains several helper functions to manipulate sleep staging
-(hypnogram) data. The default hypnogram format in YASA is a one dimensional
-integer array where:
-
-* -2  = Unscored
-* -1  = Artefact / Movement
-* 0   = Wake
-* 1   = N1 sleep
-* 2   = N2 sleep
-* 3   = N3 sleep
-* 4   = REM sleep
-
-For more details, please refer to the following references:
-
-- Iber, C. (2007). The AASM manual for the scoring of sleep and
-associated events: rules, terminology and technical specifications.
-American Academy of Sleep Medicine.
-
-- Silber, M. H., Ancoli-Israel, S., Bonnet, M. H., Chokroverty, S.,
-Grigg-Damberger, M. M., Hirshkowitz, M., … Iber, C. (2007). The visual scoring
-of sleep in adults. Journal of Clinical Sleep Medicine: JCSM: Official
-Publication of the American Academy of Sleep Medicine, 3(2), 121–131.
-
-- Combrisson, E., Vallat, R., Eichenlaub, J.-B., O’Reilly, C., Lajnef, T.,
-Guillot, A., … Jerbi, K. (2017). Sleep: An Open-Source Python Software for
-Visualization, Analysis, and Staging of Sleep Data. Frontiers in
-Neuroinformatics, 11, 60. https://doi.org/10.3389/fninf.2017.00060
+(hypnogram) data.
 """
 import mne
 import logging
@@ -46,6 +21,44 @@ __all__ = [
 
 
 logger = logging.getLogger("yasa")
+
+
+class Hypnogram:
+    """Main class for manipulation of hypnogram in YASA."""
+
+    def __init__(self, values, n_stages=5, *, freq="30s", start=None):
+        assert isinstance(values, (list, np.ndarray, pd.Series))
+        assert isinstance(n_stages, int)
+        assert n_stages in [2, 3, 4, 5]
+        assert isinstance(freq, str)
+        assert isinstance(start, (type(None), str, pd.Timestamp))
+        if n_stages == 2:
+            accepted = ["S", "W", "SLEEP", "WAKE", "ART", "UNS"]
+        elif n_stages == 3:
+            accepted = ["WAKE", "W", "NREM", "REM", "R", "ART", "UNS"]
+        elif n_stages == 4:
+            accepted = ["WAKE", "W", "LIGHT", "DEEP", "REM", "R", "ART", "UNS"]
+        else:
+            accepted = ["WAKE", "W", "N1", "N2", "N3", "REM", "R", "ART", "UNS"]
+        assert all([val.upper() in accepted for val in values]), (
+            f"{np.unique(values)} do not match the accepted values for a {n_stages} stages "
+            f"hypnogram: {accepted}"
+        )
+        hypno = pd.Series(values, name="Stage").str.upper()
+        hypno = hypno.replace({"S": "SLEEP", "W": "WAKE", "R": "REM"})
+        if start is not None:
+            hypno.index = pd.date_range(start=start, freq=freq, periods=hypno.size)
+        hypno.index.name = "Epoch"
+        self._hypno = hypno
+        self._freq = freq
+        self._start = start
+        self._n_stages = n_stages
+
+    def __repr__(self):
+        return f"{self._hypno}"
+
+    def __str__(self):
+        return f"{self._hypno}"
 
 
 #############################################################################
