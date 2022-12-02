@@ -7,6 +7,7 @@ import logging
 import numpy as np
 import pandas as pd
 from .io import set_log_level
+from yasa.sleepstats import transition_matrix, sleep_statistics
 
 __all__ = [
     "hypno_str_to_int",
@@ -34,31 +35,121 @@ class Hypnogram:
         assert isinstance(start, (type(None), str, pd.Timestamp))
         if n_stages == 2:
             accepted = ["S", "W", "SLEEP", "WAKE", "ART", "UNS"]
+            mapping = {"SLEEP": 1, "WAKE": 0, "ART": -1, "UNS": -2}
         elif n_stages == 3:
             accepted = ["WAKE", "W", "NREM", "REM", "R", "ART", "UNS"]
+            mapping = None
         elif n_stages == 4:
             accepted = ["WAKE", "W", "LIGHT", "DEEP", "REM", "R", "ART", "UNS"]
+            mapping = None
         else:
             accepted = ["WAKE", "W", "N1", "N2", "N3", "REM", "R", "ART", "UNS"]
+            mapping = {"WAKE": 0, "N1": 1, "N2": 2, "N3": 3, "REM": 4, "ART": -1, "UNS": -2}
         assert all([val.upper() in accepted for val in values]), (
             f"{np.unique(values)} do not match the accepted values for a {n_stages} stages "
             f"hypnogram: {accepted}"
         )
+        if isinstance(values, pd.Series):
+            # Make sure to remove index if the input is a pandas.Series
+            values = values.to_numpy(copy=True)
         hypno = pd.Series(values, name="Stage").str.upper()
-        hypno = hypno.replace({"S": "SLEEP", "W": "WAKE", "R": "REM"})
+        # Combine accepted values
+        map_accepted = {"S": "SLEEP", "W": "WAKE", "R": "REM"}
+        hypno = hypno.replace(map_accepted)
+        labels = pd.Series(accepted).replace(map_accepted).unique().tolist()
         if start is not None:
             hypno.index = pd.date_range(start=start, freq=freq, periods=hypno.size)
         hypno.index.name = "Epoch"
         self._hypno = hypno
         self._freq = freq
+        self._sampling_frequency = 1 / pd.Timedelta(freq).total_seconds()
         self._start = start
         self._n_stages = n_stages
+        self._labels = labels
+        self._mapping = mapping
 
     def __repr__(self):
-        return f"{self._hypno}"
+        return f"{self.hypno}"
 
     def __str__(self):
-        return f"{self._hypno}"
+        return f"{self.hypno}"
+
+    @property
+    def hypno(self):
+        return self._hypno
+
+    @property
+    def freq(self):
+        return self._freq
+
+    @property
+    def sampling_frequency(self):
+        return self._sampling_frequency
+
+    @property
+    def start(self):
+        return self._start
+
+    @property
+    def n_stages(self):
+        return self._n_stages
+
+    @property
+    def labels(self):
+        return self._labels
+
+    @property
+    def mapping(self):
+        if isinstance(self._mapping, dict):
+            return self._mapping
+        else:
+            raise ValueError(
+                "Mapping is not defined. Please define a custom mapping with "
+                "`Hypnogram.set_mapping`"
+            )
+
+    @mapping.setter
+    def mapping(self, map_dict):
+        assert isinstance(map_dict, dict)
+        assert all([val in map_dict.keys() for val in self.hypno.unique()])
+        self._mapping = map_dict
+
+    @property
+    def mapping_int(self):
+        if isinstance(self.mapping, dict):
+            return {v: k for k, v in self.mapping.items()}
+        else:
+            return None
+
+    def as_int(self):
+        """Return hypnogram as integer.
+
+        Only 2 or 5 stages hypnogram are currently supported.
+
+        - 2 stages: WAKE = 0, SLEEP = 1, (ART = -1, UNS = -2)
+        - 5 stages: WAKE = 0, N1 = 1, N2 = 2, N3 = 3, REM = 4
+        """
+        assert self.n_stages in [
+            2,
+            5,
+        ], "`Hypnogram.as_int()` only supports 2 or 5 stages hypnogram."
+        if self.n_stages == 2:
+            return self.hypno.replace(self.mapping).astype(int)
+        else:
+            return self.hypno.replace(self.mapping).astype(int)
+
+    def transition_matrix(self):
+        counts, probs = transition_matrix(self.as_int())
+        if self.mapping is not None:
+            counts.index = counts.index.map(self.mapping_int)
+            counts.columns = counts.columns.map(self.mapping_int)
+            probs.index = probs.index.map(self.mapping_int)
+            probs.columns = probs.columns.map(self.mapping_int)
+        return counts, probs
+
+    def sleep_statistics(self):
+        assert self.n_stages == 5  # TODO: Support for multi-stage
+        return sleep_statistics(self.as_int(), self.sampling_frequency)
 
 
 #############################################################################
