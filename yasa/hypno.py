@@ -1,6 +1,5 @@
 """
-This file contains several helper functions to manipulate sleep staging
-(hypnogram) data.
+Hypnogram-related functions.
 """
 import mne
 import logging
@@ -25,7 +24,7 @@ logger = logging.getLogger("yasa")
 
 
 class Hypnogram:
-    """Main class for manipulation of hypnogram in YASA."""
+    """Main class for manipulating sleep hypnogram in YASA."""
 
     def __init__(self, values, n_stages=5, *, freq="30s", start=None):
         assert isinstance(values, (list, np.ndarray, pd.Series))
@@ -132,26 +131,25 @@ class Hypnogram:
 
     @property
     def mapping_int(self):
-        # This should fail if mapping is not defined, when calling `self.mapping`
         return {v: k for k, v in self.mapping.items()}
 
     def as_int(self):
         """Return hypnogram as integer.
 
-        Only 2 or 5 stages hypnogram are natively supported. Users must define a custom mapping
-        for 3 and 4 stages hypnogram, e.g.
-
-        >>> hyp.mapping = {"WAKE": 0, "NREM": 1, "REM": 2}
-
-        The default mapping for 2 and 5 stages hypnogram is:
+        The default mapping is:
 
         * 2 stages: {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
+        * 3 stages: {"WAKE": 0, "NREM": 2, "REM": 4, "ART": -1, "UNS": -2}
+        * 4 stages: {"WAKE": 0, "LIGHT": 2, "DEEP": 3, "REM": 4, "ART": -1, "UNS": -2}
         * 5 stages: {"WAKE": 0, "N1": 1, "N2": 2, "N3": 3, "REM": 4, "ART": -1, "UNS": -2}
+
+        Users can define a custom mapping:
+
+        >>> hyp.mapping = {"WAKE": 0, "NREM": 1, "REM": 2}
         """
         return self.hypno.replace(self.mapping).astype(int)
 
     def transition_matrix(self):
-        # This function requires mapping to be defined
         counts, probs = transition_matrix(self.as_int())
         counts.index = counts.index.map(self.mapping_int)
         counts.columns = counts.columns.map(self.mapping_int)
@@ -166,19 +164,18 @@ class Hypnogram:
         Parameters
         ----------
         self : yasa.Hypnogram
-            Hypnogram, assumed to be already cropped to time in bed (TIB,
-            also referred to as Total Recording Time,
-            i.e. "lights out" to "lights on").
+            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
+            Total Recording Time, i.e. "lights out" to "lights on").
 
         Returns
         -------
         stats : dict
-            Sleep statistics (expressed in minutes)
+            Summary sleep statistics.
 
         Notes
         -----
-        All values except SE, SME and percentages of each stage are expressed in
-        minutes. YASA follows the AASM guidelines to calculate these parameters:
+        All values except SE, SME, SFI and the percentage of each stage are expressed in minutes.
+        YASA follows the AASM guidelines to calculate these parameters:
 
         * Time in Bed (TIB): total duration of the hypnogram.
         * Sleep Period Time (SPT): duration from first to last period of sleep.
@@ -272,8 +269,8 @@ class Hypnogram:
             last_sleep = idx_sleep[-1]
         # Crop to SPT
         hypno_s = hypno[first_sleep : (last_sleep + 1)]
-        stats["SPT"] = hypno_s.size
-        stats["WASO"] = hypno_s[hypno_s == "WAKE"].size
+        stats["SPT"] = hypno_s.size if len(idx_sleep) else 0
+        stats["WASO"] = hypno_s[hypno_s == "WAKE"].size if len(idx_sleep) else np.nan
         # Before YASA v0.5.0, TST was calculated as SPT - WASO, meaning that Art
         # and Unscored epochs were included. TST is now restrained to sleep stages.
         stats["TST"] = hypno_s[np.isin(hypno_s, all_sleep)].shape[0]
@@ -297,7 +294,7 @@ class Hypnogram:
             stats["SFI"] = n_trans_to_wake / (stats["TST"] / (3600 * self.sampling_frequency))
 
         # Sleep stage latencies -- only relevant if hypno is cropped to TIB
-        stats["SOL"] = first_sleep
+        stats["SOL"] = first_sleep if stats["TST"] > 0 else np.nan
         sleep_periods = hypno_find_periods(
             np.isin(hypno, all_sleep), self.sampling_frequency, threshold="5min"
         ).query("values == True")
