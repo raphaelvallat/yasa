@@ -57,7 +57,7 @@ class Hypnogram:
         hypno = hypno.replace(map_accepted)
         labels = pd.Series(accepted).replace(map_accepted).unique().tolist()
         if start is not None:
-            hypno.index = pd.date_range(start=start, freq=freq, periods=hypno.size)
+            hypno.index = pd.date_range(start=start, freq=freq, periods=hypno.shape[0])
             timedelta = hypno.index - hypno.index[0]
         else:
             fake_dt = pd.date_range(start="2022-12-03 00:00:00", freq=freq, periods=hypno.shape[0])
@@ -339,15 +339,14 @@ class Hypnogram:
         return stats
 
     def plot_hypnogram(self):
-        # This function requires mapping to be defined
         raise NotImplementedError
 
     def upsample(self, new_freq, **kwargs):
         """Upsample hypnogram to a higher frequency.
 
-        Frequency here is defined with a pandas Offset, e.g. "10s" or "1min".
+        Frequency here is defined with a pandas frequency string, e.g. "10s" or "1min".
 
-        Returns a copy: the original hypnogram is not modified in place.
+        This function returns a copy, the original hypnogram is not modified in place.
         """
         assert pd.Timedelta(new_freq) < pd.Timedelta(self.freq), (
             f"The upsampling `new_freq` ({new_freq}) must be higher than the current frequency of "
