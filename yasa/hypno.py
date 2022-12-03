@@ -35,13 +35,13 @@ class Hypnogram:
         assert isinstance(start, (type(None), str, pd.Timestamp))
         if n_stages == 2:
             accepted = ["S", "W", "SLEEP", "WAKE", "ART", "UNS"]
-            mapping = {"SLEEP": 1, "WAKE": 0, "ART": -1, "UNS": -2}
+            mapping = {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
         elif n_stages == 3:
             accepted = ["WAKE", "W", "NREM", "REM", "R", "ART", "UNS"]
-            mapping = None
+            mapping = {"WAKE": 0, "NREM": 2, "REM": 4, "ART": -1, "UNS": -2}
         elif n_stages == 4:
             accepted = ["WAKE", "W", "LIGHT", "DEEP", "REM", "R", "ART", "UNS"]
-            mapping = None
+            mapping = {"WAKE": 0, "LIGHT": 2, "DEEP": 3, "REM": 4, "ART": -1, "UNS": -2}
         else:
             accepted = ["WAKE", "W", "N1", "N2", "N3", "REM", "R", "ART", "UNS"]
             mapping = {"WAKE": 0, "N1": 1, "N2": 2, "N3": 3, "REM": 4, "ART": -1, "UNS": -2}
@@ -115,13 +115,7 @@ class Hypnogram:
 
     @property
     def mapping(self):
-        if isinstance(self._mapping, dict):
-            return self._mapping
-        else:
-            raise ValueError(
-                "Mapping is not defined. Please define a custom mapping with "
-                "`Hypnogram.mapping = {}`"
-            )
+        return self._mapping
 
     @mapping.setter
     def mapping(self, map_dict):
@@ -159,11 +153,10 @@ class Hypnogram:
     def transition_matrix(self):
         # This function requires mapping to be defined
         counts, probs = transition_matrix(self.as_int())
-        if self.mapping is not None:
-            counts.index = counts.index.map(self.mapping_int)
-            counts.columns = counts.columns.map(self.mapping_int)
-            probs.index = probs.index.map(self.mapping_int)
-            probs.columns = probs.columns.map(self.mapping_int)
+        counts.index = counts.index.map(self.mapping_int)
+        counts.columns = counts.columns.map(self.mapping_int)
+        probs.index = probs.index.map(self.mapping_int)
+        probs.columns = probs.columns.map(self.mapping_int)
         return counts, probs
 
     def sleep_statistics(self):
@@ -196,6 +189,7 @@ class Hypnogram:
         * REM latency: latency to first REM sleep.
         * Sleep Efficiency (SE): TST / TIB * 100 (%).
         * Sleep Maintenance Efficiency (SME): TST / SPT * 100 (%).
+        * Sleep Fragmentation Index: number of transitions from sleep to wake / hours of TST
         * Sleep stages amount and proportion of TST
 
         .. warning::
@@ -231,6 +225,7 @@ class Hypnogram:
         'TST': 40.0,
         'SE': 76.1905,
         'SME': 94.1176,
+        'SFI': 1.5,
         'SOL': 5.0,
         'SOL_5min': 5.0,
         'WAKE': 12.5}
@@ -247,6 +242,7 @@ class Hypnogram:
         'TST': 104.0,
         'SE': 80.0,
         'SME': 94.5455,
+        'SFI': 1.7308,
         'SOL': 10.0,
         'SOL_5min': 15.0,
         'Lat_REM': 80.0,
@@ -282,12 +278,23 @@ class Hypnogram:
         # and Unscored epochs were included. TST is now restrained to sleep stages.
         stats["TST"] = hypno_s[np.isin(hypno_s, all_sleep)].shape[0]
 
-        # Sleep efficiency and sleep maintenance efficiency
+        # Sleep efficiency and fragmentation
         stats["SE"] = 100 * stats["TST"] / stats["TIB"]
         if stats["SPT"] == 0:
             stats["SME"] = np.nan
+            stats["SFI"] = np.nan
         else:
+            # Sleep maintenance efficiency
             stats["SME"] = 100 * stats["TST"] / stats["SPT"]
+            # SFI is the ratio of the number of transitions from sleep into Wake to TST (hours)
+            # The original definition included transitions into Wake or N1.
+            counts, _ = self.transition_matrix()
+            n_trans_to_wake = np.sum(
+                counts.loc[
+                    np.intersect1d(counts.index, all_sleep), np.intersect1d(counts.index, ["WAKE"])
+                ].to_numpy()
+            )
+            stats["SFI"] = n_trans_to_wake / (stats["TST"] / (3600 * self.sampling_frequency))
 
         # Sleep stage latencies -- only relevant if hypno is cropped to TIB
         stats["SOL"] = first_sleep
