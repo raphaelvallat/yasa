@@ -7,7 +7,7 @@ import logging
 import numpy as np
 import pandas as pd
 from .io import set_log_level
-from yasa.sleepstats import transition_matrix, sleep_statistics
+from yasa.sleepstats import transition_matrix
 
 __all__ = [
     "hypno_str_to_int",
@@ -59,10 +59,16 @@ class Hypnogram:
         labels = pd.Series(accepted).replace(map_accepted).unique().tolist()
         if start is not None:
             hypno.index = pd.date_range(start=start, freq=freq, periods=hypno.size)
+            timedelta = hypno.index - hypno.index[0]
+        else:
+            fake_dt = pd.date_range(start="2022-12-03 00:00:00", freq=freq, periods=hypno.shape[0])
+            timedelta = fake_dt - fake_dt[0]
         hypno.index.name = "Epoch"
         self._hypno = hypno
+        self._n_epochs = hypno.shape[0]
         self._freq = freq
         self._sampling_frequency = 1 / pd.Timedelta(freq).total_seconds()
+        self._timedelta = timedelta
         self._start = start
         self._n_stages = n_stages
         self._labels = labels
@@ -76,7 +82,12 @@ class Hypnogram:
 
     @property
     def hypno(self):
+        # Q: Should this be called `hyp.stage`?
         return self._hypno
+
+    @property
+    def n_epochs(self):
+        return self._n_epochs
 
     @property
     def freq(self):
@@ -89,6 +100,10 @@ class Hypnogram:
     @property
     def start(self):
         return self._start
+
+    @property
+    def timedelta(self):
+        return self._timedelta
 
     @property
     def n_stages(self):
@@ -105,40 +120,44 @@ class Hypnogram:
         else:
             raise ValueError(
                 "Mapping is not defined. Please define a custom mapping with "
-                "`Hypnogram.set_mapping`"
+                "`Hypnogram.mapping = {}`"
             )
 
     @mapping.setter
     def mapping(self, map_dict):
-        assert isinstance(map_dict, dict)
-        assert all([val in map_dict.keys() for val in self.hypno.unique()])
+        assert isinstance(map_dict, dict), "`mapping` must be a dictionary, e.g. {'WAKE': 0, ...}"
+        assert all([val in map_dict.keys() for val in self.hypno.unique()]), (
+            f"Some values in `hypno` ({self.hypno.unique()}) are not in `map_dict` "
+            f"({map_dict.keys()})"
+        )
+        if "ART" not in map_dict.keys():
+            map_dict["ART"] = -1
+        if "UNS" not in map_dict.keys():
+            map_dict["UNS"] = -2
         self._mapping = map_dict
 
     @property
     def mapping_int(self):
-        if isinstance(self.mapping, dict):
-            return {v: k for k, v in self.mapping.items()}
-        else:
-            return None
+        # This should fail if mapping is not defined, when calling `self.mapping`
+        return {v: k for k, v in self.mapping.items()}
 
     def as_int(self):
         """Return hypnogram as integer.
 
-        Only 2 or 5 stages hypnogram are currently supported.
+        Only 2 or 5 stages hypnogram are natively supported. Users must define a custom mapping
+        for 3 and 4 stages hypnogram, e.g.
 
-        - 2 stages: WAKE = 0, SLEEP = 1, (ART = -1, UNS = -2)
-        - 5 stages: WAKE = 0, N1 = 1, N2 = 2, N3 = 3, REM = 4
+        >>> hyp.mapping = {"WAKE": 0, "NREM": 1, "REM": 2}
+
+        The default mapping for 2 and 5 stages hypnogram is:
+
+        * 2 stages: {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
+        * 5 stages: {"WAKE": 0, "N1": 1, "N2": 2, "N3": 3, "REM": 4, "ART": -1, "UNS": -2}
         """
-        assert self.n_stages in [
-            2,
-            5,
-        ], "`Hypnogram.as_int()` only supports 2 or 5 stages hypnogram."
-        if self.n_stages == 2:
-            return self.hypno.replace(self.mapping).astype(int)
-        else:
-            return self.hypno.replace(self.mapping).astype(int)
+        return self.hypno.replace(self.mapping).astype(int)
 
     def transition_matrix(self):
+        # This function requires mapping to be defined
         counts, probs = transition_matrix(self.as_int())
         if self.mapping is not None:
             counts.index = counts.index.map(self.mapping_int)
@@ -148,8 +167,196 @@ class Hypnogram:
         return counts, probs
 
     def sleep_statistics(self):
-        assert self.n_stages == 5  # TODO: Support for multi-stage
-        return sleep_statistics(self.as_int(), self.sampling_frequency)
+        """
+        Compute standard sleep statistics from an hypnogram.
+
+        Parameters
+        ----------
+        self : yasa.Hypnogram
+            Hypnogram, assumed to be already cropped to time in bed (TIB,
+            also referred to as Total Recording Time,
+            i.e. "lights out" to "lights on").
+
+        Returns
+        -------
+        stats : dict
+            Sleep statistics (expressed in minutes)
+
+        Notes
+        -----
+        All values except SE, SME and percentages of each stage are expressed in
+        minutes. YASA follows the AASM guidelines to calculate these parameters:
+
+        * Time in Bed (TIB): total duration of the hypnogram.
+        * Sleep Period Time (SPT): duration from first to last period of sleep.
+        * Wake After Sleep Onset (WASO): duration of wake periods within SPT.
+        * Total Sleep Time (TST): total sleep duration in SPT.
+        * Sleep Onset Latency (SOL): Latency to first epoch of any sleep.
+        * SOL 5min: Latency to 5 minutes of persistent sleep (any stage).
+        * REM latency: latency to first REM sleep.
+        * Sleep Efficiency (SE): TST / TIB * 100 (%).
+        * Sleep Maintenance Efficiency (SME): TST / SPT * 100 (%).
+        * Sleep stages amount and proportion of TST
+
+        .. warning::
+            Artefact and Unscored epochs are excluded from the calculation of the
+            total sleep time (TST). TST is calculated as the sum of all REM and NREM sleep in SPT.
+
+        References
+        ----------
+        * Iber, C. (2007). The AASM manual for the scoring of sleep and
+        associated events: rules, terminology and technical specifications.
+        American Academy of Sleep Medicine.
+
+        * Silber, M. H., Ancoli-Israel, S., Bonnet, M. H., Chokroverty, S.,
+        Grigg-Damberger, M. M., Hirshkowitz, M., Kapen, S., Keenan, S. A.,
+        Kryger, M. H., Penzel, T., Pressman, M. R., & Iber, C. (2007).
+        `The visual scoring of sleep in adults
+        <https://www.ncbi.nlm.nih.gov/pubmed/17557422>`_. Journal of Clinical
+        Sleep Medicine: JCSM: Official Publication of the American Academy of
+        Sleep Medicine, 3(2), 121–131.
+
+        Examples
+        --------
+        Sleep statistics for a 2-stage hypnogram
+
+        >>> from yasa import Hypnogram
+        >>> # Generate a fake hypnogram, where "S" = Sleep, "W" = Wake
+        >>> values = 10 * ["W"] + 40 * ["S"] + 5 * ["W"] + 40 * ["S"] + 10 * ["W"]
+        >>> hyp = Hypnogram(values, n_stages=2)
+        >>> hyp.sleep_statistics()
+        {'TIB': 52.5,
+        'SPT': 42.5,
+        'WASO': 2.5,
+        'TST': 40.0,
+        'SE': 76.1905,
+        'SME': 94.1176,
+        'SOL': 5.0,
+        'SOL_5min': 5.0,
+        'WAKE': 12.5}
+
+        Sleep statistics for a 5-stages hypnogram, where each epoch is one minute
+
+        >>> values = (10 * ["W"] + 4 * ["N1"] + 1 * ["W"] + 30 * ["N2"] + 30 * ["N3"] + 5 * ["W"]
+        ...           + 25 * ["REM"] + 15 * ["N2"] + 10 * ["W"])
+        >>> hyp = Hypnogram(values, freq="1min", n_stages=5)
+        >>> hyp.sleep_statistics()
+        {'TIB': 130.0,
+        'SPT': 110.0,
+        'WASO': 6.0,
+        'TST': 104.0,
+        'SE': 80.0,
+        'SME': 94.5455,
+        'SOL': 10.0,
+        'SOL_5min': 15.0,
+        'Lat_REM': 80.0,
+        'WAKE': 26.0,
+        'N1': 4.0,
+        'N2': 45.0,
+        'N3': 30.0,
+        'REM': 25.0,
+        '%N1': 3.8462,
+        '%N2': 43.2692,
+        '%N3': 28.8462,
+        '%REM': 24.0385}
+        """
+        hypno = self.hypno.to_numpy()
+        assert self.n_epochs > 0, "Hypnogram is empty!"
+        all_sleep = ["SLEEP", "N1", "N2", "N3", "NREM", "REM", "LIGHT", "DEEP"]
+        all_non_sleep = ["WAKE", "ART", "UNS"]
+        stats = {}
+
+        # TIB, first and last sleep
+        stats["TIB"] = self.n_epochs
+        idx_sleep = np.where(~np.isin(hypno, all_non_sleep))[0]
+        if not len(idx_sleep):
+            first_sleep, last_sleep = 0, self.n_epochs
+        else:
+            first_sleep = idx_sleep[0]
+            last_sleep = idx_sleep[-1]
+        # Crop to SPT
+        hypno_s = hypno[first_sleep : (last_sleep + 1)]
+        stats["SPT"] = hypno_s.size
+        stats["WASO"] = hypno_s[hypno_s == "WAKE"].size
+        # Before YASA v0.5.0, TST was calculated as SPT - WASO, meaning that Art
+        # and Unscored epochs were included. TST is now restrained to sleep stages.
+        stats["TST"] = hypno_s[np.isin(hypno_s, all_sleep)].shape[0]
+
+        # Sleep efficiency and sleep maintenance efficiency
+        stats["SE"] = 100 * stats["TST"] / stats["TIB"]
+        if stats["SPT"] == 0:
+            stats["SME"] = np.nan
+        else:
+            stats["SME"] = 100 * stats["TST"] / stats["SPT"]
+
+        # Sleep stage latencies -- only relevant if hypno is cropped to TIB
+        stats["SOL"] = first_sleep
+        sleep_periods = hypno_find_periods(
+            np.isin(hypno, all_sleep), self.sampling_frequency, threshold="5min"
+        ).query("values == True")
+        if sleep_periods.shape[0]:
+            stats["SOL_5min"] = sleep_periods["start"].iloc[0]
+        else:
+            stats["SOL_5min"] = np.nan
+
+        if "REM" in self.labels:
+            # Question: should we add latencies for other stage too?
+            stats["Lat_REM"] = np.where(hypno == "REM")[0].min() if "REM" in hypno else np.nan
+
+        # Duration of each stage
+        for st in self.labels:
+            if st == "SLEEP":
+                # SLEEP == TST
+                continue
+            stats[st] = hypno[hypno == st].size
+
+        # Remove ART and UNS if they are empty
+        if stats["ART"] == 0:
+            stats.pop("ART")
+        if stats["UNS"] == 0:
+            stats.pop("UNS")
+
+        # Convert to minutes
+        for key, value in stats.items():
+            if key in ["SE", "SME"]:
+                continue
+            stats[key] = value / (60 * self.sampling_frequency)
+
+        # Proportion of each sleep stages
+        for st in all_sleep:
+            if st in stats.keys():
+                if stats["TST"] == 0:
+                    stats[f"%{st}"] = np.nan
+                else:
+                    stats[f"%{st}"] = 100 * stats[st] / stats["TST"]
+
+        # Round to 4 decimals
+        stats = {key: np.round(val, 4) for key, val in stats.items()}
+        return stats
+
+    def plot_hypnogram(self):
+        # This function requires mapping to be defined
+        raise NotImplementedError
+
+    def upsample(self, new_freq, **kwargs):
+        """Upsample hypnogram to a higher frequency.
+
+        Frequency here is defined with a pandas Offset, e.g. "10s" or "1min".
+
+        Returns a copy: the original hypnogram is not modified in place.
+        """
+        assert pd.Timedelta(new_freq) < pd.Timedelta(self.freq), (
+            f"The upsampling `new_freq` ({new_freq}) must be higher than the current frequency of "
+            f"hypnogram {self.freq}"
+        )
+        if isinstance(self.hypno.index, pd.DatetimeIndex):
+            new_hyp = self.hypno.resample(new_freq, origin="start", **kwargs).ffill()
+        else:
+            new_hyp = self.hypno.copy()
+            new_hyp.index = self.timedelta
+            new_hyp = new_hyp.resample(new_freq, **kwargs).ffill().reset_index(drop=True)
+            new_hyp.index.name = "Epoch"
+        return Hypnogram(values=new_hyp, n_stages=self.n_stages, freq=new_freq, start=self.start)
 
 
 #############################################################################
