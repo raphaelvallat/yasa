@@ -271,49 +271,38 @@ def plot_spectrogram(
     # Normalization
     if vmin is None:
         vmin, vmax = np.percentile(Sxx, [0 + trimperc, 100 - trimperc])
-        norm = Normalize(vmin=vmin, vmax=vmax)
-    else:
-        norm = Normalize(vmin=vmin, vmax=vmax)
+    norm = Normalize(vmin=vmin, vmax=vmax)
 
+    # Open figure
     if hypno is None:
-        fig, ax = plt.subplots(nrows=1, figsize=(12, 4))
-        im = ax.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True, shading="auto")
-        ax.set_xlim(0, t.max())
-        ax.set_ylabel("Frequency [Hz]")
-        ax.set_xlabel("Time [hrs]")
-
-        # Add colorbar
-        cbar = fig.colorbar(im, ax=ax, shrink=0.95, fraction=0.1, aspect=25)
-        cbar.ax.set_ylabel("Log Power (dB / Hz)", rotation=270, labelpad=20)
-        return fig
+        fig, ax1 = plt.subplots(nrows=1, figsize=(12, 4))
     else:
-        # Validate input
-        hypno = np.asarray(hypno).astype(int)
-        assert hypno.ndim == 1, "Hypno must be 1D."
+        fig, (ax0, ax1) = plt.subplots(
+            nrows=2, figsize=(12, 6), gridspec_kw={"height_ratios": [1, 2], "hspace": 0.1},
+        )
+
+    # Draw Spectrogram
+    im = ax1.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True, shading="auto")
+    ax1.set_xlim(0, t.max())
+    ax1.set_ylabel("Frequency [Hz]")
+    ax1.set_xlabel("Time [hrs]")
+
+    if hypno is not None:
+        # Validate and handle hypnogram-related inputs
         assert hypno.size == data.size, "Hypno must have the same sf as data."
- 
-         # Update default plot_hypno keyword arguments with user-specified inputs
         hypnoplot_kwargs = dict(lw=1.5, fill_color=None)
         hypnoplot_kwargs.update(kwargs)
-
-        fig, (ax0, ax1) = plt.subplots(
-            nrows=2, figsize=(12, 6), gridspec_kw={"height_ratios": [1, 2]}
-        )
-        plt.subplots_adjust(hspace=0.1)
-
-        # Hypnogram (top axis)
+        # Draw hypnogram
         ax0 = plot_hypnogram(hypno, sf_hypno=sf, ax=ax0, **hypnoplot_kwargs)
         ax0.xaxis.set_visible(False)
+    else:
+        # Add colorbar
+        cbar = fig.colorbar(im, ax=ax1, shrink=0.95, fraction=0.1, aspect=25)
+        cbar.ax.set_ylabel("Log Power (dB / Hz)", rotation=270, labelpad=20)
 
-        # Spectrogram (bottom axis)
-        im = ax1.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True, shading="auto")
-        ax1.set_xlim(0, t.max())
-        ax1.set_ylabel("Frequency [Hz]")
-        ax1.set_xlabel("Time [hrs]")
-
-        # Revert font-size
-        plt.rcParams.update({"font.size": old_fontsize})
-        return fig
+    # Revert font-size
+    plt.rcParams.update({"font.size": old_fontsize})
+    return fig
 
 
 def topoplot(
