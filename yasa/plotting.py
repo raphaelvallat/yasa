@@ -142,6 +142,7 @@ def plot_spectrogram(
     cmap="RdBu_r",
     vmin=None,
     vmax=None,
+    **kwargs,
 ):
     """
     Plot a full-night multi-taper spectrogram, optionally with the hypnogram on top.
@@ -192,6 +193,8 @@ def plot_spectrogram(
         The lower range of color scale. Overwrites ``trimperc``
     vmax : int or float
         The upper range of color scale. Overwrites ``trimperc``
+    **kwargs : dict
+        Other arguments that are passed to :py:func:`yasa.plot_hypnogram`.
 
     Returns
     -------
@@ -284,13 +287,14 @@ def plot_spectrogram(
         cbar.ax.set_ylabel("Log Power (dB / Hz)", rotation=270, labelpad=20)
         return fig
     else:
+        # Validate input
         hypno = np.asarray(hypno).astype(int)
         assert hypno.ndim == 1, "Hypno must be 1D."
         assert hypno.size == data.size, "Hypno must have the same sf as data."
-        t_hyp = np.arange(hypno.size) / (sf * 3600)
-        # Make sure that REM is displayed after Wake
-        hypno = pd.Series(hypno).map({-2: -2, -1: -1, 0: 0, 1: 2, 2: 3, 3: 4, 4: 1}).values
-        hypno_rem = np.ma.masked_not_equal(hypno, 1)
+ 
+         # Update default plot_hypno keyword arguments with user-specified inputs
+        hypnoplot_kwargs = dict(lw=1.5, fill_color=None)
+        hypnoplot_kwargs.update(kwargs)
 
         fig, (ax0, ax1) = plt.subplots(
             nrows=2, figsize=(12, 6), gridspec_kw={"height_ratios": [1, 2]}
@@ -298,34 +302,8 @@ def plot_spectrogram(
         plt.subplots_adjust(hspace=0.1)
 
         # Hypnogram (top axis)
-        ax0.step(t_hyp, -1 * hypno, color="k")
-        ax0.step(t_hyp, -1 * hypno_rem, color="r")
-        if -2 in hypno and -1 in hypno:
-            # Both Unscored and Artefacts are present
-            ax0.set_yticks([2, 1, 0, -1, -2, -3, -4])
-            ax0.set_yticklabels(["Uns", "Art", "W", "R", "N1", "N2", "N3"])
-            ax0.set_ylim(-4.5, 2.5)
-        elif -2 in hypno and -1 not in hypno:
-            # Only Unscored are present
-            ax0.set_yticks([2, 0, -1, -2, -3, -4])
-            ax0.set_yticklabels(["Uns", "W", "R", "N1", "N2", "N3"])
-            ax0.set_ylim(-4.5, 2.5)
-
-        elif -2 not in hypno and -1 in hypno:
-            # Only Artefacts are present
-            ax0.set_yticks([1, 0, -1, -2, -3, -4])
-            ax0.set_yticklabels(["Art", "W", "R", "N1", "N2", "N3"])
-            ax0.set_ylim(-4.5, 1.5)
-        else:
-            # No artefacts or Unscored
-            ax0.set_yticks([0, -1, -2, -3, -4])
-            ax0.set_yticklabels(["W", "R", "N1", "N2", "N3"])
-            ax0.set_ylim(-4.5, 0.5)
-        ax0.set_xlim(0, t_hyp.max())
-        ax0.set_ylabel("Stage")
+        ax0 = plot_hypnogram(hypno, sf_hypno=sf, ax=ax0, **hypnoplot_kwargs)
         ax0.xaxis.set_visible(False)
-        ax0.spines["right"].set_visible(False)
-        ax0.spines["top"].set_visible(False)
 
         # Spectrogram (bottom axis)
         im = ax1.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True, shading="auto")
