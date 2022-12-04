@@ -8,6 +8,16 @@ What's new
 
 ----------------------------------------------------------------------------------------
 
+0.6.3.dev
+----------------------
+
+**Others**
+
+* Added the ``ax`` keyword-argument to :py:func:`yasa.plot_hypnogram` and removed ``figsize``. Now select figure aesthetics (e.g., size, dpi) by opening a :py:class:`matplotlib.axes.Axes` instance and passing to ``ax``. `PR 108 <https://github.com/raphaelvallat/yasa/pull/108>`_
+* :py:func:`yasa.plot_hypnogram` now draws the hypnogram with :py:func:`matplotlib.pyplot.stairs` instead of :py:func:`matplotlib.pyplot.step`. See `issue 106 <https://github.com/raphaelvallat/yasa/issues/106>`_ for detail. `PR 108 <https://github.com/raphaelvallat/yasa/pull/108>`_
+
+----------------------------------------------------------------------------------------
+
 v0.6.2 (August 2022)
 --------------------
 
