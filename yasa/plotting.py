@@ -277,9 +277,10 @@ def plot_spectrogram(
     if hypno is None:
         fig, ax1 = plt.subplots(nrows=1, figsize=(12, 4))
     else:
-        gridspec_kws = {"height_ratios": [1, 2], "hspace": 0.1}
         fig, (ax0, ax1) = plt.subplots(
-            nrows=2, figsize=(12, 6), gridspec_kw=gridspec_kws,
+            nrows=2,
+            figsize=(12, 6),
+            gridspec_kw={"height_ratios": [1, 2], "hspace": 0.1},
         )
 
     # Draw Spectrogram
