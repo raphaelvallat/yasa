@@ -75,6 +75,14 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, ax=None):
     bins = np.arange(hypno.size + 1) / (sf_hypno * 3600)
     # Make sure that REM is displayed after Wake
     hypno = pd.Series(hypno).map({-2: -2, -1: -1, 0: 0, 1: 2, 2: 3, 3: 4, 4: 1}).values
+
+    # Reduce data and bin edges to only moments of change in the hypnogram
+    # (to avoid drawing thousands of tiny individual lines when sf is high)
+    change_points = np.nonzero(np.ediff1d(hypno, to_end=1))
+    hypno = hypno[change_points]
+    bins = np.append(0, bins[change_points])
+
+    # Make masks for REM and Artefact/Unscored
     hypno_rem = np.ma.masked_not_equal(hypno, 1)
     hypno_art_uns = np.ma.masked_greater(hypno, -1)
 
