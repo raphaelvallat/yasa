@@ -44,8 +44,6 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, ax=None):
         Color to fill space above hypnogram line, optional.
     ax : :py:class:`matplotlib.axes.Axes`
         Axis on which to draw the plot, optional.
-    figsize : tuple
-       Width, height in inches.
 
     Returns
     -------
