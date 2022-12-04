@@ -41,9 +41,10 @@ class TestPlotting(unittest.TestCase):
         _ = plot_hypnogram(hypno)
         # Adding fill color
         _ = plot_hypnogram(hypno, fill_color="gainsboro")
-        # Changing the figsize
+        # Draw on an existing axis.
         hypno = pd.Series(np.repeat([0, 1, 2, 3, 4, 0], 120))
-        _ = plot_hypnogram(hypno, figsize=(12, 2))
+        ax = plt.subplot()
+        _ = plot_hypnogram(hypno, ax=ax)
         # Changing the lw and sf_hypno
         hypno = list(np.repeat([0, 0, -1, -1, 0, 0, 1, 2, 3, 4, 0, 0, 0], 120))
         _ = plot_hypnogram(hypno, sf_hypno=1 / 10, lw=2.5)
