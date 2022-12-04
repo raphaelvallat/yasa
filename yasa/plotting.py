@@ -12,7 +12,7 @@ from matplotlib.colors import Normalize, ListedColormap
 __all__ = ["plot_hypnogram", "plot_spectrogram", "topoplot"]
 
 
-def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, figsize=(9, 3)):
+def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, ax=None):
     """
     Plot a hypnogram.
 
@@ -42,6 +42,8 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, figsize=(9, 
         Linewidth.
     fill_color : str
         Color to fill space above hypnogram line, optional.
+    ax : :py:class:`matplotlib.axes.Axes`
+        Axis on which to draw the plot, optional.
     figsize : tuple
        Width, height in inches.
 
@@ -56,7 +58,9 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, figsize=(9, 
 
         >>> import yasa
         >>> import numpy as np
+        >>> import matplotlib.pyplot as plt
         >>> hypno = np.loadtxt("https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt")
+        >>> plt.figure(figsize=(7, 3), constrained_layout=True)
         >>> ax = yasa.plot_hypnogram(hypno, fill_color="gainsboro")
     """
     # Increase font size while preserving original
@@ -76,47 +80,49 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, figsize=(9, 
     hypno_rem = np.ma.masked_not_equal(hypno, 1)
     hypno_art_uns = np.ma.masked_greater(hypno, -1)
 
-    fig, ax0 = plt.subplots(nrows=1, figsize=figsize)
+    # Start the plot
+    if ax is None:
+        ax = plt.gca()
 
     # Draw background filling
     if fill_color is not None:
-        ax0.stairs(-1 * hypno, bins, fill=True, color=fill_color, lw=0)
+        ax.stairs(-1 * hypno, bins, fill=True, color=fill_color, lw=0)
     # Draw main hypnogram line
-    ax0.stairs(-1 * hypno, bins, baseline=None, color="k", lw=lw)
+    ax.stairs(-1 * hypno, bins, baseline=None, color="k", lw=lw)
     # Draw REM and Artefact/Unscored highlighting
     if 1 in hypno:
-        ax0.hlines(-1 * hypno_rem, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
+        ax.hlines(-1 * hypno_rem, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
     if -2 in hypno or -1 in hypno:
-        ax0.hlines(-1 * hypno_art_uns, xmin=bins[:-1], xmax=bins[1:], color="grey", lw=lw)
+        ax.hlines(-1 * hypno_art_uns, xmin=bins[:-1], xmax=bins[1:], color="grey", lw=lw)
     # Determine y-axis labels and limits
     if -2 in hypno and -1 in hypno:
         # Both Unscored and Artefacts are present
-        ax0.set_yticks([2, 1, 0, -1, -2, -3, -4])
-        ax0.set_yticklabels(["Uns", "Art", "W", "R", "N1", "N2", "N3"])
-        ax0.set_ylim(-4.5, 2.5)
+        ax.set_yticks([2, 1, 0, -1, -2, -3, -4])
+        ax.set_yticklabels(["Uns", "Art", "W", "R", "N1", "N2", "N3"])
+        ax.set_ylim(-4.5, 2.5)
     elif -2 in hypno and -1 not in hypno:
         # Only Unscored are present
-        ax0.set_yticks([2, 0, -1, -2, -3, -4])
-        ax0.set_yticklabels(["Uns", "W", "R", "N1", "N2", "N3"])
-        ax0.set_ylim(-4.5, 2.5)
+        ax.set_yticks([2, 0, -1, -2, -3, -4])
+        ax.set_yticklabels(["Uns", "W", "R", "N1", "N2", "N3"])
+        ax.set_ylim(-4.5, 2.5)
     elif -2 not in hypno and -1 in hypno:
         # Only Artefacts are present
-        ax0.set_yticks([1, 0, -1, -2, -3, -4])
-        ax0.set_yticklabels(["Art", "W", "R", "N1", "N2", "N3"])
-        ax0.set_ylim(-4.5, 1.5)
+        ax.set_yticks([1, 0, -1, -2, -3, -4])
+        ax.set_yticklabels(["Art", "W", "R", "N1", "N2", "N3"])
+        ax.set_ylim(-4.5, 1.5)
     else:
         # No artefacts or Unscored
-        ax0.set_yticks([0, -1, -2, -3, -4])
-        ax0.set_yticklabels(["W", "R", "N1", "N2", "N3"])
-        ax0.set_ylim(-4.5, 0.5)
-    ax0.set_xlim(0, bins.max())
-    ax0.set_ylabel("Stage")
-    ax0.set_xlabel("Time [hrs]")
-    ax0.spines["right"].set_visible(False)
-    ax0.spines["top"].set_visible(False)
+        ax.set_yticks([0, -1, -2, -3, -4])
+        ax.set_yticklabels(["W", "R", "N1", "N2", "N3"])
+        ax.set_ylim(-4.5, 0.5)
+    ax.set_xlim(0, bins.max())
+    ax.set_ylabel("Stage")
+    ax.set_xlabel("Time [hrs]")
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
     # Revert font-size
     plt.rcParams.update({"font.size": old_fontsize})
-    return ax0
+    return ax
 
 
 def plot_spectrogram(
