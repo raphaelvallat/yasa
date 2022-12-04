@@ -328,7 +328,7 @@ In this final section, we'll see how to perform automatic sleep staging in YASA.
   >>> hypno_pred = yasa.hypno_str_to_int(hypno_pred)  # Convert "W" to 0, "N1" to 1, etc
   >>> yasa.plot_hypnogram(hypno_pred);  # Plot
 
-.. figure::  /pictures/quickstart/hypnogram.png
+.. figure::  /pictures/quickstart/hypno_pred.png
   :align: center
 
 Let's calculate the agreement against the ground-truth expert scoring:
