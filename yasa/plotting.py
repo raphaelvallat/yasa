@@ -319,7 +319,7 @@ def topoplot(
     figsize=(4, 4),
     dpi=80,
     fontsize=14,
-    **kwargs
+    **kwargs,
 ):
     """
     Topoplot.
@@ -467,7 +467,7 @@ def topoplot(
             cmap=cmap,
             show=False,
             axes=ax,
-            **kwargs
+            **kwargs,
         )
 
         if title is not None:
