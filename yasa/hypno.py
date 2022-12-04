@@ -26,12 +26,13 @@ logger = logging.getLogger("yasa")
 class Hypnogram:
     """Main class for manipulating sleep hypnogram in YASA."""
 
-    def __init__(self, values, n_stages=5, *, freq="30s", start=None):
+    def __init__(self, values, n_stages=5, *, freq="30s", start=None, scorer=None):
         assert isinstance(values, (list, np.ndarray, pd.Series))
         assert isinstance(n_stages, int)
         assert n_stages in [2, 3, 4, 5]
         assert isinstance(freq, str)
         assert isinstance(start, (type(None), str, pd.Timestamp))
+        assert isinstance(scorer, (type(None), str, int))
         if n_stages == 2:
             accepted = ["S", "W", "SLEEP", "WAKE", "ART", "UNS"]
             mapping = {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
@@ -51,7 +52,11 @@ class Hypnogram:
         if isinstance(values, pd.Series):
             # Make sure to remove index if the input is a pandas.Series
             values = values.to_numpy(copy=True)
-        hypno = pd.Series(values, name="Stage").str.upper()
+        hypno = pd.Series(values).str.upper()
+        if scorer is None:
+            hypno.name = "Stage"
+        else:
+            hypno.name = scorer
         # Combine accepted values
         map_accepted = {"S": "SLEEP", "W": "WAKE", "R": "REM"}
         hypno = hypno.replace(map_accepted)
@@ -62,7 +67,6 @@ class Hypnogram:
         else:
             fake_dt = pd.date_range(start="2022-12-03 00:00:00", freq=freq, periods=hypno.shape[0])
             timedelta = fake_dt - fake_dt[0]
-        hypno.index.name = "Epoch"
         self._hypno = hypno
         self._n_epochs = hypno.shape[0]
         self._freq = freq
@@ -133,6 +137,10 @@ class Hypnogram:
     def mapping_int(self):
         return {v: k for k, v in self.mapping.items()}
 
+    @property
+    def scorer(self):
+        return self._scorer
+
     def as_int(self):
         """Return hypnogram as integer.
 
@@ -149,13 +157,13 @@ class Hypnogram:
         """
         return self.hypno.replace(self.mapping).astype(int)
 
-    def transition_matrix(self):
-        counts, probs = transition_matrix(self.as_int())
-        counts.index = counts.index.map(self.mapping_int)
-        counts.columns = counts.columns.map(self.mapping_int)
-        probs.index = probs.index.map(self.mapping_int)
-        probs.columns = probs.columns.map(self.mapping_int)
-        return counts, probs
+    def find_periods(self, threshold="5min", equal_length=False):
+        return hypno_find_periods(
+            self.hypno, self.sampling_frequency, threshold=threshold, equal_length=equal_length
+        )
+
+    def plot_hypnogram(self):
+        raise NotImplementedError
 
     def sleep_statistics(self):
         """
@@ -338,8 +346,13 @@ class Hypnogram:
         stats = {key: np.round(val, 4) for key, val in stats.items()}
         return stats
 
-    def plot_hypnogram(self):
-        raise NotImplementedError
+    def transition_matrix(self):
+        counts, probs = transition_matrix(self.as_int())
+        counts.index = counts.index.map(self.mapping_int)
+        counts.columns = counts.columns.map(self.mapping_int)
+        probs.index = probs.index.map(self.mapping_int)
+        probs.columns = probs.columns.map(self.mapping_int)
+        return counts, probs
 
     def upsample(self, new_freq, **kwargs):
         """Upsample hypnogram to a higher frequency.
@@ -360,6 +373,12 @@ class Hypnogram:
             new_hyp = new_hyp.resample(new_freq, **kwargs).ffill().reset_index(drop=True)
             new_hyp.index.name = "Epoch"
         return Hypnogram(values=new_hyp, n_stages=self.n_stages, freq=new_freq, start=self.start)
+
+    def upsample_to_data(self, data, sf=None, verbose=True):
+        hypno_up = hypno_upsample_to_data(
+            self.hypno, self.sampling_frequency, data=data, sf_data=sf, verbose=verbose
+        )
+        return hypno_up
 
 
 #############################################################################
