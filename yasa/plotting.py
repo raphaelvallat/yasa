@@ -58,8 +58,8 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, ax=None):
         >>> import numpy as np
         >>> import matplotlib.pyplot as plt
         >>> hypno = np.loadtxt("https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt")
-        >>> plt.figure(figsize=(7, 3), constrained_layout=True)
-        >>> ax = yasa.plot_hypnogram(hypno, fill_color="gainsboro")
+        >>> fig, ax = plt.subplots(1, 1, figsize=(7, 3), constrained_layout=True)
+        >>> ax = yasa.plot_hypnogram(hypno, fill_color="gainsboro", ax=ax)
     """
     # Increase font size while preserving original
     old_fontsize = plt.rcParams["font.size"]
