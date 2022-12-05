@@ -31,6 +31,7 @@ import mne
 import logging
 import numpy as np
 import pandas as pd
+from scipy.stats import multinomial
 from .io import set_log_level
 
 __all__ = [
@@ -40,6 +41,7 @@ __all__ = [
     "hypno_upsample_to_data",
     "hypno_find_periods",
     "load_profusion_hypno",
+    "simulate_hypno",
 ]
 
 
@@ -474,3 +476,111 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
 
     new_seq = pd.DataFrame(new_seq)
     return new_seq
+
+
+#############################################################################
+# SIMULATION
+#############################################################################
+
+
+def simulate_hypno(tib=90, sf=1 / 30, trans_probas=None, init_probas=None):
+    """Simulate a hypnogram based on transition probabilities.
+
+    Current implentation is a naive Markov model.
+    Future implementation should be a more-informated Bayesian model
+    after the Metzner et al., 2021 publication that initial transition
+    probabilites are currently based on (see Notes below).
+
+    Parameters
+    ----------
+    tib : int
+        Time in bed, expressed in minutes.
+    sf : float
+        Sampling frequency.
+    trans_probas : None or :py:class:`pandas.DataFrame`
+        Transition probability matrix where each cell is a transition probability
+        between sleep stages.
+
+        If :py:class:`pandas.DataFrame`, should be of shape (n_stages, n_stages)
+        with "from" stages as indices and "to" stages as columns.
+
+        If None (default), use transition probabilites from Metzner et al., 2021 (see Notes below).
+    init_probas : ndarray or None
+        ndarray of shape (n_stages,) to initialize random walk.
+        If None (default), initialize with Wake "From" row of ``trans_probas``.
+
+    Returns
+    -------
+    hypno : np.ndarray
+        Hypnogram containing simulated sleep stages.
+
+    Notes
+    -----
+    Default transition probabilities come from the following publication:
+    Metzner et al., 2021, Communications Biology, Sleep as a random walk: a super-statistical
+    analysis of EEG data across sleep stages. https://doi.org/10.1038/s42003-021-02912-6
+    See Figure 5b specifically. https://www.nature.com/articles/s42003-021-02912-6/figures/5
+    See Supplementary Information or Figshare for raw data (``traMat_Epoch.npy``), https://doi.org/10.6084/m9.figshare.17113700
+
+    .. note::
+        Please cite Metzner et al., 2021, Communications Biology if the default
+        transition probabilities are used in publication.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> np.random.seed(9)
+    >>>
+    >>> from yasa import simulate_hypno
+    >>> hypno = simulate_hypno(tib=10)
+    >>> hypno
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
+
+    Base the data off a real subject's transition matrix.
+
+    .. plot::
+        >>> import numpy as np
+        >>> np.random.seed(1)
+        >>> 
+        >>> import yasa
+        >>> hypno = np.loadtxt("https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt")
+        >>> _, probas = yasa.transition_matrix(hypno)
+        >>> hypno_sim = yasa.simulate_hypno(tib=360, trans_probas=probas)
+        >>> yasa.plot_hypnogram(hypno)
+        >>> yasa.plot_hypnogram(hypno_sim)
+    """
+
+    def _markov_sequence(p_init, p_transition, sequence_length):
+        """Generate a Markov sequence based on p_init and p_transition.
+        https://ericmjl.github.io/essays-on-data-science/machine-learning/markov-models
+        """
+        initial_state = list(multinomial.rvs(1, p_init)).index(1)
+        states = [initial_state]
+        for _ in range(sequence_length - 1):
+            p_tr = p_transition[states[-1]]
+            new_state = list(multinomial.rvs(1, p_tr)).index(1)
+            states.append(new_state)
+        return states
+
+    if trans_probas is None:
+        trans_freqs = np.array([
+            [11737,     2,  571,    84,    2], # W R 1 2 3
+            [   57, 10071,  189,    84,    2], # R
+            [  281,    59, 6697,  1661,   11], # 1
+            [  253,   272, 1070, 26259,  505], # 2
+            [   49,    12,  176,   279, 9630], # 3
+        ])
+        trans_probas =  trans_freqs / trans_freqs.sum(axis=1, keepdims=True)
+    else:
+        trans_probas = trans_probas.reindex([0, 4, 3, 2, 1], axis=0)
+        trans_probas = trans_probas.reindex([0, 4, 3, 2, 1], axis=1)
+        trans_probas = trans_probas.to_numpy()
+
+    if init_probas is None:
+        init_probas = trans_probas[0, :]  # first row MUST be Wake
+
+    n_epochs = np.floor(tib * 60 * sf).astype(int)
+    hypno = _markov_sequence(init_probas, trans_probas, n_epochs)
+    hypno = pd.Series(hypno).map({0:0, 1:4, 2:1, 3:2, 4:3}).to_numpy(int)
+
+    return hypno
