@@ -85,6 +85,7 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, ax=None):
     # Make masks for REM and Artefact/Unscored
     hypno_rem = np.ma.masked_not_equal(hypno, 1)
     hypno_art_uns = np.ma.masked_greater(hypno, -1)
+    hypno_sleep = np.ma.masked_less(hypno, 0)
 
     # Start the plot
     if ax is None:
@@ -92,7 +93,7 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, ax=None):
 
     # Draw background filling
     if fill_color is not None:
-        ax.stairs(-1 * hypno, bins, fill=True, color=fill_color, lw=0)
+        ax.stairs(-1 * hypno.clip(0), bins, fill=True, color=fill_color, lw=0)
     # Draw main hypnogram line
     ax.stairs(-1 * hypno, bins, baseline=None, color="k", lw=lw)
     # Draw REM and Artefact/Unscored highlighting
