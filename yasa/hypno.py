@@ -486,10 +486,12 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
 def simulate_hypno(tib=90, sf=1 / 30, trans_probas=None, init_probas=None):
     """Simulate a hypnogram based on transition probabilities.
 
-    Current implentation is a naive Markov model.
-    Future implementation should be a more-informated Bayesian model
-    after the Metzner et al., 2021 publication that initial transition
-    probabilites are currently based on (see Notes below).
+    Current implentation is a naive Markov model. The initial stage of a hypnogram
+    is generated using probabilites from ``init_probas`` and then subsequent stages
+    are generated from a Markov sequence based on ``trans_probas``.
+
+    .. important:: The Markov simulation model is not meant to accurately portray sleep
+        macroarchitecture and should only be used for testing or other unique purposes.
 
     Parameters
     ----------
@@ -499,15 +501,27 @@ def simulate_hypno(tib=90, sf=1 / 30, trans_probas=None, init_probas=None):
         Sampling frequency.
     trans_probas : None or :py:class:`pandas.DataFrame`
         Transition probability matrix where each cell is a transition probability
-        between sleep stages.
+        between sleep stages of consecutive *epochs*.
 
-        If :py:class:`pandas.DataFrame`, should be of shape (n_stages, n_stages)
-        with "from" stages as indices and "to" stages as columns.
+        ``trans_probas`` is a `right stochastic matrix
+        <https://en.wikipedia.org/wiki/Stochastic_matrix>`_, i.e. each row sums to 1.
 
-        If None (default), use transition probabilites from Metzner et al., 2021 (see Notes below).
-    init_probas : ndarray or None
-        ndarray of shape (n_stages,) to initialize random walk.
-        If None (default), initialize with Wake "From" row of ``trans_probas``.
+        If None (default), use transition probabilites from Metzner et al., 2021 [Metzner2021]_.
+        If :py:class:`pandas.DataFrame`, must have "from"-stages as indices and
+        "to"-stages as columns. Indices and columns must follow YASA integer
+        hypnogram convention (W = 0, N = 1, ...). Unscored/Artefact stages are not allowed.
+
+        .. note:: Transition probability matrices should indicate the transition
+            probability between *epochs* (i.e., probability of the next epoch) and
+            not simply stage (i.e., probability of non-similar stage).
+
+        .. seealso:: Return value from :py:func:`yasa.transition_matrix`
+
+    init_probas : None or :py:class:`pandas.Series`
+        Probabilites of each stage to initialize random walk.
+        If None (default), initialize with "From"-Wake row of ``trans_probas``.
+        If :py:class:`pandas.Series`, indices must be stages following YASA integer
+        hypnogram convention (see ``trans_probas``).
 
     Returns
     -------
@@ -516,15 +530,17 @@ def simulate_hypno(tib=90, sf=1 / 30, trans_probas=None, init_probas=None):
 
     Notes
     -----
-    Default transition probabilities come from the following publication:
-    Metzner et al., 2021, Communications Biology, Sleep as a random walk: a super-statistical
-    analysis of EEG data across sleep stages. https://doi.org/10.1038/s42003-021-02912-6
-    See Figure 5b specifically. https://www.nature.com/articles/s42003-021-02912-6/figures/5
-    See Supplementary Information or Figshare for raw data (``traMat_Epoch.npy``), https://doi.org/10.6084/m9.figshare.17113700
+    Default transition probabilities can be found in the ``traMat_Epoch.npy`` file of
+    Supplementary Information for Metzner et al., 2021 [Metzner2021]_ (rounded values
+    are viewable in Figure 5b). Please cite this work if these probabilites are used
+    for publication.
 
-    .. note::
-        Please cite Metzner et al., 2021, Communications Biology if the default
-        transition probabilities are used in publication.
+    References
+    ----------
+    .. [Metzner2021] Metzner, C., Schilling, A., Traxdorf, M., Schulze, H., & Krausse, P.
+                     (2021). Sleep as a random walk: a super-statistical analysis of EEG
+                     data across sleep stages. Communications Biology, 4.
+                     https://doi.org/10.1038/s42003-021-02912-6
 
     Examples
     --------
