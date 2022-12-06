@@ -152,9 +152,7 @@ class TestHypno(unittest.TestCase):
                 hypno_in = hypno_consolidate_stages(hypno_in, 4, 3)
             for n_out in [4, 3, 2]:
                 if n_out < n_in:
-                    hypno_c = hypno_consolidate_stages(
-                        hypno_in, n_stages_in=n_in, n_stages_out=n_out,
-                    )
+                    hypno_c = hypno_consolidate_stages(hypno_in, n_in, n_stages_out=n_out)
                     assert not np.array_equal(hypno_in, hypno_c)
                     assert hypno_in.size == hypno_c.size
                     assert hypno_in.max() > hypno_c.max()
