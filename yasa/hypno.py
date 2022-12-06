@@ -620,7 +620,11 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     .. plot::
         >>> import matplotlib.pyplot as plt
         >>> import yasa
-        >>> hypno = np.loadtxt("https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt")
+        >>> url = (
+        >>>     "https://github.com/raphaelvallat/yasa/raw/master/"
+        >>>     "notebooks/data_full_6hrs_100Hz_hypno_30s.txt"
+        >>> )
+        >>> hypno = np.loadtxt(url)
         >>> _, probas = yasa.transition_matrix(hypno)
         >>> hypno_sim = yasa.simulate_hypno(tib=360, trans_probas=probas, seed=9)
         >>> fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(7, 6))
@@ -657,13 +661,13 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     if trans_probas is None:
         # Generate transition probability DataFrame
         trans_freqs = np.array([
-            [11737,     2,  571,    84,    2],  # W R 1 2 3
-            [   57, 10071,  189,    84,    2],  # R
-            [  281,    59, 6697,  1661,   11],  # 1
-            [  253,   272, 1070, 26259,  505],  # 2
-            [   49,    12,  176,   279, 9630],  # 3
+            [11737, 2, 571, 84, 2],  # W R 1 2 3
+            [57, 10071, 189, 84, 2],  # R
+            [281, 59, 6697, 1661, 11],  # 1
+            [253, 272, 1070, 26259, 505],  # 2
+            [49, 12, 176, 279, 9630],  # 3
         ])
-        trans_probas =  trans_freqs / trans_freqs.sum(axis=1, keepdims=True)
+        trans_probas = trans_freqs / trans_freqs.sum(axis=1, keepdims=True)
         trans_probas = pd.DataFrame(
             trans_probas, index=[0, 4, 1, 2, 3], columns=[0, 4, 1, 2, 3],
         )
@@ -678,7 +682,7 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     init_probas = init_probas.reindex([0, 1, 2, 3, 4])
     assert trans_probas.notna().values.all(), "trans_proba indices must be YASA integer codes"
     assert init_probas.notna().all(), "init_probas index must be YASA integer codes"
-    
+
     # Extract probabilities as arrays
     trans_mat = trans_probas.to_numpy()
     init_arr = init_probas.to_numpy()
