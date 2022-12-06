@@ -37,6 +37,7 @@ from .io import set_log_level
 __all__ = [
     "hypno_str_to_int",
     "hypno_int_to_str",
+    "hypno_consolidate_stages",
     "hypno_upsample_to_sf",
     "hypno_upsample_to_data",
     "hypno_find_periods",
@@ -479,6 +480,66 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
 
 
 #############################################################################
+# STAGE CONVERSION
+#############################################################################
+
+
+def hypno_consolidate_stages(hypno, n_stages_in, n_stages_out):
+    """Reduce the number of stages in a hypnogram to match actigraphy or wearables.
+
+    For example, a standard 5-stage hypnogram (W, N1, N2, N3, REM) could be consolidated
+    to a hypnogram more common with actigraphy (W, Light, Deep, REM).
+
+    Parameters
+    ----------
+    hypno : array_like
+        The sleep staging (hypnogram) 1D array.
+    n_stages_in : int
+        Number of possible stages of ``hypno``, where:
+
+        - 5 stages - 0=Wake, 1=N1, 2=N2, 3=N3, 4=REM
+        - 4 stages - 0=Wake, 1=Light, 2=Deep, 3=REM
+        - 3 stages - 0=Wake, 1=NREM, 2=REM
+        - 2 stages - 0=Wake, 1=Sleep
+
+        .. note:: The default YASA values for Unscored (-2) and Artefact (-1) are always allowed.
+    n_stages_out : int
+        Similar to ``n_stages_in`` but for output. Must be higher than ``n_stages_out``.
+
+    Returns
+    -------
+    hypno : array_like
+        The hypnogram, with stages converted to ``n_stages_out`` staging scheme.
+    """
+    assert isinstance(hypno, (list, np.ndarray, pd.Series)), "hypno must be array_like"
+    hypno = np.asarray(hypno, dtype=int)
+    assert n_stages_in in [3, 4, 5], "n_stages_in must be 3, 4, or 5"
+    assert n_stages_out in [2, 3, 4], "n_stages_in must be 2, 3, or 4"
+    assert n_stages_out < n_stages_in, "n_stages_out must be lower than n_stages_in"
+    assert all(s < n_stages_in for s in hypno), "hypno and n_stages_in are not compatible"
+
+    # Change sleep codes (Wake, Artefact, and Unscored never change)
+    if n_stages_out == 2:
+        # Reduce to Wake/Sleep
+        hypno[hypno > 0] = 1  # All non-Wake becomes Sleep
+    elif n_stages_out == 3:
+        # Reduce to Wake/NREM/REM
+        if n_stages_in == 4:  # input is Wake/Light/Deep/REM
+            hypno[hypno == 2] = 1  # Deep become NREM
+            hypno[hypno == 3] = 2  # REM code changes
+        elif n_stages_in == 5:  # input is Wake/N1/N2/N3/REM
+            hypno[hypno == 2] = 1  # N2 becomes NREM
+            hypno[hypno == 3] = 1  # N3 becomes NREM
+            hypno[hypno == 4] = 2  # REM code changes
+    elif n_stages_out == 4:
+        # Reduce to Wake/Light/Deep/REM
+        hypno[hypno == 2] = 1  # N2 becomes Light
+        hypno[hypno == 3] = 2  # N3 becomes Deep
+        hypno[hypno == 4] = 3  # REM code changes
+    return hypno
+
+
+#############################################################################
 # SIMULATION
 #############################################################################
 
@@ -500,7 +561,9 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     sf : float
         Sampling frequency.
     n_stages : int
-        Staging scheme of returned hypnogram.
+        Staging scheme of returned hypnogram. Input should follow 5-stage scheme but can
+        be converted to lower scheme if desired.
+        .. seealso:: :py:func:`yasa.hypno_consolidate_stages`
     trans_probas : None or :py:class:`pandas.DataFrame`
         Transition probability matrix where each cell is a transition probability
         between sleep stages of consecutive *epochs*.
@@ -571,7 +634,8 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     # Validate input
     assert isinstance(tib, (int, float)), "tib must be a number"
     assert isinstance(sf, (int, float)), "sf must be a number"
-    assert isinstance(n_stages, int), "sf must be an integer"
+    assert isinstance(n_stages, int), "n_stages must be an integer"
+    assert 2 <= n_stages <= 5, "n_stages must be 2, 3, 4, or 5"
     if trans_probas is not None:
         assert isinstance(trans_probas, pd.DataFrame), "trans_probas must be a pandas DataFrame"
     if trans_probas is not None:
@@ -619,5 +683,8 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
 
     # Remap hypnogram, since trans_probas has REM as second row and value=1
     hypno = pd.Series(hypno).map({0:0, 1:4, 2:1, 3:2, 4:3}).to_numpy(int)
+
+    if n_stages < 5:
+        hypno = hypno_consolidate_stages(hypno, n_stages_in=5, n_stages_out=n_stages)
 
     return hypno
