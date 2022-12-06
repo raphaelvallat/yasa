@@ -647,39 +647,48 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
         """
         initial_state = list(multinomial.rvs(1, p_init)).index(1)
         states = [initial_state]
-        for _ in range(sequence_length - 1):
+        while len(states) < sequence_length:
             p_tr = p_transition[states[-1]]
             new_state = list(multinomial.rvs(1, p_tr)).index(1)
             states.append(new_state)
         return states
 
     if trans_probas is None:
+        # Generate transition probability DataFrame
         trans_freqs = np.array([
-            [11737,   571,    84,     2,     2],  # W 1 2 3 R
-            [  281,  6697,  1661,    11,    59],  # 1
-            [  253,  1070, 26259,   505,   272],  # 2
-            [   49,   176,   279,  9630,    12],  # 3
-            [   57,   189,    84,     2, 10071],  # R
+            [11737,     2,  571,    84,    2],  # W R 1 2 3
+            [   57, 10071,  189,    84,    2],  # R
+            [  281,    59, 6697,  1661,   11],  # 1
+            [  253,   272, 1070, 26259,  505],  # 2
+            [   49,    12,  176,   279, 9630],  # 3
         ])
         trans_probas =  trans_freqs / trans_freqs.sum(axis=1, keepdims=True)
-    else:
-        # Ensure trans_probas indices are in order W N1 N2 N3 R
-        trans_probas = trans_probas.reindex([0, 1, 2, 3, 4], axis=0)
-        trans_probas = trans_probas.reindex([0, 1, 2, 3, 4], axis=1)
-        trans_probas = trans_probas.to_numpy()
+        trans_probas = pd.DataFrame(
+            trans_probas, index=[0, 4, 1, 2, 3], columns=[0, 4, 1, 2, 3],
+        )
 
     if init_probas is None:
-        init_probas = trans_probas[0, :]  # first row MUST be Wake
-    else:
-        init_probas = init_probas.reindex([0, 1, 2, 3, 4]).to_numpy()
+        # Extract Wake row of initial probabilities as a Series
+        init_probas = trans_probas.loc[0, :]
+
+    # Ensure trans_probas DataFrame and init_probas Series are in row/column order W N1 N2 N3 R
+    trans_probas = trans_probas.reindex([0, 1, 2, 3, 4], axis=0)
+    trans_probas = trans_probas.reindex([0, 1, 2, 3, 4], axis=1)
+    init_probas = init_probas.reindex([0, 1, 2, 3, 4])
+    assert trans_probas.notna().values.all(), "trans_proba indices must be YASA integer codes"
+    assert init_probas.notna().all(), "init_probas index must be YASA integer codes"
+    
+    # Extract probabilities as arrays
+    trans_mat = trans_probas.to_numpy()
+    init_arr = init_probas.to_numpy()
 
     # Make sure all rows sum to 1
-    assert np.allclose(trans_probas.sum(axis=1), 1)
-    assert np.isclose(init_probas.sum(), 1)
+    assert np.allclose(trans_mat.sum(axis=1), 1)
+    assert np.isclose(init_arr.sum(), 1)
 
     # Generate hypnogram
     n_epochs = np.floor(tib * 60 * sf).astype(int)
-    hypno = _markov_sequence(init_probas, trans_probas, n_epochs)
+    hypno = _markov_sequence(init_arr, trans_mat, n_epochs)
 
     if n_stages < 5:
         hypno = hypno_consolidate_stages(hypno, n_stages_in=5, n_stages_out=n_stages)
