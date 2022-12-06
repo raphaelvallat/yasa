@@ -132,7 +132,7 @@ class TestHypno(unittest.TestCase):
     def test_simulation(self):
         """Test hypnogram simulations."""
         hypno = simulate_hypno(tib=360, sf=1 / 30)
-        assert hypno.size <= 360 * 60 * 1/30
+        assert hypno.size <= 360 * 60 * 1 / 30
         assert np.unique(hypno).size > 1
         assert np.array_equal(simulate_hypno(tib=4, seed=7), np.array([0, 0, 0, 0, 1, 1, 1, 2]))
         assert np.unique(simulate_hypno(tib=500, n_stages=2)).size == 2
