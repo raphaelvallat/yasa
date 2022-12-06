@@ -512,7 +512,7 @@ def hypno_consolidate_stages(hypno, n_stages_in, n_stages_out):
         The hypnogram, with stages converted to ``n_stages_out`` staging scheme.
     """
     assert isinstance(hypno, (list, np.ndarray, pd.Series)), "hypno must be array_like"
-    hypno = np.asarray(hypno, dtype=int)
+    hypno = np.asarray(hypno, dtype=int).copy()
     assert n_stages_in in [3, 4, 5], "n_stages_in must be 3, 4, or 5"
     assert n_stages_out in [2, 3, 4], "n_stages_in must be 2, 3, or 4"
     assert n_stages_out < n_stages_in, "n_stages_out must be lower than n_stages_in"
@@ -656,16 +656,16 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
             p_tr = p_transition[states[-1]]
             new_state = list(multinomial.rvs(1, p_tr)).index(1)
             states.append(new_state)
-        return states
+        return np.asarray(states)
 
     if trans_probas is None:
-        # Generate transition probability DataFrame
+        # Generate transition probability DataFrame (here, ordered W R 1 2 3)
         trans_freqs = np.array([
-            [11737, 2, 571, 84, 2],  # W R 1 2 3
-            [57, 10071, 189, 84, 2],  # R
-            [281, 59, 6697, 1661, 11],  # 1
-            [253, 272, 1070, 26259, 505],  # 2
-            [49, 12, 176, 279, 9630],  # 3
+            [11737, 2, 571, 84, 2],
+            [57, 10071, 189, 84, 2],
+            [281, 59, 6697, 1661, 11],
+            [253, 272, 1070, 26259, 505],
+            [49, 12, 176, 279, 9630],
         ])
         trans_probas = trans_freqs / trans_freqs.sum(axis=1, keepdims=True)
         trans_probas = pd.DataFrame(

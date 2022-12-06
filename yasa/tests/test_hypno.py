@@ -132,18 +132,30 @@ class TestHypno(unittest.TestCase):
     def test_simulation(self):
         """Test hypnogram simulations."""
         hypno = simulate_hypno(tib=360, sf=1 / 30)
-        assert hypno.size == 360 * 60 * 1/30
+        assert hypno.size <= 360 * 60 * 1/30
         assert np.unique(hypno).size > 1
+        assert np.array_equal(simulate_hypno(tib=4, seed=7), np.array([0, 0, 0, 0, 1, 1, 1, 2]))
+        assert np.unique(simulate_hypno(tib=500, n_stages=2)).size == 2
+
+        # Passing in probabilities
+        trans_df = pd.DataFrame(np.full((5, 5), 0.2))
+        simulate_hypno(trans_probas=trans_df)
+        simulate_hypno(init_probas=trans_df.loc[0])
 
     def test_consolidation(self):
         """Test hypnogram stage consolidation."""
-        for n_in in [3, 4, 5]:
-            for n_out in [2, 3, 4]:
-                if n_in > n_out:
+        hypno_in = hypno.copy()
+        for n_in in [5, 4, 3]:
+            if n_in == 4:
+                hypno_in = hypno_consolidate_stages(hypno_in, 5, 4)
+            elif n_in == 3:
+                hypno_in = hypno_consolidate_stages(hypno_in, 4, 3)
+            for n_out in [4, 3, 2]:
+                if n_out < n_in:
                     hypno_c = hypno_consolidate_stages(
-                        hypno, n_stages_in=n_in, n_stages_out=n_out,
+                        hypno_in, n_stages_in=n_in, n_stages_out=n_out,
                     )
-                    assert not np.array_equal(hypno, hypno_c)
-                    assert hypno.size == hypno_c.size
-                    assert hypno.max() > hypno_c.max()
-                    assert hypno.min() == hypno_c.min()
+                    assert not np.array_equal(hypno_in, hypno_c)
+                    assert hypno_in.size == hypno_c.size
+                    assert hypno_in.max() > hypno_c.max()
+                    assert hypno_in.min() == hypno_c.min()
