@@ -544,7 +544,7 @@ def hypno_consolidate_stages(hypno, n_stages_in, n_stages_out):
 #############################################################################
 
 
-def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas=None):
+def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas=None, seed=None):
     """Simulate a hypnogram based on transition probabilities.
 
     Current implentation is a naive Markov model. The initial stage of a hypnogram
@@ -564,7 +564,7 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
         Staging scheme of returned hypnogram. Input should follow 5-stage scheme but can
         be converted to lower scheme if desired.
         .. seealso:: :py:func:`yasa.hypno_consolidate_stages`
-    trans_probas : None or :py:class:`pandas.DataFrame`
+    trans_probas : :py:class:`pandas.DataFrame` or None
         Transition probability matrix where each cell is a transition probability
         between sleep stages of consecutive *epochs*.
 
@@ -581,12 +581,13 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
             not simply stage (i.e., probability of non-similar stage).
 
         .. seealso:: Return value from :py:func:`yasa.transition_matrix`
-
-    init_probas : None or :py:class:`pandas.Series`
+    init_probas : :py:class:`pandas.Series` or None
         Probabilites of each stage to initialize random walk.
         If None (default), initialize with "From"-Wake row of ``trans_probas``.
         If :py:class:`pandas.Series`, indices must be stages following YASA integer
         hypnogram convention (see ``trans_probas``).
+    seed : int or None
+        Random seed for generating Markov sequence.
 
     Returns
     -------
@@ -609,26 +610,24 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
 
     Examples
     --------
-    >>> import numpy as np
-    >>> np.random.seed(9)
-    >>>
     >>> from yasa import simulate_hypno
-    >>> hypno = simulate_hypno(tib=10)
+    >>> hypno = simulate_hypno(tib=10, seed=0)
     >>> hypno
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4]
 
     Base the data off a real subject's transition matrix.
 
     .. plot::
-        >>> import numpy as np
-        >>> np.random.seed(1)
-        >>> 
+        >>> import matplotlib.pyplot as plt
         >>> import yasa
         >>> hypno = np.loadtxt("https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt")
         >>> _, probas = yasa.transition_matrix(hypno)
-        >>> hypno_sim = yasa.simulate_hypno(tib=360, trans_probas=probas)
-        >>> yasa.plot_hypnogram(hypno)
-        >>> yasa.plot_hypnogram(hypno_sim)
+        >>> hypno_sim = yasa.simulate_hypno(tib=360, trans_probas=probas, seed=9)
+        >>> fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(7, 6))
+        >>> yasa.plot_hypnogram(hypno, ax=ax1)
+        >>> yasa.plot_hypnogram(hypno_sim, ax=ax2)
+        >>> ax1.set_title("True hypnogram")
+        >>> ax2.set_title("Simulated hypnogram")
     """
 
     # Validate input
@@ -636,9 +635,11 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     assert isinstance(sf, (int, float)), "sf must be a number"
     assert isinstance(n_stages, int), "n_stages must be an integer"
     assert 2 <= n_stages <= 5, "n_stages must be 2, 3, 4, or 5"
+    if seed is not None:
+        assert isinstance(seed, int), "seed must be an integer"
     if trans_probas is not None:
         assert isinstance(trans_probas, pd.DataFrame), "trans_probas must be a pandas DataFrame"
-    if trans_probas is not None:
+    if init_probas is not None:
         assert isinstance(init_probas, pd.Series), "init_probas must be a pandas Series"
 
     def _markov_sequence(p_init, p_transition, sequence_length):
@@ -687,6 +688,8 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     assert np.isclose(init_arr.sum(), 1)
 
     # Generate hypnogram
+    if seed is not None:
+        np.random.seed(seed)
     n_epochs = np.floor(tib * 60 * sf).astype(int)
     hypno = _markov_sequence(init_arr, trans_mat, n_epochs)
 
