@@ -660,16 +660,20 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
 
     if trans_probas is None:
         # Generate transition probability DataFrame (here, ordered W R 1 2 3)
-        trans_freqs = np.array([
-            [11737, 2, 571, 84, 2],
-            [57, 10071, 189, 84, 2],
-            [281, 59, 6697, 1661, 11],
-            [253, 272, 1070, 26259, 505],
-            [49, 12, 176, 279, 9630],
-        ])
+        trans_freqs = np.array(
+            [
+                [11737, 2, 571, 84, 2],
+                [57, 10071, 189, 84, 2],
+                [281, 59, 6697, 1661, 11],
+                [253, 272, 1070, 26259, 505],
+                [49, 12, 176, 279, 9630],
+            ]
+        )
         trans_probas = trans_freqs / trans_freqs.sum(axis=1, keepdims=True)
         trans_probas = pd.DataFrame(
-            trans_probas, index=[0, 4, 1, 2, 3], columns=[0, 4, 1, 2, 3],
+            trans_probas,
+            index=[0, 4, 1, 2, 3],
+            columns=[0, 4, 1, 2, 3],
         )
 
     if init_probas is None:
