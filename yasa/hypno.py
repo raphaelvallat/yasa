@@ -655,23 +655,23 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
 
     if trans_probas is None:
         trans_freqs = np.array([
-            [11737,     2,  571,    84,    2], # W R 1 2 3
-            [   57, 10071,  189,    84,    2], # R
-            [  281,    59, 6697,  1661,   11], # 1
-            [  253,   272, 1070, 26259,  505], # 2
-            [   49,    12,  176,   279, 9630], # 3
+            [11737,   571,    84,     2,     2],  # W 1 2 3 R
+            [  281,  6697,  1661,    11,    59],  # 1
+            [  253,  1070, 26259,   505,   272],  # 2
+            [   49,   176,   279,  9630,    12],  # 3
+            [   57,   189,    84,     2, 10071],  # R
         ])
         trans_probas =  trans_freqs / trans_freqs.sum(axis=1, keepdims=True)
     else:
-        # Reorder provided trans_probas to match the default
-        trans_probas = trans_probas.reindex([0, 4, 3, 2, 1], axis=0)
-        trans_probas = trans_probas.reindex([0, 4, 3, 2, 1], axis=1)
+        # Ensure trans_probas indices are in order W N1 N2 N3 R
+        trans_probas = trans_probas.reindex([0, 1, 2, 3, 4], axis=0)
+        trans_probas = trans_probas.reindex([0, 1, 2, 3, 4], axis=1)
         trans_probas = trans_probas.to_numpy()
 
     if init_probas is None:
         init_probas = trans_probas[0, :]  # first row MUST be Wake
     else:
-        init_probas = init_probas.reindex([0, 4, 3, 2, 1]).to_numpy()
+        init_probas = init_probas.reindex([0, 1, 2, 3, 4]).to_numpy()
 
     # Make sure all rows sum to 1
     assert np.allclose(trans_probas.sum(axis=1), 1)
@@ -680,9 +680,6 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     # Generate hypnogram
     n_epochs = np.floor(tib * 60 * sf).astype(int)
     hypno = _markov_sequence(init_probas, trans_probas, n_epochs)
-
-    # Remap hypnogram, since trans_probas has REM as second row and value=1
-    hypno = pd.Series(hypno).map({0:0, 1:4, 2:1, 3:2, 4:3}).to_numpy(int)
 
     if n_stages < 5:
         hypno = hypno_consolidate_stages(hypno, n_stages_in=5, n_stages_out=n_stages)
