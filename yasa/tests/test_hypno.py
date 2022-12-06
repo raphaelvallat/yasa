@@ -7,9 +7,11 @@ from pandas.testing import assert_frame_equal
 from yasa.hypno import (
     hypno_str_to_int,
     hypno_int_to_str,
+    hypno_consolidate_stages,
     hypno_upsample_to_sf,
     hypno_fit_to_data,
     hypno_upsample_to_data,
+    simulate_hypno,
 )
 
 from yasa.hypno import hypno_find_periods as hfp
@@ -126,3 +128,22 @@ class TestHypno(unittest.TestCase):
         assert_frame_equal(
             hfp(np.array(x).astype(str), sf_hypno=1 / 60, threshold="0min"), expected, **kwargs
         )
+
+    def test_simulation(self):
+        """Test hypnogram simulations."""
+        hypno = simulate_hypno(tib=360, sf=1 / 30)
+        assert hypno.size == 360 * 60 * 1/30
+        assert np.unique(hypno).size > 1
+
+    def test_consolidation(self):
+        """Test hypnogram stage consolidation."""
+        for n_in in [3, 4, 5]:
+            for n_out in [2, 3, 4]:
+                if n_in > n_out:
+                    hypno_c = hypno_consolidate_stages(
+                        hypno, n_stages_in=n_in, n_stages_out=n_out,
+                    )
+                    assert not np.array_equal(hypno, hypno_c)
+                    assert hypno.size == hypno_c.size
+                    assert hypno.max() > hypno_c.max()
+                    assert hypno.min() == hypno_c.min()
