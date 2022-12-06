@@ -566,6 +566,14 @@ def simulate_hypno(tib=90, sf=1 / 30, trans_probas=None, init_probas=None):
         >>> yasa.plot_hypnogram(hypno_sim)
     """
 
+    # Validate input
+    assert isinstance(tib, (int, float)), "tib must be a number"
+    assert isinstance(sf, (int, float)), "sf must be a number"
+    if trans_probas is not None:
+        assert isinstance(trans_probas, pd.DataFrame), "trans_probas must be a pandas DataFrame"
+    if trans_probas is not None:
+        assert isinstance(init_probas, pd.Series), "init_probas must be a pandas Series"
+
     def _markov_sequence(p_init, p_transition, sequence_length):
         """Generate a Markov sequence based on p_init and p_transition.
         https://ericmjl.github.io/essays-on-data-science/machine-learning/markov-models
@@ -588,15 +596,25 @@ def simulate_hypno(tib=90, sf=1 / 30, trans_probas=None, init_probas=None):
         ])
         trans_probas =  trans_freqs / trans_freqs.sum(axis=1, keepdims=True)
     else:
+        # Reorder provided trans_probas to match the default
         trans_probas = trans_probas.reindex([0, 4, 3, 2, 1], axis=0)
         trans_probas = trans_probas.reindex([0, 4, 3, 2, 1], axis=1)
         trans_probas = trans_probas.to_numpy()
 
     if init_probas is None:
         init_probas = trans_probas[0, :]  # first row MUST be Wake
+    else:
+        init_probas = init_probas.reindex([0, 4, 3, 2, 1]).to_numpy()
 
+    # Make sure all rows sum to 1
+    assert np.allclose(trans_probas.sum(axis=1), 1)
+    assert np.isclose(init_probas.sum(), 1)
+
+    # Generate hypnogram
     n_epochs = np.floor(tib * 60 * sf).astype(int)
     hypno = _markov_sequence(init_probas, trans_probas, n_epochs)
+
+    # Remap hypnogram, since trans_probas has REM as second row and value=1
     hypno = pd.Series(hypno).map({0:0, 1:4, 2:1, 3:2, 4:3}).to_numpy(int)
 
     return hypno
