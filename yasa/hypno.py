@@ -483,7 +483,7 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
 #############################################################################
 
 
-def simulate_hypno(tib=90, sf=1 / 30, trans_probas=None, init_probas=None):
+def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas=None):
     """Simulate a hypnogram based on transition probabilities.
 
     Current implentation is a naive Markov model. The initial stage of a hypnogram
@@ -499,6 +499,8 @@ def simulate_hypno(tib=90, sf=1 / 30, trans_probas=None, init_probas=None):
         Time in bed, expressed in minutes.
     sf : float
         Sampling frequency.
+    n_stages : int
+        Staging scheme of returned hypnogram.
     trans_probas : None or :py:class:`pandas.DataFrame`
         Transition probability matrix where each cell is a transition probability
         between sleep stages of consecutive *epochs*.
@@ -569,6 +571,7 @@ def simulate_hypno(tib=90, sf=1 / 30, trans_probas=None, init_probas=None):
     # Validate input
     assert isinstance(tib, (int, float)), "tib must be a number"
     assert isinstance(sf, (int, float)), "sf must be a number"
+    assert isinstance(n_stages, int), "sf must be an integer"
     if trans_probas is not None:
         assert isinstance(trans_probas, pd.DataFrame), "trans_probas must be a pandas DataFrame"
     if trans_probas is not None:
