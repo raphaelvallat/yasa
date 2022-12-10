@@ -256,6 +256,9 @@ def plot_spectrogram(
         assert isinstance(vmax, (int, float)), "vmax must be int or float if vmin is provided"
     if vmax is not None:
         assert isinstance(vmin, (int, float)), "vmin must be int or float if vmax is provided"
+    if hypno is not None:
+        # Validate and handle hypnogram-related inputs
+        assert hypno.size == data.size, "Hypno must have the same sf as data."
 
     # Calculate multi-taper spectrogram
     nperseg = int(win_sec * sf)
@@ -291,8 +294,6 @@ def plot_spectrogram(
     ax1.set_xlabel("Time [hrs]")
 
     if hypno is not None:
-        # Validate and handle hypnogram-related inputs
-        assert hypno.size == data.size, "Hypno must have the same sf as data."
         hypnoplot_kwargs = dict(lw=1.5, fill_color=None)
         hypnoplot_kwargs.update(kwargs)
         # Draw hypnogram
