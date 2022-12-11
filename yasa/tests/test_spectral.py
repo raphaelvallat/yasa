@@ -161,6 +161,8 @@ class TestSpectral(unittest.TestCase):
         # Now replace REM by Unscored
         hypno_full_art[hypno_full_art == 4.0] = -2
         plot_spectrogram(data_full[0, :], sf_full, hypno_full_art)
+        # Pass kwargs to the hypnogram plot
+        plot_spectrogram(data_full[0, :], sf_full, hypno_full_art, lw=1, fill_color="blue")
         plt.close("all")
         # Errors
         with pytest.raises(AssertionError):

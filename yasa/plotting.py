@@ -12,7 +12,7 @@ from matplotlib.colors import Normalize, ListedColormap
 __all__ = ["plot_hypnogram", "plot_spectrogram", "topoplot"]
 
 
-def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
+def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, ax=None):
     """
     Plot a hypnogram.
 
@@ -40,8 +40,10 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
         * 1 = 1 value per second of EEG data
     lw : float
         Linewidth.
-    figsize : tuple
-       Width, height in inches.
+    fill_color : str
+        Color to fill space above hypnogram line, optional.
+    ax : :py:class:`matplotlib.axes.Axes`
+        Axis on which to draw the plot, optional.
 
     Returns
     -------
@@ -54,8 +56,10 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
 
         >>> import yasa
         >>> import numpy as np
+        >>> import matplotlib.pyplot as plt
         >>> hypno = np.loadtxt("https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt")
-        >>> ax = yasa.plot_hypnogram(hypno)
+        >>> fig, ax = plt.subplots(1, 1, figsize=(7, 3), constrained_layout=True)
+        >>> ax = yasa.plot_hypnogram(hypno, fill_color="gainsboro", ax=ax)
     """
     # Increase font size while preserving original
     old_fontsize = plt.rcParams["font.size"]
@@ -68,46 +72,64 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, figsize=(9, 3)):
     assert hypno.ndim == 1, "hypno must be a 1D array."
     assert isinstance(sf_hypno, (int, float)), "sf must be int or float."
 
-    t_hyp = np.arange(hypno.size) / (sf_hypno * 3600)
+    bins = np.arange(hypno.size + 1) / (sf_hypno * 3600)
     # Make sure that REM is displayed after Wake
     hypno = pd.Series(hypno).map({-2: -2, -1: -1, 0: 0, 1: 2, 2: 3, 3: 4, 4: 1}).values
+
+    # Reduce data and bin edges to only moments of change in the hypnogram
+    # (to avoid drawing thousands of tiny individual lines when sf is high)
+    change_points = np.nonzero(np.ediff1d(hypno, to_end=1))
+    hypno = hypno[change_points]
+    bins = np.append(0, bins[change_points])
+
+    # Make masks for REM and Artefact/Unscored
     hypno_rem = np.ma.masked_not_equal(hypno, 1)
     hypno_art_uns = np.ma.masked_greater(hypno, -1)
+    hypno_sleep = np.ma.masked_less(hypno, 0)
 
-    fig, ax0 = plt.subplots(nrows=1, figsize=figsize)
+    # Start the plot
+    if ax is None:
+        ax = plt.gca()
 
-    # Hypnogram (top axis)
-    ax0.step(t_hyp, -1 * hypno, color="k", lw=lw)
-    ax0.step(t_hyp, -1 * hypno_rem, color="red", lw=lw)
-    ax0.step(t_hyp, -1 * hypno_art_uns, color="grey", lw=lw)
+    # Draw background filling
+    if fill_color is not None:
+        ax.stairs(-1 * hypno.clip(0), bins, fill=True, color=fill_color, lw=0)
+    # Draw main hypnogram line
+    ax.stairs(-1 * hypno, bins, baseline=None, color="k", lw=lw)
+    # Draw REM and Artefact/Unscored highlighting
+    if 1 in hypno:
+        ax.hlines(-1 * hypno_rem, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
+    if -2 in hypno or -1 in hypno:
+        ax.hlines(-1 * hypno_art_uns, xmin=bins[:-1], xmax=bins[1:], color="grey", lw=lw)
+    # Determine y-axis labels and limits
     if -2 in hypno and -1 in hypno:
         # Both Unscored and Artefacts are present
-        ax0.set_yticks([2, 1, 0, -1, -2, -3, -4])
-        ax0.set_yticklabels(["Uns", "Art", "W", "R", "N1", "N2", "N3"])
-        ax0.set_ylim(-4.5, 2.5)
+        ax.set_yticks([2, 1, 0, -1, -2, -3, -4])
+        ax.set_yticklabels(["Uns", "Art", "W", "R", "N1", "N2", "N3"])
+        ax.set_ylim(-4.5, 2.5)
     elif -2 in hypno and -1 not in hypno:
         # Only Unscored are present
-        ax0.set_yticks([2, 0, -1, -2, -3, -4])
-        ax0.set_yticklabels(["Uns", "W", "R", "N1", "N2", "N3"])
-        ax0.set_ylim(-4.5, 2.5)
+        ax.set_yticks([2, 0, -1, -2, -3, -4])
+        ax.set_yticklabels(["Uns", "W", "R", "N1", "N2", "N3"])
+        ax.set_ylim(-4.5, 2.5)
     elif -2 not in hypno and -1 in hypno:
         # Only Artefacts are present
-        ax0.set_yticks([1, 0, -1, -2, -3, -4])
-        ax0.set_yticklabels(["Art", "W", "R", "N1", "N2", "N3"])
-        ax0.set_ylim(-4.5, 1.5)
+        ax.set_yticks([1, 0, -1, -2, -3, -4])
+        ax.set_yticklabels(["Art", "W", "R", "N1", "N2", "N3"])
+        ax.set_ylim(-4.5, 1.5)
     else:
         # No artefacts or Unscored
-        ax0.set_yticks([0, -1, -2, -3, -4])
-        ax0.set_yticklabels(["W", "R", "N1", "N2", "N3"])
-        ax0.set_ylim(-4.5, 0.5)
-    ax0.set_xlim(0, t_hyp.max())
-    ax0.set_ylabel("Stage")
-    ax0.set_xlabel("Time [hrs]")
-    ax0.spines["right"].set_visible(False)
-    ax0.spines["top"].set_visible(False)
+        ax.set_yticks([0, -1, -2, -3, -4])
+        ax.set_yticklabels(["W", "R", "N1", "N2", "N3"])
+        ax.set_ylim(-4.5, 0.5)
+    ax.set_xlim(0, bins.max())
+    ax.set_ylabel("Stage")
+    ax.set_xlabel("Time [hrs]")
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
     # Revert font-size
     plt.rcParams.update({"font.size": old_fontsize})
-    return ax0
+    return ax
 
 
 def plot_spectrogram(
@@ -121,6 +143,7 @@ def plot_spectrogram(
     cmap="RdBu_r",
     vmin=None,
     vmax=None,
+    **kwargs,
 ):
     """
     Plot a full-night multi-taper spectrogram, optionally with the hypnogram on top.
@@ -171,6 +194,8 @@ def plot_spectrogram(
         The lower range of color scale. Overwrites ``trimperc``
     vmax : int or float
         The upper range of color scale. Overwrites ``trimperc``
+    **kwargs : dict
+        Other arguments that are passed to :py:func:`yasa.plot_hypnogram`.
 
     Returns
     -------
@@ -231,6 +256,9 @@ def plot_spectrogram(
         assert isinstance(vmax, (int, float)), "vmax must be int or float if vmin is provided"
     if vmax is not None:
         assert isinstance(vmin, (int, float)), "vmin must be int or float if vmax is provided"
+    if hypno is not None:
+        # Validate and handle hypnogram-related inputs
+        assert hypno.size == data.size, "Hypno must have the same sf as data."
 
     # Calculate multi-taper spectrogram
     nperseg = int(win_sec * sf)
@@ -247,74 +275,38 @@ def plot_spectrogram(
     # Normalization
     if vmin is None:
         vmin, vmax = np.percentile(Sxx, [0 + trimperc, 100 - trimperc])
-        norm = Normalize(vmin=vmin, vmax=vmax)
-    else:
-        norm = Normalize(vmin=vmin, vmax=vmax)
+    norm = Normalize(vmin=vmin, vmax=vmax)
 
+    # Open figure
     if hypno is None:
-        fig, ax = plt.subplots(nrows=1, figsize=(12, 4))
-        im = ax.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True, shading="auto")
-        ax.set_xlim(0, t.max())
-        ax.set_ylabel("Frequency [Hz]")
-        ax.set_xlabel("Time [hrs]")
-
-        # Add colorbar
-        cbar = fig.colorbar(im, ax=ax, shrink=0.95, fraction=0.1, aspect=25)
-        cbar.ax.set_ylabel("Log Power (dB / Hz)", rotation=270, labelpad=20)
-        return fig
+        fig, ax1 = plt.subplots(nrows=1, figsize=(12, 4))
     else:
-        hypno = np.asarray(hypno).astype(int)
-        assert hypno.ndim == 1, "Hypno must be 1D."
-        assert hypno.size == data.size, "Hypno must have the same sf as data."
-        t_hyp = np.arange(hypno.size) / (sf * 3600)
-        # Make sure that REM is displayed after Wake
-        hypno = pd.Series(hypno).map({-2: -2, -1: -1, 0: 0, 1: 2, 2: 3, 3: 4, 4: 1}).values
-        hypno_rem = np.ma.masked_not_equal(hypno, 1)
-
         fig, (ax0, ax1) = plt.subplots(
-            nrows=2, figsize=(12, 6), gridspec_kw={"height_ratios": [1, 2]}
+            nrows=2,
+            figsize=(12, 6),
+            gridspec_kw={"height_ratios": [1, 2], "hspace": 0.1},
         )
-        plt.subplots_adjust(hspace=0.1)
 
-        # Hypnogram (top axis)
-        ax0.step(t_hyp, -1 * hypno, color="k")
-        ax0.step(t_hyp, -1 * hypno_rem, color="r")
-        if -2 in hypno and -1 in hypno:
-            # Both Unscored and Artefacts are present
-            ax0.set_yticks([2, 1, 0, -1, -2, -3, -4])
-            ax0.set_yticklabels(["Uns", "Art", "W", "R", "N1", "N2", "N3"])
-            ax0.set_ylim(-4.5, 2.5)
-        elif -2 in hypno and -1 not in hypno:
-            # Only Unscored are present
-            ax0.set_yticks([2, 0, -1, -2, -3, -4])
-            ax0.set_yticklabels(["Uns", "W", "R", "N1", "N2", "N3"])
-            ax0.set_ylim(-4.5, 2.5)
+    # Draw Spectrogram
+    im = ax1.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True, shading="auto")
+    ax1.set_xlim(0, t.max())
+    ax1.set_ylabel("Frequency [Hz]")
+    ax1.set_xlabel("Time [hrs]")
 
-        elif -2 not in hypno and -1 in hypno:
-            # Only Artefacts are present
-            ax0.set_yticks([1, 0, -1, -2, -3, -4])
-            ax0.set_yticklabels(["Art", "W", "R", "N1", "N2", "N3"])
-            ax0.set_ylim(-4.5, 1.5)
-        else:
-            # No artefacts or Unscored
-            ax0.set_yticks([0, -1, -2, -3, -4])
-            ax0.set_yticklabels(["W", "R", "N1", "N2", "N3"])
-            ax0.set_ylim(-4.5, 0.5)
-        ax0.set_xlim(0, t_hyp.max())
-        ax0.set_ylabel("Stage")
+    if hypno is not None:
+        hypnoplot_kwargs = dict(lw=1.5, fill_color=None)
+        hypnoplot_kwargs.update(kwargs)
+        # Draw hypnogram
+        ax0 = plot_hypnogram(hypno, sf_hypno=sf, ax=ax0, **hypnoplot_kwargs)
         ax0.xaxis.set_visible(False)
-        ax0.spines["right"].set_visible(False)
-        ax0.spines["top"].set_visible(False)
+    else:
+        # Add colorbar
+        cbar = fig.colorbar(im, ax=ax1, shrink=0.95, fraction=0.1, aspect=25)
+        cbar.ax.set_ylabel("Log Power (dB / Hz)", rotation=270, labelpad=20)
 
-        # Spectrogram (bottom axis)
-        im = ax1.pcolormesh(t, f, Sxx, norm=norm, cmap=cmap, antialiased=True, shading="auto")
-        ax1.set_xlim(0, t.max())
-        ax1.set_ylabel("Frequency [Hz]")
-        ax1.set_xlabel("Time [hrs]")
-
-        # Revert font-size
-        plt.rcParams.update({"font.size": old_fontsize})
-        return fig
+    # Revert font-size
+    plt.rcParams.update({"font.size": old_fontsize})
+    return fig
 
 
 def topoplot(
@@ -331,7 +323,7 @@ def topoplot(
     figsize=(4, 4),
     dpi=80,
     fontsize=14,
-    **kwargs
+    **kwargs,
 ):
     """
     Topoplot.
@@ -479,7 +471,7 @@ def topoplot(
             cmap=cmap,
             show=False,
             axes=ax,
-            **kwargs
+            **kwargs,
         )
 
         if title is not None:
