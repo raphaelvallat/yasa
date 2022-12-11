@@ -18,9 +18,9 @@ def _corr(x, y):
     n = x.size
     mx, my = x.mean(), y.mean()
     xm2s, ym2s, r_num = 0, 0, 0
-    for i in range(n):
-        xm = x[i] - mx
-        ym = y[i] - my
+    for xi, yi in zip(x, y):
+        xm = xi - mx
+        ym = yi - my
         r_num += xm * ym
         xm2s += xm**2
         ym2s += ym**2
