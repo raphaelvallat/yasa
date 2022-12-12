@@ -146,16 +146,12 @@ class TestHypno(unittest.TestCase):
 
     def test_consolidation(self):
         """Test hypnogram stage consolidation."""
-        hypno_in = hypno.copy()
-        for n_in in [5, 4, 3]:
-            if n_in == 4:
-                hypno_in = hypno_consolidate_stages(hypno_in, 5, 4)
-            elif n_in == 3:
-                hypno_in = hypno_consolidate_stages(hypno_in, 4, 3)
-            for n_out in [4, 3, 2]:
-                if n_out < n_in:
-                    hypno_c = hypno_consolidate_stages(hypno_in, n_in, n_stages_out=n_out)
-                    assert not np.array_equal(hypno_in, hypno_c)
-                    assert hypno_in.size == hypno_c.size
-                    assert hypno_in.max() > hypno_c.max()
-                    assert hypno_in.min() == hypno_c.min()
+        assert np.unique(hypno_consolidate_stages(hypno, 5, 4)).size == 4
+        assert np.unique(hypno_consolidate_stages(hypno, 5, 3)).size == 3
+        assert np.unique(hypno_consolidate_stages(hypno, 5, 2)).size == 2
+        hypno4 = hypno_consolidate_stages(hypno, 5, 4)
+        hypno3 = hypno_consolidate_stages(hypno4, 4, 3)
+        hypno2 = hypno_consolidate_stages(hypno3, 3, 2)
+        assert np.array_equal(np.unique(hypno4), np.array([0, 2, 3, 4]))
+        assert np.array_equal(np.unique(hypno3), np.array([0, 2, 4]))
+        assert np.array_equal(np.unique(hypno2), np.array([0, 1]))
