@@ -39,9 +39,12 @@ class TestPlotting(unittest.TestCase):
         # Default parameters
         hypno = np.loadtxt("notebooks/data_full_6hrs_100Hz_hypno_30s.txt")
         _ = plot_hypnogram(hypno)
-        # Changing the figsize
+        # Adding fill color
+        _ = plot_hypnogram(hypno, fill_color="gainsboro")
+        # Draw on an existing axis.
         hypno = pd.Series(np.repeat([0, 1, 2, 3, 4, 0], 120))
-        _ = plot_hypnogram(hypno, figsize=(12, 2))
+        ax = plt.subplot()
+        _ = plot_hypnogram(hypno, ax=ax)
         # Changing the lw and sf_hypno
         hypno = list(np.repeat([0, 0, -1, -1, 0, 0, 1, 2, 3, 4, 0, 0, 0], 120))
         _ = plot_hypnogram(hypno, sf_hypno=1 / 10, lw=2.5)
