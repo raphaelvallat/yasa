@@ -497,8 +497,8 @@ def hypno_consolidate_stages(hypno, n_stages_in, n_stages_out):
         Number of possible stages of ``hypno``, where:
 
         - 5 stages - 0=Wake, 1=N1, 2=N2, 3=N3, 4=REM
-        - 4 stages - 0=Wake, 1=Light, 2=Deep, 3=REM
-        - 3 stages - 0=Wake, 1=NREM, 2=REM
+        - 4 stages - 0=Wake, 2=Light, 3=Deep, 4=REM
+        - 3 stages - 0=Wake, 2=NREM, 4=REM
         - 2 stages - 0=Wake, 1=Sleep
 
         .. note:: The default YASA values for Unscored (-2) and Artefact (-1) are always allowed.
@@ -515,26 +515,19 @@ def hypno_consolidate_stages(hypno, n_stages_in, n_stages_out):
     assert n_stages_in in [3, 4, 5], "n_stages_in must be 3, 4, or 5"
     assert n_stages_out in [2, 3, 4], "n_stages_in must be 2, 3, or 4"
     assert n_stages_out < n_stages_in, "n_stages_out must be lower than n_stages_in"
-    assert all(s < n_stages_in for s in hypno), "hypno and n_stages_in are not compatible"
 
-    # Change sleep codes (Wake, Artefact, and Unscored never change)
+    # Change sleep codes where applicable.
     if n_stages_out == 2:
-        # Reduce to Wake/Sleep
-        hypno[hypno > 0] = 1  # All non-Wake becomes Sleep
+        # Consolidate all Sleep
+        mapping = {0: 0, 1: 1, 2: 1, 3: 1, 4: 1, -1: -1, -2: -2}
     elif n_stages_out == 3:
-        # Reduce to Wake/NREM/REM
-        if n_stages_in == 4:  # input is Wake/Light/Deep/REM
-            hypno[hypno == 2] = 1  # Deep become NREM
-            hypno[hypno == 3] = 2  # REM code changes
-        elif n_stages_in == 5:  # input is Wake/N1/N2/N3/REM
-            hypno[hypno == 2] = 1  # N2 becomes NREM
-            hypno[hypno == 3] = 1  # N3 becomes NREM
-            hypno[hypno == 4] = 2  # REM code changes
+        # Consolidate N1/N2/N3 or Light/Deep into NREM
+        mapping = {0: 0, 1: 2, 2: 2, 3: 2, 4: 4, -1: -1, -2: -2}
     elif n_stages_out == 4:
-        # Reduce to Wake/Light/Deep/REM
-        hypno[hypno == 2] = 1  # N2 becomes Light
-        hypno[hypno == 3] = 2  # N3 becomes Deep
-        hypno[hypno == 4] = 3  # REM code changes
+        # Consolidate N1/N2 into Light
+        mapping = {0: 0, 1: 2, 2: 2, 3: 3, 4: 4, -1: -1, -2: -2}
+    hypno = pd.Series(hypno).map(mapping).to_numpy()
+
     return hypno
 
 
