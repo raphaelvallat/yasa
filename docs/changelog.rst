@@ -11,6 +11,10 @@ What's new
 v0.6.3.dev
 ----------------------
 
+**New function: simulate hypnogram**
+
+We have added the :py:func:`yasa.hypno.simulate_hypno` function to generate a simulated hypnogram, primarily for testing purposes and tutorials. The hypnogram is simulated as a Markov sequence based on sleep stage transition probabilities. Transition probabilities can be user-defined or will default to those published in Metzner et al., 2021, *Commun Biol* (see `Figure 5b <https://www.nature.com/articles/s42003-021-02912-6#Fig5>`_).
+
 **Others**
 
 * Added the ``ax`` keyword-argument to :py:func:`yasa.plot_hypnogram` and removed ``figsize``. Now select figure aesthetics (e.g., size, dpi) by opening a :py:class:`matplotlib.axes.Axes` instance and passing to ``ax``. `PR 108 <https://github.com/raphaelvallat/yasa/pull/108>`_
