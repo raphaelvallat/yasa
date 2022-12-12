@@ -31,7 +31,6 @@ import mne
 import logging
 import numpy as np
 import pandas as pd
-from scipy.stats import multinomial
 from .io import set_log_level
 
 __all__ = [
@@ -588,6 +587,8 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
         hypnogram convention (see ``trans_probas``).
     seed : int or None
         Random seed for generating Markov sequence.
+        If an integer number is provided, the random hypnogram will be predictable.
+        This argument is required if reproducible results are desired.
 
     Returns
     -------
@@ -612,8 +613,11 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     --------
     >>> from yasa import simulate_hypno
     >>> hypno = simulate_hypno(tib=10, seed=0)
-    >>> hypno
-    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4]
+    >>> print(hypno)
+    [0 0 0 0 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2]
+    >>> hypno = simulate_hypno(tib=10, n_stages=2, seed=0)
+    >>> print(hypno)
+    [0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1]
 
     Base the data off a real subject's transition matrix.
 
@@ -633,28 +637,30 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
         >>> ax1.set_title("True hypnogram")
         >>> ax2.set_title("Simulated hypnogram")
     """
-
     # Validate input
     assert isinstance(tib, (int, float)), "tib must be a number"
     assert isinstance(sf, (int, float)), "sf must be a number"
     assert isinstance(n_stages, int), "n_stages must be an integer"
     assert 2 <= n_stages <= 5, "n_stages must be 2, 3, 4, or 5"
     if seed is not None:
-        assert isinstance(seed, int), "seed must be an integer"
+        assert isinstance(seed, int) and seed >= 0, "seed must be an integer >= 0"
     if trans_probas is not None:
         assert isinstance(trans_probas, pd.DataFrame), "trans_probas must be a pandas DataFrame"
     if init_probas is not None:
         assert isinstance(init_probas, pd.Series), "init_probas must be a pandas Series"
 
+    # Initialize random number generator
+    rng = np.random.default_rng(seed)
+
     def _markov_sequence(p_init, p_transition, sequence_length):
         """Generate a Markov sequence based on p_init and p_transition.
         https://ericmjl.github.io/essays-on-data-science/machine-learning/markov-models
         """
-        initial_state = list(multinomial.rvs(1, p_init)).index(1)
+        initial_state = list(rng.multinomial(1, p_init)).index(1)
         states = [initial_state]
         while len(states) < sequence_length:
             p_tr = p_transition[states[-1]]
-            new_state = list(multinomial.rvs(1, p_tr)).index(1)
+            new_state = list(rng.multinomial(1, p_tr)).index(1)
             states.append(new_state)
         return np.asarray(states)
 
@@ -688,18 +694,17 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     assert init_probas.notna().all(), "init_probas index must be YASA integer codes"
 
     # Extract probabilities as arrays
-    trans_mat = trans_probas.to_numpy()
+    trans_arr = trans_probas.to_numpy()
     init_arr = init_probas.to_numpy()
 
     # Make sure all rows sum to 1
-    assert np.allclose(trans_mat.sum(axis=1), 1)
+    assert np.allclose(trans_arr.sum(axis=1), 1)
     assert np.isclose(init_arr.sum(), 1)
 
-    # Generate hypnogram
-    if seed is not None:
-        np.random.seed(seed)
+    # Find number of *complete* epochs within TIB timeframe
     n_epochs = np.floor(tib * 60 * sf).astype(int)
-    hypno = _markov_sequence(init_arr, trans_mat, n_epochs)
+    # Generate hypnogram
+    hypno = _markov_sequence(init_arr, trans_arr, n_epochs)
 
     if n_stages < 5:
         hypno = hypno_consolidate_stages(hypno, n_stages_in=5, n_stages_out=n_stages)
