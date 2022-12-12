@@ -556,7 +556,10 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     Parameters
     ----------
     tib : int
-        Time in bed, expressed in minutes.
+        Total duration of the hypnogram (i.e., time in bed), expressed in minutes.
+        Returned hypnogram will be slightly shorter if ``tib`` in seconds is not
+        evenly divisible by ``sf``.
+        .. seealso:: :py:func:`yasa.sleep_statistics`
     sf : float
         Sampling frequency.
     n_stages : int
