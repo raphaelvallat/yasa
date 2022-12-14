@@ -9,6 +9,7 @@ from .io import set_log_level
 from yasa.sleepstats import transition_matrix
 
 __all__ = [
+    "Hypnogram",
     "hypno_str_to_int",
     "hypno_int_to_str",
     "hypno_consolidate_stages",
@@ -142,9 +143,9 @@ class Hypnogram:
         return self._scorer
 
     def as_int(self):
-        """Return hypnogram as integer.
+        """Return hypnogram as integers.
 
-        The default mapping is:
+        The default mapping from string to integer is:
 
         * 2 stages: {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
         * 3 stages: {"WAKE": 0, "NREM": 2, "REM": 4, "ART": -1, "UNS": -2}
@@ -154,20 +155,136 @@ class Hypnogram:
         Users can define a custom mapping:
 
         >>> hyp.mapping = {"WAKE": 0, "NREM": 1, "REM": 2}
+
+        Examples
+        --------
+        Convert a 2-stages hypnogram to integers
+
+        >>> from yasa import Hypnogram
+        >>> hyp = Hypnogram(["W", "W", "S", "S", "W", "S"], n_stages=2)
+        >>> hyp.as_int()
+        0    0
+        1    0
+        2    1
+        3    1
+        4    0
+        5    1
+        Name: Stage, dtype: int64
+
+        Same with a 4-stages hypnogram
+
+        >>> from yasa import Hypnogram
+        >>> hyp = Hypnogram(["W", "W", "LIGHT", "LIGHT", "DEEP", "REM", "WAKE"], n_stages=4)
+        >>> hyp.as_int()
+        0    0
+        1    0
+        2    2
+        3    2
+        4    3
+        5    4
+        6    0
+        Name: Stage, dtype: int64
         """
         return self.hypno.replace(self.mapping).astype(int)
 
     def find_periods(self, threshold="5min", equal_length=False):
+        """Find sequences of consecutive values exceeding a certain duration in hypnogram.
+
+        Parameters
+        ----------
+        self : yasa.Hypnogram
+            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
+            Total Recording Time, i.e. "lights out" to "lights on").
+        threshold : str
+            This function will only keep periods that exceed a certain duration (default '5min'),
+            e.g. '5min', '15min', '30sec', '1hour'. To disable thresholding, use '0sec'.
+        equal_length : bool
+            If True, the periods will all have the exact duration defined
+            in threshold. That is, periods that are longer than the duration threshold will be
+            divided into sub-periods of exactly the length of ``threshold``.
+
+        Returns
+        -------
+        periods : :py:class:`pandas.DataFrame`
+            Output dataframe
+
+            * ``values`` : The value in hypno of the current period
+            * ``start`` : The index of the start of the period in hypno
+            * ``length`` : The duration of the period, in number of samples
+
+        Examples
+        --------
+        Let's assume that we have an hypnogram where sleep = 1 and wake = 0, with one value
+        per minute.
+
+        >>> from yasa import Hypnogram
+        >>> val = 11 * ["W"] + 3 * ["S"] + 2 * ["W"] + 9 * ["S"] + ["W", "W"]
+        >>> hyp = Hypnogram(val, n_stages=2, freq="1min")
+        >>> hyp.find_periods(threshold="0min")
+          values  start  length
+        0   WAKE      0      11
+        1  SLEEP     11       3
+        2   WAKE     14       2
+        3  SLEEP     16       9
+        4   WAKE     25       2
+
+        This gives us the start and duration of each sequence of consecutive values in the
+        hypnogram. For example, the first row tells us that there is a sequence of 11 consecutive
+        WAKE starting at the first index of hypno.
+
+        Now, we may want to keep only periods that are longer than a specific threshold,
+        for example 5 minutes:
+
+        >>> hyp.find_periods(threshold="5min")
+          values  start  length
+        0   WAKE      0      11
+        1  SLEEP     16       9
+
+        Only the two sequences that are longer than 5 minutes (11 minutes and 9 minutes
+        respectively) are kept. Feel free to play around with different values of threshold!
+
+        This function is not limited to binary arrays, e.g. a 5-stages hypnogram at 30-sec
+        resolution:
+
+        >>> val = ["W", "W", "W", "W", "N1"] + 6 * ["N2"] + ["W", "W", "W", "N1", "W", "N1"]
+        >>> hyp = Hypnogram(val)
+        >>> hyp.find_periods(threshold="2min")
+          values  start  length
+        0   WAKE      0       4
+        1     N2      5       6
+
+        Lastly, using ``equal_length=True`` will further divide the periods into segments of the
+        same duration, i.e. the duration defined in ``threshold``:
+
+        >>> hyp.find_periods(threshold="1min", equal_length=True)
+          values  start  length
+        0   WAKE      0       2
+        1   WAKE      2       2
+        2     N2      5       2
+        3     N2      7       2
+        4     N2      9       2
+        5   WAKE     11       2
+
+        Here, the first 2 minutes of consecutive WAKE are divided into 2 periods of exactly 1
+        minute each. Next, the sequence of 6 consecutive 30-sec N2 epochs is further divided
+        into 3 periods of 1 minute each. Lastly, the last value in the sequence of 3
+        consecutive WAKE at the end of the hypnogram is removed to keep only a segment of exactly
+        1 minute. In other words, the remainder of the division of a given segment by the desired
+        duration is discarded.
+        """
         return hypno_find_periods(
             self.hypno, self.sampling_frequency, threshold=threshold, equal_length=equal_length
         )
 
     def plot_hypnogram(self):
+        # TODO: Add support for 2, 3 and 4-stages hypnogram
         raise NotImplementedError
 
     def sleep_statistics(self):
         """
         Compute standard sleep statistics from an hypnogram.
+
+        This function supports a 2, 3, 4 or 5-stages hypnogram.
 
         Parameters
         ----------
@@ -213,7 +330,7 @@ class Hypnogram:
         `The visual scoring of sleep in adults
         <https://www.ncbi.nlm.nih.gov/pubmed/17557422>`_. Journal of Clinical
         Sleep Medicine: JCSM: Official Publication of the American Academy of
-        Sleep Medicine, 3(2), 121–131.
+        Sleep Medicine, 3(2), 121-131.
 
         Examples
         --------
@@ -347,6 +464,50 @@ class Hypnogram:
         return stats
 
     def transition_matrix(self):
+        """Create a state-transition matrix from an hypnogram.
+
+        Parameters
+        ----------
+        self : yasa.Hypnogram
+            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
+            Total Recording Time, i.e. "lights out" to "lights on"). For best results, the
+            hypnogram should not contain any artefact or unscored epochs.
+
+        Returns
+        -------
+        counts : :py:class:`pandas.DataFrame`
+            Counts transition matrix (number of transitions from stage A to stage B). The
+            pre-transition states are the rows and the post-transition states are the columns.
+        probs : :py:class:`pandas.DataFrame`
+            Conditional probability transition matrix, i.e. given that current state is A, what is
+            the probability that the next state is B. ``probs`` is a `right stochastic matrix
+            <https://en.wikipedia.org/wiki/Stochastic_matrix>`_, i.e. each row sums to 1.
+
+        Examples
+        --------
+        >>> from yasa import Hypnogram
+        >>> values = (10 * ["W"] + 4 * ["N1"] + 1 * ["W"] + 30 * ["N2"] + 30 * ["N3"] + 5 * ["W"]
+        ...           + 25 * ["REM"] + 15 * ["N2"] + 10 * ["W"])
+        >>> hyp = Hypnogram(values, n_stages=5)
+        >>> counts, probs = hyp.transition_matrix()
+        >>> counts
+        To Stage    WAKE  N1  N2  N3  REM
+        From Stage
+        WAKE          22   1   1   0    1
+        N1             1   3   0   0    0
+        N2             1   0  43   1    0
+        N3             1   0   0  29    0
+        REM            0   0   1   0   24
+
+        >>> probs.round(3)
+        To Stage     WAKE    N1     N2     N3   REM
+        From Stage
+        WAKE        0.880  0.04  0.040  0.000  0.04
+        N1          0.250  0.75  0.000  0.000  0.00
+        N2          0.022  0.00  0.956  0.022  0.00
+        N3          0.033  0.00  0.000  0.967  0.00
+        REM         0.000  0.00  0.040  0.000  0.96
+        """
         counts, probs = transition_matrix(self.as_int())
         counts.index = counts.index.map(self.mapping_int)
         counts.columns = counts.columns.map(self.mapping_int)
