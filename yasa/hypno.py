@@ -278,6 +278,7 @@ class Hypnogram:
         )
 
     def plot_hypnogram(self):
+        """Plot the hypnogram."""
         # TODO: Add support for 2, 3 and 4-stages hypnogram
         raise NotImplementedError
 
@@ -519,26 +520,82 @@ class Hypnogram:
     def upsample(self, new_freq, **kwargs):
         """Upsample hypnogram to a higher frequency.
 
-        Frequency here is defined with a pandas frequency string, e.g. "10s" or "1min".
+        Parameters
+        ----------
+        self : yasa.Hypnogram
+            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
+            Total Recording Time, i.e. "lights out" to "lights on"). For best results, the
+            hypnogram should not contain any artefact or unscored epochs.
+        new_freq : str
+            Frequency is defined with a pandas frequency string, e.g. "10s" or "1min".
 
-        This function returns a copy, the original hypnogram is not modified in place.
+        Returns
+        -------
+        hyp : yasa.Hypnogram
+            The upsampled Hypnogram object. This function returns a copy, i.e. the original
+            hypnogram is not modified in place.
         """
         assert pd.Timedelta(new_freq) < pd.Timedelta(self.freq), (
             f"The upsampling `new_freq` ({new_freq}) must be higher than the current frequency of "
             f"hypnogram {self.freq}"
         )
         if isinstance(self.hypno.index, pd.DatetimeIndex):
+            # TODO: Upsampling should extend the last epoch, e.g.
+            # - 30-sec: last epoch at 08:00:00
+            # - 10-sec: last epoch should be 08:00:50 and not 08:00:30 otherwise we're losing 20 sec
             new_hyp = self.hypno.resample(new_freq, origin="start", **kwargs).ffill()
         else:
             new_hyp = self.hypno.copy()
             new_hyp.index = self.timedelta
             new_hyp = new_hyp.resample(new_freq, **kwargs).ffill().reset_index(drop=True)
             new_hyp.index.name = "Epoch"
-        return Hypnogram(values=new_hyp, n_stages=self.n_stages, freq=new_freq, start=self.start)
+        return Hypnogram(
+            values=new_hyp,
+            n_stages=self.n_stages,
+            freq=new_freq,
+            start=self.start,
+            scorer=self.scorer,
+        )
 
     def upsample_to_data(self, data, sf=None, verbose=True):
+        """
+        Upsample an hypnogram to a given sampling frequency and fit the resulting hypnogram to
+        corresponding EEG data, such that the hypnogram and EEG data have the exact same number of
+        samples.
+
+        Parameters
+        ----------
+        self : yasa.Hypnogram
+            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
+            Total Recording Time, i.e. "lights out" to "lights on"). For best results, the
+            hypnogram should not contain any artefact or unscored epochs.
+        data : array_like or :py:class:`mne.io.BaseRaw`
+            1D or 2D EEG data. Can also be a :py:class:`mne.io.BaseRaw`, in which case ``data``
+            and ``sf_data`` will be automatically extracted.
+        sf_data : float
+            The sampling frequency of ``data``, in Hz (e.g. 100 Hz, 256 Hz, ...).
+            Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+        verbose : bool or str
+            Verbose level. Default (False) will only print warning and error messages. The logging
+            levels are 'debug', 'info', 'warning', 'error', and 'critical'. For most users the
+            choice is between 'info' (or ``verbose=True``) and warning (``verbose=False``).
+
+        Returns
+        -------
+        hypno : array_like
+            The hypnogram values, upsampled to ``sf_data`` and cropped/padded to
+            ``max(data.shape)``. For compatibility with most YASA functions, the returned hypnogram
+            is an array with integer values, and not a :py:class:`yasa.Hypnogram` object.
+
+        Warns
+        -----
+        UserWarning
+            If the upsampled ``hypno`` is shorter / longer than ``max(data.shape)``
+            and therefore needs to be padded/cropped respectively. This output can be disabled by
+            passing ``verbose='ERROR'``.
+        """
         hypno_up = hypno_upsample_to_data(
-            self.hypno, self.sampling_frequency, data=data, sf_data=sf, verbose=verbose
+            self.as_int(), self.sampling_frequency, data=data, sf_data=sf, verbose=verbose
         )
         return hypno_up
 

@@ -1,9 +1,19 @@
 """Test the class Hypnogram."""
+import mne
 import unittest
 import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from yasa.hypno import simulate_hypno, Hypnogram
+
+
+def create_raw(npts, ch_names=["F4-M1", "F3-M2"], sf=100):
+    """Utility function for test fit to data."""
+    nchan = len(ch_names)
+    info = mne.create_info(ch_names=ch_names, sfreq=sf, ch_types=["eeg"] * nchan, verbose=0)
+    data = np.random.rand(nchan, npts)
+    raw = mne.io.RawArray(data, info, verbose=0)
+    return raw
 
 
 class TestHypnoClass(unittest.TestCase):
@@ -62,6 +72,15 @@ class TestHypnoClass(unittest.TestCase):
             "WAKE": 10.5,
         }
         assert sstats == truth
+        hyp_up = hyp.upsample("5s")
+        # TODO: Upsampling should extend the last epoch, e.g.
+        # - 30-sec: last epoch at 08:00:00
+        # - 10-sec: last epoch should be 08:00:50 and not 08:00:30 otherwise we're losing 20 sec
+        assert hyp_up.hypno.index[0] == hyp.hypno.index[0]
+        assert hyp_up.hypno.index[-1] == hyp.hypno.index[-1]
+        assert hyp_up.timedelta[-1] == hyp.timedelta[-1]
+
+        # TODO: Add unit test for upsample to data
 
         # Invert the mapping
         hyp.mapping = {"SLEEP": 0, "WAKE": 1}
