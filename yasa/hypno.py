@@ -36,10 +36,12 @@ from .io import set_log_level
 __all__ = [
     "hypno_str_to_int",
     "hypno_int_to_str",
+    "hypno_consolidate_stages",
     "hypno_upsample_to_sf",
     "hypno_upsample_to_data",
     "hypno_find_periods",
     "load_profusion_hypno",
+    "simulate_hypno",
 ]
 
 
@@ -474,3 +476,233 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
 
     new_seq = pd.DataFrame(new_seq)
     return new_seq
+
+
+#############################################################################
+# STAGE CONVERSION
+#############################################################################
+
+
+def hypno_consolidate_stages(hypno, n_stages_in, n_stages_out):
+    """Reduce the number of stages in a hypnogram to match actigraphy or wearables.
+
+    For example, a standard 5-stage hypnogram (W, N1, N2, N3, REM) could be consolidated
+    to a hypnogram more common with actigraphy (W, Light, Deep, REM).
+
+    Parameters
+    ----------
+    hypno : array_like
+        The sleep staging (hypnogram) 1D array.
+    n_stages_in : int
+        Number of possible stages of ``hypno``, where:
+
+        - 5 stages - 0=Wake, 1=N1, 2=N2, 3=N3, 4=REM
+        - 4 stages - 0=Wake, 2=Light, 3=Deep, 4=REM
+        - 3 stages - 0=Wake, 2=NREM, 4=REM
+        - 2 stages - 0=Wake, 1=Sleep
+
+        .. note:: The default YASA values for Unscored (-2) and Artefact (-1) are always allowed.
+    n_stages_out : int
+        Similar to ``n_stages_in`` but for output. Must be higher than ``n_stages_out``.
+
+    Returns
+    -------
+    hypno : array_like
+        The hypnogram, with stages converted to ``n_stages_out`` staging scheme.
+    """
+    assert isinstance(hypno, (list, np.ndarray, pd.Series)), "hypno must be array_like"
+    hypno = np.asarray(hypno, dtype=int).copy()
+    assert n_stages_in in [3, 4, 5], "n_stages_in must be 3, 4, or 5"
+    assert n_stages_out in [2, 3, 4], "n_stages_in must be 2, 3, or 4"
+    assert n_stages_out < n_stages_in, "n_stages_out must be lower than n_stages_in"
+
+    # Change sleep codes where applicable.
+    if n_stages_out == 2:
+        # Consolidate all Sleep
+        mapping = {0: 0, 1: 1, 2: 1, 3: 1, 4: 1, -1: -1, -2: -2}
+    elif n_stages_out == 3:
+        # Consolidate N1/N2/N3 or Light/Deep into NREM
+        mapping = {0: 0, 1: 2, 2: 2, 3: 2, 4: 4, -1: -1, -2: -2}
+    elif n_stages_out == 4:
+        # Consolidate N1/N2 into Light
+        mapping = {0: 0, 1: 2, 2: 2, 3: 3, 4: 4, -1: -1, -2: -2}
+    hypno = pd.Series(hypno).map(mapping).to_numpy()
+
+    return hypno
+
+
+#############################################################################
+# SIMULATION
+#############################################################################
+
+
+def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas=None, seed=None):
+    """Simulate a hypnogram based on transition probabilities.
+
+    Current implentation is a naive Markov model. The initial stage of a hypnogram
+    is generated using probabilites from ``init_probas`` and then subsequent stages
+    are generated from a Markov sequence based on ``trans_probas``.
+
+    .. important:: The Markov simulation model is not meant to accurately portray sleep
+        macroarchitecture and should only be used for testing or other unique purposes.
+
+    Parameters
+    ----------
+    tib : int
+        Total duration of the hypnogram (i.e., time in bed), expressed in minutes.
+        Returned hypnogram will be slightly shorter if ``tib`` in seconds is not
+        evenly divisible by ``sf``.
+        .. seealso:: :py:func:`yasa.sleep_statistics`
+    sf : float
+        Sampling frequency.
+    n_stages : int
+        Staging scheme of returned hypnogram. Input should follow 5-stage scheme but can
+        be converted to lower scheme if desired.
+        .. seealso:: :py:func:`yasa.hypno_consolidate_stages`
+    trans_probas : :py:class:`pandas.DataFrame` or None
+        Transition probability matrix where each cell is a transition probability
+        between sleep stages of consecutive *epochs*.
+
+        ``trans_probas`` is a `right stochastic matrix
+        <https://en.wikipedia.org/wiki/Stochastic_matrix>`_, i.e. each row sums to 1.
+
+        If None (default), use transition probabilites from Metzner et al., 2021 [Metzner2021]_.
+        If :py:class:`pandas.DataFrame`, must have "from"-stages as indices and
+        "to"-stages as columns. Indices and columns must follow YASA integer
+        hypnogram convention (W = 0, N = 1, ...). Unscored/Artefact stages are not allowed.
+
+        .. note:: Transition probability matrices should indicate the transition
+            probability between *epochs* (i.e., probability of the next epoch) and
+            not simply stage (i.e., probability of non-similar stage).
+
+        .. seealso:: Return value from :py:func:`yasa.transition_matrix`
+    init_probas : :py:class:`pandas.Series` or None
+        Probabilites of each stage to initialize random walk.
+        If None (default), initialize with "From"-Wake row of ``trans_probas``.
+        If :py:class:`pandas.Series`, indices must be stages following YASA integer
+        hypnogram convention (see ``trans_probas``).
+    seed : int or None
+        Random seed for generating Markov sequence.
+        If an integer number is provided, the random hypnogram will be predictable.
+        This argument is required if reproducible results are desired.
+
+    Returns
+    -------
+    hypno : np.ndarray
+        Hypnogram containing simulated sleep stages.
+
+    Notes
+    -----
+    Default transition probabilities can be found in the ``traMat_Epoch.npy`` file of
+    Supplementary Information for Metzner et al., 2021 [Metzner2021]_ (rounded values
+    are viewable in Figure 5b). Please cite this work if these probabilites are used
+    for publication.
+
+    References
+    ----------
+    .. [Metzner2021] Metzner, C., Schilling, A., Traxdorf, M., Schulze, H., & Krausse, P.
+                     (2021). Sleep as a random walk: a super-statistical analysis of EEG
+                     data across sleep stages. Communications Biology, 4.
+                     https://doi.org/10.1038/s42003-021-02912-6
+
+    Examples
+    --------
+    >>> from yasa import simulate_hypno
+    >>> hypno = simulate_hypno(tib=10, seed=0)
+    >>> print(hypno)
+    [0 0 0 0 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2]
+    >>> hypno = simulate_hypno(tib=10, n_stages=2, seed=0)
+    >>> print(hypno)
+    [0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1]
+
+    Base the data off a real subject's transition matrix.
+
+    .. plot::
+        >>> import matplotlib.pyplot as plt
+        >>> import yasa
+        >>> url = (
+        >>>     "https://github.com/raphaelvallat/yasa/raw/master/"
+        >>>     "notebooks/data_full_6hrs_100Hz_hypno_30s.txt"
+        >>> )
+        >>> hypno = np.loadtxt(url)
+        >>> _, probas = yasa.transition_matrix(hypno)
+        >>> hypno_sim = yasa.simulate_hypno(tib=360, trans_probas=probas, seed=9)
+        >>> fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(7, 6))
+        >>> yasa.plot_hypnogram(hypno, ax=ax1)
+        >>> yasa.plot_hypnogram(hypno_sim, ax=ax2)
+        >>> ax1.set_title("True hypnogram")
+        >>> ax2.set_title("Simulated hypnogram")
+    """
+    # Validate input
+    assert isinstance(tib, (int, float)), "tib must be a number"
+    assert isinstance(sf, (int, float)), "sf must be a number"
+    assert isinstance(n_stages, int), "n_stages must be an integer"
+    assert 2 <= n_stages <= 5, "n_stages must be 2, 3, 4, or 5"
+    if seed is not None:
+        assert isinstance(seed, int) and seed >= 0, "seed must be an integer >= 0"
+    if trans_probas is not None:
+        assert isinstance(trans_probas, pd.DataFrame), "trans_probas must be a pandas DataFrame"
+    if init_probas is not None:
+        assert isinstance(init_probas, pd.Series), "init_probas must be a pandas Series"
+
+    # Initialize random number generator
+    rng = np.random.default_rng(seed)
+
+    def _markov_sequence(p_init, p_transition, sequence_length):
+        """Generate a Markov sequence based on p_init and p_transition.
+        https://ericmjl.github.io/essays-on-data-science/machine-learning/markov-models
+        """
+        initial_state = list(rng.multinomial(1, p_init)).index(1)
+        states = [initial_state]
+        while len(states) < sequence_length:
+            p_tr = p_transition[states[-1]]
+            new_state = list(rng.multinomial(1, p_tr)).index(1)
+            states.append(new_state)
+        return np.asarray(states)
+
+    if trans_probas is None:
+        # Generate transition probability DataFrame (here, ordered W R 1 2 3)
+        trans_freqs = np.array(
+            [
+                [11737, 2, 571, 84, 2],
+                [57, 10071, 189, 84, 2],
+                [281, 59, 6697, 1661, 11],
+                [253, 272, 1070, 26259, 505],
+                [49, 12, 176, 279, 9630],
+            ]
+        )
+        trans_probas = trans_freqs / trans_freqs.sum(axis=1, keepdims=True)
+        trans_probas = pd.DataFrame(
+            trans_probas,
+            index=[0, 4, 1, 2, 3],
+            columns=[0, 4, 1, 2, 3],
+        )
+
+    if init_probas is None:
+        # Extract Wake row of initial probabilities as a Series
+        init_probas = trans_probas.loc[0, :]
+
+    # Ensure trans_probas DataFrame and init_probas Series are in row/column order W N1 N2 N3 R
+    trans_probas = trans_probas.reindex([0, 1, 2, 3, 4], axis=0)
+    trans_probas = trans_probas.reindex([0, 1, 2, 3, 4], axis=1)
+    init_probas = init_probas.reindex([0, 1, 2, 3, 4])
+    assert trans_probas.notna().values.all(), "trans_proba indices must be YASA integer codes"
+    assert init_probas.notna().all(), "init_probas index must be YASA integer codes"
+
+    # Extract probabilities as arrays
+    trans_arr = trans_probas.to_numpy()
+    init_arr = init_probas.to_numpy()
+
+    # Make sure all rows sum to 1
+    assert np.allclose(trans_arr.sum(axis=1), 1)
+    assert np.isclose(init_arr.sum(), 1)
+
+    # Find number of *complete* epochs within TIB timeframe
+    n_epochs = np.floor(tib * 60 * sf).astype(int)
+    # Generate hypnogram
+    hypno = _markov_sequence(init_arr, trans_arr, n_epochs)
+
+    if n_stages < 5:
+        hypno = hypno_consolidate_stages(hypno, n_stages_in=5, n_stages_out=n_stages)
+
+    return hypno

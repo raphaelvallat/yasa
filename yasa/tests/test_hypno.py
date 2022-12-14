@@ -7,9 +7,11 @@ from pandas.testing import assert_frame_equal
 from yasa.hypno import (
     hypno_str_to_int,
     hypno_int_to_str,
+    hypno_consolidate_stages,
     hypno_upsample_to_sf,
     hypno_fit_to_data,
     hypno_upsample_to_data,
+    simulate_hypno,
 )
 
 from yasa.hypno import hypno_find_periods as hfp
@@ -126,3 +128,30 @@ class TestHypno(unittest.TestCase):
         assert_frame_equal(
             hfp(np.array(x).astype(str), sf_hypno=1 / 60, threshold="0min"), expected, **kwargs
         )
+
+    def test_simulation(self):
+        """Test hypnogram simulations."""
+        hypno = simulate_hypno(tib=360, sf=1 / 30)
+        assert hypno.size <= 360 * 60 * 1 / 30
+        assert np.unique(hypno).size > 1
+        assert np.array_equal(simulate_hypno(tib=4, seed=1), np.array([0, 1, 1, 2, 2, 2, 2, 2]))
+        assert np.unique(simulate_hypno(tib=500, n_stages=2)).size == 2
+        assert np.unique(simulate_hypno(tib=500, n_stages=3)).size == 3
+
+        # Passing in probabilities
+        trans_df = pd.DataFrame(np.full((5, 5), 0.2))
+        simulate_hypno(trans_probas=trans_df)
+        simulate_hypno(init_probas=trans_df.loc[0])
+        assert not np.any(simulate_hypno(trans_probas=pd.DataFrame(np.eye(5, 5))))
+
+    def test_consolidation(self):
+        """Test hypnogram stage consolidation."""
+        assert np.unique(hypno_consolidate_stages(hypno, 5, 4)).size == 4
+        assert np.unique(hypno_consolidate_stages(hypno, 5, 3)).size == 3
+        assert np.unique(hypno_consolidate_stages(hypno, 5, 2)).size == 2
+        hypno4 = hypno_consolidate_stages(hypno, 5, 4)
+        hypno3 = hypno_consolidate_stages(hypno4, 4, 3)
+        hypno2 = hypno_consolidate_stages(hypno3, 3, 2)
+        assert np.array_equal(np.unique(hypno4), np.array([0, 2, 3, 4]))
+        assert np.array_equal(np.unique(hypno3), np.array([0, 2, 4]))
+        assert np.array_equal(np.unique(hypno2), np.array([0, 1]))
