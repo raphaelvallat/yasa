@@ -77,6 +77,7 @@ class Hypnogram:
         self._n_stages = n_stages
         self._labels = labels
         self._mapping = mapping
+        self._scorer = scorer
 
     def __repr__(self):
         return f"{self.hypno}"
