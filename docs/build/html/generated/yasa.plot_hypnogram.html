@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.plot_hypnogram &#8212; yasa 0.6.2 documentation</title>
+    <title>yasa.plot_hypnogram &#8212; yasa 0.6.3 documentation</title>
     <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.2</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.3</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -97,7 +97,7 @@
 <h1>yasa.plot_hypnogram<a class="headerlink" href="#yasa-plot-hypnogram" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
 <dt id="yasa.plot_hypnogram">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">plot_hypnogram</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">hypno</span></em>, <em class="sig-param"><span class="n">sf_hypno</span><span class="o">=</span><span class="default_value">0.03333333333333333</span></em>, <em class="sig-param"><span class="n">lw</span><span class="o">=</span><span class="default_value">1.5</span></em>, <em class="sig-param"><span class="n">figsize</span><span class="o">=</span><span class="default_value">9, 3</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/plotting.html#plot_hypnogram"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.plot_hypnogram" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">plot_hypnogram</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">hypno</span></em>, <em class="sig-param"><span class="n">sf_hypno</span><span class="o">=</span><span class="default_value">0.03333333333333333</span></em>, <em class="sig-param"><span class="n">lw</span><span class="o">=</span><span class="default_value">1.5</span></em>, <em class="sig-param"><span class="n">fill_color</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/plotting.html#plot_hypnogram"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.plot_hypnogram" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot a hypnogram.</p>
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 0.6.0.</span></p>
@@ -128,13 +128,15 @@
 </dd>
 <dt><strong>lw</strong><span class="classifier">float</span></dt><dd><p>Linewidth.</p>
 </dd>
-<dt><strong>figsize</strong><span class="classifier">tuple</span></dt><dd><p>Width, height in inches.</p>
+<dt><strong>fill_color</strong><span class="classifier">str</span></dt><dd><p>Color to fill space above hypnogram line, optional.</p>
+</dd>
+<dt><strong>ax</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#matplotlib.axes.Axes" title="(in Matplotlib v3.6.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a></span></dt><dd><p>Axis on which to draw the plot, optional.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>ax</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#matplotlib.axes.Axes" title="(in Matplotlib v3.5.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a></span></dt><dd><p>Matplotlib Axes</p>
+<dt><strong>ax</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#matplotlib.axes.Axes" title="(in Matplotlib v3.6.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a></span></dt><dd><p>Matplotlib Axes</p>
 </dd>
 </dl>
 </dd>
@@ -142,8 +144,10 @@
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">yasa</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">hypno</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s2">&quot;https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ax</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">plot_hypnogram</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ax</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">plot_hypnogram</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="s2">&quot;gainsboro&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="figure align-default">

@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>yasa.hypno &#8212; yasa 0.6.2 documentation</title>
+    <title>yasa.hypno &#8212; yasa 0.6.3 documentation</title>
     <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.2</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.3</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -132,10 +132,12 @@
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;hypno_str_to_int&quot;</span><span class="p">,</span>
     <span class="s2">&quot;hypno_int_to_str&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hypno_consolidate_stages&quot;</span><span class="p">,</span>
     <span class="s2">&quot;hypno_upsample_to_sf&quot;</span><span class="p">,</span>
     <span class="s2">&quot;hypno_upsample_to_data&quot;</span><span class="p">,</span>
     <span class="s2">&quot;hypno_find_periods&quot;</span><span class="p">,</span>
     <span class="s2">&quot;load_profusion_hypno&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;simulate_hypno&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -570,6 +572,243 @@
 
     <span class="n">new_seq</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">new_seq</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">new_seq</span></div>
+
+
+<span class="c1">#############################################################################</span>
+<span class="c1"># STAGE CONVERSION</span>
+<span class="c1">#############################################################################</span>
+
+
+<span class="k">def</span> <span class="nf">hypno_consolidate_stages</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">n_stages_in</span><span class="p">,</span> <span class="n">n_stages_out</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Reduce the number of stages in a hypnogram to match actigraphy or wearables.</span>
+
+<span class="sd">    For example, a standard 5-stage hypnogram (W, N1, N2, N3, REM) could be consolidated</span>
+<span class="sd">    to a hypnogram more common with actigraphy (W, Light, Deep, REM).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        The sleep staging (hypnogram) 1D array.</span>
+<span class="sd">    n_stages_in : int</span>
+<span class="sd">        Number of possible stages of ``hypno``, where:</span>
+
+<span class="sd">        - 5 stages - 0=Wake, 1=N1, 2=N2, 3=N3, 4=REM</span>
+<span class="sd">        - 4 stages - 0=Wake, 2=Light, 3=Deep, 4=REM</span>
+<span class="sd">        - 3 stages - 0=Wake, 2=NREM, 4=REM</span>
+<span class="sd">        - 2 stages - 0=Wake, 1=Sleep</span>
+
+<span class="sd">        .. note:: The default YASA values for Unscored (-2) and Artefact (-1) are always allowed.</span>
+<span class="sd">    n_stages_out : int</span>
+<span class="sd">        Similar to ``n_stages_in`` but for output. Must be higher than ``n_stages_out``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    hypno : array_like</span>
+<span class="sd">        The hypnogram, with stages converted to ``n_stages_out`` staging scheme.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)),</span> <span class="s2">&quot;hypno must be array_like&quot;</span>
+    <span class="n">hypno</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="n">n_stages_in</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="s2">&quot;n_stages_in must be 3, 4, or 5&quot;</span>
+    <span class="k">assert</span> <span class="n">n_stages_out</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="s2">&quot;n_stages_in must be 2, 3, or 4&quot;</span>
+    <span class="k">assert</span> <span class="n">n_stages_out</span> <span class="o">&lt;</span> <span class="n">n_stages_in</span><span class="p">,</span> <span class="s2">&quot;n_stages_out must be lower than n_stages_in&quot;</span>
+
+    <span class="c1"># Change sleep codes where applicable.</span>
+    <span class="k">if</span> <span class="n">n_stages_out</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># Consolidate all Sleep</span>
+        <span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">}</span>
+    <span class="k">elif</span> <span class="n">n_stages_out</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="c1"># Consolidate N1/N2/N3 or Light/Deep into NREM</span>
+        <span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">}</span>
+    <span class="k">elif</span> <span class="n">n_stages_out</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="c1"># Consolidate N1/N2 into Light</span>
+        <span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">}</span>
+    <span class="n">hypno</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">mapping</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">hypno</span>
+
+
+<span class="c1">#############################################################################</span>
+<span class="c1"># SIMULATION</span>
+<span class="c1">#############################################################################</span>
+
+
+<div class="viewcode-block" id="simulate_hypno"><a class="viewcode-back" href="../../generated/yasa.simulate_hypno.html#yasa.simulate_hypno">[docs]</a><span class="k">def</span> <span class="nf">simulate_hypno</span><span class="p">(</span><span class="n">tib</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span> <span class="n">sf</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">30</span><span class="p">,</span> <span class="n">n_stages</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">trans_probas</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">init_probas</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Simulate a hypnogram based on transition probabilities.</span>
+
+<span class="sd">    Current implentation is a naive Markov model. The initial stage of a hypnogram</span>
+<span class="sd">    is generated using probabilites from ``init_probas`` and then subsequent stages</span>
+<span class="sd">    are generated from a Markov sequence based on ``trans_probas``.</span>
+
+<span class="sd">    .. important:: The Markov simulation model is not meant to accurately portray sleep</span>
+<span class="sd">        macroarchitecture and should only be used for testing or other unique purposes.</span>
+
+<span class="sd">    .. versionadded:: 0.6.3</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tib : int</span>
+<span class="sd">        Total duration of the hypnogram (i.e., time in bed), expressed in minutes.</span>
+<span class="sd">        Returned hypnogram will be slightly shorter if ``tib`` in seconds is not</span>
+<span class="sd">        evenly divisible by ``sf``.</span>
+
+<span class="sd">        .. seealso:: :py:func:`yasa.sleep_statistics`</span>
+<span class="sd">    sf : float</span>
+<span class="sd">        Sampling frequency.</span>
+<span class="sd">    n_stages : int</span>
+<span class="sd">        Staging scheme of returned hypnogram. Input should follow 5-stage scheme but can</span>
+<span class="sd">        be converted to lower scheme if desired.</span>
+
+<span class="sd">        .. seealso:: :py:func:`yasa.hypno_consolidate_stages`</span>
+<span class="sd">    trans_probas : :py:class:`pandas.DataFrame` or None</span>
+<span class="sd">        Transition probability matrix where each cell is a transition probability</span>
+<span class="sd">        between sleep stages of consecutive *epochs*.</span>
+
+<span class="sd">        ``trans_probas`` is a `right stochastic matrix</span>
+<span class="sd">        &lt;https://en.wikipedia.org/wiki/Stochastic_matrix&gt;`_, i.e. each row sums to 1.</span>
+
+<span class="sd">        If None (default), use transition probabilites from Metzner et al., 2021 [Metzner2021]_.</span>
+<span class="sd">        If :py:class:`pandas.DataFrame`, must have &quot;from&quot;-stages as indices and</span>
+<span class="sd">        &quot;to&quot;-stages as columns. Indices and columns must follow YASA integer</span>
+<span class="sd">        hypnogram convention (W = 0, N = 1, ...). Unscored/Artefact stages are not allowed.</span>
+
+<span class="sd">        .. note:: Transition probability matrices should indicate the transition</span>
+<span class="sd">            probability between *epochs* (i.e., probability of the next epoch) and</span>
+<span class="sd">            not simply stage (i.e., probability of non-similar stage).</span>
+
+<span class="sd">        .. seealso:: Return value from :py:func:`yasa.transition_matrix`</span>
+<span class="sd">    init_probas : :py:class:`pandas.Series` or None</span>
+<span class="sd">        Probabilites of each stage to initialize random walk.</span>
+<span class="sd">        If None (default), initialize with &quot;From&quot;-Wake row of ``trans_probas``.</span>
+<span class="sd">        If :py:class:`pandas.Series`, indices must be stages following YASA integer</span>
+<span class="sd">        hypnogram convention (see ``trans_probas``).</span>
+<span class="sd">    seed : int or None</span>
+<span class="sd">        Random seed for generating Markov sequence.</span>
+<span class="sd">        If an integer number is provided, the random hypnogram will be predictable.</span>
+<span class="sd">        This argument is required if reproducible results are desired.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    hypno : np.ndarray</span>
+<span class="sd">        Hypnogram containing simulated sleep stages.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Default transition probabilities can be found in the ``traMat_Epoch.npy`` file of</span>
+<span class="sd">    Supplementary Information for Metzner et al., 2021 [Metzner2021]_ (rounded values</span>
+<span class="sd">    are viewable in Figure 5b). Please cite this work if these probabilites are used</span>
+<span class="sd">    for publication.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [Metzner2021] Metzner, C., Schilling, A., Traxdorf, M., Schulze, H., &amp; Krausse, P.</span>
+<span class="sd">                     (2021). Sleep as a random walk: a super-statistical analysis of EEG</span>
+<span class="sd">                     data across sleep stages. Communications Biology, 4.</span>
+<span class="sd">                     https://doi.org/10.1038/s42003-021-02912-6</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from yasa import simulate_hypno</span>
+<span class="sd">    &gt;&gt;&gt; hypno = simulate_hypno(tib=10, seed=0)</span>
+<span class="sd">    &gt;&gt;&gt; print(hypno)</span>
+<span class="sd">    [0 0 0 0 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2]</span>
+
+<span class="sd">    &gt;&gt;&gt; hypno = simulate_hypno(tib=10, n_stages=2, seed=0)</span>
+<span class="sd">    &gt;&gt;&gt; print(hypno)</span>
+<span class="sd">    [0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1]</span>
+
+<span class="sd">    Base the data off a real subject&#39;s transition matrix.</span>
+
+<span class="sd">    .. plot::</span>
+
+<span class="sd">        &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<span class="sd">        &gt;&gt;&gt; import yasa</span>
+<span class="sd">        &gt;&gt;&gt; url = (</span>
+<span class="sd">        &gt;&gt;&gt;     &quot;https://github.com/raphaelvallat/yasa/raw/master/&quot;</span>
+<span class="sd">        &gt;&gt;&gt;     &quot;notebooks/data_full_6hrs_100Hz_hypno_30s.txt&quot;</span>
+<span class="sd">        &gt;&gt;&gt; )</span>
+<span class="sd">        &gt;&gt;&gt; hypno = np.loadtxt(url)</span>
+<span class="sd">        &gt;&gt;&gt; _, probas = yasa.transition_matrix(hypno)</span>
+<span class="sd">        &gt;&gt;&gt; hypno_sim = yasa.simulate_hypno(tib=360, trans_probas=probas, seed=9)</span>
+<span class="sd">        &gt;&gt;&gt; fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 6))</span>
+<span class="sd">        &gt;&gt;&gt; yasa.plot_hypnogram(hypno, ax=ax1)</span>
+<span class="sd">        &gt;&gt;&gt; yasa.plot_hypnogram(hypno_sim, ax=ax2)</span>
+<span class="sd">        &gt;&gt;&gt; ax1.set_title(&quot;True hypnogram&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; ax2.set_title(&quot;Simulated hypnogram&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; plt.tight_layout()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Validate input</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tib</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;tib must be a number&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;sf must be a number&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n_stages</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="s2">&quot;n_stages must be an integer&quot;</span>
+    <span class="k">assert</span> <span class="mi">2</span> <span class="o">&lt;=</span> <span class="n">n_stages</span> <span class="o">&lt;=</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">&quot;n_stages must be 2, 3, 4, or 5&quot;</span>
+    <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">seed</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">seed</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;seed must be an integer &gt;= 0&quot;</span>
+    <span class="k">if</span> <span class="n">trans_probas</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trans_probas</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">),</span> <span class="s2">&quot;trans_probas must be a pandas DataFrame&quot;</span>
+    <span class="k">if</span> <span class="n">init_probas</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">init_probas</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">),</span> <span class="s2">&quot;init_probas must be a pandas Series&quot;</span>
+
+    <span class="c1"># Initialize random number generator</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_markov_sequence</span><span class="p">(</span><span class="n">p_init</span><span class="p">,</span> <span class="n">p_transition</span><span class="p">,</span> <span class="n">sequence_length</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate a Markov sequence based on p_init and p_transition.</span>
+<span class="sd">        https://ericmjl.github.io/essays-on-data-science/machine-learning/markov-models</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">initial_state</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p_init</span><span class="p">))</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="n">initial_state</span><span class="p">]</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">states</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">sequence_length</span><span class="p">:</span>
+            <span class="n">p_tr</span> <span class="o">=</span> <span class="n">p_transition</span><span class="p">[</span><span class="n">states</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">new_state</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p_tr</span><span class="p">))</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">states</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_state</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">states</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">trans_probas</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Generate transition probability DataFrame (here, ordered W R 1 2 3)</span>
+        <span class="n">trans_freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="p">[</span><span class="mi">11737</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">571</span><span class="p">,</span> <span class="mi">84</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                <span class="p">[</span><span class="mi">57</span><span class="p">,</span> <span class="mi">10071</span><span class="p">,</span> <span class="mi">189</span><span class="p">,</span> <span class="mi">84</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+                <span class="p">[</span><span class="mi">281</span><span class="p">,</span> <span class="mi">59</span><span class="p">,</span> <span class="mi">6697</span><span class="p">,</span> <span class="mi">1661</span><span class="p">,</span> <span class="mi">11</span><span class="p">],</span>
+                <span class="p">[</span><span class="mi">253</span><span class="p">,</span> <span class="mi">272</span><span class="p">,</span> <span class="mi">1070</span><span class="p">,</span> <span class="mi">26259</span><span class="p">,</span> <span class="mi">505</span><span class="p">],</span>
+                <span class="p">[</span><span class="mi">49</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">176</span><span class="p">,</span> <span class="mi">279</span><span class="p">,</span> <span class="mi">9630</span><span class="p">],</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">trans_probas</span> <span class="o">=</span> <span class="n">trans_freqs</span> <span class="o">/</span> <span class="n">trans_freqs</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">trans_probas</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">trans_probas</span><span class="p">,</span>
+            <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">init_probas</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Extract Wake row of initial probabilities as a Series</span>
+        <span class="n">init_probas</span> <span class="o">=</span> <span class="n">trans_probas</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span>
+
+    <span class="c1"># Ensure trans_probas DataFrame and init_probas Series are in row/column order W N1 N2 N3 R</span>
+    <span class="n">trans_probas</span> <span class="o">=</span> <span class="n">trans_probas</span><span class="o">.</span><span class="n">reindex</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">trans_probas</span> <span class="o">=</span> <span class="n">trans_probas</span><span class="o">.</span><span class="n">reindex</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">init_probas</span> <span class="o">=</span> <span class="n">init_probas</span><span class="o">.</span><span class="n">reindex</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+    <span class="k">assert</span> <span class="n">trans_probas</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span> <span class="s2">&quot;trans_proba indices must be YASA integer codes&quot;</span>
+    <span class="k">assert</span> <span class="n">init_probas</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span> <span class="s2">&quot;init_probas index must be YASA integer codes&quot;</span>
+
+    <span class="c1"># Extract probabilities as arrays</span>
+    <span class="n">trans_arr</span> <span class="o">=</span> <span class="n">trans_probas</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+    <span class="n">init_arr</span> <span class="o">=</span> <span class="n">init_probas</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+
+    <span class="c1"># Make sure all rows sum to 1</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">trans_arr</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">init_arr</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Find number of *complete* epochs within TIB timeframe</span>
+    <span class="n">n_epochs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">tib</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="c1"># Generate hypnogram</span>
+    <span class="n">hypno</span> <span class="o">=</span> <span class="n">_markov_sequence</span><span class="p">(</span><span class="n">init_arr</span><span class="p">,</span> <span class="n">trans_arr</span><span class="p">,</span> <span class="n">n_epochs</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">n_stages</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
+        <span class="n">hypno</span> <span class="o">=</span> <span class="n">hypno_consolidate_stages</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">n_stages_in</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">n_stages_out</span><span class="o">=</span><span class="n">n_stages</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">hypno</span></div>
 </pre></div>
 
     </div>

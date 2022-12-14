@@ -15,7 +15,6 @@ __all__ = []
 @jit("float64(float64[:], float64[:])", nopython=True)
 def _corr(x, y):
     """Fast Pearson correlation."""
-    n = x.size
     mx, my = x.mean(), y.mean()
     xm2s, ym2s, r_num = 0, 0, 0
     for xi, yi in zip(x, y):

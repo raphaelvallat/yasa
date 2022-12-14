@@ -546,18 +546,22 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     .. important:: The Markov simulation model is not meant to accurately portray sleep
         macroarchitecture and should only be used for testing or other unique purposes.
 
+    .. versionadded:: 0.6.3
+
     Parameters
     ----------
     tib : int
         Total duration of the hypnogram (i.e., time in bed), expressed in minutes.
         Returned hypnogram will be slightly shorter if ``tib`` in seconds is not
         evenly divisible by ``sf``.
+
         .. seealso:: :py:func:`yasa.sleep_statistics`
     sf : float
         Sampling frequency.
     n_stages : int
         Staging scheme of returned hypnogram. Input should follow 5-stage scheme but can
         be converted to lower scheme if desired.
+
         .. seealso:: :py:func:`yasa.hypno_consolidate_stages`
     trans_probas : :py:class:`pandas.DataFrame` or None
         Transition probability matrix where each cell is a transition probability
@@ -611,6 +615,7 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     >>> hypno = simulate_hypno(tib=10, seed=0)
     >>> print(hypno)
     [0 0 0 0 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2]
+
     >>> hypno = simulate_hypno(tib=10, n_stages=2, seed=0)
     >>> print(hypno)
     [0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1]
@@ -618,6 +623,7 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     Base the data off a real subject's transition matrix.
 
     .. plot::
+
         >>> import matplotlib.pyplot as plt
         >>> import yasa
         >>> url = (
@@ -627,11 +633,12 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
         >>> hypno = np.loadtxt(url)
         >>> _, probas = yasa.transition_matrix(hypno)
         >>> hypno_sim = yasa.simulate_hypno(tib=360, trans_probas=probas, seed=9)
-        >>> fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(7, 6))
+        >>> fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 6))
         >>> yasa.plot_hypnogram(hypno, ax=ax1)
         >>> yasa.plot_hypnogram(hypno_sim, ax=ax2)
         >>> ax1.set_title("True hypnogram")
         >>> ax2.set_title("Simulated hypnogram")
+        >>> plt.tight_layout()
     """
     # Validate input
     assert isinstance(tib, (int, float)), "tib must be a number"
