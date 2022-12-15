@@ -25,7 +25,148 @@ logger = logging.getLogger("yasa")
 
 
 class Hypnogram:
-    """Main class for manipulating sleep hypnogram in YASA."""
+    """
+    Main class for manipulating sleep hypnogram in YASA.
+
+    Up until YASA v0.7, the default format for hypnogram data was a :py:class:`numpy.ndarray` with
+    integer values to represent the stages throughout the night. Moving forward, YASA will take a
+    more object-oriented approach, i.e. hypnograms will be stored as a class (aka object), which
+    comes with its own attributes and functions. This also implements a stricter input validation:
+    YASA will not allow integer values to define the stages anymore. Instead, users must pass an
+    array of strings with the actual stage names (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]).
+
+    .. versionadded:: 0.7.0
+
+    Parameters
+    ----------
+    values : array_like
+        A vector of stage values, represented as strings. See some examples below:
+
+        * 2-stages hypnogram (Wake/Sleep): ["W", "S", "S", "W", "S"]
+        * 3-stages hypnogram (Wake/NREM/REM): pd.Series(["W", "NREM", "NREM", "REM", "REM"])
+        * 4-stages hypnogram (Wake/Light/Deep/REM): np.array([["Wake", "Light", "Deep", "Deep"]])
+        * 5-stages hypnogram (default): ["N1", "N1", "N2", "N3", "N2", "REM", "W"]
+
+        Note that artefacts ("Art") and unscored ("Uns") epochs are always allowed regardless of the
+        number of stages in the hypnogram.
+    n_stages : int
+        Whether ``values`` comes from a 2, 3, 4 or 5-stages hypnogram. Default is 5, i.e. the
+        following stages are accepted: N1, N2, N3, REM, WAKE.
+    freq : str
+        A pandas frequency string indicating the frequency resolution of the hypnogram. Default is
+        "30s" meaning that each value in the hypnogram represent a 30-seconds epoch.
+        Examples: "1min", "10s", "15min".
+    start : str or datetime
+        An optional string indicating the starting date/time of the hypnogram. If ``start`` is
+        specified and valid, the index of the hypnogram will be a :py:class:`pandas.DatetimeIndex`.
+        e.g. "2022-12-15 22:30:00"
+    scorer : str
+        An optional striong indicating the scorer name. If specified, this will be set as the name
+        of the :py:class:`pandas.Series`, otherwise will be set to "Stage".
+
+    Examples
+    --------
+    Create a 2-stage hypnogram
+
+    >>> from yasa import Hypnogram
+    >>> values = ["W", "W", "W", "S", "S", "S", "S", "S", "W", "S", "S", "S"]
+    >>> hyp = Hypnogram(values, n_stages=2)
+    >>> hyp.hypno
+    0      WAKE
+    1      WAKE
+    2      WAKE
+    3     SLEEP
+    4     SLEEP
+    5     SLEEP
+    6     SLEEP
+    7     SLEEP
+    8      WAKE
+    9     SLEEP
+    10    SLEEP
+    11    SLEEP
+    Name: Stage, dtype: object
+
+    >>> hyp.n_epochs
+    12
+
+    >>> hyp.mapping
+    {'WAKE': 0, 'SLEEP': 1, 'ART': -1, 'UNS': -2}
+
+    >>> hyp.as_int()
+    0     0
+    1     0
+    2     0
+    3     1
+    4     1
+    5     1
+    6     1
+    7     1
+    8     0
+    9     1
+    10    1
+    11    1
+    Name: Stage, dtype: int64
+
+    >>> hyp.sleep_statistics()
+    {'TIB': 6.0,
+     'SPT': 4.5,
+     'WASO': 0.5,
+     'TST': 4.0,
+     'SE': 66.6667,
+     'SME': 88.8889,
+     'SFI': 7.5,
+     'SOL': 1.5,
+     'SOL_5min': nan,
+     'WAKE': 2.0}
+
+    >>> counts, probs = hyp.transition_matrix()
+    >>> counts
+    To Stage    WAKE  SLEEP
+    From Stage
+    WAKE           2      2
+    SLEEP          1      6
+
+    Simulate a 5-stages hypnogram
+
+    >>> from yasa import simulate_hypno
+    >>> values = simulate_hypno(tib=500, n_stages=5, seed=42)
+    >>> values = pd.Series(values).map({0: "W", 1: "N1", 2: "N2", 3: "N3", 4: "REM"}).to_numpy()
+    >>> hyp = Hypnogram(values, start="2022-12-15 22:30:00", scorer="S1")
+    >>> hyp
+    2022-12-15 22:30:00    WAKE
+    2022-12-15 22:30:30    WAKE
+    2022-12-15 22:31:00    WAKE
+    2022-12-15 22:31:30    WAKE
+    2022-12-15 22:32:00    WAKE
+                        ...
+    2022-12-16 06:47:30      N2
+    2022-12-16 06:48:00      N2
+    2022-12-16 06:48:30      N2
+    2022-12-16 06:49:00      N2
+    2022-12-16 06:49:30      N2
+    Freq: 30S, Name: S1, Length: 1000, dtype: object
+
+    >>> hyp.sleep_statistics()
+    {'TIB': 500.0,
+     'SPT': 497.5,
+     'WASO': 79.5,
+     'TST': 418.0,
+     'SE': 83.6,
+     'SME': 84.0201,
+     'SFI': 0.7177,
+     'SOL': 2.5,
+     'SOL_5min': 2.5,
+     'Lat_REM': 67.0,
+     'WAKE': 82.0,
+     'N1': 69.0,
+     'N2': 247.0,
+     'N3': 64.5,
+     'REM': 37.5,
+     '%N1': 16.5072,
+     '%N2': 59.0909,
+     '%N3': 15.4306,
+     '%REM': 8.9713}
+    """
 
     def __init__(self, values, n_stages=5, *, freq="30s", start=None, scorer=None):
         assert isinstance(values, (list, np.ndarray, pd.Series))
@@ -142,6 +283,8 @@ class Hypnogram:
     @property
     def scorer(self):
         return self._scorer
+
+    # CLASS METHODS BELOW
 
     def as_int(self):
         """Return hypnogram as integers.
@@ -517,45 +660,45 @@ class Hypnogram:
         probs.columns = probs.columns.map(self.mapping_int)
         return counts, probs
 
-    def upsample(self, new_freq, **kwargs):
-        """Upsample hypnogram to a higher frequency.
+    # def upsample(self, new_freq, **kwargs):
+    #     """Upsample hypnogram to a higher frequency.
 
-        Parameters
-        ----------
-        self : yasa.Hypnogram
-            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
-            Total Recording Time, i.e. "lights out" to "lights on"). For best results, the
-            hypnogram should not contain any artefact or unscored epochs.
-        new_freq : str
-            Frequency is defined with a pandas frequency string, e.g. "10s" or "1min".
+    #     Parameters
+    #     ----------
+    #     self : yasa.Hypnogram
+    #         Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
+    #         Total Recording Time, i.e. "lights out" to "lights on"). For best results, the
+    #         hypnogram should not contain any artefact or unscored epochs.
+    #     new_freq : str
+    #         Frequency is defined with a pandas frequency string, e.g. "10s" or "1min".
 
-        Returns
-        -------
-        hyp : yasa.Hypnogram
-            The upsampled Hypnogram object. This function returns a copy, i.e. the original
-            hypnogram is not modified in place.
-        """
-        assert pd.Timedelta(new_freq) < pd.Timedelta(self.freq), (
-            f"The upsampling `new_freq` ({new_freq}) must be higher than the current frequency of "
-            f"hypnogram {self.freq}"
-        )
-        if isinstance(self.hypno.index, pd.DatetimeIndex):
-            # TODO: Upsampling should extend the last epoch, e.g.
-            # - 30-sec: last epoch at 08:00:00
-            # - 10-sec: last epoch should be 08:00:50 and not 08:00:30 otherwise we're losing 20 sec
-            new_hyp = self.hypno.resample(new_freq, origin="start", **kwargs).ffill()
-        else:
-            new_hyp = self.hypno.copy()
-            new_hyp.index = self.timedelta
-            new_hyp = new_hyp.resample(new_freq, **kwargs).ffill().reset_index(drop=True)
-            new_hyp.index.name = "Epoch"
-        return Hypnogram(
-            values=new_hyp,
-            n_stages=self.n_stages,
-            freq=new_freq,
-            start=self.start,
-            scorer=self.scorer,
-        )
+    #     Returns
+    #     -------
+    #     hyp : yasa.Hypnogram
+    #         The upsampled Hypnogram object. This function returns a copy, i.e. the original
+    #         hypnogram is not modified in place.
+    #     """
+    #     assert pd.Timedelta(new_freq) < pd.Timedelta(self.freq), (
+    #         f"The upsampling `new_freq` ({new_freq}) must be higher than the current frequency of "
+    #         f"hypnogram {self.freq}"
+    #     )
+    #     if isinstance(self.hypno.index, pd.DatetimeIndex):
+    #         # TODO: Upsampling should extend the last epoch, e.g.
+    #         # - 30-sec: last epoch at 08:00:00
+    #         # - 10-sec: last epoch should be 08:00:50 and not 08:00:30 otherwise we're losing 20 sec
+    #         new_hyp = self.hypno.resample(new_freq, origin="start", **kwargs).ffill()
+    #     else:
+    #         new_hyp = self.hypno.copy()
+    #         new_hyp.index = self.timedelta
+    #         new_hyp = new_hyp.resample(new_freq, **kwargs).ffill().reset_index(drop=True)
+    #         new_hyp.index.name = "Epoch"
+    #     return Hypnogram(
+    #         values=new_hyp,
+    #         n_stages=self.n_stages,
+    #         freq=new_freq,
+    #         start=self.start,
+    #         scorer=self.scorer,
+    #     )
 
     def upsample_to_data(self, data, sf=None, verbose=True):
         """
