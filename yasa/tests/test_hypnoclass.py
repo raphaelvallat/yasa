@@ -72,19 +72,27 @@ class TestHypnoClass(unittest.TestCase):
             "WAKE": 10.5,
         }
         assert sstats == truth
-        hyp_up = hyp.upsample("5s")
-        # TODO: Upsampling should extend the last epoch, e.g.
-        # - 30-sec: last epoch at 08:00:00
-        # - 10-sec: last epoch should be 08:00:50 and not 08:00:30 otherwise we're losing 20 sec
-        assert hyp_up.hypno.index[0] == hyp.hypno.index[0]
-        assert hyp_up.hypno.index[-1] == hyp.hypno.index[-1]
-        assert hyp_up.timedelta[-1] == hyp.timedelta[-1]
-
-        # TODO: Add unit test for upsample to data
 
         # Invert the mapping
         hyp.mapping = {"SLEEP": 0, "WAKE": 1}
-        assert hyp.mapping_int == {0: "SLEEP", 1: "WAKE", -1: "ART", -2: "UNS"}
-        assert np.testing.assert_array_equal(hyp.as_int(), (values_int == 0).astype(int))
+        hyp.mapping_int == {0: "SLEEP", 1: "WAKE", -1: "ART", -2: "UNS"}
+        np.testing.assert_array_equal(hyp.as_int(), (values_int == 0).astype(int))
         sstats = hyp.sleep_statistics()
         assert sstats == truth
+
+        # TODO: Upsampling should extend the last epoch, e.g.
+        # hyp_up = hyp.upsample("5s")
+        # # - 30-sec: last epoch at 08:00:00
+        # # - 10-sec: last epoch should be 08:00:50 and not 08:00:30 otherwise we're losing 20 sec
+        # assert hyp_up.hypno.index[0] == hyp.hypno.index[0]
+        # assert hyp_up.hypno.index[-1] == hyp.hypno.index[-1]
+        # assert hyp_up.timedelta[-1] == hyp.timedelta[-1]
+
+        # yasa.Hypnogram.upsample_to_data
+        npts = (3600 * 100) + 10 * 100  # 60 min + 10 seconds (at 100 Hz)
+        raw = create_raw(npts=npts, sf=100)
+        hyp_up = hyp.upsample_to_data(raw)
+        assert isinstance(hyp_up, np.ndarray)
+        assert hyp_up.size == npts
+        assert hyp_up.dtype == int
+        hyp_up = hyp.upsample_to_data(raw.get_data(), sf=100)
