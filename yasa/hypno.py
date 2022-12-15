@@ -660,45 +660,57 @@ class Hypnogram:
         probs.columns = probs.columns.map(self.mapping_int)
         return counts, probs
 
-    # def upsample(self, new_freq, **kwargs):
-    #     """Upsample hypnogram to a higher frequency.
+    def upsample(self, new_freq, **kwargs):
+        """Upsample hypnogram to a higher frequency.
 
-    #     Parameters
-    #     ----------
-    #     self : yasa.Hypnogram
-    #         Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
-    #         Total Recording Time, i.e. "lights out" to "lights on"). For best results, the
-    #         hypnogram should not contain any artefact or unscored epochs.
-    #     new_freq : str
-    #         Frequency is defined with a pandas frequency string, e.g. "10s" or "1min".
+        Parameters
+        ----------
+        self : yasa.Hypnogram
+            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
+            Total Recording Time, i.e. "lights out" to "lights on"). For best results, the
+            hypnogram should not contain any artefact or unscored epochs.
+        new_freq : str
+            Frequency is defined with a pandas frequency string, e.g. "10s" or "1min".
 
-    #     Returns
-    #     -------
-    #     hyp : yasa.Hypnogram
-    #         The upsampled Hypnogram object. This function returns a copy, i.e. the original
-    #         hypnogram is not modified in place.
-    #     """
-    #     assert pd.Timedelta(new_freq) < pd.Timedelta(self.freq), (
-    #         f"The upsampling `new_freq` ({new_freq}) must be higher than the current frequency of "
-    #         f"hypnogram {self.freq}"
-    #     )
-    #     if isinstance(self.hypno.index, pd.DatetimeIndex):
-    #         # TODO: Upsampling should extend the last epoch, e.g.
-    #         # - 30-sec: last epoch at 08:00:00
-    #         # - 10-sec: last epoch should be 08:00:50 and not 08:00:30 otherwise we're losing 20 sec
-    #         new_hyp = self.hypno.resample(new_freq, origin="start", **kwargs).ffill()
-    #     else:
-    #         new_hyp = self.hypno.copy()
-    #         new_hyp.index = self.timedelta
-    #         new_hyp = new_hyp.resample(new_freq, **kwargs).ffill().reset_index(drop=True)
-    #         new_hyp.index.name = "Epoch"
-    #     return Hypnogram(
-    #         values=new_hyp,
-    #         n_stages=self.n_stages,
-    #         freq=new_freq,
-    #         start=self.start,
-    #         scorer=self.scorer,
-    #     )
+        Returns
+        -------
+        hyp : yasa.Hypnogram
+            The upsampled Hypnogram object. This function returns a copy, i.e. the original
+            hypnogram is not modified in place.
+        """
+        assert pd.Timedelta(new_freq) < pd.Timedelta(self.freq), (
+            f"The upsampling `new_freq` ({new_freq}) must be higher than the current frequency of "
+            f"hypnogram {self.freq}"
+        )
+        if isinstance(self.hypno.index, pd.DatetimeIndex):
+            # Upsampling should extend the last epoch, e.g.
+            # - 30-sec: last epoch at 07:20:30
+            # - 10-sec: last epoch should be 07:20:50 and not 07:20:30 otherwise we're losing 20 sec
+            hyp_extend = self.hypno.copy()
+            hyp_extend = hyp_extend.reindex(
+                hyp_extend.index.union([hyp_extend.index[-1] + pd.Timedelta(self.freq)])
+            ).ffill()
+            new_hyp = hyp_extend.resample(new_freq, origin="start").ffill().iloc[:-1]
+        else:
+            hyp_extend = self.hypno.copy()
+            hyp_extend.index = self.timedelta
+            hyp_extend = hyp_extend.reindex(
+                hyp_extend.index.union([hyp_extend.index[-1] + pd.Timedelta(self.freq)])
+            ).ffill()
+            new_hyp = (
+                hyp_extend.resample(new_freq, origin="start")
+                .ffill()
+                .reset_index(drop=True)
+                .iloc[:-1]
+            )
+            new_hyp.index.name = "Epoch"
+        return Hypnogram(
+            values=new_hyp,
+            n_stages=self.n_stages,
+            freq=new_freq,
+            start=self.start,
+            scorer=self.scorer,
+        )
 
     def upsample_to_data(self, data, sf=None, verbose=True):
         """

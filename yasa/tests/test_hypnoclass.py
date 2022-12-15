@@ -40,13 +40,13 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp.timedelta[-1] == pd.Timedelta("0 days 01:59:30")
 
         # Adding start time
-        hyp = Hypnogram(values, n_stages=2, start="2022-11-10 13:30:00", freq="15s", scorer="Test")
+        hyp = Hypnogram(values, n_stages=2, start="2022-11-10 13:30:10", freq="15s", scorer="Test")
         assert isinstance(hyp.hypno.index, pd.DatetimeIndex)
         assert hyp.hypno.name == "Test"
         assert hyp.scorer == "Test"
         assert hyp.sampling_frequency == 1 / 15
         assert hyp.freq == "15s"
-        assert hyp.start == "2022-11-10 13:30:00"
+        assert hyp.start == "2022-11-10 13:30:10"
         assert hyp.n_epochs == len(values)
         assert hyp.timedelta[0] == pd.Timedelta("0 days 00:00:00")
         assert hyp.timedelta[-1] == pd.Timedelta("0 days 00:59:45")
@@ -80,13 +80,11 @@ class TestHypnoClass(unittest.TestCase):
         sstats = hyp.sleep_statistics()
         assert sstats == truth
 
-        # TODO: Upsampling should extend the last epoch, e.g.
-        # hyp_up = hyp.upsample("5s")
-        # # - 30-sec: last epoch at 08:00:00
-        # # - 10-sec: last epoch should be 08:00:50 and not 08:00:30 otherwise we're losing 20 sec
-        # assert hyp_up.hypno.index[0] == hyp.hypno.index[0]
-        # assert hyp_up.hypno.index[-1] == hyp.hypno.index[-1]
-        # assert hyp_up.timedelta[-1] == hyp.timedelta[-1]
+        # yasa.Hypnogram.upsample
+        hyp_up = hyp.upsample("5s")
+        assert hyp_up.hypno.index[0] == hyp.hypno.index[0]
+        assert hyp_up.hypno.index[-1] != hyp.hypno.index[-1]
+        assert hyp_up.n_epochs == 3 * hyp.n_epochs  # 15-sec to 5-sec
 
         # yasa.Hypnogram.upsample_to_data
         npts = (3600 * 100) + 10 * 100  # 60 min + 10 seconds (at 100 Hz)
