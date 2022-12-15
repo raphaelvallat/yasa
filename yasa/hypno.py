@@ -54,7 +54,7 @@ class Hypnogram:
         following stages are accepted: N1, N2, N3, REM, WAKE.
     freq : str
         A pandas frequency string indicating the frequency resolution of the hypnogram. Default is
-        "30s" meaning that each value in the hypnogram represent a 30-seconds epoch.
+        "30s" meaning that each value in the hypnogram represents a 30-seconds epoch.
         Examples: "1min", "10s", "15min".
     start : str or datetime
         An optional string indicating the starting date/time of the hypnogram. If ``start`` is
@@ -228,39 +228,49 @@ class Hypnogram:
 
     @property
     def hypno(self):
+        """The hypnogram values, stored in a :py:class:`pandas.Series`."""
         # Q: Should this be called `hyp.stage`?
         return self._hypno
 
     @property
     def n_epochs(self):
+        """The number of epochs in the hypnogram."""
         return self._n_epochs
 
     @property
     def freq(self):
+        """The frequency resolution of the hypnogram. Default is '30s'"""
         return self._freq
 
     @property
     def sampling_frequency(self):
+        """The sampling frequency (Hz) of the hypnogram."""
         return self._sampling_frequency
 
     @property
     def start(self):
+        """The start date/time of the hypnogram. Default is None."""
         return self._start
 
     @property
     def timedelta(self):
+        """A :py:class:`pandas.TimedeltaIndex` vector with the accumulated time difference of each
+        epoch compared to the first epoch."""
         return self._timedelta
 
     @property
     def n_stages(self):
+        """The number of accepted stages in the hypnogram."""
         return self._n_stages
 
     @property
     def labels(self):
+        """The accepted stage labels."""
         return self._labels
 
     @property
     def mapping(self):
+        """A dictionary with the mapping from string to integer values."""
         return self._mapping
 
     @mapping.setter
@@ -278,10 +288,12 @@ class Hypnogram:
 
     @property
     def mapping_int(self):
+        """A dictionary with the mapping from integer to string values."""
         return {v: k for k, v in self.mapping.items()}
 
     @property
     def scorer(self):
+        """The scorer name."""
         return self._scorer
 
     # CLASS METHODS BELOW
@@ -466,16 +478,16 @@ class Hypnogram:
         References
         ----------
         * Iber, C. (2007). The AASM manual for the scoring of sleep and
-        associated events: rules, terminology and technical specifications.
-        American Academy of Sleep Medicine.
+          associated events: rules, terminology and technical specifications.
+          American Academy of Sleep Medicine.
 
         * Silber, M. H., Ancoli-Israel, S., Bonnet, M. H., Chokroverty, S.,
-        Grigg-Damberger, M. M., Hirshkowitz, M., Kapen, S., Keenan, S. A.,
-        Kryger, M. H., Penzel, T., Pressman, M. R., & Iber, C. (2007).
-        `The visual scoring of sleep in adults
-        <https://www.ncbi.nlm.nih.gov/pubmed/17557422>`_. Journal of Clinical
-        Sleep Medicine: JCSM: Official Publication of the American Academy of
-        Sleep Medicine, 3(2), 121-131.
+          Grigg-Damberger, M. M., Hirshkowitz, M., Kapen, S., Keenan, S. A.,
+          Kryger, M. H., Penzel, T., Pressman, M. R., & Iber, C. (2007).
+          `The visual scoring of sleep in adults
+          <https://www.ncbi.nlm.nih.gov/pubmed/17557422>`_. Journal of Clinical
+          Sleep Medicine: JCSM: Official Publication of the American Academy of
+          Sleep Medicine, 3(2), 121-131.
 
         Examples
         --------
