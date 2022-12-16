@@ -5,7 +5,7 @@ import mne
 import logging
 import numpy as np
 import pandas as pd
-from .io import set_log_level
+from yasa.io import set_log_level
 from yasa.sleepstats import transition_matrix
 
 __all__ = [
