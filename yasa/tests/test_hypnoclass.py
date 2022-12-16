@@ -23,6 +23,8 @@ class TestHypnoClass(unittest.TestCase):
         values_int = simulate_hypno(tib=120, n_stages=2, seed=42)
         values = pd.Series(values_int).map({0: "W", 1: "S"}).to_numpy()
         hyp = Hypnogram(values, n_stages=2)
+        print(hyp)
+        print(str(hyp))
 
         # Check properties
         np.testing.assert_array_equal(hyp.hypno.str.get(0).to_numpy(), values)
@@ -154,3 +156,8 @@ class TestHypnoClass(unittest.TestCase):
         assert np.isnan(sstats["Lat_REM"])
         assert sstats["SPT"] == 0
         assert sstats["N3"] == 0
+
+        # Consolidate stages
+        assert hyp.consolidate_stages(new_n_stages=4).n_stages == 4
+        assert hyp.consolidate_stages(new_n_stages=3).n_stages == 3
+        assert hyp.consolidate_stages(new_n_stages=2).n_stages == 2
