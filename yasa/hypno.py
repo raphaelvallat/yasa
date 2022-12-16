@@ -343,6 +343,83 @@ class Hypnogram:
         """
         return self.hypno.replace(self.mapping).astype(int)
 
+    def consolidate_stages(self, new_n_stages):
+        """Reduce the number of stages in a hypnogram to match actigraphy or wearables.
+
+        For example, a standard 5-stage hypnogram (W, N1, N2, N3, REM) could be consolidated
+        to a hypnogram more common with actigraphy (e.g. 2-stages: [Wake, Sleep] or
+        4-stages: [W, Light, Deep, REM]).
+
+        Parameters
+        ----------
+        self : yasa.Hypnogram
+            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
+            Total Recording Time, i.e. "lights out" to "lights on"). For best results, the
+            hypnogram should not contain any artefact or unscored epochs.
+        new_n_stages : int
+            Desired number of sleep stages. Must be lower than the current number of stages.
+
+            - 5 stages - Wake, N1, N2, N3, REM
+            - 4 stages - Wake, Light, Deep, REM
+            - 3 stages - Wake, NREM, REM
+            - 2 stages - Wake, Sleep
+
+            .. note:: Unscored and Artefact are always allowed.
+
+        Returns
+        -------
+        hyp : yasa.Hypnogram
+            The consolidated Hypnogram object. This function returns a copy, i.e. the original
+            hypnogram is not modified in place.
+
+        Examples
+        --------
+        >>> from yasa import Hypnogram
+        >>> hyp = Hypnogram(["W", "W", "N1", "N2", "N2", "N2", "N2", "W"], n_stages=5)
+        >>> hyp_2s = hyp.consolidate_stages(2)
+        >>> print(hyp_2s)
+        0     WAKE
+        1     WAKE
+        2    SLEEP
+        3    SLEEP
+        4    SLEEP
+        5    SLEEP
+        6    SLEEP
+        7     WAKE
+        Name: Stage, dtype: object
+        """
+        assert self.n_stages in [3, 4, 5], "`self.n_stages` must be 3, 4, or 5"
+        assert new_n_stages in [2, 3, 4], "`new_n_stages` must be 2, 3, or 4"
+        assert new_n_stages < self.n_stages, "`new_n_stages` must be lower than `self.n_stages`"
+
+        # Change sleep codes where applicable.
+        if new_n_stages == 2:
+            # Consolidate all Sleep
+            mapping = {
+                "N1": "S",
+                "N2": "S",
+                "N3": "S",
+                "REM": "S",
+                "LIGHT": "S",
+                "DEEP": "S",
+                "NREM": "S",
+            }
+        elif new_n_stages == 3:
+            # Consolidate N1/N2/N3 or Light/Deep into NREM
+            mapping = {"N1": "NREM", "N2": "NREM", "N3": "NREM", "LIGHT": "NREM", "DEEP": "NREM"}
+        elif new_n_stages == 4:
+            # Consolidate N1/N2 into Light
+            mapping = {"N1": "LIGHT", "N2": "LIGHT", "N3": "DEEP"}
+        new_hyp = self.hypno.replace(mapping).to_numpy()
+
+        return Hypnogram(
+            values=new_hyp,
+            n_stages=new_n_stages,
+            freq=self.freq,
+            start=self.start,
+            scorer=self.scorer,
+        )
+
     def find_periods(self, threshold="5min", equal_length=False):
         """Find sequences of consecutive values exceeding a certain duration in hypnogram.
 
