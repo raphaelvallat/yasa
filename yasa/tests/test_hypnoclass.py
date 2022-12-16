@@ -3,7 +3,6 @@ import mne
 import unittest
 import numpy as np
 import pandas as pd
-from pandas.testing import assert_frame_equal
 from yasa.hypno import simulate_hypno, Hypnogram
 
 
@@ -94,3 +93,64 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp_up.size == npts
         assert hyp_up.dtype == int
         hyp_up = hyp.upsample_to_data(raw.get_data(), sf=100)
+
+    def test_3stages_hypno(self):
+        """Test 3-stages Hypnogram class"""
+        values = simulate_hypno(tib=120, sf=1, n_stages=3, seed=42)
+        values = pd.Series(values).map({0: "W", 2: "NREM", 4: "REM"}).to_numpy()
+        hyp = Hypnogram(values, n_stages=3, freq="1s")
+        assert hyp.sampling_frequency == 1
+        assert hyp.freq == "1s"
+        assert hyp.n_stages == 3
+        assert hyp.labels == ["WAKE", "NREM", "REM", "ART", "UNS"]
+        assert hyp.mapping == {"WAKE": 0, "NREM": 2, "REM": 4, "ART": -1, "UNS": -2}
+        sstats = hyp.sleep_statistics()
+        assert sstats["TIB"] == 120
+        assert "%REM" in sstats.keys()
+        assert "Lat_REM" in sstats.keys()
+
+    def test_4stages_hypno(self):
+        """Test 4-stages Hypnogram class"""
+        values = simulate_hypno(tib=400, n_stages=4, seed=42)
+        values = pd.Series(values).map({0: "W", 2: "Light", 3: "Deep", 4: "REM"}).to_numpy()
+        hyp = Hypnogram(values, n_stages=4, freq="30s")
+        assert hyp.n_stages == 4
+        assert hyp.labels == ["WAKE", "LIGHT", "DEEP", "REM", "ART", "UNS"]
+        assert hyp.mapping == {"WAKE": 0, "LIGHT": 2, "DEEP": 3, "REM": 4, "ART": -1, "UNS": -2}
+        sstats = hyp.sleep_statistics()
+        assert sstats["TIB"] == 400
+        assert "%DEEP" in sstats.keys()
+        assert "Lat_REM" in sstats.keys()
+
+    def test_5stages_hypno(self):
+        """Test 5-stages Hypnogram class"""
+        values = simulate_hypno(tib=600, n_stages=5, seed=42)
+        values = pd.Series(values).map({0: "W", 1: "N1", 2: "N2", 3: "N3", 4: "REM"}).to_numpy()
+        hyp = Hypnogram(values, n_stages=5, freq="30s")
+        assert hyp.n_stages == 5
+        assert hyp.labels == ["WAKE", "N1", "N2", "N3", "REM", "ART", "UNS"]
+        assert hyp.mapping == {
+            "WAKE": 0,
+            "N1": 1,
+            "N2": 2,
+            "N3": 3,
+            "REM": 4,
+            "ART": -1,
+            "UNS": -2,
+        }
+
+        # Test upsampling (without a pd.DatetimeIndex)
+        hyp_up = hyp.upsample("10s")
+        assert hyp_up.n_epochs == 3 * hyp.n_epochs
+        sstats = hyp.sleep_statistics()
+        sstats_up = hyp_up.sleep_statistics()
+        assert sstats["TIB"] == sstats_up["TIB"] == 600
+
+        # Hypno is all WAKE (with Art and Uns)
+        hyp = Hypnogram(100 * ["W"] + 10 * ["Art"] + 30 * ["Uns"], n_stages=5)
+        sstats = hyp.sleep_statistics()
+        assert "ART" in sstats.keys()
+        assert "UNS" in sstats.keys()
+        assert np.isnan(sstats["Lat_REM"])
+        assert sstats["SPT"] == 0
+        assert sstats["N3"] == 0
