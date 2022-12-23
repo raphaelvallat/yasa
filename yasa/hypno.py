@@ -28,12 +28,11 @@ class Hypnogram:
     """
     Main class for manipulating sleep hypnogram in YASA.
 
-    Up until YASA v0.7, the default format for hypnogram data was a :py:class:`numpy.ndarray` with
-    integer values to represent the stages throughout the night. Moving forward, YASA will take a
-    more object-oriented approach, i.e. hypnograms will be stored as a class (aka object), which
-    comes with its own attributes and functions. This also implements a stricter input validation:
-    YASA will not allow integer values to define the stages anymore. Instead, users must pass an
-    array of strings with the actual stage names (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]).
+    Starting with YASA v0.7, YASA takes a more object-oriented approach to hypnograms. That is,
+    hypnograms are now stored as a class (aka object), which comes with its own attributes and
+    functions. Furthermore, YASA does not allow integer values to define the stages anymore.
+    Instead, users must pass an array of strings with the actual stage names
+    (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]).
 
     .. versionadded:: 0.7.0
 
@@ -43,22 +42,31 @@ class Hypnogram:
         A vector of stage values, represented as strings. See some examples below:
 
         * 2-stages hypnogram (Wake/Sleep): ["W", "S", "S", "W", "S"]
-        * 3-stages hypnogram (Wake/NREM/REM): pd.Series(["W", "NREM", "NREM", "REM", "REM"])
+        * 3-stages hypnogram (Wake/NREM/REM): pd.Series(["WAKE", "NREM", "NREM", "REM", "REM"])
         * 4-stages hypnogram (Wake/Light/Deep/REM): np.array([["Wake", "Light", "Deep", "Deep"]])
         * 5-stages hypnogram (default): ["N1", "N1", "N2", "N3", "N2", "REM", "W"]
 
         Note that artefacts ("Art") and unscored ("Uns") epochs are always allowed regardless of the
         number of stages in the hypnogram.
+
+        Abbreviated or full spellings for the stages are allowed, as well as lower/upper/mixed
+        case. Internally, YASA will convert the stages to to full spelling and uppercase (e.g.
+        "w" -> "WAKE").
     n_stages : int
         Whether ``values`` comes from a 2, 3, 4 or 5-stages hypnogram. Default is 5, i.e. the
-        following stages are accepted: N1, N2, N3, REM, WAKE.
+        following sleep stages are accepted: N1, N2, N3, REM, WAKE.
     freq : str
         A pandas frequency string indicating the frequency resolution of the hypnogram. Default is
         "30s" meaning that each value in the hypnogram represents a 30-seconds epoch.
-        Examples: "1min", "10s", "15min".
+        Examples: "1min", "10s", "15min". A full list of accepted values can be found at
+        https://pandas.pydata.org/docs/user_guide/timeseries.html#timeseries-offset-aliases
+
+        ``freq`` will be passed to the :py:func:pandas.date_range` function to create the time
+        index of the hypnogram.
     start : str or datetime
-        An optional string indicating the starting date/time of the hypnogram. If ``start`` is
+        An optional string indicating the starting datetime of the hypnogram. If ``start`` is
         specified and valid, the index of the hypnogram will be a :py:class:`pandas.DatetimeIndex`.
+        Otherwise it will be a :py:class:`pandas.RangeIndex`, indicating the epoch number.
         e.g. "2022-12-15 22:30:00"
     scorer : str
         An optional striong indicating the scorer name. If specified, this will be set as the name
@@ -72,6 +80,7 @@ class Hypnogram:
     >>> values = ["W", "W", "W", "S", "S", "S", "S", "S", "W", "S", "S", "S"]
     >>> hyp = Hypnogram(values, n_stages=2)
     >>> hyp.hypno
+    Epoch
     0      WAKE
     1      WAKE
     2      WAKE
@@ -93,6 +102,7 @@ class Hypnogram:
     {'WAKE': 0, 'SLEEP': 1, 'ART': -1, 'UNS': -2}
 
     >>> hyp.as_int()
+    Epoch
     0     0
     1     0
     2     0
@@ -133,6 +143,7 @@ class Hypnogram:
     >>> values = pd.Series(values).map({0: "W", 1: "N1", 2: "N2", 3: "N3", 4: "REM"}).to_numpy()
     >>> hyp = Hypnogram(values, start="2022-12-15 22:30:00", scorer="S1")
     >>> hyp
+    Time
     2022-12-15 22:30:00    WAKE
     2022-12-15 22:30:30    WAKE
     2022-12-15 22:31:00    WAKE
@@ -169,12 +180,18 @@ class Hypnogram:
     """
 
     def __init__(self, values, n_stages=5, *, freq="30s", start=None, scorer=None):
-        assert isinstance(values, (list, np.ndarray, pd.Series))
-        assert isinstance(n_stages, int)
-        assert n_stages in [2, 3, 4, 5]
-        assert isinstance(freq, str)
-        assert isinstance(start, (type(None), str, pd.Timestamp))
-        assert isinstance(scorer, (type(None), str, int))
+        assert isinstance(
+            values, (list, np.ndarray, pd.Series)
+        ), "`values` must be a list, numpy.array or pandas.Series"
+        assert isinstance(n_stages, int), "`n_stages` must be an integer between 2 and 5."
+        assert n_stages in [2, 3, 4, 5], "`n_stages` must be an integer between 2 and 5."
+        assert isinstance(freq, str), "`freq` must be a pandas frequency string."
+        assert isinstance(
+            start, (type(None), str, pd.Timestamp)
+        ), "`start` must be either None, a string or a pandas.Timestamp."
+        assert isinstance(
+            scorer, (type(None), str, int)
+        ), "`scorer` must be either None, or a string or an integer."
         if n_stages == 2:
             accepted = ["S", "W", "SLEEP", "WAKE", "ART", "UNS"]
             mapping = {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
@@ -205,9 +222,11 @@ class Hypnogram:
         labels = pd.Series(accepted).replace(map_accepted).unique().tolist()
         if start is not None:
             hypno.index = pd.date_range(start=start, freq=freq, periods=hypno.shape[0])
+            hypno.index.name = "Time"
             timedelta = hypno.index - hypno.index[0]
         else:
             fake_dt = pd.date_range(start="2022-12-03 00:00:00", freq=freq, periods=hypno.shape[0])
+            hypno.index.name = "Epoch"
             timedelta = fake_dt - fake_dt[0]
         self._hypno = hypno
         self._n_epochs = hypno.shape[0]
@@ -254,18 +273,23 @@ class Hypnogram:
 
     @property
     def timedelta(self):
-        """A :py:class:`pandas.TimedeltaIndex` vector with the accumulated time difference of each
-        epoch compared to the first epoch."""
+        """
+        A :py:class:`pandas.TimedeltaIndex` vector with the accumulated time difference of each
+        epoch compared to the first epoch.
+        """
         return self._timedelta
 
     @property
     def n_stages(self):
-        """The number of accepted stages in the hypnogram."""
+        """
+        The number of allowed stages in the hypnogram. This is not the number of unique stages
+        in the current hypnogram.
+        """
         return self._n_stages
 
     @property
     def labels(self):
-        """The accepted stage labels."""
+        """The allowed stage labels."""
         return self._labels
 
     @property
@@ -319,6 +343,7 @@ class Hypnogram:
         >>> from yasa import Hypnogram
         >>> hyp = Hypnogram(["W", "W", "S", "S", "W", "S"], n_stages=2)
         >>> hyp.as_int()
+        Epoch
         0    0
         1    0
         2    1
@@ -332,6 +357,7 @@ class Hypnogram:
         >>> from yasa import Hypnogram
         >>> hyp = Hypnogram(["W", "W", "LIGHT", "LIGHT", "DEEP", "REM", "WAKE"], n_stages=4)
         >>> hyp.as_int()
+        Epoch
         0    0
         1    0
         2    2
@@ -354,8 +380,7 @@ class Hypnogram:
         ----------
         self : yasa.Hypnogram
             Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
-            Total Recording Time, i.e. "lights out" to "lights on"). For best results, the
-            hypnogram should not contain any artefact or unscored epochs.
+            Total Recording Time, i.e. "lights out" to "lights on").
         new_n_stages : int
             Desired number of sleep stages. Must be lower than the current number of stages.
 
@@ -378,6 +403,7 @@ class Hypnogram:
         >>> hyp = Hypnogram(["W", "W", "N1", "N2", "N2", "N2", "N2", "W"], n_stages=5)
         >>> hyp_2s = hyp.consolidate_stages(2)
         >>> print(hyp_2s)
+        Epoch
         0     WAKE
         1     WAKE
         2    SLEEP
