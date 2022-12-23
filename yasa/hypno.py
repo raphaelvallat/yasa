@@ -248,7 +248,6 @@ class Hypnogram:
     @property
     def hypno(self):
         """The hypnogram values, stored in a :py:class:`pandas.Series`."""
-        # Q: Should this be called `hyp.stage`?
         return self._hypno
 
     @property
@@ -792,6 +791,38 @@ class Hypnogram:
         hyp : yasa.Hypnogram
             The upsampled Hypnogram object. This function returns a copy, i.e. the original
             hypnogram is not modified in place.
+
+        Examples
+        --------
+        Create a 30-sec hypnogram
+
+        >>> from yasa import Hypnogram
+        >>> hyp = Hypnogram(["W", "W", "S", "S", "W"], n_stages=2, start="2022-12-23 23:00")
+        >>> hyp.hypno
+        Time
+        2022-12-23 23:00:00     WAKE
+        2022-12-23 23:00:30     WAKE
+        2022-12-23 23:01:00    SLEEP
+        2022-12-23 23:01:30    SLEEP
+        2022-12-23 23:02:00     WAKE
+        Freq: 30S, Name: Stage, dtype: object
+
+        Upsample to a 15-seconds resolution
+
+        >>> hyp_up = hyp.upsample("15s")
+        >>> hyp_up.hypno
+        Time
+        2022-12-23 23:00:00     WAKE
+        2022-12-23 23:00:15     WAKE
+        2022-12-23 23:00:30     WAKE
+        2022-12-23 23:00:45     WAKE
+        2022-12-23 23:01:00    SLEEP
+        2022-12-23 23:01:15    SLEEP
+        2022-12-23 23:01:30    SLEEP
+        2022-12-23 23:01:45    SLEEP
+        2022-12-23 23:02:00     WAKE
+        2022-12-23 23:02:15     WAKE
+        Freq: 15S, Name: Stage, dtype: object
         """
         assert pd.Timedelta(new_freq) < pd.Timedelta(self.freq), (
             f"The upsampling `new_freq` ({new_freq}) must be higher than the current frequency of "
