@@ -450,8 +450,6 @@ def topoplot(
         kwargs["res"] = 256
     if "names" not in kwargs:
         kwargs["names"] = chan
-    if "show_names" not in kwargs:
-        kwargs["show_names"] = True
     if "mask_params" not in kwargs:
         kwargs["mask_params"] = dict(marker=None)
 
@@ -478,6 +476,10 @@ def topoplot(
                 **kwargs,
             )
         else:
+
+            if "show_names" not in kwargs:
+                kwargs["show_names"] = True
+
             im, _ = mne.viz.plot_topomap(
                 data=data.iloc[:, 0][chan],
                 pos=Info,
