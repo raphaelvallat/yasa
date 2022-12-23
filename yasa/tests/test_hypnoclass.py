@@ -29,6 +29,7 @@ class TestHypnoClass(unittest.TestCase):
         # Check properties
         np.testing.assert_array_equal(hyp.hypno.str.get(0).to_numpy(), values)
         assert isinstance(hyp.hypno.index, pd.RangeIndex)
+        assert hyp.hypno.index.name == "Epoch"
         assert hyp.sampling_frequency == 1 / 30
         assert hyp.freq == "30s"
         assert hyp.n_epochs == len(values)
@@ -43,6 +44,7 @@ class TestHypnoClass(unittest.TestCase):
         # Adding start time
         hyp = Hypnogram(values, n_stages=2, start="2022-11-10 13:30:10", freq="15s", scorer="Test")
         assert isinstance(hyp.hypno.index, pd.DatetimeIndex)
+        assert hyp.hypno.index.name == "Time"
         assert hyp.hypno.name == "Test"
         assert hyp.scorer == "Test"
         assert hyp.sampling_frequency == 1 / 15
