@@ -1584,6 +1584,7 @@ def simulate_hypno(
     7      N2
     8      N2
     9      N2
+    Name: Stage, dtype: object
 
     >>> hyp = simulate_hypno(tib=5, n_stages=2, seed=1)
     >>> print(hyp)
@@ -1598,6 +1599,24 @@ def simulate_hypno(
     7      N2
     8      N2
     9      N2
+    Name: Stage, dtype: object
+
+    Add some Unscored epochs.
+    >>> hyp = simulate_hypno(tib=5, n_stages=2, seed=1)
+    >>> hyp.hypno.iloc[-2:] = "UNS"
+    >>> print(hyp)
+    Epoch
+    0     WAKE
+    1    SLEEP
+    2    SLEEP
+    3    SLEEP
+    4    SLEEP
+    5    SLEEP
+    6    SLEEP
+    7    SLEEP
+    8      UNS
+    9      UNS
+    Name: Stage, dtype: object
 
     Base the data off a real subject's transition matrix.
 
