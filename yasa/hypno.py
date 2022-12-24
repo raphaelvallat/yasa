@@ -321,6 +321,50 @@ class Hypnogram:
 
     # CLASS METHODS BELOW
 
+    def as_annotations(self):
+        """
+        Return a pandas DataFrame summarizing epoch-level information.
+
+        Column order and names are compliant with BIDS events files [BIDSevents]_ and MNE
+        events/annotations dataframes [MNEannotations]_.
+
+        Returns
+        -------
+        annotations : :py:class:`pandas.DataFrame`
+            A dataframe containing epoch onset, duration, stage, etc.
+
+        References
+        ----------
+        .. [BIDSevents] https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/05-task-events.html
+
+        .. [MNEannotations] https://mne.tools/stable/glossary.html#term-annotations
+
+        Examples
+        --------
+        >>> from yasa import Hypnogram
+        >>> hyp = Hypnogram(["W", "W", "LIGHT", "LIGHT", "DEEP", "REM", "WAKE"], n_stages=4)
+        >>> hyp.as_annotations()
+               onset  duration  value description
+        epoch
+        1        0.0      30.0      0        WAKE
+        2       30.0      30.0      0        WAKE
+        3       60.0      30.0      2       LIGHT
+        4       90.0      30.0      2       LIGHT
+        5      120.0      30.0      3        DEEP
+        6      150.0      30.0      4         REM
+        7      180.0      30.0      0        WAKE
+        """
+        data = {
+            "onset": self.timedelta.total_seconds(),
+            "duration": 1 / self.sampling_frequency,
+            "value": self.as_int().to_numpy(),
+            "description": self.hypno.to_numpy(),
+            "epoch": 1 + np.arange(self.n_epochs),
+        }
+        if self.scorer is not None:
+            data["scorer"] = self.scorer
+        return pd.DataFrame(data).set_index("epoch")
+
     def as_int(self):
         """Return hypnogram as integers.
 
