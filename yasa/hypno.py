@@ -26,7 +26,7 @@ logger = logging.getLogger("yasa")
 
 class Hypnogram:
     """
-    Main class for manipulating sleep hypnogram in YASA.
+    Main class for manipulating hypnogram in YASA.
 
     Starting with YASA v0.7, YASA takes a more object-oriented approach to hypnograms. That is,
     hypnograms are now stored as a class (aka object), which comes with its own attributes and
@@ -41,40 +41,40 @@ class Hypnogram:
     values : array_like
         A vector of stage values, represented as strings. See some examples below:
 
-        * 2-stages hypnogram (Wake/Sleep): ["W", "S", "S", "W", "S"]
-        * 3-stages hypnogram (Wake/NREM/REM): pd.Series(["WAKE", "NREM", "NREM", "REM", "REM"])
-        * 4-stages hypnogram (Wake/Light/Deep/REM): np.array([["Wake", "Light", "Deep", "Deep"]])
-        * 5-stages hypnogram (default): ["N1", "N1", "N2", "N3", "N2", "REM", "W"]
+        * 2-stages hypnogram (Wake/Sleep): ``["W", "S", "S", "W", "S"]``
+        * 3-stages (Wake/NREM/REM): ``pd.Series(["WAKE", "NREM", "NREM", "REM", "REM"])``
+        * 4-stages (Wake/Light/Deep/REM): ``np.array(["Wake", "Light", "Deep", "Deep"])``
+        * 5-stages (default): ``["N1", "N1", "N2", "N3", "N2", "REM", "W"]``
 
-        Note that artefacts ("Art") and unscored ("Uns") epochs are always allowed regardless of the
+        Artefacts ("Art") and unscored ("Uns") epochs are always allowed regardless of the
         number of stages in the hypnogram.
 
-        Abbreviated or full spellings for the stages are allowed, as well as lower/upper/mixed
-        case. Internally, YASA will convert the stages to to full spelling and uppercase (e.g.
-        "w" -> "WAKE").
+        .. note:: Abbreviated or full spellings for the stages are allowed, as well as
+            lower/upper/mixed case. Internally, YASA will convert the stages to to full spelling
+            and uppercase (e.g. "w" -> "WAKE").
     n_stages : int
-        Whether ``values`` comes from a 2, 3, 4 or 5-stages hypnogram. Default is 5, i.e. the
-        following sleep stages are accepted: N1, N2, N3, REM, WAKE.
+        Whether ``values`` comes from a 2, 3, 4 or 5-stages hypnogram. Default is 5 stages, meanng
+        that the following sleep stages are allowed: N1, N2, N3, REM, WAKE.
     freq : str
         A pandas frequency string indicating the frequency resolution of the hypnogram. Default is
         "30s" meaning that each value in the hypnogram represents a 30-seconds epoch.
         Examples: "1min", "10s", "15min". A full list of accepted values can be found at
         https://pandas.pydata.org/docs/user_guide/timeseries.html#timeseries-offset-aliases
 
-        ``freq`` will be passed to the :py:func:pandas.date_range` function to create the time
+        ``freq`` will be passed to the :py:func:`pandas.date_range` function to create the time
         index of the hypnogram.
     start : str or datetime
-        An optional string indicating the starting datetime of the hypnogram. If ``start`` is
-        specified and valid, the index of the hypnogram will be a :py:class:`pandas.DatetimeIndex`.
-        Otherwise it will be a :py:class:`pandas.RangeIndex`, indicating the epoch number.
-        e.g. "2022-12-15 22:30:00"
+        An optional string indicating the starting datetime of the hypnogram
+        (e.g. "2022-12-15 22:30:00"). If ``start`` is specified and valid, the index of the
+        hypnogram will be a :py:class:`pandas.DatetimeIndex`. Otherwise it will be a
+        :py:class:`pandas.RangeIndex`, indicating the epoch number.
     scorer : str
-        An optional striong indicating the scorer name. If specified, this will be set as the name
-        of the :py:class:`pandas.Series`, otherwise will be set to "Stage".
+        An optional string indicating the scorer name. If specified, this will be set as the name
+        of the :py:class:`pandas.Series`, otherwise the name will be set to "Stage".
 
     Examples
     --------
-    Create a 2-stage hypnogram
+    Create a 2-stages hypnogram
 
     >>> from yasa import Hypnogram
     >>> values = ["W", "W", "W", "S", "S", "S", "S", "S", "W", "S", "S", "S"]
@@ -325,19 +325,16 @@ class Hypnogram:
         """
         Return a pandas DataFrame summarizing epoch-level information.
 
-        Column order and names are compliant with BIDS events files [BIDSevents]_ and MNE
-        events/annotations dataframes [MNEannotations]_.
+        Column order and names are compliant with BIDS
+        `events files
+        <https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/05-task-events.html>`_
+        and MNE `events/annotations dataframes
+        <https://mne.tools/stable/glossary.html#term-annotations>`_.
 
         Returns
         -------
         annotations : :py:class:`pandas.DataFrame`
             A dataframe containing epoch onset, duration, stage, etc.
-
-        References
-        ----------
-        .. [BIDSevents] https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/05-task-events.html
-
-        .. [MNEannotations] https://mne.tools/stable/glossary.html#term-annotations
 
         Examples
         --------
@@ -623,16 +620,11 @@ class Hypnogram:
 
         References
         ----------
-        * Iber, C. (2007). The AASM manual for the scoring of sleep and
-          associated events: rules, terminology and technical specifications.
-          American Academy of Sleep Medicine.
+        * Iber (2007). The AASM manual for the scoring of sleep and associated events: rules,
+          terminology and technical specifications. American Academy of Sleep Medicine.
 
-        * Silber, M. H., Ancoli-Israel, S., Bonnet, M. H., Chokroverty, S.,
-          Grigg-Damberger, M. M., Hirshkowitz, M., Kapen, S., Keenan, S. A.,
-          Kryger, M. H., Penzel, T., Pressman, M. R., & Iber, C. (2007).
-          `The visual scoring of sleep in adults
+        * Silber et al. (2007). `The visual scoring of sleep in adults
           <https://www.ncbi.nlm.nih.gov/pubmed/17557422>`_. Journal of Clinical
-          Sleep Medicine: JCSM: Official Publication of the American Academy of
           Sleep Medicine, 3(2), 121-131.
 
         Examples
