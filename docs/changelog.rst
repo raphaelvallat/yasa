@@ -8,6 +8,35 @@ What's new
 
 ----------------------------------------------------------------------------------------
 
+v0.7.dev
+--------
+
+**Object-oriented hypnogram manipulation**
+
+This version introduces the new :py:class:`yasa.Hypnogram` class, which will progressively become
+the standard way to store and manipulate hypnograms in YASA. Put simply, YASA now uses an
+object-oriented approach to hypnograms. That is, hypnograms are now stored as a class (aka object),
+which comes with several pre-built functions (named methods) and attributes. See for example below:
+
+.. code-block::  python
+
+    from yasa import Hypnogram
+    # Create an hypnogram object
+    values = ["W", "W", "W", "S", "S", "S", "S", "S", "W", "S", "S", "S"]
+    hyp = Hypnogram(values, n_stages=2, start="2022-12-23 22:30:00", scorer="RM")
+    # Below are some class attributes
+    hyp.hypno  # Hypnogram values (pandas Series)
+    hyp.sampling_frequency  # Sampling frequency of the hypnogram
+    hyp.mapping  # Mapping from strings to integers
+    # Below are some class methods
+    hyp.sleep_statistics()  # Calculate the sleep statistics
+    hyp.plot_hypnogram()  # Plot the hypnogram
+    hyp.upsample_to_data()  # Upsample to data
+
+Please see the documentation of :py:class:`yasa.Hypnogram` for more details.
+
+----------------------------------------------------------------------------------------
+
 v0.6.3 (December 2022)
 ----------------------
 
