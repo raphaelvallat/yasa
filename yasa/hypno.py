@@ -53,7 +53,7 @@ class Hypnogram:
             lower/upper/mixed case. Internally, YASA will convert the stages to to full spelling
             and uppercase (e.g. "w" -> "WAKE").
     n_stages : int
-        Whether ``values`` comes from a 2, 3, 4 or 5-stages hypnogram. Default is 5 stages, meanng
+        Whether ``values`` comes from a 2, 3, 4 or 5-stages hypnogram. Default is 5 stages, meaning
         that the following sleep stages are allowed: N1, N2, N3, REM, WAKE.
     freq : str
         A pandas frequency string indicating the frequency resolution of the hypnogram. Default is
