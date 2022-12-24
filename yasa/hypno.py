@@ -232,8 +232,10 @@ class Hypnogram:
         self._n_epochs = hypno.shape[0]
         self._freq = freq
         self._sampling_frequency = 1 / pd.Timedelta(freq).total_seconds()
-        self._timedelta = timedelta
         self._start = start
+        self._timedelta = timedelta
+        self._tib = self._n_epochs / (60 * self._sampling_frequency)
+        # self._tib = self._n_epochs * pd.Timedelta(freq).total_seconds() / 60
         self._n_stages = n_stages
         self._labels = labels
         self._mapping = mapping
@@ -277,6 +279,11 @@ class Hypnogram:
         epoch compared to the first epoch.
         """
         return self._timedelta
+
+    @property
+    def tib(self):
+        """Time in bed, or total duration of the hypnogram, expressed in minutes."""
+        return self._tib
 
     @property
     def n_stages(self):
@@ -579,6 +586,56 @@ class Hypnogram:
         """Plot the hypnogram."""
         # TODO: Add support for 2, 3 and 4-stages hypnogram
         raise NotImplementedError
+
+    def simulate_similar(self, **kwargs):
+        """Simulate a new hypnogram based on properties of the current hypnogram.
+
+        .. seealso:: :py:func:`yasa.simulate_hypno`
+
+        Parameters
+        ----------
+        self : :py:class:`yasa.Hypnogram`
+            Hypnogram, assumed to be already cropped to time in bed (TIB).
+        **kwargs : dict
+            Optional keyword arguments passed to :py:func:`yasa.simulate_hypno`.
+
+        Returns
+        -------
+        hyp : :py:class:`yasa.Hypnogram`
+            A simulated hypnogram.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> from yasa import Hypnogram
+        >>> hyp = Hypnogram(["W", "S", "W"], n_stages=2, freq="2min", scorer="Human").upsample("30s")
+        >>> sim = hyp.simulate_similar(scorer="Simulated", seed=6)
+        >>> df = pd.concat([hyp.hypno, sim.hypno], axis=1)
+        >>> print(df)
+               Human Simulated
+        Epoch
+        0       WAKE      WAKE
+        1       WAKE      WAKE
+        2       WAKE      WAKE
+        3       WAKE      WAKE
+        4      SLEEP     SLEEP
+        5      SLEEP     SLEEP
+        6      SLEEP     SLEEP
+        7      SLEEP     SLEEP
+        8       WAKE     SLEEP
+        9       WAKE     SLEEP
+        10      WAKE     SLEEP
+        11      WAKE      WAKE
+        """
+        simulate_hypno_kwargs = {
+            "tib": self.tib,
+            "freq": self.freq,
+            "n_stages": self.n_stages,
+            "trans_probas": self.transition_matrix()[1],
+        }
+        simulate_hypno_kwargs.update(kwargs)
+        hyp = simulate_hypno(**simulate_hypno_kwargs)
+        return hyp
 
     def sleep_statistics(self):
         """
@@ -1449,10 +1506,10 @@ def simulate_hypno(
 
     Parameters
     ----------
-    tib : int
+    tib : int, float
         Total duration of the hypnogram (i.e., time in bed), expressed in minutes.
-        Returned hypnogram will be slightly shorter if ``tib`` in seconds is not
-        evenly divisible by ``sf``.
+        Returned hypnogram will be slightly shorter if ``tib`` is not evenly
+        divisible by ``freq``.
 
         .. seealso:: :py:func:`yasa.sleep_statistics`
     freq : str
@@ -1494,7 +1551,7 @@ def simulate_hypno(
 
     Returns
     -------
-    hypno : :py:class:`yasa.Hypnogram`
+    hyp : :py:class:`yasa.Hypnogram`
         Hypnogram containing simulated sleep stages.
 
     Notes
@@ -1514,8 +1571,8 @@ def simulate_hypno(
     Examples
     --------
     >>> from yasa import simulate_hypno
-    >>> hypno = simulate_hypno(tib=5, seed=1)
-    >>> print(hypno)
+    >>> hyp = simulate_hypno(tib=5, seed=1)
+    >>> print(hyp)
     Epoch
     0    WAKE
     1      N1
@@ -1528,8 +1585,8 @@ def simulate_hypno(
     8      N2
     9      N2
 
-    >>> hypno = simulate_hypno(tib=5, n_stages=2, seed=1)
-    >>> print(hypno)
+    >>> hyp = simulate_hypno(tib=5, n_stages=2, seed=1)
+    >>> print(hyp)
     Epoch
     0    WAKE
     1      N1
@@ -1553,12 +1610,12 @@ def simulate_hypno(
         >>>     "https://github.com/raphaelvallat/yasa/raw/master/"
         >>>     "notebooks/data_full_6hrs_100Hz_hypno_30s.txt"
         >>> )
-        >>> hypno = np.loadtxt(url)
-        >>> _, probas = yasa.transition_matrix(hypno)
-        >>> hypno_sim = yasa.simulate_hypno(tib=360, trans_probas=probas, seed=9)
+        >>> hyp = np.loadtxt(url)
+        >>> _, probas = yasa.transition_matrix(hyp)
+        >>> hyp_sim = yasa.simulate_hypno(tib=360, trans_probas=probas, seed=9)
         >>> fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 6))
-        >>> yasa.plot_hypnogram(hypno, ax=ax1)
-        >>> yasa.plot_hypnogram(hypno_sim, ax=ax2)
+        >>> yasa.plot_hypnogram(hyp, ax=ax1)
+        >>> yasa.plot_hypnogram(hyp_sim, ax=ax2)
         >>> ax1.set_title("True hypnogram")
         >>> ax2.set_title("Simulated hypnogram")
         >>> plt.tight_layout()
