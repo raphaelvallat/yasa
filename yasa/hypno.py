@@ -609,8 +609,8 @@ class Hypnogram:
         >>> import pandas as pd
         >>> from yasa import Hypnogram
         >>> hyp = Hypnogram(["W", "S", "W"], n_stages=2, freq="2min", scorer="Human").upsample("30s")
-        >>> sim = hyp.simulate_similar(scorer="Simulated", seed=6)
-        >>> df = pd.concat([hyp.hypno, sim.hypno], axis=1)
+        >>> shyp = hyp.simulate_similar(scorer="Simulated", seed=6)
+        >>> df = pd.concat([hyp.hypno, shyp.hypno], axis=1)
         >>> print(df)
                Human Simulated
         Epoch
@@ -629,8 +629,8 @@ class Hypnogram:
         """
         simulate_hypno_kwargs = {
             "tib": self.tib,
-            "freq": self.freq,
             "n_stages": self.n_stages,
+            "freq": self.freq,
             "trans_probas": self.transition_matrix()[1],
         }
         simulate_hypno_kwargs.update(kwargs)
@@ -1484,8 +1484,8 @@ def hypno_consolidate_stages(hypno, n_stages_in, n_stages_out):
 
 def simulate_hypno(
     tib=90,
-    freq="30s",
     n_stages=5,
+    freq="30s",
     trans_probas=None,
     init_probas=None,
     seed=None,
@@ -1512,12 +1512,12 @@ def simulate_hypno(
         divisible by ``freq``.
 
         .. seealso:: :py:func:`yasa.sleep_statistics`
-    freq : str
-        A pandas frequency string indicating the frequency resolution of the hypnogram.
-        See :py:class:`yasa.Hypnogram` for details.
     n_stages : int
         Staging scheme of returned hypnogram. Input should follow 5-stage scheme but can
         be converted to lower scheme if desired.
+    freq : str
+        A pandas frequency string indicating the frequency resolution of the hypnogram.
+        See :py:class:`yasa.Hypnogram` for details.
 
         .. seealso:: :py:func:`yasa.hypno_consolidate_stages`
     trans_probas : :py:class:`pandas.DataFrame` or None
@@ -1631,18 +1631,18 @@ def simulate_hypno(
         >>> )
         >>> hyp = np.loadtxt(url)
         >>> _, probas = yasa.transition_matrix(hyp)
-        >>> hyp_sim = yasa.simulate_hypno(tib=360, trans_probas=probas, seed=9)
+        >>> shyp = yasa.simulate_hypno(tib=360, trans_probas=probas, seed=9)
         >>> fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 6))
         >>> yasa.plot_hypnogram(hyp, ax=ax1)
-        >>> yasa.plot_hypnogram(hyp_sim, ax=ax2)
+        >>> yasa.plot_hypnogram(shyp, ax=ax2)
         >>> ax1.set_title("True hypnogram")
         >>> ax2.set_title("Simulated hypnogram")
         >>> plt.tight_layout()
     """
     # Validate input
     assert isinstance(tib, (int, float)), "tib must be a number"
-    assert isinstance(freq, str), "freq must be a pandas frequency string"
     assert isinstance(n_stages, int), "n_stages must be an integer"
+    assert isinstance(freq, str), "freq must be a pandas frequency string"
     assert 2 <= n_stages <= 5, "n_stages must be 2, 3, 4, or 5"
     if seed is not None:
         assert isinstance(seed, int) and seed >= 0, "seed must be an integer >= 0"
@@ -1693,12 +1693,11 @@ def simulate_hypno(
         elif n_stages == 4:
             trans_probas.loc[:, "LIGHT"] = trans_probas.loc[:, ["N1", "N2"]].sum(axis=1)
             trans_probas.loc["LIGHT", :] = trans_probas.loc[["N1", "N2"], :].mean(axis=0)
-            trans_probas.loc[:, "DEEP"] = trans_probas.loc[:, "REM"].sum(axis=1)
-            trans_probas.loc["DEEP", :] = trans_probas.loc["REM", :].mean(axis=0)
+            trans_probas = trans_probas.rename(columns={"N3": "DEEP"}, index={"N3": "DEEP"})
 
     if init_probas is None:
         # Extract Wake row of initial probabilities as a Series
-        init_probas = trans_probas.loc["WAKE", :]
+        init_probas = trans_probas.loc["WAKE", :].copy()
 
     # Ensure trans_probas DataFrame and init_probas Series are in row/column order W N1 N2 N3 R
     if n_stages == 2:
@@ -1731,9 +1730,6 @@ def simulate_hypno(
 
     # Generate hypnogram
     values_int = _markov_sequence(init_arr, trans_arr, n_epochs)
-    values_str = hypno_int_to_str(values_int)
-    hyp = Hypnogram(values_str, freq=freq, **kwargs)
-    if n_stages < 5:
-        hyp = hyp.consolidate_stages(n_stages)
-
+    values_str = [ stage_order[x] for x in values_int ]
+    hyp = Hypnogram(values_str, n_stages=n_stages, freq=freq, **kwargs)
     return hyp
