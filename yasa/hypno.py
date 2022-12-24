@@ -1732,8 +1732,8 @@ def simulate_hypno(
     # Generate hypnogram
     values_int = _markov_sequence(init_arr, trans_arr, n_epochs)
     values_str = hypno_int_to_str(values_int)
-    hypno = Hypnogram(values_str, freq=freq, **kwargs)
+    hyp = Hypnogram(values_str, freq=freq, **kwargs)
     if n_stages < 5:
-        hypno = hypno.consolidate_stages(n_stages)
+        hyp = hyp.consolidate_stages(n_stages)
 
-    return hypno
+    return hyp
