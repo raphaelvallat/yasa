@@ -1589,16 +1589,16 @@ def simulate_hypno(
     >>> hyp = simulate_hypno(tib=5, n_stages=2, seed=1)
     >>> print(hyp)
     Epoch
-    0    WAKE
-    1      N1
-    2      N1
-    3      N2
-    4      N2
-    5      N2
-    6      N2
-    7      N2
-    8      N2
-    9      N2
+    0     WAKE
+    1    SLEEP
+    2    SLEEP
+    3    SLEEP
+    4    SLEEP
+    5    SLEEP
+    6    SLEEP
+    7    SLEEP
+    8    SLEEP
+    9    SLEEP
     Name: Stage, dtype: object
 
     Add some Unscored epochs.
@@ -1640,16 +1640,17 @@ def simulate_hypno(
         >>> plt.tight_layout()
     """
     # Validate input
-    assert isinstance(tib, (int, float)), "tib must be a number"
-    assert isinstance(n_stages, int), "n_stages must be an integer"
+    assert isinstance(tib, (int, float)) and tib > 0, "tib must be a number > 0"
+    assert isinstance(n_stages, int) and (2 <= n_stages <= 5), "n_stages must be 2, 3, 4, or 5"
     assert isinstance(freq, str), "freq must be a pandas frequency string"
-    assert 2 <= n_stages <= 5, "n_stages must be 2, 3, 4, or 5"
     if seed is not None:
         assert isinstance(seed, int) and seed >= 0, "seed must be an integer >= 0"
     if trans_probas is not None:
         assert isinstance(trans_probas, pd.DataFrame), "trans_probas must be a pandas DataFrame"
+        assert np.all(np.less_equal(trans_probas.shape, n_stages)), "too many trans_probas stages"
     if init_probas is not None:
         assert isinstance(init_probas, pd.Series), "init_probas must be a pandas Series"
+        assert init_probas.size <= n_stages, "too many stages in init_probas"
 
     # Initialize random number generator
     rng = np.random.default_rng(seed)
@@ -1683,7 +1684,7 @@ def simulate_hypno(
             index=["WAKE", "REM", "N1", "N2", "N3"],
             columns=["WAKE", "REM", "N1", "N2", "N3"],
         )
-        # If using default trans_probas, consolidate stages as needed
+        # If using default trans_probas, consolidate stages as needed.
         if n_stages == 2:
             trans_probas.loc[:, "SLEEP"] = trans_probas.loc[:, ["REM", "N1", "N2", "N3"]].sum(axis=1)
             trans_probas.loc["SLEEP", :] = trans_probas.loc[["REM", "N1", "N2", "N3"], :].mean(axis=0)
@@ -1708,9 +1709,8 @@ def simulate_hypno(
         stage_order = ["WAKE", "LIGHT", "DEEP", "REM"]
     elif n_stages == 5:
         stage_order = ["WAKE", "N1", "N2", "N3", "REM"]
-    trans_probas = trans_probas.reindex(stage_order, axis=0)
-    trans_probas = trans_probas.reindex(stage_order, axis=1)
-    init_probas = init_probas.reindex(stage_order)
+    trans_probas = trans_probas.reindex(index=stage_order, columns=stage_order, fill_value=0)
+    init_probas = init_probas.reindex(index=stage_order, fill_value=0)
     assert trans_probas.notna().values.all(), "trans_proba indices must be YASA string codes"
     assert init_probas.notna().all(), "init_probas index must be YASA string codes"
 
