@@ -132,16 +132,30 @@ class TestHypno(unittest.TestCase):
 
     def test_simulation(self):
         """Test hypnogram simulations."""
-        hyp = simulate_hypno(tib=360, freq="30s")
-        assert hyp.n_epochs <= 360 * 60 * 1 / 30
-        assert hyp.hypno.nunique() > 1
-        assert simulate_hypno(tib=500, n_stages=2).hypno.nunique() == 2
-        assert simulate_hypno(tib=500, n_stages=3).hypno.nunique() == 3
-        assert np.array_equal(
-            simulate_hypno(tib=4, seed=1).as_int(), np.array([0, 1, 1, 2, 2, 2, 2, 2])
+        hyp = simulate_hypno(tib=4, seed=1)
+        assert hyp.n_epochs == 8
+        np.testing.assert_array_equal(hyp.as_int(), [0, 1, 1, 2, 2, 2, 2, 2])
+
+        # Handling different n_stages
+        assert simulate_hypno(tib=1000, n_stages=2).hypno.nunique() == 2
+        np.testing.assert_array_equal(
+            simulate_hypno(tib=4, seed=1, n_stages=3).as_int(), [0, 2, 2, 2, 2, 2, 2, 2]
         )
 
-        # Passing in probabilities
+        # Handling different frequencies
+        np.testing.assert_array_equal(
+            hyp.hypno, simulate_hypno(tib=4, freq="0.5min", seed=1).hypno
+        )
+        np.testing.assert_array_equal(
+            hyp.upsample("5s").hypno, simulate_hypno(tib=4, freq="5s", seed=1).hypno
+        )
+        assert simulate_hypno(tib=4, freq="15s").n_epochs == 16
+        assert simulate_hypno(tib=4, freq="15s").tib == 4
+        assert simulate_hypno(tib=4, freq="30s").tib == 4
+        with pytest.raises(AssertionError):
+            simulate_hypno(freq="60s")
+
+        # Hanling different probabilities
         trans_probas = pd.DataFrame(
             data=np.full((5, 5), 0.2),
             index=["WAKE", "N1", "N2", "N3", "REM"],
@@ -162,7 +176,7 @@ class TestHypno(unittest.TestCase):
         with pytest.raises(AssertionError):
             simulate_hypno(n_stages=2, trans_probas=trans_probas)
 
-        # Pass **kwargs through to yasa.Hypnogram
+        # Passing **kwargs through to yasa.Hypnogram
         shyp = simulate_hypno(tib=5, scorer="RV", start="2022-12-15 22:30:00")
         assert shyp.scorer == shyp.hypno.name == "RV"
 

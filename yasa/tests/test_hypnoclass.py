@@ -78,24 +78,7 @@ class TestHypnoClass(unittest.TestCase):
             "WAKE": 10.5,
         }
         assert sstats == truth
-        shyp = hyp.simulate_similar()
-        assert shyp.sampling_frequency == hyp.sampling_frequency
-        assert shyp.hypno.index.name == hyp.hypno.index.name
-        assert shyp.timedelta == hyp.timedelta
-        assert shyp.n_epochs == hyp.n_epochs
-        assert shyp.n_stages == hyp.n_stages
-        assert shyp.scorer == hyp.scorer
-        assert shyp.labels == hyp.labels
-        assert shyp.start == hyp.start
-        assert shyp.freq == hyp.freq
-        assert shyp.tib == hyp.tib
-        assert hyp.simulate_similar(tib=2, scorer="YASA").scorer == "YASA"
-        assert hyp.simulate_similar(tib=2).n_epochs == 4
-        assert hyp.simulate_similar(freq="30min").n_epochs == 4
-        # np.testing.assert_array_equal(
-        #     simulate_hypno(freq="10min", seed=42).simulate_similar(n_stages=3).as_int(),
-        #     [x, x, x, x, x, x, x, x, x, x],
-        # )
+        assert sstats["TIB"] == hyp.tib
 
         # Invert the mapping
         hyp.mapping = {"SLEEP": 0, "WAKE": 1}
@@ -118,6 +101,26 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp_up.size == npts
         assert hyp_up.dtype == int
         hyp_up = hyp.upsample_to_data(raw.get_data(), sf=100)
+
+        # yasa.Hypnogram.simulate_similar
+        shyp = hyp.simulate_similar()
+        assert shyp.tib == hyp.tib
+        assert shyp.freq == hyp.freq
+        assert shyp.start == hyp.start
+        assert shyp.scorer == hyp.scorer
+        assert shyp.labels == hyp.labels
+        assert shyp.n_epochs == hyp.n_epochs
+        assert shyp.n_stages == hyp.n_stages
+        assert shyp.hypno.index.name == hyp.hypno.index.name
+        assert shyp.sampling_frequency == hyp.sampling_frequency
+        assert hyp.simulate_similar(tib=2, scorer="YASA").scorer == "YASA"
+        assert hyp.simulate_similar(tib=2, start="2022-11-10").start == "2022-11-10"
+        assert hyp.simulate_similar(tib=2, freq="30s").n_epochs == 4
+        assert hyp.simulate_similar(tib=2, freq="15s").n_epochs == 8
+        np.testing.assert_array_equal(
+            simulate_hypno(seed=1).simulate_similar(tib=2, n_stages=4, freq="10s", seed=6).as_int(),
+            [0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2],
+        )
 
     def test_3stages_hypno(self):
         """Test 3-stages Hypnogram class"""

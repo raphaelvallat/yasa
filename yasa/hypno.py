@@ -1562,9 +1562,9 @@ def simulate_hypno(
 
     Notes
     -----
-    Default transition probabilities can be found in the ``traMat_Epoch.npy`` file of
-    Supplementary Information for Metzner et al., 2021 [Metzner2021]_ (rounded values
-    are viewable in Figure 5b). Please cite this work if these probabilites are used
+    Default transition probabilities are based on 30-second epochs and can be found in the
+    ``traMat_Epoch.npy`` file of Supplementary Information for Metzner et al., 2021 [Metzner2021]_
+    (rounded values are viewable in Figure 5b). Please cite this work if these probabilites are used
     for publication.
 
     References
@@ -1649,7 +1649,9 @@ def simulate_hypno(
     # Validate input
     assert isinstance(tib, (int, float)) and tib > 0, "tib must be a number > 0"
     assert isinstance(n_stages, int) and (2 <= n_stages <= 5), "n_stages must be 2, 3, 4, or 5"
-    assert isinstance(freq, str), "freq must be a pandas frequency string"
+    assert isinstance(freq, str) and pd.Timedelta(freq) <= pd.Timedelta("30s"), (
+        "freq must be a pandas frequency string and <= 30 seconds"
+    )
     if seed is not None:
         assert isinstance(seed, int) and seed >= 0, "seed must be an integer >= 0"
     if trans_probas is not None:
@@ -1714,8 +1716,8 @@ def simulate_hypno(
     assert np.isclose(init_arr.sum(), 1)
 
     # Find number of *complete* epochs within TIB duration
-    sampling_frequency = 1 / pd.Timedelta(freq).total_seconds()
-    n_epochs = np.floor(tib * 60 * sampling_frequency).astype(int)
+    freq_sec = 30 if trans_probas.attrs.get("default") else pd.Timedelta(freq).total_seconds()
+    n_epochs = np.floor(tib * 60 / freq_sec).astype(int)
 
     # Generate hypnogram integer values
     values_int = _markov_sequence(init_arr, trans_arr, n_epochs)
@@ -1723,10 +1725,13 @@ def simulate_hypno(
     values_str = [ stage_order[x] for x in values_int ]
 
     # Create YASA hypnogram instance
-    if trans_probas.attrs.get("default") and n_stages < 5:
-        # Reduce stages when trans_probas is a hypnogram with higher n_stages than desired output
-        hyp = Hypnogram(values_str, n_stages=5, freq=freq, **kwargs)
-        hyp = hyp.consolidate_stages(n_stages)
+    if trans_probas.attrs.get("default"):
+        # If using default trans_probas, hyp must be initialized with 5 stages and 30s epochs
+        hyp = Hypnogram(values_str, n_stages=5, freq="30s", **kwargs)
+        if pd.Timedelta(freq) != pd.Timedelta("30s"):
+            hyp = hyp.upsample(freq)
+        if n_stages < 5:
+            hyp = hyp.consolidate_stages(n_stages)
     else:
         hyp = Hypnogram(values_str, n_stages=n_stages, freq=freq, **kwargs)
 
