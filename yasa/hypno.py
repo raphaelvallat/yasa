@@ -628,14 +628,20 @@ class Hypnogram:
         10      WAKE     SLEEP
         11      WAKE      WAKE
         """
-        simulate_hypno_kwargs = {
+        kwargs_ = {
             "tib": self.tib,
             "n_stages": self.n_stages,
             "freq": self.freq,
             "trans_probas": self.transition_matrix()[1],
+            "start": self.start,
+            "scorer": self.scorer,
         }
-        simulate_hypno_kwargs.update(kwargs)
-        hyp = simulate_hypno(**simulate_hypno_kwargs)
+        if (n_stages := kwargs.pop("n_stages", None)) is not None:
+            assert n_stages <= self.n_stages, "new n_stages must be <= original n_stages"
+        kwargs_.update(kwargs)
+        hyp = simulate_hypno(**kwargs_)
+        if n_stages is not None and n_stages < self.n_stages:
+            hyp = hyp.consolidate_stages(n_stages)
         return hyp
 
     def sleep_statistics(self):
@@ -1509,18 +1515,17 @@ def simulate_hypno(
     ----------
     tib : int, float
         Total duration of the hypnogram (i.e., time in bed), expressed in minutes.
-        Returned hypnogram will be slightly shorter if ``tib`` is not evenly
-        divisible by ``freq``.
+        Returned hypnogram will be slightly shorter if ``tib`` is not evenly divisible by ``freq``.
 
         .. seealso:: :py:func:`yasa.sleep_statistics`
     n_stages : int
         Staging scheme of returned hypnogram. Input should follow 5-stage scheme but can
         be converted to lower scheme if desired.
+
+        .. seealso:: :py:func:`yasa.hypno_consolidate_stages`
     freq : str
         A pandas frequency string indicating the frequency resolution of the hypnogram.
         See :py:class:`yasa.Hypnogram` for details.
-
-        .. seealso:: :py:func:`yasa.hypno_consolidate_stages`
     trans_probas : :py:class:`pandas.DataFrame` or None
         Transition probability matrix where each cell is a transition probability
         between sleep stages of consecutive *epochs*.
@@ -1649,7 +1654,6 @@ def simulate_hypno(
         assert isinstance(seed, int) and seed >= 0, "seed must be an integer >= 0"
     if trans_probas is not None:
         assert isinstance(trans_probas, pd.DataFrame), "trans_probas must be a pandas DataFrame"
-        # Fewer stages in trans_proba than n_stages allowed bc stages can be allowed but absent
         assert np.all(np.less_equal(trans_probas.shape, n_stages)), "too many trans_probas stages"
     if init_probas is not None:
         assert isinstance(init_probas, pd.Series), "init_probas must be a pandas Series"

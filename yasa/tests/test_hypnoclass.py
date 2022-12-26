@@ -64,8 +64,6 @@ class TestHypnoClass(unittest.TestCase):
         hyp.transition_matrix()
         hyp.find_periods()
         hyp.as_annotations()
-        hyp.simulate_similar(tib=10, scorer="YASA")
-        assert hyp.simulate_similar().n_epochs == hyp.n_epochs
         sstats = hyp.sleep_statistics()
         truth = {
             "TIB": 60.0,
@@ -80,6 +78,24 @@ class TestHypnoClass(unittest.TestCase):
             "WAKE": 10.5,
         }
         assert sstats == truth
+        shyp = hyp.simulate_similar()
+        assert shyp.sampling_frequency == hyp.sampling_frequency
+        assert shyp.hypno.index.name == hyp.hypno.index.name
+        assert shyp.timedelta == hyp.timedelta
+        assert shyp.n_epochs == hyp.n_epochs
+        assert shyp.n_stages == hyp.n_stages
+        assert shyp.scorer == hyp.scorer
+        assert shyp.labels == hyp.labels
+        assert shyp.start == hyp.start
+        assert shyp.freq == hyp.freq
+        assert shyp.tib == hyp.tib
+        assert hyp.simulate_similar(tib=2, scorer="YASA").scorer == "YASA"
+        assert hyp.simulate_similar(tib=2).n_epochs == 4
+        assert hyp.simulate_similar(freq="30min").n_epochs == 4
+        # np.testing.assert_array_equal(
+        #     simulate_hypno(freq="10min", seed=42).simulate_similar(n_stages=3).as_int(),
+        #     [x, x, x, x, x, x, x, x, x, x],
+        # )
 
         # Invert the mapping
         hyp.mapping = {"SLEEP": 0, "WAKE": 1}
