@@ -284,6 +284,7 @@ class Hypnogram:
     def tib(self):
         """Time in bed, or total duration of the hypnogram, expressed in minutes."""
         return self._tib
+        ## Q: Should this be called "duration" instead?
 
     @property
     def n_stages(self):
@@ -1720,10 +1721,6 @@ def simulate_hypno(
     # Create YASA hypnogram instance
     if trans_probas.attrs.get("default") and n_stages < 5:
         # Reduce stages when trans_probas is a hypnogram with higher n_stages than desired output
-        ## Q: Should yasa.Hypnogram accept mismatched n_stages & values
-        ##    and then apply the .consolidate_stages method automatically
-        ##    with a logger warning?
-        ##    That would make something like this unnecessary.
         hyp = Hypnogram(values_str, n_stages=5, freq=freq, **kwargs)
         hyp = hyp.consolidate_stages(n_stages)
     else:
