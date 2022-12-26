@@ -143,9 +143,7 @@ class TestHypno(unittest.TestCase):
         )
 
         # Handling different frequencies
-        np.testing.assert_array_equal(
-            hyp.hypno, simulate_hypno(tib=4, freq="0.5min", seed=1).hypno
-        )
+        np.testing.assert_array_equal(hyp.hypno, simulate_hypno(tib=4, freq="0.5min", seed=1).hypno)
         np.testing.assert_array_equal(
             hyp.upsample("5s").hypno, simulate_hypno(tib=4, freq="5s", seed=1).hypno
         )

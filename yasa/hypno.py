@@ -1649,9 +1649,9 @@ def simulate_hypno(
     # Validate input
     assert isinstance(tib, (int, float)) and tib > 0, "tib must be a number > 0"
     assert isinstance(n_stages, int) and (2 <= n_stages <= 5), "n_stages must be 2, 3, 4, or 5"
-    assert isinstance(freq, str) and pd.Timedelta(freq) <= pd.Timedelta("30s"), (
-        "freq must be a pandas frequency string and <= 30 seconds"
-    )
+    assert isinstance(freq, str) and pd.Timedelta(freq) <= pd.Timedelta(
+        "30s"
+    ), "freq must be a pandas frequency string and <= 30 seconds"
     if seed is not None:
         assert isinstance(seed, int) and seed >= 0, "seed must be an integer >= 0"
     if trans_probas is not None:
@@ -1703,9 +1703,9 @@ def simulate_hypno(
         assert init_probas is not None, "trans_probas must include 'WAKE' in the index"
 
     stage_order = init_probas.index.tolist()
-    assert stage_order == trans_probas.index.tolist() == trans_probas.columns.tolist(), (
-        "init_probas and trans_probas must all have matching indices"
-    )
+    assert (
+        stage_order == trans_probas.index.tolist() == trans_probas.columns.tolist()
+    ), "init_probas and trans_probas must all have matching indices"
 
     # Extract probabilities as arrays
     trans_arr = trans_probas.to_numpy()
@@ -1722,7 +1722,7 @@ def simulate_hypno(
     # Generate hypnogram integer values
     values_int = _markov_sequence(init_arr, trans_arr, n_epochs)
     # Convert to hypnogram string values (based on indices)
-    values_str = [ stage_order[x] for x in values_int ]
+    values_str = [stage_order[x] for x in values_int]
 
     # Create YASA hypnogram instance
     if trans_probas.attrs.get("default"):
