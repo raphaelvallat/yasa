@@ -34,6 +34,8 @@ class Hypnogram:
     Instead, users must pass an array of strings with the actual stage names
     (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]).
 
+    .. seealso:: :py:func:`yasa.simulate_hypno`
+
     .. versionadded:: 0.7.0
 
     Parameters
@@ -139,9 +141,7 @@ class Hypnogram:
     Simulate a 5-stages hypnogram
 
     >>> from yasa import simulate_hypno
-    >>> values = simulate_hypno(tib=500, n_stages=5, seed=42)
-    >>> values = pd.Series(values).map({0: "W", 1: "N1", 2: "N2", 3: "N3", 4: "REM"}).to_numpy()
-    >>> hyp = Hypnogram(values, start="2022-12-15 22:30:00", scorer="S1")
+    >>> hyp = simulate_hypno(tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42)
     >>> hyp
     Time
     2022-12-15 22:30:00    WAKE
@@ -1629,12 +1629,13 @@ def simulate_hypno(
         >>>     "https://github.com/raphaelvallat/yasa/raw/master/"
         >>>     "notebooks/data_full_6hrs_100Hz_hypno_30s.txt"
         >>> )
-        >>> hyp = np.loadtxt(url)
-        >>> _, probas = yasa.transition_matrix(hyp)
-        >>> shyp = yasa.simulate_hypno(tib=360, trans_probas=probas, seed=9)
+        >>> values_int = np.loadtxt(url)
+        >>> values_str = yasa.hypno_int_to_str(values_int)
+        >>> hyp = yasa.Hypnogram(values_str)
+        >>> shyp = hyp.simulate_similar(seed=2)
         >>> fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 6))
-        >>> yasa.plot_hypnogram(hyp, ax=ax1)
-        >>> yasa.plot_hypnogram(shyp, ax=ax2)
+        >>> yasa.plot_hypnogram(hyp.as_int(), ax=ax1)
+        >>> yasa.plot_hypnogram(shyp.as_int(), ax=ax2)
         >>> ax1.set_title("True hypnogram")
         >>> ax2.set_title("Simulated hypnogram")
         >>> plt.tight_layout()
@@ -1647,6 +1648,7 @@ def simulate_hypno(
         assert isinstance(seed, int) and seed >= 0, "seed must be an integer >= 0"
     if trans_probas is not None:
         assert isinstance(trans_probas, pd.DataFrame), "trans_probas must be a pandas DataFrame"
+        # Fewer stages in trans_proba than n_stages allowed bc stages can be allowed but absent
         assert np.all(np.less_equal(trans_probas.shape, n_stages)), "too many trans_probas stages"
     if init_probas is not None:
         assert isinstance(init_probas, pd.Series), "init_probas must be a pandas Series"
@@ -1668,68 +1670,63 @@ def simulate_hypno(
         return np.asarray(states)
 
     if trans_probas is None:
-        # Generate transition probability DataFrame (here, ordered W R 1 2 3)
+        # Generate transition probability DataFrame
         trans_freqs = np.array(
             [
-                [11737, 2, 571, 84, 2],
-                [57, 10071, 189, 84, 2],
-                [281, 59, 6697, 1661, 11],
-                [253, 272, 1070, 26259, 505],
-                [49, 12, 176, 279, 9630],
+                [11737, 571, 84, 2, 2],
+                [281, 6697, 1661, 11, 59],
+                [253, 1070, 26259, 505, 272],
+                [49, 176, 279, 9630, 12],
+                [57, 189, 84, 2, 10071],
             ]
         )
         trans_probas = trans_freqs / trans_freqs.sum(axis=1, keepdims=True)
         trans_probas = pd.DataFrame(
             trans_probas,
-            index=["WAKE", "REM", "N1", "N2", "N3"],
-            columns=["WAKE", "REM", "N1", "N2", "N3"],
+            index=["WAKE", "N1", "N2", "N3", "REM"],
+            columns=["WAKE", "N1", "N2", "N3", "REM"],
         )
-        # If using default trans_probas, consolidate stages as needed.
-        if n_stages == 2:
-            trans_probas.loc[:, "SLEEP"] = trans_probas.loc[:, ["REM", "N1", "N2", "N3"]].sum(axis=1)
-            trans_probas.loc["SLEEP", :] = trans_probas.loc[["REM", "N1", "N2", "N3"], :].mean(axis=0)
-        elif n_stages == 3:
-            trans_probas.loc[:, "NREM"] = trans_probas.loc[:, ["N1", "N2", "N3"]].sum(axis=1)
-            trans_probas.loc["NREM", :] = trans_probas.loc[["N1", "N2", "N3"], :].mean(axis=0)
-        elif n_stages == 4:
-            trans_probas.loc[:, "LIGHT"] = trans_probas.loc[:, ["N1", "N2"]].sum(axis=1)
-            trans_probas.loc["LIGHT", :] = trans_probas.loc[["N1", "N2"], :].mean(axis=0)
-            trans_probas = trans_probas.rename(columns={"N3": "DEEP"}, index={"N3": "DEEP"})
+        trans_probas.attrs = {"default": True}
 
     if init_probas is None:
         # Extract Wake row of initial probabilities as a Series
-        init_probas = trans_probas.loc["WAKE", :].copy()
+        for w in ["w", "W", "wake", "WAKE"]:
+            if w in trans_probas.index:
+                init_probas = trans_probas.loc[w, :].copy()
+        assert init_probas is not None, "trans_probas must include 'WAKE' in the index"
 
-    # Ensure trans_probas DataFrame and init_probas Series are in row/column order W N1 N2 N3 R
-    if n_stages == 2:
-        stage_order = ["WAKE", "SLEEP"]
-    elif n_stages == 3:
-        stage_order = ["WAKE", "NREM", "REM"]
-    elif n_stages == 4:
-        stage_order = ["WAKE", "LIGHT", "DEEP", "REM"]
-    elif n_stages == 5:
-        stage_order = ["WAKE", "N1", "N2", "N3", "REM"]
-    trans_probas = trans_probas.reindex(index=stage_order, columns=stage_order, fill_value=0)
-    init_probas = init_probas.reindex(index=stage_order, fill_value=0)
-    assert trans_probas.notna().values.all(), "trans_proba indices must be YASA string codes"
-    assert init_probas.notna().all(), "init_probas index must be YASA string codes"
+    stage_order = init_probas.index.tolist()
+    assert stage_order == trans_probas.index.tolist() == trans_probas.columns.tolist(), (
+        "init_probas and trans_probas must all have matching indices"
+    )
 
     # Extract probabilities as arrays
     trans_arr = trans_probas.to_numpy()
     init_arr = init_probas.to_numpy()
 
-    # Make sure all rows sum to 1 (or zero, in cases where a stage was absent)
-    row_sums = trans_arr.sum(axis=1)
-    assert np.all(np.logical_xor(np.isclose(row_sums, 1), np.isclose(row_sums, 0)))
-    # assert np.allclose(trans_arr.sum(axis=1), 1)
+    # Make sure all rows sum to 1
+    assert np.allclose(trans_arr.sum(axis=1), 1)
     assert np.isclose(init_arr.sum(), 1)
 
-    # Find number of *complete* epochs within TIB timeframe
+    # Find number of *complete* epochs within TIB duration
     sampling_frequency = 1 / pd.Timedelta(freq).total_seconds()
     n_epochs = np.floor(tib * 60 * sampling_frequency).astype(int)
 
-    # Generate hypnogram
+    # Generate hypnogram integer values
     values_int = _markov_sequence(init_arr, trans_arr, n_epochs)
+    # Convert to hypnogram string values (based on indices)
     values_str = [ stage_order[x] for x in values_int ]
-    hyp = Hypnogram(values_str, n_stages=n_stages, freq=freq, **kwargs)
+
+    # Create YASA hypnogram instance
+    if trans_probas.attrs.get("default") and n_stages < 5:
+        # Reduce stages when trans_probas is a hypnogram with higher n_stages than desired output
+        ## Q: Should yasa.Hypnogram accept mismatched n_stages & values
+        ##    and then apply the .consolidate_stages method automatically
+        ##    with a logger warning?
+        ##    That would make something like this unnecessary.
+        hyp = Hypnogram(values_str, n_stages=5, freq=freq, **kwargs)
+        hyp = hyp.consolidate_stages(n_stages)
+    else:
+        hyp = Hypnogram(values_str, n_stages=n_stages, freq=freq, **kwargs)
+
     return hyp

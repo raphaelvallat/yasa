@@ -25,7 +25,7 @@ class TestHypnoClass(unittest.TestCase):
         print(str(hyp))
 
         # Check properties
-        np.testing.assert_array_equal(hyp.hypno.str.get(0).unique(), ["W", "S"])
+        np.testing.assert_array_equal(hyp.hypno.str.get(0)[:10], np.repeat(["W", "S"], 5))
         assert isinstance(hyp.hypno.index, pd.RangeIndex)
         assert hyp.hypno.index.name == "Epoch"
         assert hyp.sampling_frequency == 1 / 30
@@ -70,14 +70,14 @@ class TestHypnoClass(unittest.TestCase):
         truth = {
             "TIB": 60.0,
             "SPT": 58.75,
-            "WASO": 6.0,
-            "TST": 52.75,
-            "SE": 87.9167,
-            "SME": 89.7872,
-            "SFI": 0.2844,
+            "WASO": 9.25,
+            "TST": 49.5,
+            "SE": 82.5,
+            "SME": 84.2553,
+            "SFI": 0.303,
             "SOL": 1.25,
             "SOL_5min": 1.25,
-            "WAKE": 7.25,
+            "WAKE": 10.5,
         }
         assert sstats == truth
 

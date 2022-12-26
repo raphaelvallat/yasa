@@ -138,8 +138,7 @@ class TestHypno(unittest.TestCase):
         assert simulate_hypno(tib=500, n_stages=2).hypno.nunique() == 2
         assert simulate_hypno(tib=500, n_stages=3).hypno.nunique() == 3
         assert np.array_equal(
-            simulate_hypno(tib=4, seed=1).as_int(),
-            np.array([0, 1, 1, 2, 2, 2, 2, 2]),
+            simulate_hypno(tib=4, seed=1).as_int(), np.array([0, 1, 1, 2, 2, 2, 2, 2])
         )
 
         # Passing in probabilities
@@ -148,20 +147,20 @@ class TestHypno(unittest.TestCase):
             index=["WAKE", "N1", "N2", "N3", "REM"],
             columns=["WAKE", "N1", "N2", "N3", "REM"],
         )
-        simulate_hypno(trans_probas=trans_probas)
-        simulate_hypno(init_probas=trans_probas.loc["WAKE"])
+        simulate_hypno(tib=2, trans_probas=trans_probas)
+        simulate_hypno(tib=2, init_probas=trans_probas.loc["WAKE"])
+        simulate_hypno(tib=2, trans_probas=trans_probas, init_probas=trans_probas.loc["WAKE"])
         # Setting all probabilities between stages as zero
         trans_probas.loc[:, :] = np.eye(5, 5)
         assert not simulate_hypno(trans_probas=trans_probas).as_int().any()
 
-        # Test conflicts between n_stages and trans_proba
-        # When trans_proba has fewer stages than allowed by n_stages
+        # When trans_probas has fewer stages than allowed by n_stages
         trans_probas = trans_probas.drop("REM", axis=0).drop("REM", axis=1)
         trans_probas.loc[:, :] = np.full((4, 4), 0.25)
         simulate_hypno(trans_probas=trans_probas)
         # When trans_proba has more stages than allowed by n_stages
         with pytest.raises(AssertionError):
-            simulate_hypno(tib=10, n_stages=2, trans_probas=trans_probas)
+            simulate_hypno(n_stages=2, trans_probas=trans_probas)
 
         # Pass **kwargs through to yasa.Hypnogram
         shyp = simulate_hypno(tib=5, scorer="RV", start="2022-12-15 22:30:00")
