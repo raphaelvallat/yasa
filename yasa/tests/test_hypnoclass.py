@@ -115,11 +115,9 @@ class TestHypnoClass(unittest.TestCase):
         assert shyp.sampling_frequency == hyp.sampling_frequency
         assert hyp.simulate_similar(tib=2, scorer="YASA").scorer == "YASA"
         assert hyp.simulate_similar(tib=2, start="2022-11-10").start == "2022-11-10"
-        assert hyp.simulate_similar(tib=2, freq="30s").n_epochs == 4
-        assert hyp.simulate_similar(tib=2, freq="15s").n_epochs == 8
         np.testing.assert_array_equal(
-            simulate_hypno(seed=1).simulate_similar(tib=2, n_stages=4, freq="10s", seed=6).as_int(),
-            [0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2],
+            simulate_hypno(seed=1).simulate_similar(tib=5, seed=6).as_int(),
+            [0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
         )
 
     def test_3stages_hypno(self):
