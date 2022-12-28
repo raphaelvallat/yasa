@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from lspopt import spectrogram_lspopt
 from matplotlib.colors import Normalize, ListedColormap
 
@@ -50,9 +51,11 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     .. plot::
 
         >>> from yasa import simulate_hypno
-        >>> hyp = simulate_hypno(tib=90, n_stages=3, seed=99, start="2022-01-31 22:00:00")
-        >>> fig, ax = plt.subplots(figsize=(6, 3), constrained_layout=True)
-        >>> hyp.plot_hypnogram(fill_color="gainsboro", ax=ax)
+        >>> fig, axes = plt.subplots(nrows=2, figsize=(6, 4), constrained_layout=True)
+        >>> hyp_a = simulate_hypno(tib=90, n_stages=3, seed=99)
+        >>> hyp_b = simulate_hypno(tib=90, n_stages=3, seed=99, start="2022-01-31 23:30:00")
+        >>> hyp_a.plot_hypnogram(fill_color="whitesmoke", ax=axes[0])
+        >>> hyp_b.plot_hypnogram(fill_color="whitesmoke", ax=axes[1])
     """
     from yasa import Hypnogram  # Avoiding circular import
     assert isinstance(hyp, Hypnogram), "`hypno` must be YASA Hypnogram."
@@ -79,25 +82,26 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     hyp.mapping = { stage: i for i, stage in enumerate(stage_order) }
 
     ## Extract values to plot ##
-    df = hyp.as_annotations()
+    hypno = hyp.as_int()
     # Reduce to breakpoints (where stages change) to avoid drawing individual lines for every epoch
-    df = df[df["value"].shift().ne(df["value"])]
+    hypno = hypno[hypno.shift().ne(hypno)]
     # Extract x-values (bins) and y-values to plot
-    hypno = df["value"].to_numpy()
-    bins = np.append(df["onset"].to_numpy(), hyp.duration * 60)
-    # Convert x-axis bins to minutes or hours
-    if hyp.duration <= 90:
-        bins /= 60
-        xlabel = "Time [mins]"
+    yvalues = hypno.to_numpy()
+    if hyp.start is not None:
+        final_bin_edge = pd.Timestamp(hyp.start) + pd.Timedelta(hyp.duration, unit="min")
+        bins = np.append(hypno.index.to_list(), final_bin_edge)
+        bins = [mdates.date2num(b) for b in bins]
+        xlabel = "Time"
     else:
-        bins /= 3600
-        xlabel = "Time [hrs]"
+        final_bin_edge = hyp.duration * 60
+        bins = np.append(hyp.timedelta[hypno.index].total_seconds(), final_bin_edge)
+        bins /= (60 if hyp.duration <= 90 else 3600)
+        xlabel = "Time [mins]" if hyp.duration <= 90 else "Time [hrs]"
 
     # Make masks to draw with different colors
-    hypno_sleep = np.ma.masked_less(hypno, 0)
-    hypno_art_uns = np.ma.masked_greater(hypno, -1)
+    yvals_art_uns = np.ma.masked_greater(yvalues, -1)
     highlight_int = hyp.mapping[highlight] if highlight in hyp.mapping else np.nan
-    hypno_highlight = np.ma.masked_not_equal(hypno, highlight_int)
+    yvals_highlight = np.ma.masked_not_equal(yvalues, highlight_int)
 
     # Open the figure
     if ax is None:
@@ -106,15 +110,13 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     # Draw background filling
     if fill_color is not None:
         baseline = hyp.mapping["WAKE"]  # len(stage_order) - 1 to fill from bottom
-        ax.stairs(hypno.clip(baseline), bins, baseline=baseline, fill=True, color=fill_color, lw=0)
-    # Draw main hypnogram line
-    ax.stairs(hypno, bins, baseline=None, color="black", lw=lw)
-    # Draw highlighted line
-    if not hypno_highlight.mask.all():
-        ax.hlines(hypno_highlight, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
-    # Draw Artefact/Unscored line
-    if not hypno_art_uns.mask.all():
-        ax.hlines(hypno_art_uns, xmin=bins[:-1], xmax=bins[1:], color="grey", lw=lw)
+        ax.stairs(yvalues.clip(baseline), bins, baseline=baseline, fill=True, color=fill_color, lw=0)
+    # Draw main hypnogram line, highlighted stage line, and Artefact/Unscored line
+    ax.stairs(yvalues, bins, baseline=None, color="black", lw=lw)
+    if not yvals_highlight.mask.all():
+        ax.hlines(yvals_highlight, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
+    if not yvals_art_uns.mask.all():
+        ax.hlines(yvals_art_uns, xmin=bins[:-1], xmax=bins[1:], color="grey", lw=lw)
 
     # Aesthetics
     ax.use_sticky_edges = False
@@ -125,6 +127,9 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     ax.set_xlabel(xlabel)
     ax.invert_yaxis()
     ax.spines[["right", "top"]].set_visible(False)
+    if hyp.start is not None:
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+        ax.xaxis.set_major_locator(mdates.AutoDateLocator())
     # Revert font-size
     plt.rcParams.update({"font.size": old_fontsize})
     return ax
