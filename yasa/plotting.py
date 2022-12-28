@@ -139,7 +139,7 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
 def plot_spectrogram(
     data,
     sf,
-    hypno=None,
+    hyp=None,
     win_sec=30,
     fmin=0.5,
     fmax=25,
@@ -163,23 +163,11 @@ def plot_spectrogram(
         Single-channel EEG data. Must be a 1D NumPy array.
     sf : float
         The sampling frequency of data AND the hypnogram.
-    hypno : array_like
-        Sleep stage (hypnogram), optional.
+    hyp : :py:class:`yasa.Hypnogram`
+        Hypnogram, optional.
 
         The hypnogram must have the exact same number of samples as ``data``.
-        To upsample your hypnogram, please refer to :py:func:`yasa.hypno_upsample_to_data`.
-
-        .. note::
-            The default hypnogram format in YASA is a 1D integer
-            vector where:
-
-            - -2 = Unscored
-            - -1 = Artefact / Movement
-            - 0 = Wake
-            - 1 = N1 sleep
-            - 2 = N2 sleep
-            - 3 = N3 sleep
-            - 4 = REM sleep
+        To upsample your hypnogram, please refer to :py:meth:`yasa.Hypnogram.upsample_to_data`.
     win_sec : int or float
         The length of the sliding window, in seconds, used for multitaper PSD
         calculation. Default is 30 seconds. Note that ``data`` must be at least
@@ -199,7 +187,7 @@ def plot_spectrogram(
     vmax : int or float
         The upper range of color scale. Overwrites ``trimperc``
     **kwargs : dict
-        Other arguments that are passed to :py:func:`yasa.plot_hypnogram`.
+        Other arguments that are passed to :py:meth:`yasa.Hypnogram.plot_hypnogram`.
 
     Returns
     -------
@@ -239,7 +227,9 @@ def plot_spectrogram(
         >>> # Load the 30-sec hypnogram and upsample to data
         >>> hypno = np.loadtxt('https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt')
         >>> hypno = yasa.hypno_upsample_to_data(hypno, 1/30, data, sf)
-        >>> fig = yasa.plot_spectrogram(data, sf, hypno, cmap='Spectral_r')
+        >>> hypno = yasa.hypno_int_to_str(hypno)
+        >>> hyp = yasa.Hypnogram(hypno, freq="10ms")
+        >>> fig = yasa.plot_spectrogram(data, sf, hyp, cmap='Spectral_r')
     """
     # Increase font size while preserving original
     old_fontsize = plt.rcParams["font.size"]
@@ -260,9 +250,11 @@ def plot_spectrogram(
         assert isinstance(vmax, (int, float)), "vmax must be int or float if vmin is provided"
     if vmax is not None:
         assert isinstance(vmin, (int, float)), "vmin must be int or float if vmax is provided"
-    if hypno is not None:
+    if hyp is not None:
         # Validate and handle hypnogram-related inputs
-        assert hypno.size == data.size, "Hypno must have the same sf as data."
+        from yasa.hypno import Hypnogram
+        assert isinstance(hyp, Hypnogram)
+        assert hyp.n_epochs == data.size, "Hypno must have the same number of samples as data."
 
     # Calculate multi-taper spectrogram
     nperseg = int(win_sec * sf)
@@ -282,7 +274,7 @@ def plot_spectrogram(
     norm = Normalize(vmin=vmin, vmax=vmax)
 
     # Open figure
-    if hypno is None:
+    if hyp is None:
         fig, ax1 = plt.subplots(nrows=1, figsize=(12, 4))
     else:
         fig, (ax0, ax1) = plt.subplots(
@@ -297,11 +289,11 @@ def plot_spectrogram(
     ax1.set_ylabel("Frequency [Hz]")
     ax1.set_xlabel("Time [hrs]")
 
-    if hypno is not None:
+    if hyp is not None:
         hypnoplot_kwargs = dict(lw=1.5, fill_color=None)
         hypnoplot_kwargs.update(kwargs)
         # Draw hypnogram
-        ax0 = plot_hypnogram(hypno, sf_hypno=sf, ax=ax0, **hypnoplot_kwargs)
+        ax0 = hyp.plot_hypnogram(ax=ax0, **hypnoplot_kwargs)
         ax0.xaxis.set_visible(False)
     else:
         # Add colorbar
