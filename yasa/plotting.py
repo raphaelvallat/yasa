@@ -58,6 +58,7 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
         >>> hyp_b.plot_hypnogram(fill_color="whitesmoke", ax=axes[1])
     """
     from yasa import Hypnogram  # Avoiding circular import
+
     assert isinstance(hyp, Hypnogram), "`hypno` must be YASA Hypnogram."
 
     # Increase font size while preserving original
@@ -79,7 +80,7 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     if hyp.n_stages == 5:
         stage_order.insert(stage_order.index("WAKE") + 1, stage_order.pop(stage_order.index("REM")))
     # Reset the Hypnogram mapping so any future returns have this order
-    hyp.mapping = { stage: i for i, stage in enumerate(stage_order) }
+    hyp.mapping = {stage: i for i, stage in enumerate(stage_order)}
 
     ## Extract values to plot ##
     hypno = hyp.as_int()
@@ -95,7 +96,7 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     else:
         final_bin_edge = hyp.duration * 60
         bins = np.append(hyp.timedelta[hypno.index].total_seconds(), final_bin_edge)
-        bins /= (60 if hyp.duration <= 90 else 3600)
+        bins /= 60 if hyp.duration <= 90 else 3600
         xlabel = "Time [mins]" if hyp.duration <= 90 else "Time [hrs]"
 
     # Make masks to draw with different colors
@@ -109,8 +110,8 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
 
     # Draw background filling
     if fill_color is not None:
-        baseline = hyp.mapping["WAKE"]  # len(stage_order) - 1 to fill from bottom
-        ax.stairs(yvalues.clip(baseline), bins, baseline=baseline, fill=True, color=fill_color, lw=0)
+        bline = hyp.mapping["WAKE"]  # len(stage_order) - 1 to fill from bottom
+        ax.stairs(yvalues.clip(baseline), bins, baseline=bline, color=fill_color, fill=True, lw=0)
     # Draw main hypnogram line, highlighted stage line, and Artefact/Unscored line
     ax.stairs(yvalues, bins, baseline=None, color="black", lw=lw)
     if not yvals_highlight.mask.all():
