@@ -75,11 +75,6 @@ class Hypnogram:
         An optional string indicating the scorer name. If specified, this will be set as the name
         of the :py:class:`pandas.Series`, otherwise the name will be set to "Stage".
 
-    See Also
-    --------
-    yasa.simulate_hypno
-
-
     Examples
     --------
     Create a 2-stages hypnogram
