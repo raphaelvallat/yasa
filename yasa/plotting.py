@@ -12,7 +12,7 @@ from matplotlib.colors import Normalize, ListedColormap
 __all__ = ["plot_hypnogram", "plot_spectrogram", "topoplot"]
 
 
-def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, ax=None):
+def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     """
     Plot a hypnogram.
 
@@ -20,28 +20,14 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, ax=None):
 
     Parameters
     ----------
-    hypno : array_like
-        Sleep stage (hypnogram).
-
-        .. note::
-            The default hypnogram format in YASA is a 1D integer vector where:
-
-            * -2 = Unscored
-            * -1 = Artefact / Movement
-            * 0 = Wake
-            * 1 = N1 sleep
-            * 2 = N2 sleep
-            * 3 = N3 sleep
-            * 4 = REM sleep
-    sf_hypno : float
-        The current sampling frequency of the hypnogram, in Hz, e.g.
-
-        * 1/30 = 1 value per each 30 seconds of EEG data,
-        * 1 = 1 value per second of EEG data
+    hyp : :py:class:`yasa.Hypnogram`
+        A YASA hypnogram instance.
     lw : float
         Linewidth.
     fill_color : str
-        Color to fill space above hypnogram line, optional.
+        Optional color to fill space above hypnogram line.
+    highlight : str
+        Optional stage to highlight with alternate color.
     ax : :py:class:`matplotlib.axes.Axes`
         Axis on which to draw the plot, optional.
 
@@ -55,78 +41,90 @@ def plot_hypnogram(hypno, sf_hypno=1 / 30, lw=1.5, fill_color=None, ax=None):
     .. plot::
 
         >>> import yasa
-        >>> import numpy as np
         >>> import matplotlib.pyplot as plt
-        >>> hypno = np.loadtxt("https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt")
-        >>> fig, ax = plt.subplots(1, 1, figsize=(7, 3), constrained_layout=True)
-        >>> ax = yasa.plot_hypnogram(hypno, fill_color="gainsboro", ax=ax)
+        >>> values = 4 * ["W", "N1", "N2", "N3", "REM"] + ["ART", "N2", "REM", "W", "UNS"]
+        >>> hyp = yasa.Hypnogram(values, freq="22min").upsample("30s")
+        >>> ax = yasa.plot_hypnogram(hyp, lw=2, highlight="REM", fill_color="thistle")
+        >>> plt.tight_layout()
+
+    .. plot::
+
+        >>> from yasa import simulate_hypno
+        >>> hyp = simulate_hypno(tib=90, n_stages=3, seed=99, start="2022-01-31 22:00:00")
+        >>> fig, ax = plt.subplots(figsize=(6, 3), constrained_layout=True)
+        >>> hyp.plot_hypnogram(fill_color="gainsboro", ax=ax)
     """
+    from yasa import Hypnogram  # Avoiding circular import
+    assert isinstance(hyp, Hypnogram), "`hypno` must be YASA Hypnogram."
+
     # Increase font size while preserving original
     old_fontsize = plt.rcParams["font.size"]
     plt.rcParams.update({"font.size": 18})
 
-    # Safety checks
-    assert isinstance(hypno, (np.ndarray, pd.Series, list)), "hypno must be an array."
-    hypno = np.asarray(hypno).astype(int)
-    assert (hypno >= -2).all() and (hypno <= 4).all(), "hypno values must be between -2 to 4."
-    assert hypno.ndim == 1, "hypno must be a 1D array."
-    assert isinstance(sf_hypno, (int, float)), "sf must be int or float."
+    # Pick y-axis order and remap hypno integer values accordingly.
+    # Start with default of all allowed labels
+    stage_order = hyp.labels.copy()
+    stages_present = hyp.hypno.unique()
+    # Remove Art/Uns from stage order, and place back individually at front as needed
+    art_str = stage_order.pop(stage_order.index("ART"))
+    uns_str = stage_order.pop(stage_order.index("UNS"))
+    if "ART" in stages_present:
+        stage_order.insert(0, art_str)
+    if "UNS" in stages_present:
+        stage_order.insert(0, uns_str)
+    # Put REM after WAKE if all 5 standard stages are allowed
+    if hyp.n_stages == 5:
+        stage_order.insert(stage_order.index("WAKE") + 1, stage_order.pop(stage_order.index("REM")))
+    hyp.mapping = { stage: i for i, stage in enumerate(stage_order) }
 
-    bins = np.arange(hypno.size + 1) / (sf_hypno * 3600)
-    # Make sure that REM is displayed after Wake
-    hypno = pd.Series(hypno).map({-2: -2, -1: -1, 0: 0, 1: 2, 2: 3, 3: 4, 4: 1}).values
+    # Extract values to plot
+    df = hyp.as_annotations()
+    # Drop to only breakpoints to avoid drawing individual lines for each epoch.
+    df = df[df["value"].shift().ne(df["value"])]
+    hypno = df["value"].to_numpy()
+    onsets = df["onset"].to_numpy()
+    bins = np.append(onsets, hyp.duration*60)
+    # Convert x-axis bins to minutes or hours
+    if hyp.duration <= 90:
+        bins /= 60
+        xlabel = "Time [mins]"
+    else:
+        bins /= 3600
+        xlabel = "Time [hrs]"
 
-    # Reduce data and bin edges to only moments of change in the hypnogram
-    # (to avoid drawing thousands of tiny individual lines when sf is high)
-    change_points = np.nonzero(np.ediff1d(hypno, to_end=1))
-    hypno = hypno[change_points]
-    bins = np.append(0, bins[change_points])
-
-    # Make masks for REM and Artefact/Unscored
-    hypno_rem = np.ma.masked_not_equal(hypno, 1)
-    hypno_art_uns = np.ma.masked_greater(hypno, -1)
+    # Make masks to draw with different colors
     hypno_sleep = np.ma.masked_less(hypno, 0)
+    hypno_art_uns = np.ma.masked_greater(hypno, -1)
+    if highlight is not None:
+        highlight_int = hyp.mapping[highlight]
+        hypno_highlight = np.ma.masked_not_equal(hypno, highlight_int)
 
-    # Start the plot
+    # Open the figure
     if ax is None:
         ax = plt.gca()
 
     # Draw background filling
     if fill_color is not None:
-        ax.stairs(-1 * hypno.clip(0), bins, fill=True, color=fill_color, lw=0)
+        baseline = hyp.mapping["WAKE"]  # len(stage_order) - 1 to fill from bottom
+        ax.stairs(hypno.clip(baseline), bins, baseline=baseline, fill=True, color=fill_color, lw=0)
     # Draw main hypnogram line
-    ax.stairs(-1 * hypno, bins, baseline=None, color="k", lw=lw)
-    # Draw REM and Artefact/Unscored highlighting
-    if 1 in hypno:
-        ax.hlines(-1 * hypno_rem, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
-    if -2 in hypno or -1 in hypno:
-        ax.hlines(-1 * hypno_art_uns, xmin=bins[:-1], xmax=bins[1:], color="grey", lw=lw)
-    # Determine y-axis labels and limits
-    if -2 in hypno and -1 in hypno:
-        # Both Unscored and Artefacts are present
-        ax.set_yticks([2, 1, 0, -1, -2, -3, -4])
-        ax.set_yticklabels(["Uns", "Art", "W", "R", "N1", "N2", "N3"])
-        ax.set_ylim(-4.5, 2.5)
-    elif -2 in hypno and -1 not in hypno:
-        # Only Unscored are present
-        ax.set_yticks([2, 0, -1, -2, -3, -4])
-        ax.set_yticklabels(["Uns", "W", "R", "N1", "N2", "N3"])
-        ax.set_ylim(-4.5, 2.5)
-    elif -2 not in hypno and -1 in hypno:
-        # Only Artefacts are present
-        ax.set_yticks([1, 0, -1, -2, -3, -4])
-        ax.set_yticklabels(["Art", "W", "R", "N1", "N2", "N3"])
-        ax.set_ylim(-4.5, 1.5)
-    else:
-        # No artefacts or Unscored
-        ax.set_yticks([0, -1, -2, -3, -4])
-        ax.set_yticklabels(["W", "R", "N1", "N2", "N3"])
-        ax.set_ylim(-4.5, 0.5)
-    ax.set_xlim(0, bins.max())
+    ax.stairs(hypno, bins, baseline=None, color="black", lw=lw)
+    # Draw highlighted line
+    if highlight is not None and not hypno_highlight.mask.all():
+        ax.hlines(hypno_highlight, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
+    # Draw Artefact/Unscored line
+    if not hypno_art_uns.mask.all():
+        ax.hlines(hypno_art_uns, xmin=bins[:-1], xmax=bins[1:], color="grey", lw=lw)
+
+    # Aesthetics
+    ax.use_sticky_edges = False
+    ax.margins(x=0, y=1 / len(stage_order) / 2)
+    ax.set_yticks(range(len(stage_order)))
+    ax.set_yticklabels(stage_order)
     ax.set_ylabel("Stage")
-    ax.set_xlabel("Time [hrs]")
-    ax.spines["right"].set_visible(False)
-    ax.spines["top"].set_visible(False)
+    ax.set_xlabel(xlabel)
+    ax.invert_yaxis()
+    ax.spines[["right", "top"]].set_visible(False)
     # Revert font-size
     plt.rcParams.update({"font.size": old_fontsize})
     return ax

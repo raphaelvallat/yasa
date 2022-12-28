@@ -6,6 +6,7 @@ import logging
 import numpy as np
 import pandas as pd
 from yasa.io import set_log_level
+from yasa.plotting import plot_hypnogram
 from yasa.sleepstats import transition_matrix
 
 __all__ = [
@@ -193,7 +194,7 @@ class Hypnogram:
             scorer, (type(None), str, int)
         ), "`scorer` must be either None, or a string or an integer."
         if n_stages == 2:
-            accepted = ["S", "W", "SLEEP", "WAKE", "ART", "UNS"]
+            accepted = ["W", "WAKE", "S", "SLEEP", "ART", "UNS"]
             mapping = {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
         elif n_stages == 3:
             accepted = ["WAKE", "W", "NREM", "REM", "R", "ART", "UNS"]
@@ -581,10 +582,29 @@ class Hypnogram:
             self.hypno, self.sampling_frequency, threshold=threshold, equal_length=equal_length
         )
 
-    def plot_hypnogram(self):
-        """Plot the hypnogram."""
-        # TODO: Add support for 2, 3 and 4-stages hypnogram
-        raise NotImplementedError
+    def plot_hypnogram(self, **kwargs):
+        """Plot the hypnogram.
+
+        .. seealso:: :py:func:`yasa.plot_hypnogram`
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Optional keyword arguments passed to :py:func:`yasa.plot_hypnogram`.
+
+        Returns
+        -------
+        ax : :py:class:`matplotlib.axes.Axes`
+            Matplotlib Axes
+
+        Examples
+        --------
+        .. plot::
+
+            >>> from yasa import simulate_hypnogram
+            >>> ax = simulate_hypnogram(tib=480, seed=88).plot_hypnogram()
+        """
+        return plot_hypnogram(self, **kwargs)
 
     def simulate_similar(self, **kwargs):
         """Simulate a new hypnogram based on properties of the current hypnogram.
