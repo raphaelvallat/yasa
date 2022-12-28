@@ -602,7 +602,7 @@ class Hypnogram:
         .. plot::
 
             >>> from yasa import simulate_hypnogram
-            >>> ax = simulate_hypnogram(tib=480, seed=88).plot_hypnogram()
+            >>> ax = simulate_hypno(tib=480, seed=88).plot_hypnogram(highlight="REM"")
         """
         return plot_hypnogram(self, **kwargs)
 
@@ -1638,22 +1638,19 @@ def simulate_hypno(
 
     .. plot::
 
-        >>> import matplotlib.pyplot as plt
         >>> import numpy as np
-        >>> import yasa
+        >>> import matplotlib.pyplot as plt
+        >>> from yasa import Hypnogram, hypno_int_to_str
         >>> url = (
         >>>     "https://github.com/raphaelvallat/yasa/raw/master/"
         >>>     "notebooks/data_full_6hrs_100Hz_hypno_30s.txt"
         >>> )
-        >>> values_int = np.loadtxt(url)
-        >>> values_str = yasa.hypno_int_to_str(values_int)
-        >>> hyp = yasa.Hypnogram(values_str)
-        >>> shyp = hyp.simulate_similar(seed=2)
-        >>> fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 6))
-        >>> yasa.plot_hypnogram(hyp.as_int(), ax=ax1)
-        >>> yasa.plot_hypnogram(shyp.as_int(), ax=ax2)
-        >>> ax1.set_title("True hypnogram")
-        >>> ax2.set_title("Simulated hypnogram")
+        >>> values_str = hypno_int_to_str(np.loadtxt(url))
+        >>> real_hyp = Hypnogram(values_str)
+        >>> fake_hyp = real_hyp.simulate_similar(seed=2)
+        >>> fig, (ax1, ax2) = plt.subplots(nrows=2, figsize=(7, 5))
+        >>> real_hyp.plot_hypnogram(ax=ax1).set_title("Real hypnogram")
+        >>> fake_hyp.plot_hypnogram(ax=ax2).set_title("Fake hypnogram")
         >>> plt.tight_layout()
     """
     # Extract yasa.Hypnogram defaults, which will be assumed later but need throughout
