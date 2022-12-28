@@ -626,7 +626,7 @@ class Hypnogram:
         10      WAKE     SLEEP
         11      WAKE      WAKE
         """
-        kwargs_ = {
+        simulate_hypno_kwargs = {
             "tib": self.duration,
             "n_stages": self.n_stages,
             "freq": self.freq,
@@ -634,12 +634,13 @@ class Hypnogram:
             "start": self.start,
             "scorer": self.scorer,
         }
-        if (n_stages := kwargs.pop("n_stages", None)) is not None:
-            assert n_stages <= self.n_stages, "new n_stages must be <= original n_stages"
-        kwargs_.update(kwargs)
-        hyp = simulate_hypno(**kwargs_)
-        if n_stages is not None and n_stages < self.n_stages:
-            hyp = hyp.consolidate_stages(n_stages)
+        new_n_stages = kwargs.pop("n_stages", None)
+        if new_n_stages is not None:
+            assert new_n_stages <= self.n_stages, "new n_stages must be <= original n_stages"
+        simulate_hypno_kwargs.update(kwargs)
+        hyp = simulate_hypno(**simulate_hypno_kwargs)
+        if new_n_stages is not None and new_n_stages < self.n_stages:
+            hyp = hyp.consolidate_stages(new_n_stages)
         return hyp
 
     def sleep_statistics(self):
