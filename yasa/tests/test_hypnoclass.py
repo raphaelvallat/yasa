@@ -3,7 +3,7 @@ import mne
 import unittest
 import numpy as np
 import pandas as pd
-from yasa.hypno import simulate_hypno, Hypnogram
+from yasa.hypno import simulate_hypno, Hypnogram, hypno_str_to_int
 
 
 def create_raw(npts, ch_names=["F4-M1", "F3-M2"], sf=100):
@@ -20,19 +20,18 @@ class TestHypnoClass(unittest.TestCase):
 
     def test_2stages_hypno(self):
         """Test 2-stages Hypnogram class"""
-        values_int = simulate_hypno(tib=120, n_stages=2, seed=42)
-        values = pd.Series(values_int).map({0: "W", 1: "S"}).to_numpy()
-        hyp = Hypnogram(values, n_stages=2)
+        hyp = simulate_hypno(tib=120, n_stages=2, seed=42)
         print(hyp)
         print(str(hyp))
 
         # Check properties
-        np.testing.assert_array_equal(hyp.hypno.str.get(0).to_numpy(), values)
+        np.testing.assert_array_equal(hyp.hypno.str.get(0)[:10], np.repeat(["W", "S"], 5))
         assert isinstance(hyp.hypno.index, pd.RangeIndex)
         assert hyp.hypno.index.name == "Epoch"
         assert hyp.sampling_frequency == 1 / 30
         assert hyp.freq == "30s"
-        assert hyp.n_epochs == len(values)
+        assert hyp.n_epochs == 240
+        assert hyp.duration == 120
         assert hyp.n_stages == 2
         assert hyp.labels == ["SLEEP", "WAKE", "ART", "UNS"]
         assert hyp.mapping == {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
@@ -42,6 +41,7 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp.timedelta[-1] == pd.Timedelta("0 days 01:59:30")
 
         # Adding start time
+        values = hyp.hypno.to_numpy()
         hyp = Hypnogram(values, n_stages=2, start="2022-11-10 13:30:10", freq="15s", scorer="Test")
         assert isinstance(hyp.hypno.index, pd.DatetimeIndex)
         assert hyp.hypno.index.name == "Time"
@@ -51,6 +51,7 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp.freq == "15s"
         assert hyp.start == "2022-11-10 13:30:10"
         assert hyp.n_epochs == len(values)
+        assert hyp.duration == 60
         assert hyp.timedelta[0] == pd.Timedelta("0 days 00:00:00")
         assert hyp.timedelta[-1] == pd.Timedelta("0 days 00:59:45")
         assert hyp.hypno.index[-1] == hyp.hypno.index[0] + pd.Timedelta(
@@ -58,6 +59,7 @@ class TestHypnoClass(unittest.TestCase):
         )
 
         # Test class methods
+        values_int = hypno_str_to_int(hyp.hypno.tolist(), mapping_dict={"wake": 0, "sleep": 1})
         np.testing.assert_array_equal(hyp.as_int(), values_int)
         hyp.transition_matrix()
         hyp.find_periods()
@@ -76,6 +78,7 @@ class TestHypnoClass(unittest.TestCase):
             "WAKE": 10.5,
         }
         assert sstats == truth
+        assert sstats["TIB"] == hyp.duration
 
         # Invert the mapping
         hyp.mapping = {"SLEEP": 0, "WAKE": 1}
@@ -99,11 +102,27 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp_up.dtype == int
         hyp_up = hyp.upsample_to_data(raw.get_data(), sf=100)
 
+        # yasa.Hypnogram.simulate_similar
+        shyp = hyp.simulate_similar()
+        assert shyp.freq == hyp.freq
+        assert shyp.start == hyp.start
+        assert shyp.scorer == hyp.scorer
+        assert shyp.labels == hyp.labels
+        assert shyp.duration == hyp.duration
+        assert shyp.n_epochs == hyp.n_epochs
+        assert shyp.n_stages == hyp.n_stages
+        assert shyp.hypno.index.name == hyp.hypno.index.name
+        assert shyp.sampling_frequency == hyp.sampling_frequency
+        assert hyp.simulate_similar(tib=2, scorer="YASA").scorer == "YASA"
+        assert hyp.simulate_similar(tib=2, start="2022-11-10").start == "2022-11-10"
+        np.testing.assert_array_equal(
+            simulate_hypno(seed=1).simulate_similar(tib=5, seed=6).as_int(),
+            [0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+        )
+
     def test_3stages_hypno(self):
         """Test 3-stages Hypnogram class"""
-        values = simulate_hypno(tib=120, sf=1, n_stages=3, seed=42)
-        values = pd.Series(values).map({0: "W", 2: "NREM", 4: "REM"}).to_numpy()
-        hyp = Hypnogram(values, n_stages=3, freq="1s")
+        hyp = simulate_hypno(tib=120, n_stages=3, freq="1s", seed=42)
         assert hyp.sampling_frequency == 1
         assert hyp.freq == "1s"
         assert hyp.n_stages == 3
@@ -116,9 +135,7 @@ class TestHypnoClass(unittest.TestCase):
 
     def test_4stages_hypno(self):
         """Test 4-stages Hypnogram class"""
-        values = simulate_hypno(tib=400, n_stages=4, seed=42)
-        values = pd.Series(values).map({0: "W", 2: "Light", 3: "Deep", 4: "REM"}).to_numpy()
-        hyp = Hypnogram(values, n_stages=4, freq="30s")
+        hyp = simulate_hypno(tib=400, n_stages=4, freq="30s", seed=42)
         assert hyp.n_stages == 4
         assert hyp.labels == ["WAKE", "LIGHT", "DEEP", "REM", "ART", "UNS"]
         assert hyp.mapping == {"WAKE": 0, "LIGHT": 2, "DEEP": 3, "REM": 4, "ART": -1, "UNS": -2}
@@ -130,9 +147,7 @@ class TestHypnoClass(unittest.TestCase):
 
     def test_5stages_hypno(self):
         """Test 5-stages Hypnogram class"""
-        values = simulate_hypno(tib=600, n_stages=5, seed=42)
-        values = pd.Series(values).map({0: "W", 1: "N1", 2: "N2", 3: "N3", 4: "REM"}).to_numpy()
-        hyp = Hypnogram(values, n_stages=5, freq="30s")
+        hyp = simulate_hypno(tib=600, n_stages=5, freq="30s", seed=42)
         assert hyp.n_stages == 5
         assert hyp.labels == ["WAKE", "N1", "N2", "N3", "REM", "ART", "UNS"]
         assert hyp.mapping == {

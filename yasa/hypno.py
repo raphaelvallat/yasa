@@ -34,6 +34,8 @@ class Hypnogram:
     Instead, users must pass an array of strings with the actual stage names
     (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]).
 
+    .. seealso:: :py:func:`yasa.simulate_hypno`
+
     .. versionadded:: 0.7.0
 
     Parameters
@@ -139,9 +141,7 @@ class Hypnogram:
     Simulate a 5-stages hypnogram
 
     >>> from yasa import simulate_hypno
-    >>> values = simulate_hypno(tib=500, n_stages=5, seed=42)
-    >>> values = pd.Series(values).map({0: "W", 1: "N1", 2: "N2", 3: "N3", 4: "REM"}).to_numpy()
-    >>> hyp = Hypnogram(values, start="2022-12-15 22:30:00", scorer="S1")
+    >>> hyp = simulate_hypno(tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42)
     >>> hyp
     Time
     2022-12-15 22:30:00    WAKE
@@ -232,8 +232,9 @@ class Hypnogram:
         self._n_epochs = hypno.shape[0]
         self._freq = freq
         self._sampling_frequency = 1 / pd.Timedelta(freq).total_seconds()
-        self._timedelta = timedelta
         self._start = start
+        self._timedelta = timedelta
+        self._duration = self._n_epochs / (60 * self._sampling_frequency)
         self._n_stages = n_stages
         self._labels = labels
         self._mapping = mapping
@@ -277,6 +278,11 @@ class Hypnogram:
         epoch compared to the first epoch.
         """
         return self._timedelta
+
+    @property
+    def duration(self):
+        """Total duration of the hypnogram, expressed in minutes. AKA Time in Bed."""
+        return self._duration
 
     @property
     def n_stages(self):
@@ -579,6 +585,61 @@ class Hypnogram:
         """Plot the hypnogram."""
         # TODO: Add support for 2, 3 and 4-stages hypnogram
         raise NotImplementedError
+
+    def simulate_similar(self, **kwargs):
+        """Simulate a new hypnogram based on properties of the current hypnogram.
+
+        .. seealso:: :py:func:`yasa.simulate_hypno`
+
+        Parameters
+        ----------
+        self : :py:class:`yasa.Hypnogram`
+            Hypnogram, assumed to be already cropped to time in bed (TIB).
+        **kwargs : dict
+            Optional keyword arguments passed to :py:func:`yasa.simulate_hypno`.
+
+        Returns
+        -------
+        hyp : :py:class:`yasa.Hypnogram`
+            A simulated hypnogram.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> from yasa import Hypnogram
+        >>> hyp = Hypnogram(["W", "S", "W"], n_stages=2, freq="2min", scorer="Human").upsample("30s")
+        >>> shyp = hyp.simulate_similar(scorer="Simulated", seed=6)
+        >>> df = pd.concat([hyp.hypno, shyp.hypno], axis=1)
+        >>> print(df)
+               Human Simulated
+        Epoch
+        0       WAKE      WAKE
+        1       WAKE      WAKE
+        2       WAKE      WAKE
+        3       WAKE      WAKE
+        4      SLEEP     SLEEP
+        5      SLEEP     SLEEP
+        6      SLEEP     SLEEP
+        7      SLEEP     SLEEP
+        8       WAKE     SLEEP
+        9       WAKE     SLEEP
+        10      WAKE     SLEEP
+        11      WAKE      WAKE
+        """
+        assert "n_stages" not in kwargs and "freq" not in kwargs, (
+            "`n_stages` and `freq` cannot be included as additional `**kwargs` "
+            "because they must match properties of the current Hypnogram."
+        )
+        simulate_hypno_kwargs = {
+            "tib": self.duration,
+            "n_stages": self.n_stages,
+            "freq": self.freq,
+            "trans_probas": self.transition_matrix()[1],
+            "start": self.start,
+            "scorer": self.scorer,
+        }
+        simulate_hypno_kwargs.update(kwargs)
+        return simulate_hypno(**simulate_hypno_kwargs)
 
     def sleep_statistics(self):
         """
@@ -1425,7 +1486,13 @@ def hypno_consolidate_stages(hypno, n_stages_in, n_stages_out):
 #############################################################################
 
 
-def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas=None, seed=None):
+def simulate_hypno(
+    tib=90,
+    trans_probas=None,
+    init_probas=None,
+    seed=None,
+    **kwargs,
+):
     """Simulate a hypnogram based on transition probabilities.
 
     Current implentation is a naive Markov model. The initial stage of a hypnogram
@@ -1435,23 +1502,17 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     .. important:: The Markov simulation model is not meant to accurately portray sleep
         macroarchitecture and should only be used for testing or other unique purposes.
 
+    .. seealso:: :py:meth:`yasa.Hypnogram.simulate_similar`
+
     .. versionadded:: 0.6.3
 
     Parameters
     ----------
-    tib : int
+    tib : int, float
         Total duration of the hypnogram (i.e., time in bed), expressed in minutes.
-        Returned hypnogram will be slightly shorter if ``tib`` in seconds is not
-        evenly divisible by ``sf``.
+        Returned hypnogram will be slightly shorter if ``tib`` is not evenly divisible by ``freq``.
 
         .. seealso:: :py:func:`yasa.sleep_statistics`
-    sf : float
-        Sampling frequency.
-    n_stages : int
-        Staging scheme of returned hypnogram. Input should follow 5-stage scheme but can
-        be converted to lower scheme if desired.
-
-        .. seealso:: :py:func:`yasa.hypno_consolidate_stages`
     trans_probas : :py:class:`pandas.DataFrame` or None
         Transition probability matrix where each cell is a transition probability
         between sleep stages of consecutive *epochs*.
@@ -1459,10 +1520,10 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
         ``trans_probas`` is a `right stochastic matrix
         <https://en.wikipedia.org/wiki/Stochastic_matrix>`_, i.e. each row sums to 1.
 
-        If None (default), use transition probabilites from Metzner et al., 2021 [Metzner2021]_.
+        If None (default), transition probabilities come from Metzner et al., 2021 [Metzner2021]_.
         If :py:class:`pandas.DataFrame`, must have "from"-stages as indices and
-        "to"-stages as columns. Indices and columns must follow YASA integer
-        hypnogram convention (W = 0, N = 1, ...). Unscored/Artefact stages are not allowed.
+        "to"-stages as columns. Indices and columns must follow YASA string
+        hypnogram convention (e.g., WAKE, N1). Unscored/Artefact stages are not allowed.
 
         .. note:: Transition probability matrices should indicate the transition
             probability between *epochs* (i.e., probability of the next epoch) and
@@ -1471,24 +1532,28 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
         .. seealso:: Return value from :py:func:`yasa.transition_matrix`
     init_probas : :py:class:`pandas.Series` or None
         Probabilites of each stage to initialize random walk.
-        If None (default), initialize with "From"-Wake row of ``trans_probas``.
-        If :py:class:`pandas.Series`, indices must be stages following YASA integer
-        hypnogram convention (see ``trans_probas``).
+        If None (default), initialize with "from"-WAKE row of ``trans_probas``.
+        If :py:class:`pandas.Series`, indices must be stages following YASA string
+        hypnogram convention and identical to those of ``trans_probas``.
     seed : int or None
         Random seed for generating Markov sequence.
         If an integer number is provided, the random hypnogram will be predictable.
         This argument is required if reproducible results are desired.
+    **kwargs : dict
+        Other arguments that are passed to :py:class:`yasa.Hypnogram`.
+
+        .. note:: `n_stages` and `freq` must be consistent with a user-specificied `trans_probas`.
 
     Returns
     -------
-    hypno : np.ndarray
+    hyp : :py:class:`yasa.Hypnogram`
         Hypnogram containing simulated sleep stages.
 
     Notes
     -----
-    Default transition probabilities can be found in the ``traMat_Epoch.npy`` file of
-    Supplementary Information for Metzner et al., 2021 [Metzner2021]_ (rounded values
-    are viewable in Figure 5b). Please cite this work if these probabilites are used
+    Default transition probabilities are based on 30-second epochs and can be found in the
+    ``traMat_Epoch.npy`` file of Supplementary Information for Metzner et al., 2021 [Metzner2021]_
+    (rounded values are viewable in Figure 5b). Please cite this work if these probabilites are used
     for publication.
 
     References
@@ -1501,45 +1566,97 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
     Examples
     --------
     >>> from yasa import simulate_hypno
-    >>> hypno = simulate_hypno(tib=10, seed=0)
-    >>> print(hypno)
-    [0 0 0 0 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2]
+    >>> hyp = simulate_hypno(tib=5, seed=1)
+    >>> print(hyp)
+    Epoch
+    0    WAKE
+    1      N1
+    2      N1
+    3      N2
+    4      N2
+    5      N2
+    6      N2
+    7      N2
+    8      N2
+    9      N2
+    Name: Stage, dtype: object
 
-    >>> hypno = simulate_hypno(tib=10, n_stages=2, seed=0)
-    >>> print(hypno)
-    [0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1]
+    >>> hyp = simulate_hypno(tib=5, n_stages=2, seed=1)
+    >>> print(hyp)
+    Epoch
+    0     WAKE
+    1    SLEEP
+    2    SLEEP
+    3    SLEEP
+    4    SLEEP
+    5    SLEEP
+    6    SLEEP
+    7    SLEEP
+    8    SLEEP
+    9    SLEEP
+    Name: Stage, dtype: object
+
+    Add some Unscored epochs.
+
+    >>> hyp = simulate_hypno(tib=5, n_stages=2, seed=1)
+    >>> hyp.hypno.iloc[-2:] = "UNS"
+    >>> print(hyp)
+    Epoch
+    0     WAKE
+    1    SLEEP
+    2    SLEEP
+    3    SLEEP
+    4    SLEEP
+    5    SLEEP
+    6    SLEEP
+    7    SLEEP
+    8      UNS
+    9      UNS
+    Name: Stage, dtype: object
 
     Base the data off a real subject's transition matrix.
 
     .. plot::
 
         >>> import matplotlib.pyplot as plt
+        >>> import numpy as np
         >>> import yasa
         >>> url = (
         >>>     "https://github.com/raphaelvallat/yasa/raw/master/"
         >>>     "notebooks/data_full_6hrs_100Hz_hypno_30s.txt"
         >>> )
-        >>> hypno = np.loadtxt(url)
-        >>> _, probas = yasa.transition_matrix(hypno)
-        >>> hypno_sim = yasa.simulate_hypno(tib=360, trans_probas=probas, seed=9)
+        >>> values_int = np.loadtxt(url)
+        >>> values_str = yasa.hypno_int_to_str(values_int)
+        >>> hyp = yasa.Hypnogram(values_str)
+        >>> shyp = hyp.simulate_similar(seed=2)
         >>> fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 6))
-        >>> yasa.plot_hypnogram(hypno, ax=ax1)
-        >>> yasa.plot_hypnogram(hypno_sim, ax=ax2)
+        >>> yasa.plot_hypnogram(hyp.as_int(), ax=ax1)
+        >>> yasa.plot_hypnogram(shyp.as_int(), ax=ax2)
         >>> ax1.set_title("True hypnogram")
         >>> ax2.set_title("Simulated hypnogram")
         >>> plt.tight_layout()
     """
+    # Extract yasa.Hypnogram defaults, which will be assumed later but need throughout
+    if "n_stages" not in kwargs:
+        kwargs["n_stages"] = 5
+    if "freq" not in kwargs:
+        kwargs["freq"] = "30s"
     # Validate input
-    assert isinstance(tib, (int, float)), "tib must be a number"
-    assert isinstance(sf, (int, float)), "sf must be a number"
-    assert isinstance(n_stages, int), "n_stages must be an integer"
-    assert 2 <= n_stages <= 5, "n_stages must be 2, 3, 4, or 5"
-    if seed is not None:
-        assert isinstance(seed, int) and seed >= 0, "seed must be an integer >= 0"
+    assert isinstance(tib, (int, float)) and tib > 0, "`tib` must be a number > 0"
     if trans_probas is not None:
-        assert isinstance(trans_probas, pd.DataFrame), "trans_probas must be a pandas DataFrame"
+        assert isinstance(trans_probas, pd.DataFrame), "`trans_probas` must be a pandas DataFrame"
+        assert np.all(
+            np.less_equal(trans_probas.shape, kwargs["n_stages"])
+        ), "user-specified `trans_probas` must not include more stages than `n_stages`"
     if init_probas is not None:
-        assert isinstance(init_probas, pd.Series), "init_probas must be a pandas Series"
+        assert isinstance(init_probas, pd.Series), "`init_probas` must be a pandas Series"
+    if seed is not None:
+        assert isinstance(seed, int) and seed >= 0, "`seed` must be an integer >= 0"
+    if trans_probas is None:
+        # Check this here, rather than letting hyp.upsample catch it, to be clear about reason
+        assert pd.Timedelta(kwargs["freq"]) <= pd.Timedelta(
+            "30s"
+        ), "`freq` must be <= 30s when using default `trans_probas`"
 
     # Initialize random number generator
     rng = np.random.default_rng(seed)
@@ -1557,48 +1674,69 @@ def simulate_hypno(tib=90, sf=1 / 30, n_stages=5, trans_probas=None, init_probas
         return np.asarray(states)
 
     if trans_probas is None:
-        # Generate transition probability DataFrame (here, ordered W R 1 2 3)
+        # Generate transition probability DataFrame
         trans_freqs = np.array(
             [
-                [11737, 2, 571, 84, 2],
-                [57, 10071, 189, 84, 2],
-                [281, 59, 6697, 1661, 11],
-                [253, 272, 1070, 26259, 505],
-                [49, 12, 176, 279, 9630],
+                [11737, 571, 84, 2, 2],
+                [281, 6697, 1661, 11, 59],
+                [253, 1070, 26259, 505, 272],
+                [49, 176, 279, 9630, 12],
+                [57, 189, 84, 2, 10071],
             ]
         )
         trans_probas = trans_freqs / trans_freqs.sum(axis=1, keepdims=True)
         trans_probas = pd.DataFrame(
             trans_probas,
-            index=[0, 4, 1, 2, 3],
-            columns=[0, 4, 1, 2, 3],
+            index=["WAKE", "N1", "N2", "N3", "REM"],
+            columns=["WAKE", "N1", "N2", "N3", "REM"],
         )
+        trans_probas.attrs = {"is_default": True}
+    else:
+        trans_probas.attrs = {"is_default": False}
 
     if init_probas is None:
         # Extract Wake row of initial probabilities as a Series
-        init_probas = trans_probas.loc[0, :]
+        for w in ["w", "W", "wake", "WAKE"]:
+            if w in trans_probas.index:
+                init_probas = trans_probas.loc[w, :].copy()
+        assert init_probas is not None, "`trans_probas` must include 'WAKE' in the index"
 
-    # Ensure trans_probas DataFrame and init_probas Series are in row/column order W N1 N2 N3 R
-    trans_probas = trans_probas.reindex([0, 1, 2, 3, 4], axis=0)
-    trans_probas = trans_probas.reindex([0, 1, 2, 3, 4], axis=1)
-    init_probas = init_probas.reindex([0, 1, 2, 3, 4])
-    assert trans_probas.notna().values.all(), "trans_proba indices must be YASA integer codes"
-    assert init_probas.notna().all(), "init_probas index must be YASA integer codes"
+    stage_order = init_probas.index.tolist()
+    assert (
+        stage_order == trans_probas.index.tolist() == trans_probas.columns.tolist()
+    ), "`init_probas` and `trans_probas` must have all matching indices"
 
     # Extract probabilities as arrays
     trans_arr = trans_probas.to_numpy()
     init_arr = init_probas.to_numpy()
 
     # Make sure all rows sum to 1
-    assert np.allclose(trans_arr.sum(axis=1), 1)
-    assert np.isclose(init_arr.sum(), 1)
+    assert np.allclose(trans_arr.sum(axis=1), 1), "All rows of `trans_probas` must sum to 1"
+    assert np.isclose(init_arr.sum(), 1), "`init_probas` must sum to 1"
 
-    # Find number of *complete* epochs within TIB timeframe
-    n_epochs = np.floor(tib * 60 * sf).astype(int)
-    # Generate hypnogram
-    hypno = _markov_sequence(init_arr, trans_arr, n_epochs)
+    # Find number of *complete* epochs within TIB duration to simulate
+    if trans_probas.attrs.get("is_default"):
+        freq_sec = 30
+    else:
+        freq_sec = pd.Timedelta(kwargs["freq"]).total_seconds()
+    n_epochs = np.floor(tib * 60 / freq_sec).astype(int)
 
-    if n_stages < 5:
-        hypno = hypno_consolidate_stages(hypno, n_stages_in=5, n_stages_out=n_stages)
+    # Generate hypnogram integer values
+    values_int = _markov_sequence(init_arr, trans_arr, n_epochs)
+    # Convert to hypnogram string values (based on indices)
+    values_str = [stage_order[x] for x in values_int]
 
-    return hypno
+    # Create YASA hypnogram instance
+    if trans_probas.attrs.get("is_default"):
+        # If using default trans_probas, hyp *must* be initialized with 5 stages and 30s epochs
+        n_stages = kwargs.pop("n_stages")
+        freq = kwargs.pop("freq")
+        hyp = Hypnogram(values_str, n_stages=5, freq="30s", **kwargs)
+        if pd.Timedelta(freq) < pd.Timedelta("30s"):
+            hyp = hyp.upsample(freq)
+        if n_stages != 5:
+            hyp = hyp.consolidate_stages(n_stages)
+    else:
+        hyp = Hypnogram(values_str, **kwargs)
+
+    return hyp
