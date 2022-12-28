@@ -40,11 +40,11 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     --------
     .. plot::
 
-        >>> import yasa
+        >>> from yasa import Hypnogram
         >>> import matplotlib.pyplot as plt
         >>> values = 4 * ["W", "N1", "N2", "N3", "REM"] + ["ART", "N2", "REM", "W", "UNS"]
-        >>> hyp = yasa.Hypnogram(values, freq="22min").upsample("30s")
-        >>> ax = yasa.plot_hypnogram(hyp, lw=2, highlight="REM", fill_color="thistle")
+        >>> hyp = Hypnogram(values, freq="24min").upsample("30s")
+        >>> ax = hyp.plot_hypnogram(lw=2, highlight="REM", fill_color="thistle")
         >>> plt.tight_layout()
 
     .. plot::
@@ -61,11 +61,11 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     old_fontsize = plt.rcParams["font.size"]
     plt.rcParams.update({"font.size": 18})
 
-    # Pick y-axis order and remap hypno integer values accordingly.
+    ## Remap stages to be in desired y-axis order ##
     # Start with default of all allowed labels
     stage_order = hyp.labels.copy()
     stages_present = hyp.hypno.unique()
-    # Remove Art/Uns from stage order, and place back individually at front as needed
+    # Remove Art/Uns from stage order, and place back individually at front to be higher on plot
     art_str = stage_order.pop(stage_order.index("ART"))
     uns_str = stage_order.pop(stage_order.index("UNS"))
     if "ART" in stages_present:
@@ -75,15 +75,16 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     # Put REM after WAKE if all 5 standard stages are allowed
     if hyp.n_stages == 5:
         stage_order.insert(stage_order.index("WAKE") + 1, stage_order.pop(stage_order.index("REM")))
+    # Reset the Hypnogram mapping so any future returns have this order
     hyp.mapping = { stage: i for i, stage in enumerate(stage_order) }
 
-    # Extract values to plot
+    ## Extract values to plot ##
     df = hyp.as_annotations()
-    # Drop to only breakpoints to avoid drawing individual lines for each epoch.
+    # Reduce to breakpoints (where stages change) to avoid drawing individual lines for every epoch
     df = df[df["value"].shift().ne(df["value"])]
+    # Extract x-values (bins) and y-values to plot
     hypno = df["value"].to_numpy()
-    onsets = df["onset"].to_numpy()
-    bins = np.append(onsets, hyp.duration*60)
+    bins = np.append(df["onset"].to_numpy(), hyp.duration * 60)
     # Convert x-axis bins to minutes or hours
     if hyp.duration <= 90:
         bins /= 60
@@ -95,9 +96,8 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     # Make masks to draw with different colors
     hypno_sleep = np.ma.masked_less(hypno, 0)
     hypno_art_uns = np.ma.masked_greater(hypno, -1)
-    if highlight is not None:
-        highlight_int = hyp.mapping[highlight]
-        hypno_highlight = np.ma.masked_not_equal(hypno, highlight_int)
+    highlight_int = hyp.mapping[highlight] if highlight in hyp.mapping else np.nan
+    hypno_highlight = np.ma.masked_not_equal(hypno, highlight_int)
 
     # Open the figure
     if ax is None:
@@ -110,7 +110,7 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     # Draw main hypnogram line
     ax.stairs(hypno, bins, baseline=None, color="black", lw=lw)
     # Draw highlighted line
-    if highlight is not None and not hypno_highlight.mask.all():
+    if not hypno_highlight.mask.all():
         ax.hlines(hypno_highlight, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
     # Draw Artefact/Unscored line
     if not hypno_art_uns.mask.all():
@@ -118,7 +118,7 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
 
     # Aesthetics
     ax.use_sticky_edges = False
-    ax.margins(x=0, y=1 / len(stage_order) / 2)
+    ax.margins(x=0, y=1 / len(stage_order) / 2)  # 1/n_epochs/2 gives half-unit margins
     ax.set_yticks(range(len(stage_order)))
     ax.set_yticklabels(stage_order)
     ax.set_ylabel("Stage")
