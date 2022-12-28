@@ -75,6 +75,11 @@ class Hypnogram:
         An optional string indicating the scorer name. If specified, this will be set as the name
         of the :py:class:`pandas.Series`, otherwise the name will be set to "Stage".
 
+    See Also
+    --------
+    yasa.simulate_hypno
+
+
     Examples
     --------
     Create a 2-stages hypnogram
@@ -149,11 +154,14 @@ class Hypnogram:
     SLEEP          1      6
 
     All these methods and properties are also valid with a 5-stages hypnogram. In the example below,
-    we use the `yasa.simulate_hypno` to generate a plausible 5-stages hypnogram with a 30-seconds
-    resolution. A random seed is specified to ensure that we get reproducible results.
+    we use the :py:func:`yasa.simulate_hypno` to generate a plausible 5-stages hypnogram with a
+    30-seconds resolution. A random seed is specified to ensure that we get reproducible results.
+    Lastly, we set an actual start time to the hypnogram. As a result, the index of the resulting
+    hypnogram is a :py:class:`pandas.DatetimeIndex`.
 
     >>> from yasa import simulate_hypno
-    >>> hyp = simulate_hypno(tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42)
+    >>> hyp = simulate_hypno(
+    ...     tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42)
     >>> hyp
     Time
     2022-12-15 22:30:00    WAKE
@@ -1050,7 +1058,7 @@ def hypno_str_to_int(
         around :py:meth:`pandas.Series.map`.
 
     Returns
-    --------
+    -------
     hypno : array_like
         The corresponding integer hypnogram.
     """
@@ -1083,7 +1091,7 @@ def hypno_int_to_str(
         :py:meth:`pandas.Series.map`.
 
     Returns
-    --------
+    -------
     hypno : array_like
         The corresponding integer hypnogram.
     """
