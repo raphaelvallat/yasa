@@ -111,7 +111,7 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     # Draw background filling
     if fill_color is not None:
         bline = hyp.mapping["WAKE"]  # len(stage_order) - 1 to fill from bottom
-        ax.stairs(yvalues.clip(baseline), bins, baseline=bline, color=fill_color, fill=True, lw=0)
+        ax.stairs(yvalues.clip(bline), bins, baseline=bline, color=fill_color, fill=True, lw=0)
     # Draw main hypnogram line, highlighted stage line, and Artefact/Unscored line
     ax.stairs(yvalues, bins, baseline=None, color="black", lw=lw)
     if not yvals_highlight.mask.all():

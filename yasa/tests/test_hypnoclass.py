@@ -34,7 +34,7 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp.n_epochs == 240
         assert hyp.duration == 120
         assert hyp.n_stages == 2
-        assert hyp.labels == ["SLEEP", "WAKE", "ART", "UNS"]
+        assert hyp.labels == ["WAKE", "SLEEP", "ART", "UNS"]
         assert hyp.mapping == {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
         assert hyp.start is None
         assert hyp.scorer is None

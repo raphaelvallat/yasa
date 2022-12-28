@@ -8,7 +8,7 @@ from scipy.signal import welch
 import matplotlib.pyplot as plt
 
 from yasa.plotting import plot_spectrogram
-from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
+from yasa.hypno import hypno_int_to_str, hypno_str_to_int, hypno_upsample_to_data, Hypnogram
 from yasa.spectral import (
     bandpower,
     bandpower_from_psd,
@@ -27,6 +27,10 @@ data_full = file_full.get("data")
 chan_full = file_full.get("chan")
 sf_full = 100
 hypno_full = np.load("notebooks/data_full_6hrs_100Hz_hypno.npz").get("hypno")
+
+# Convert to Hypnogram for plotting
+hypno_full_str = hypno_int_to_str(hypno_full)
+hyp_full = Hypnogram(hypno_full_str, freq="10ms")
 
 # Using MNE
 data_mne = mne.io.read_raw_fif("notebooks/sub-02_mne_raw.fif", preload=True, verbose=0)
@@ -152,17 +156,16 @@ class TestSpectral(unittest.TestCase):
     def test_plot_spectrogram(self):
         """Test function plot_spectrogram"""
         plot_spectrogram(data_full[0, :], sf_full, fmin=0.5, fmax=30)
-        plot_spectrogram(data_full[0, :], sf_full, hypno_full, trimperc=5)
+        plot_spectrogram(data_full[0, :], sf_full, hyp_full, trimperc=5)
         plot_spectrogram(data_full[0, :], sf_full, fmin=0.5, fmax=30, vmin=-50, vmax=100)
-        hypno_full_art = np.copy(hypno_full)
-        hypno_full_art[hypno_full_art == 3.0] = -1
         # Replace N3 by Artefact
-        plot_spectrogram(data_full[0, :], sf_full, hypno_full_art, trimperc=5)
+        hyp_full.hypno.loc[hyp_full.hypno.eq("N3")] = "ART"
+        plot_spectrogram(data_full[0, :], sf_full, hyp_full, trimperc=5)
         # Now replace REM by Unscored
-        hypno_full_art[hypno_full_art == 4.0] = -2
-        plot_spectrogram(data_full[0, :], sf_full, hypno_full_art)
+        hyp_full.hypno.loc[hyp_full.hypno.eq("REM")] = "UNS"
+        plot_spectrogram(data_full[0, :], sf_full, hyp_full)
         # Pass kwargs to the hypnogram plot
-        plot_spectrogram(data_full[0, :], sf_full, hypno_full_art, lw=1, fill_color="blue")
+        plot_spectrogram(data_full[0, :], sf_full, hyp_full, lw=1, fill_color="blue")
         plt.close("all")
         # Errors
         with pytest.raises(AssertionError):
