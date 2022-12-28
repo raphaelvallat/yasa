@@ -39,6 +39,7 @@ Please see the documentation of :py:class:`yasa.Hypnogram` for more details.
   The adoption of object-oriented :py:class:`yasa.Hypnogram` usage brings along critical changes to several YASA function, for example:
 
   * :py:func:`yasa.simulate_hypno` now returns a `yasa.Hypnogram` instead of a :py:class:`numpy.ndarray`.
+  * The suggested approach to plotting hypnograms is through the :py:meth:`yasa.Hypnogram.plot_hypnogram` method. The old function :py:func:`yasa.plot_hypnogram` still exists, but now *requires* a `yasa.Hypnogram` instance as input.
 
 ----------------------------------------------------------------------------------------
 
