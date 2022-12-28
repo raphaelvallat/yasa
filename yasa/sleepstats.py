@@ -2,6 +2,7 @@
 This file contains several helper functions to calculate sleep statistics from
 a one-dimensional sleep staging vector (hypnogram).
 """
+import warnings
 import numpy as np
 import pandas as pd
 
@@ -98,6 +99,8 @@ def transition_matrix(hypno):
         >>> ax.set_ylabel("From sleep stage")
         >>> ax.xaxis.set_label_position('top')
     """
+    # NOTE: FutureWarning not added here otherwise it would also be shown when calling
+    # yasa.Hypnogram.transition_matrix
     x = np.asarray(hypno, dtype=int)
     unique, inverse = np.unique(x, return_inverse=True)  # unique is sorted
     n = unique.size
@@ -217,6 +220,11 @@ def sleep_statistics(hypno, sf_hyp):
      'SE': 80.0,
      'SME': 100.0}
     """
+    warnings.warn(
+        "The `yasa.sleep_statistics` function is deprecated and will be removed in v0.8. "
+        "Please use the `yasa.Hypnogram.sleep_statistics` method instead.",
+        FutureWarning,
+    )
     stats = {}
     hypno = np.asarray(hypno)
     assert hypno.ndim == 1, "hypno must have only one dimension."

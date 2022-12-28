@@ -117,7 +117,7 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp.simulate_similar(tib=2, start="2022-11-10").start == "2022-11-10"
         np.testing.assert_array_equal(
             simulate_hypno(seed=1).simulate_similar(tib=5, seed=6).as_int(),
-            [0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 1, 1, 1, 2, 2, 2],
         )
 
     def test_3stages_hypno(self):

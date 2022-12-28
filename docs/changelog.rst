@@ -26,6 +26,7 @@ which comes with several pre-built functions (named methods) and attributes. See
     hyp = Hypnogram(values, n_stages=2, start="2022-12-23 22:30:00", scorer="RM")
     # Below are some class attributes
     hyp.hypno  # Hypnogram values (pandas Series)
+    hyp.duration  # Total duration of the hypnogram, in minutes
     hyp.sampling_frequency  # Sampling frequency of the hypnogram
     hyp.mapping  # Mapping from strings to integers
     # Below are some class methods
