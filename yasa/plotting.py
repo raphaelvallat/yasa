@@ -236,29 +236,29 @@ def plot_spectrogram(
     plt.rcParams.update({"font.size": 18})
 
     # Safety checks
-    assert isinstance(data, np.ndarray), "Data must be a 1D NumPy array."
-    assert isinstance(sf, (int, float)), "sf must be int or float."
-    assert data.ndim == 1, "Data must be a 1D (single-channel) NumPy array."
-    assert isinstance(win_sec, (int, float)), "win_sec must be int or float."
-    assert isinstance(fmin, (int, float)), "fmin must be int or float."
-    assert isinstance(fmax, (int, float)), "fmax must be int or float."
-    assert fmin < fmax, "fmin must be strictly inferior to fmax."
-    assert fmax < sf / 2, "fmax must be less than Nyquist (sf / 2)."
-    assert isinstance(vmin, (int, float, type(None))), "vmin must be int, float, or None."
-    assert isinstance(vmax, (int, float, type(None))), "vmax must be int, float, or None."
+    assert isinstance(data, np.ndarray), "`data` must be a 1D NumPy array."
+    assert isinstance(sf, (int, float)), "`sf` must be int or float."
+    assert data.ndim == 1, "`data` must be a 1D (single-channel) NumPy array."
+    assert isinstance(win_sec, (int, float)), "`win_sec` must be int or float."
+    assert isinstance(fmin, (int, float)), "`fmin` must be int or float."
+    assert isinstance(fmax, (int, float)), "`fmax` must be int or float."
+    assert fmin < fmax, "`fmin` must be strictly inferior to `fmax`."
+    assert fmax < sf / 2, "`fmax` must be less than Nyquist (sf / 2)."
+    assert isinstance(vmin, (int, float, type(None))), "`vmin` must be int, float, or None."
+    assert isinstance(vmax, (int, float, type(None))), "`vmax` must be int, float, or None."
     if vmin is not None:
-        assert isinstance(vmax, (int, float)), "vmax must be int or float if vmin is provided"
+        assert isinstance(vmax, (int, float)), "`vmax` must be int or float if `vmin` is provided."
     if vmax is not None:
-        assert isinstance(vmin, (int, float)), "vmin must be int or float if vmax is provided"
+        assert isinstance(vmin, (int, float)), "`vmin` must be int or float if `vmax` is provided."
     if hyp is not None:
-        # Validate and handle hypnogram-related inputs
-        from yasa.hypno import Hypnogram
+        from yasa.hypno import Hypnogram  # Avoiding circular import
+
         assert isinstance(hyp, Hypnogram)
-        assert hyp.n_epochs == data.size, "Hypno must have the same number of samples as data."
+        assert hyp.n_epochs == data.size, "`hyp` must have the same number of samples as data."
 
     # Calculate multi-taper spectrogram
     nperseg = int(win_sec * sf)
-    assert data.size > 2 * nperseg, "Data length must be at least 2 * win_sec."
+    assert data.size > 2 * nperseg, "`data` length must be at least 2 * `win_sec`."
     f, t, Sxx = spectrogram_lspopt(data, sf, nperseg=nperseg, noverlap=0)
     Sxx = 10 * np.log10(Sxx)  # Convert uV^2 / Hz --> dB / Hz
 
@@ -402,13 +402,13 @@ def topoplot(
     plt.rcParams.update({"savefig.transparent": "True"})
 
     # Make sure we don't do any in-place modification
-    assert isinstance(data, pd.Series), "Data must be a Pandas Series"
+    assert isinstance(data, pd.Series), "`data` must be a Pandas Series"
     data = data.copy()
 
     # Add mask, if present
     if mask is not None:
-        assert isinstance(mask, pd.Series), "mask must be a Pandas Series"
-        assert mask.dtype.kind in "bi", "mask must be True/False or 0/1."
+        assert isinstance(mask, pd.Series), "`mask` must be a Pandas Series"
+        assert mask.dtype.kind in "bi", "`mask` must be True/False or 0/1."
     else:
         mask = pd.Series(1, index=data.index, name="mask")
 
