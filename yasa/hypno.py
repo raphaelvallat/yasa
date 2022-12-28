@@ -13,7 +13,6 @@ __all__ = [
     "Hypnogram",
     "hypno_str_to_int",
     "hypno_int_to_str",
-    "hypno_consolidate_stages",
     "hypno_upsample_to_sf",
     "hypno_upsample_to_data",
     "hypno_find_periods",
@@ -110,7 +109,7 @@ class Hypnogram:
     >>> hyp.mapping
     {'WAKE': 0, 'SLEEP': 1, 'ART': -1, 'UNS': -2}
 
-    >>> # Get the hypnogram with integers values
+    >>> # Get the hypnogram Series integer values
     >>> hyp.as_int()
     Epoch
     0     0
@@ -588,7 +587,7 @@ class Hypnogram:
         3     N2     41      10
 
         Here, the 24.5 minutes of consecutive N2 sleep (= 49 epochs) are divided into 4 periods of
-        exactly 5 minute each. The remaining 4.5 minutes at the end of the hypnogram is removed
+        exactly 5 minute each. The remaining 4.5 minutes at the end of the hypnogram are removed
         because it is less than 5 minutes. In other words, the remainder of the division of a given
         segment by the desired duration is discarded.
         """
@@ -727,7 +726,7 @@ class Hypnogram:
         Sleep statistics for a 5-stages hypnogram
 
         >>> from yasa import simulate_hypno
-        >>> # Generate a 8 hr (=480 minutes) 5-stages hypnogram with a 30-seconds resolution
+        >>> # Generate a 8 hr (= 480 minutes) 5-stages hypnogram with a 30-seconds resolution
         >>> hyp = simulate_hypno(tib=480, seed=42)
         >>> hyp.sleep_statistics()
         {'TIB': 480.0,
@@ -858,7 +857,7 @@ class Hypnogram:
         Examples
         --------
         >>> from yasa import Hypnogram, simulate_hypno
-        >>> # Generate a 8 hr (=480 minutes) 5-stages hypnogram with a 30-seconds resolution
+        >>> # Generate a 8 hr (= 480 minutes) 5-stages hypnogram with a 30-seconds resolution
         >>> hyp = simulate_hypno(tib=480, seed=42)
         >>> counts, probs = hyp.transition_matrix()
         >>> counts
@@ -1464,65 +1463,12 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
 
 
 #############################################################################
-# STAGE CONVERSION
-#############################################################################
-
-
-def hypno_consolidate_stages(hypno, n_stages_in, n_stages_out):
-    """Reduce the number of stages in a hypnogram to match actigraphy or wearables.
-
-    For example, a standard 5-stage hypnogram (W, N1, N2, N3, REM) could be consolidated
-    to a hypnogram more common with actigraphy (W, Light, Deep, REM).
-
-    Parameters
-    ----------
-    hypno : array_like
-        The sleep staging (hypnogram) 1D array.
-    n_stages_in : int
-        Number of possible stages of ``hypno``, where:
-
-        - 5 stages - 0=Wake, 1=N1, 2=N2, 3=N3, 4=REM
-        - 4 stages - 0=Wake, 2=Light, 3=Deep, 4=REM
-        - 3 stages - 0=Wake, 2=NREM, 4=REM
-        - 2 stages - 0=Wake, 1=Sleep
-
-        .. note:: The default YASA values for Unscored (-2) and Artefact (-1) are always allowed.
-    n_stages_out : int
-        Similar to ``n_stages_in`` but for output. Must be higher than ``n_stages_out``.
-
-    Returns
-    -------
-    hypno : array_like
-        The hypnogram, with stages converted to ``n_stages_out`` staging scheme.
-    """
-    assert isinstance(hypno, (list, np.ndarray, pd.Series)), "hypno must be array_like"
-    hypno = np.asarray(hypno, dtype=int).copy()
-    assert n_stages_in in [3, 4, 5], "n_stages_in must be 3, 4, or 5"
-    assert n_stages_out in [2, 3, 4], "n_stages_in must be 2, 3, or 4"
-    assert n_stages_out < n_stages_in, "n_stages_out must be lower than n_stages_in"
-
-    # Change sleep codes where applicable.
-    if n_stages_out == 2:
-        # Consolidate all Sleep
-        mapping = {0: 0, 1: 1, 2: 1, 3: 1, 4: 1, -1: -1, -2: -2}
-    elif n_stages_out == 3:
-        # Consolidate N1/N2/N3 or Light/Deep into NREM
-        mapping = {0: 0, 1: 2, 2: 2, 3: 2, 4: 4, -1: -1, -2: -2}
-    elif n_stages_out == 4:
-        # Consolidate N1/N2 into Light
-        mapping = {0: 0, 1: 2, 2: 2, 3: 3, 4: 4, -1: -1, -2: -2}
-    hypno = pd.Series(hypno).map(mapping).to_numpy()
-
-    return hypno
-
-
-#############################################################################
 # SIMULATION
 #############################################################################
 
 
 def simulate_hypno(
-    tib=90,
+    tib=480,
     trans_probas=None,
     init_probas=None,
     seed=None,
@@ -1546,6 +1492,7 @@ def simulate_hypno(
     tib : int, float
         Total duration of the hypnogram (i.e., time in bed), expressed in minutes.
         Returned hypnogram will be slightly shorter if ``tib`` is not evenly divisible by ``freq``.
+        Default is 480 minutes (= 8 hours).
 
         .. seealso:: :py:func:`yasa.sleep_statistics`
     trans_probas : :py:class:`pandas.DataFrame` or None

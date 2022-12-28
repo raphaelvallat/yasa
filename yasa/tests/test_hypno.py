@@ -8,7 +8,6 @@ from pandas.testing import assert_frame_equal
 from yasa.hypno import (
     hypno_str_to_int,
     hypno_int_to_str,
-    hypno_consolidate_stages,
     hypno_upsample_to_sf,
     hypno_fit_to_data,
     hypno_upsample_to_data,
@@ -178,15 +177,3 @@ class TestHypno(unittest.TestCase):
         # Passing **kwargs through to yasa.Hypnogram
         shyp = simulate_hypno(tib=5, scorer="RV", start="2022-12-15 22:30:00")
         assert shyp.scorer == shyp.hypno.name == "RV"
-
-    def test_consolidation(self):
-        """Test hypnogram stage consolidation."""
-        assert np.unique(hypno_consolidate_stages(hypno, 5, 4)).size == 4
-        assert np.unique(hypno_consolidate_stages(hypno, 5, 3)).size == 3
-        assert np.unique(hypno_consolidate_stages(hypno, 5, 2)).size == 2
-        hypno4 = hypno_consolidate_stages(hypno, 5, 4)
-        hypno3 = hypno_consolidate_stages(hypno4, 4, 3)
-        hypno2 = hypno_consolidate_stages(hypno3, 3, 2)
-        assert np.array_equal(np.unique(hypno4), np.array([0, 2, 3, 4]))
-        assert np.array_equal(np.unique(hypno3), np.array([0, 2, 4]))
-        assert np.array_equal(np.unique(hypno2), np.array([0, 1]))
