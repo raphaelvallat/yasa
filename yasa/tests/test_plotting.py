@@ -4,6 +4,7 @@ import unittest
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from yasa.hypno import simulate_hypno
 from yasa.plotting import topoplot, plot_hypnogram
 
 
@@ -36,26 +37,28 @@ class TestPlotting(unittest.TestCase):
 
     def test_plot_hypnogram(self):
         """Test plot_hypnogram function."""
-        # Default parameters
-        hypno = np.loadtxt("notebooks/data_full_6hrs_100Hz_hypno_30s.txt")
-        _ = plot_hypnogram(hypno)
-        # Adding fill color
-        _ = plot_hypnogram(hypno, fill_color="gainsboro")
-        # Draw on an existing axis.
-        hypno = pd.Series(np.repeat([0, 1, 2, 3, 4, 0], 120))
-        ax = plt.subplot()
-        _ = plot_hypnogram(hypno, ax=ax)
-        # Changing the lw and sf_hypno
-        hypno = list(np.repeat([0, 0, -1, -1, 0, 0, 1, 2, 3, 4, 0, 0, 0], 120))
-        _ = plot_hypnogram(hypno, sf_hypno=1 / 10, lw=2.5)
-        # With Unscored
-        hypno = np.repeat([0, 1, 2, 3, 4, 0, -2], 120)
-        _ = plot_hypnogram(hypno)
-        # With both Art and Uns
-        hypno = np.repeat([-2, -2, -2, 0, -1, 0, 1, 2, 2, 2, 3, 3, 3, 4, -2, -2], 30)
-        _ = plot_hypnogram(hypno)
-        # Error because of "-3"
+        # Error because of input is not a yasa.Hypnogram
         with pytest.raises(AssertionError):
-            hypno = np.repeat([0, 1, 2, 3, 4, -2, -1, -3], 120)
-            _ = plot_hypnogram(hypno)
+            _ = plot_hypnogram(np.repeat([0, 1, 2, 3, 4, -2, -1, -3], 120))
+        # Default parameters
+        hyp5 = simulate_hypno(n_stages=5)
+        hyp2 = simulate_hypno(n_stages=2)
+        ax = hyp5.plot_hypnogram()
+        assert isinstance(ax, plt.Axes)
+        # Aesthetic parameters
+        _ = hyp5.plot_hypnogram(fill_color="gainsboro")
+        _ = hyp5.plot_hypnogram(fill_color="gainsboro", highlight="REM")
+        _ = hyp2.plot_hypnogram(fill_color="gainsboro", highlight="SLEEP")
+        _ = hyp2.plot_hypnogram(fill_color="gainsboro", highlight="SLEEP", lw=3)
+        # Draw on an existing axis.
+        ax = plt.subplot()
+        _ = hyp5.plot_hypnogram(ax=ax)
+        # With datetime axis
+        hyp3 = simulate_hypno(n_stages=3, tib=800, start="2020-01-01 20:00:00")
+        hyp3.plot_hypnogram()
+        # With Artefacts and Unscored
+        hyp3.hypno.iloc[-100:] = "UNS"
+        hyp3.hypno.loc["2020-01-01 22:10:00":"2020-01-01 22:15:00"] = "ART"
+        hyp3.hypno.loc["2020-01-01 23:30:00":"2020-01-02 01:00:00"] = "ART"
+        hyp3.plot_hypnogram(fill_color="peachpuff")
         plt.close("all")

@@ -3,6 +3,7 @@ import mne
 import unittest
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from yasa.hypno import simulate_hypno, Hypnogram, hypno_str_to_int
 
 
@@ -119,6 +120,11 @@ class TestHypnoClass(unittest.TestCase):
             simulate_hypno(seed=1).simulate_similar(tib=5, seed=6).as_int(),
             [0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
         )
+
+        # yasa.Hypnogram.plot_hypnogram
+        assert isinstance(hyp.plot_hypnogram(), plt.Axes)
+        hyp.plot_hypnogram(fill_color="cornflowerblue", highlight="N3", lw=0.5)
+        plt.close("all")
 
     def test_3stages_hypno(self):
         """Test 3-stages Hypnogram class"""
