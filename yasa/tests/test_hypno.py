@@ -148,8 +148,8 @@ class TestHypno(unittest.TestCase):
             hyp.upsample("5s").hypno, simulate_hypno(tib=4, freq="5s", seed=1).hypno
         )
         assert simulate_hypno(tib=4, freq="15s").n_epochs == 16
-        assert simulate_hypno(tib=4, freq="15s").tib == 4
-        assert simulate_hypno(tib=4, freq="30s").tib == 4
+        assert simulate_hypno(tib=4, freq="15s").duration == 4
+        assert simulate_hypno(tib=4, freq="30s").duration == 4
         with pytest.raises(AssertionError):
             simulate_hypno(freq="60s")
 

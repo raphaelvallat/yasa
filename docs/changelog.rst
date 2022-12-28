@@ -38,7 +38,7 @@ Please see the documentation of :py:class:`yasa.Hypnogram` for more details.
 .. important::
   The adoption of object-oriented :py:class:`yasa.Hypnogram` usage brings along critical changes to several YASA function, for example:
 
-  * :py:func:`yasa.simulate_hypno` now returns a `yasa.Hypnogram` instead of a :py:class:`np.ndarray`.
+  * :py:func:`yasa.simulate_hypno` now returns a `yasa.Hypnogram` instead of a :py:class:`numpy.ndarray`.
 
 ----------------------------------------------------------------------------------------
 

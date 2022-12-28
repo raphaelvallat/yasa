@@ -234,8 +234,7 @@ class Hypnogram:
         self._sampling_frequency = 1 / pd.Timedelta(freq).total_seconds()
         self._start = start
         self._timedelta = timedelta
-        self._tib = self._n_epochs / (60 * self._sampling_frequency)
-        # self._tib = self._n_epochs * pd.Timedelta(freq).total_seconds() / 60
+        self._duration = self._n_epochs / (60 * self._sampling_frequency)
         self._n_stages = n_stages
         self._labels = labels
         self._mapping = mapping
@@ -281,10 +280,9 @@ class Hypnogram:
         return self._timedelta
 
     @property
-    def tib(self):
-        """Time in bed, or total duration of the hypnogram, expressed in minutes."""
-        return self._tib
-        ## Q: Should this be called "duration" instead?
+    def duration(self):
+        """Total duration of the hypnogram, expressed in minutes. AKA Time in Bed."""
+        return self._duration
 
     @property
     def n_stages(self):
@@ -629,7 +627,7 @@ class Hypnogram:
         11      WAKE      WAKE
         """
         kwargs_ = {
-            "tib": self.tib,
+            "tib": self.duration,
             "n_stages": self.n_stages,
             "freq": self.freq,
             "trans_probas": self.transition_matrix()[1],
@@ -1608,6 +1606,7 @@ def simulate_hypno(
     Name: Stage, dtype: object
 
     Add some Unscored epochs.
+
     >>> hyp = simulate_hypno(tib=5, n_stages=2, seed=1)
     >>> hyp.hypno.iloc[-2:] = "UNS"
     >>> print(hyp)
@@ -1647,7 +1646,7 @@ def simulate_hypno(
         >>> plt.tight_layout()
     """
     # Validate input
-    assert isinstance(tib, (int, float)) and tib > 0, "tib must be a number > 0"
+    assert isinstance(tib, (int, float)) and tib > 0, "`tib` must be a number > 0"
     assert isinstance(n_stages, int) and (2 <= n_stages <= 5), "n_stages must be 2, 3, 4, or 5"
     assert isinstance(freq, str) and pd.Timedelta(freq) <= pd.Timedelta(
         "30s"
@@ -1655,11 +1654,11 @@ def simulate_hypno(
     if seed is not None:
         assert isinstance(seed, int) and seed >= 0, "seed must be an integer >= 0"
     if trans_probas is not None:
-        assert isinstance(trans_probas, pd.DataFrame), "trans_probas must be a pandas DataFrame"
-        assert np.all(np.less_equal(trans_probas.shape, n_stages)), "too many trans_probas stages"
+        assert isinstance(trans_probas, pd.DataFrame), "`trans_probas` must be a pandas DataFrame"
+        assert np.all(np.less_equal(trans_probas.shape, n_stages)), "too many `trans_probas` stages"
     if init_probas is not None:
-        assert isinstance(init_probas, pd.Series), "init_probas must be a pandas Series"
-        assert init_probas.size <= n_stages, "too many stages in init_probas"
+        assert isinstance(init_probas, pd.Series), "`init_probas` must be a pandas Series"
+        assert init_probas.size <= n_stages, "too many stages in `init_probas`"
 
     # Initialize random number generator
     rng = np.random.default_rng(seed)
@@ -1700,20 +1699,20 @@ def simulate_hypno(
         for w in ["w", "W", "wake", "WAKE"]:
             if w in trans_probas.index:
                 init_probas = trans_probas.loc[w, :].copy()
-        assert init_probas is not None, "trans_probas must include 'WAKE' in the index"
+        assert init_probas is not None, "`trans_probas` must include 'WAKE' in the index"
 
     stage_order = init_probas.index.tolist()
     assert (
         stage_order == trans_probas.index.tolist() == trans_probas.columns.tolist()
-    ), "init_probas and trans_probas must all have matching indices"
+    ), "`init_probas` and `trans_probas` must all have matching indices"
 
     # Extract probabilities as arrays
     trans_arr = trans_probas.to_numpy()
     init_arr = init_probas.to_numpy()
 
     # Make sure all rows sum to 1
-    assert np.allclose(trans_arr.sum(axis=1), 1)
-    assert np.isclose(init_arr.sum(), 1)
+    assert np.allclose(trans_arr.sum(axis=1), 1), "All rows of `trans_probas` must sum to 1"
+    assert np.isclose(init_arr.sum(), 1), "`init_probas` must sum to 1"
 
     # Find number of *complete* epochs within TIB duration
     freq_sec = 30 if trans_probas.attrs.get("default") else pd.Timedelta(freq).total_seconds()

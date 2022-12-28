@@ -31,7 +31,7 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp.sampling_frequency == 1 / 30
         assert hyp.freq == "30s"
         assert hyp.n_epochs == 240
-        assert hyp.tib == 120
+        assert hyp.duration == 120
         assert hyp.n_stages == 2
         assert hyp.labels == ["SLEEP", "WAKE", "ART", "UNS"]
         assert hyp.mapping == {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
@@ -51,7 +51,7 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp.freq == "15s"
         assert hyp.start == "2022-11-10 13:30:10"
         assert hyp.n_epochs == len(values)
-        assert hyp.tib == 60
+        assert hyp.duration == 60
         assert hyp.timedelta[0] == pd.Timedelta("0 days 00:00:00")
         assert hyp.timedelta[-1] == pd.Timedelta("0 days 00:59:45")
         assert hyp.hypno.index[-1] == hyp.hypno.index[0] + pd.Timedelta(
@@ -78,7 +78,7 @@ class TestHypnoClass(unittest.TestCase):
             "WAKE": 10.5,
         }
         assert sstats == truth
-        assert sstats["TIB"] == hyp.tib
+        assert sstats["TIB"] == hyp.duration
 
         # Invert the mapping
         hyp.mapping = {"SLEEP": 0, "WAKE": 1}
@@ -104,11 +104,11 @@ class TestHypnoClass(unittest.TestCase):
 
         # yasa.Hypnogram.simulate_similar
         shyp = hyp.simulate_similar()
-        assert shyp.tib == hyp.tib
         assert shyp.freq == hyp.freq
         assert shyp.start == hyp.start
         assert shyp.scorer == hyp.scorer
         assert shyp.labels == hyp.labels
+        assert shyp.duration == hyp.duration
         assert shyp.n_epochs == hyp.n_epochs
         assert shyp.n_stages == hyp.n_stages
         assert shyp.hypno.index.name == hyp.hypno.index.name
