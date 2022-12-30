@@ -19,7 +19,7 @@ __all__ = [
     "hypno_upsample_to_data",
     "hypno_find_periods",
     "load_profusion_hypno",
-    "simulate_hypno",
+    "simulate_hypnogram",
 ]
 
 
@@ -36,7 +36,7 @@ class Hypnogram:
     Instead, users must pass an array of strings with the actual stage names
     (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]).
 
-    .. seealso:: :py:func:`yasa.simulate_hypno`
+    .. seealso:: :py:func:`yasa.simulate_hypnogram`
 
     .. versionadded:: 0.7.0
 
@@ -151,13 +151,13 @@ class Hypnogram:
     SLEEP          1      6
 
     All these methods and properties are also valid with a 5-stages hypnogram. In the example below,
-    we use the :py:func:`yasa.simulate_hypno` to generate a plausible 5-stages hypnogram with a
+    we use the :py:func:`yasa.simulate_hypnogram` to generate a plausible 5-stages hypnogram with a
     30-seconds resolution. A random seed is specified to ensure that we get reproducible results.
     Lastly, we set an actual start time to the hypnogram. As a result, the index of the resulting
     hypnogram is a :py:class:`pandas.DatetimeIndex`.
 
-    >>> from yasa import simulate_hypno
-    >>> hyp = simulate_hypno(
+    >>> from yasa import simulate_hypnogram
+    >>> hyp = simulate_hypnogram(
     ...     tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42)
     >>> hyp  # This is a shortcut to `hyp.hypno`
     Time
@@ -597,8 +597,8 @@ class Hypnogram:
         This function is not limited to binary arrays, e.g. a 5-stages hypnogram at 30-sec
         resolution:
 
-        >>> from yasa import simulate_hypno
-        >>> hyp = simulate_hypno(tib=30, seed=42)
+        >>> from yasa import simulate_hypnogram
+        >>> hyp = simulate_hypnogram(tib=30, seed=42)
         >>> hyp.find_periods(threshold="2min")
           values  start  length
         0   WAKE      0       5
@@ -643,22 +643,22 @@ class Hypnogram:
         --------
         .. plot::
 
-            >>> from yasa import simulate_hypno
-            >>> ax = simulate_hypno(tib=480, seed=88).plot_hypnogram(highlight="REM")
+            >>> from yasa import simulate_hypnogram
+            >>> ax = simulate_hypnogram(tib=480, seed=88).plot_hypnogram(highlight="REM")
         """
         return plot_hypnogram(self, **kwargs)
 
     def simulate_similar(self, **kwargs):
         """Simulate a new hypnogram based on properties of the current hypnogram.
 
-        .. seealso:: :py:func:`yasa.simulate_hypno`
+        .. seealso:: :py:func:`yasa.simulate_hypnogram`
 
         Parameters
         ----------
         self : :py:class:`yasa.Hypnogram`
             Hypnogram, assumed to be already cropped to time in bed (TIB).
         **kwargs : dict
-            Optional keyword arguments passed to :py:func:`yasa.simulate_hypno`.
+            Optional keyword arguments passed to :py:func:`yasa.simulate_hypnogram`.
 
         Returns
         -------
@@ -693,7 +693,7 @@ class Hypnogram:
             "`n_stages` and `freq` cannot be included as additional `**kwargs` "
             "because they must match properties of the current Hypnogram."
         )
-        simulate_hypno_kwargs = {
+        simulate_hypnogram_kwargs = {
             "tib": self.duration,
             "n_stages": self.n_stages,
             "freq": self.freq,
@@ -701,8 +701,8 @@ class Hypnogram:
             "start": self.start,
             "scorer": self.scorer,
         }
-        simulate_hypno_kwargs.update(kwargs)
-        return simulate_hypno(**simulate_hypno_kwargs)
+        simulate_hypnogram_kwargs.update(kwargs)
+        return simulate_hypnogram(**simulate_hypnogram_kwargs)
 
     def sleep_statistics(self):
         """
@@ -773,9 +773,9 @@ class Hypnogram:
 
         Sleep statistics for a 5-stages hypnogram
 
-        >>> from yasa import simulate_hypno
+        >>> from yasa import simulate_hypnogram
         >>> # Generate a 8 hr (= 480 minutes) 5-stages hypnogram with a 30-seconds resolution
-        >>> hyp = simulate_hypno(tib=480, seed=42)
+        >>> hyp = simulate_hypnogram(tib=480, seed=42)
         >>> hyp.sleep_statistics()
         {'TIB': 480.0,
         'SPT': 477.5,
@@ -904,9 +904,9 @@ class Hypnogram:
 
         Examples
         --------
-        >>> from yasa import Hypnogram, simulate_hypno
+        >>> from yasa import Hypnogram, simulate_hypnogram
         >>> # Generate a 8 hr (= 480 minutes) 5-stages hypnogram with a 30-seconds resolution
-        >>> hyp = simulate_hypno(tib=480, seed=42)
+        >>> hyp = simulate_hypnogram(tib=480, seed=42)
         >>> counts, probs = hyp.transition_matrix()
         >>> counts
         To Stage    WAKE  N1   N2  N3  REM
@@ -1517,7 +1517,7 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
 #############################################################################
 
 
-def simulate_hypno(
+def simulate_hypnogram(
     tib=480,
     trans_probas=None,
     init_probas=None,
@@ -1597,8 +1597,8 @@ def simulate_hypno(
 
     Examples
     --------
-    >>> from yasa import simulate_hypno
-    >>> hyp = simulate_hypno(tib=5, seed=1)
+    >>> from yasa import simulate_hypnogram
+    >>> hyp = simulate_hypnogram(tib=5, seed=1)
     >>> print(hyp)
     Epoch
     0    WAKE
@@ -1613,7 +1613,7 @@ def simulate_hypno(
     9      N2
     Name: Stage, dtype: object
 
-    >>> hyp = simulate_hypno(tib=5, n_stages=2, seed=1)
+    >>> hyp = simulate_hypnogram(tib=5, n_stages=2, seed=1)
     >>> print(hyp)
     Epoch
     0     WAKE
@@ -1630,7 +1630,7 @@ def simulate_hypno(
 
     Add some Unscored epochs.
 
-    >>> hyp = simulate_hypno(tib=5, n_stages=2, seed=1)
+    >>> hyp = simulate_hypnogram(tib=5, n_stages=2, seed=1)
     >>> hyp.hypno.iloc[-2:] = "UNS"
     >>> print(hyp)
     Epoch

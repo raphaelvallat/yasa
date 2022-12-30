@@ -11,7 +11,7 @@ from yasa.hypno import (
     hypno_upsample_to_sf,
     hypno_fit_to_data,
     hypno_upsample_to_data,
-    simulate_hypno,
+    simulate_hypnogram,
 )
 
 from yasa.hypno import hypno_find_periods as hfp
@@ -131,26 +131,28 @@ class TestHypno(unittest.TestCase):
 
     def test_simulation(self):
         """Test hypnogram simulations."""
-        hyp = simulate_hypno(tib=4, seed=1)
+        hyp = simulate_hypnogram(tib=4, seed=1)
         assert hyp.n_epochs == 8
         np.testing.assert_array_equal(hyp.as_int(), [0, 1, 1, 2, 2, 2, 2, 2])
 
         # Handling different n_stages
-        assert simulate_hypno(tib=1000, n_stages=2).hypno.nunique() == 2
+        assert simulate_hypnogram(tib=1000, n_stages=2).hypno.nunique() == 2
         np.testing.assert_array_equal(
-            simulate_hypno(tib=4, seed=1, n_stages=3).as_int(), [0, 2, 2, 2, 2, 2, 2, 2]
+            simulate_hypnogram(tib=4, seed=1, n_stages=3).as_int(), [0, 2, 2, 2, 2, 2, 2, 2]
         )
 
         # Handling different frequencies
-        np.testing.assert_array_equal(hyp.hypno, simulate_hypno(tib=4, freq="0.5min", seed=1).hypno)
         np.testing.assert_array_equal(
-            hyp.upsample("5s").hypno, simulate_hypno(tib=4, freq="5s", seed=1).hypno
+            hyp.hypno, simulate_hypnogram(tib=4, freq="0.5min", seed=1).hypno
         )
-        assert simulate_hypno(tib=4, freq="15s").n_epochs == 16
-        assert simulate_hypno(tib=4, freq="15s").duration == 4
-        assert simulate_hypno(tib=4, freq="30s").duration == 4
+        np.testing.assert_array_equal(
+            hyp.upsample("5s").hypno, simulate_hypnogram(tib=4, freq="5s", seed=1).hypno
+        )
+        assert simulate_hypnogram(tib=4, freq="15s").n_epochs == 16
+        assert simulate_hypnogram(tib=4, freq="15s").duration == 4
+        assert simulate_hypnogram(tib=4, freq="30s").duration == 4
         with pytest.raises(AssertionError):
-            simulate_hypno(freq="60s")
+            simulate_hypnogram(freq="60s")
 
         # Hanling different probabilities
         trans_probas = pd.DataFrame(
@@ -158,22 +160,22 @@ class TestHypno(unittest.TestCase):
             index=["WAKE", "N1", "N2", "N3", "REM"],
             columns=["WAKE", "N1", "N2", "N3", "REM"],
         )
-        simulate_hypno(tib=2, trans_probas=trans_probas)
-        simulate_hypno(tib=2, init_probas=trans_probas.loc["WAKE"])
-        simulate_hypno(tib=2, trans_probas=trans_probas, init_probas=trans_probas.loc["WAKE"])
+        simulate_hypnogram(tib=2, trans_probas=trans_probas)
+        simulate_hypnogram(tib=2, init_probas=trans_probas.loc["WAKE"])
+        simulate_hypnogram(tib=2, trans_probas=trans_probas, init_probas=trans_probas.loc["WAKE"])
         # Setting all probabilities between stages as zero
         trans_probas.loc[:, :] = np.eye(5, 5)
-        assert not simulate_hypno(trans_probas=trans_probas).as_int().any()
+        assert not simulate_hypnogram(trans_probas=trans_probas).as_int().any()
 
         # When trans_proba has more stages than allowed by n_stages
         with pytest.raises(AssertionError):
-            simulate_hypno(n_stages=4, trans_probas=trans_probas)
+            simulate_hypnogram(n_stages=4, trans_probas=trans_probas)
 
         # When trans_probas includes only a subset of stages allowed by n_stages
         trans_probas = trans_probas.drop(index="REM", columns="REM")
         trans_probas.loc[:, :] = np.full((4, 4), 0.25)
-        simulate_hypno(trans_probas=trans_probas)
+        simulate_hypnogram(trans_probas=trans_probas)
 
         # Passing **kwargs through to yasa.Hypnogram
-        shyp = simulate_hypno(tib=5, scorer="RV", start="2022-12-15 22:30:00")
+        shyp = simulate_hypnogram(tib=5, scorer="RV", start="2022-12-15 22:30:00")
         assert shyp.scorer == shyp.hypno.name == "RV"
