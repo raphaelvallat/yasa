@@ -67,6 +67,9 @@ def plot_hypnogram(hyp, lw=1.5, highlight="REM", fill_color=None, ax=None):
 
     assert isinstance(hyp, Hypnogram), "`hypno` must be YASA Hypnogram."
 
+    # Work with a copy of the Hypnogram to not alter the original
+    hyp = hyp.copy()
+
     # Increase font size while preserving original
     old_fontsize = plt.rcParams["font.size"]
     plt.rcParams.update({"font.size": 18})
