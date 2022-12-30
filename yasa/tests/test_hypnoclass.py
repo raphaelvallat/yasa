@@ -3,6 +3,7 @@ import mne
 import unittest
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from yasa.hypno import simulate_hypno, Hypnogram, hypno_str_to_int
 
 
@@ -33,7 +34,7 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp.n_epochs == 240
         assert hyp.duration == 120
         assert hyp.n_stages == 2
-        assert hyp.labels == ["SLEEP", "WAKE", "ART", "UNS"]
+        assert hyp.labels == ["WAKE", "SLEEP", "ART", "UNS"]
         assert hyp.mapping == {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
         assert hyp.start is None
         assert hyp.scorer is None
@@ -79,6 +80,10 @@ class TestHypnoClass(unittest.TestCase):
         }
         assert sstats == truth
         assert sstats["TIB"] == hyp.duration
+        hyp_cp = hyp.copy()
+        np.testing.assert_array_equal(hyp_cp.as_int(), hyp.as_int())
+        assert hyp_cp.sleep_statistics() == truth
+        assert hyp_cp.scorer == hyp.scorer
 
         # Invert the mapping
         hyp.mapping = {"SLEEP": 0, "WAKE": 1}
@@ -119,6 +124,13 @@ class TestHypnoClass(unittest.TestCase):
             simulate_hypno(seed=1).simulate_similar(tib=5, seed=6).as_int(),
             [0, 0, 0, 0, 1, 1, 1, 2, 2, 2],
         )
+
+        # yasa.Hypnogram.plot_hypnogram
+        assert isinstance(hyp.plot_hypnogram(), plt.Axes)
+        hyp.plot_hypnogram(fill_color="cornflowerblue", highlight="N3", lw=0.5)
+        plt.close("all")
+        # Make sure mapping stays intact after plotting
+        assert hyp.mapping == {"SLEEP": 0, "WAKE": 1, "ART": -1, "UNS": -2}
 
     def test_3stages_hypno(self):
         """Test 3-stages Hypnogram class"""
