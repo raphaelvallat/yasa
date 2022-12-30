@@ -13,7 +13,7 @@ from matplotlib.colors import Normalize, ListedColormap
 __all__ = ["plot_hypnogram", "plot_spectrogram", "topoplot"]
 
 
-def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
+def plot_hypnogram(hyp, lw=1.5, highlight="REM", fill_color=None, ax=None):
     """
     Plot a hypnogram.
 
@@ -25,10 +25,10 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
         A YASA hypnogram instance.
     lw : float
         Linewidth.
-    fill_color : str
-        Optional color to fill space above hypnogram line.
-    highlight : str
+    highlight : str or None
         Optional stage to highlight with alternate color.
+    fill_color : str or None
+        Optional color to fill space above hypnogram line.
     ax : :py:class:`matplotlib.axes.Axes`
         Axis on which to draw the plot, optional.
 
@@ -41,21 +41,27 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
     --------
     .. plot::
 
-        >>> from yasa import Hypnogram
+        >>> from yasa import simulate_hypno
         >>> import matplotlib.pyplot as plt
-        >>> values = 4 * ["W", "N1", "N2", "N3", "REM"] + ["ART", "N2", "REM", "W", "UNS"]
-        >>> hyp = Hypnogram(values, freq="24min").upsample("30s")
-        >>> ax = hyp.plot_hypnogram(lw=2, highlight="REM", fill_color="thistle")
+        >>> hyp = simulate_hypno(tib=300, seed=11)
+        >>> ax = hyp.plot_hypnogram()
         >>> plt.tight_layout()
 
     .. plot::
 
-        >>> from yasa import simulate_hypno
+        >>> from yasa import Hypnogram
+        >>> values = 4 * ["W", "N1", "N2", "N3", "REM"] + ["ART", "N2", "REM", "W", "UNS"]
+        >>> hyp = Hypnogram(values, freq="24min").upsample("30s")
+        >>> ax = hyp.plot_hypnogram(lw=2, fill_color="thistle")
+        >>> plt.tight_layout()
+
+    .. plot::
+
         >>> fig, axes = plt.subplots(nrows=2, figsize=(6, 4), constrained_layout=True)
-        >>> hyp_a = simulate_hypno(tib=90, n_stages=3, seed=99)
-        >>> hyp_b = simulate_hypno(tib=90, n_stages=3, seed=99, start="2022-01-31 23:30:00")
-        >>> hyp_a.plot_hypnogram(fill_color="whitesmoke", ax=axes[0])
-        >>> hyp_b.plot_hypnogram(fill_color="whitesmoke", ax=axes[1])
+        >>> hyp_a = simulate_hypno(n_stages=3, seed=99)
+        >>> hyp_b = simulate_hypno(n_stages=3, seed=99, start="2022-01-31 23:30:00")
+        >>> hyp_a.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[0])
+        >>> hyp_b.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[1])
     """
     from yasa.hypno import Hypnogram  # Avoiding circular import
 
