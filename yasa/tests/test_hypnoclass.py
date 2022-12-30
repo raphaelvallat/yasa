@@ -80,6 +80,10 @@ class TestHypnoClass(unittest.TestCase):
         }
         assert sstats == truth
         assert sstats["TIB"] == hyp.duration
+        hyp_cp = hyp.copy()
+        np.testing.assert_array_equal(hyp_cp.as_int(), hyp.as_int())
+        assert hyp_cp.sleep_statistics() == truth
+        assert hyp_cp.scorer == hyp.scorer
 
         # Invert the mapping
         hyp.mapping = {"SLEEP": 0, "WAKE": 1}

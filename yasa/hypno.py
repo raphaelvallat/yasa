@@ -328,6 +328,16 @@ class Hypnogram:
 
     # CLASS METHODS BELOW
 
+    def copy(self):
+        """Return a new copy of the current Hypnogram."""
+        return type(self)(
+            values=self.hypno.to_numpy(),
+            n_stages=self.n_stages,
+            freq=self.freq,
+            start=self.start,
+            scorer=self.scorer,
+        )
+
     def as_annotations(self):
         """
         Return a pandas DataFrame summarizing epoch-level information.
