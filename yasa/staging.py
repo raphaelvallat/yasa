@@ -422,6 +422,7 @@ class SleepStaging:
             returned as a :py:class:`yasa.Hypnogram` instance.
         """
         from yasa.hypno import Hypnogram
+
         if not hasattr(self, "_features"):
             self.fit()
         # Load and validate pre-trained classifier
