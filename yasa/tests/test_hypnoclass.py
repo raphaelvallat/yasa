@@ -130,7 +130,7 @@ class TestHypnoClass(unittest.TestCase):
         hyp.plot_hypnogram(fill_color="cornflowerblue", highlight="N3", lw=0.5)
         plt.close("all")
         # Make sure mapping stays intact after plotting
-        assert hyp.mapping == {'SLEEP': 0, 'WAKE': 1, 'ART': -1, 'UNS': -2}
+        assert hyp.mapping == {"SLEEP": 0, "WAKE": 1, "ART": -1, "UNS": -2}
 
     def test_3stages_hypno(self):
         """Test 3-stages Hypnogram class"""
