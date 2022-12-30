@@ -108,10 +108,8 @@ def plot_hypnogram(hyp, lw=1.5, highlight="REM", fill_color=None, ax=None):
         bins /= 60 if hyp.duration <= 90 else 3600
         xlabel = "Time [mins]" if hyp.duration <= 90 else "Time [hrs]"
 
-    # Make masks to draw with different colors
-    yvals_art_uns = np.ma.masked_greater(yvalues, -1)
-    highlight_int = hyp.mapping[highlight] if highlight in hyp.mapping else np.nan
-    yvals_highlight = np.ma.masked_not_equal(yvalues, highlight_int)
+    # Make mask to draw the highlighted stage
+    yvals_highlight = np.ma.masked_not_equal(yvalues, hyp.mapping.get(highlight))
 
     # Open the figure
     if ax is None:
@@ -125,8 +123,6 @@ def plot_hypnogram(hyp, lw=1.5, highlight="REM", fill_color=None, ax=None):
     ax.stairs(yvalues, bins, baseline=None, color="black", lw=lw)
     if not yvals_highlight.mask.all():
         ax.hlines(yvals_highlight, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
-    if not yvals_art_uns.mask.all():
-        ax.hlines(yvals_art_uns, xmin=bins[:-1], xmax=bins[1:], color="grey", lw=lw)
 
     # Aesthetics
     ax.use_sticky_edges = False
