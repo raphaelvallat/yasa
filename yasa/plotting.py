@@ -57,7 +57,7 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
         >>> hyp_a.plot_hypnogram(fill_color="whitesmoke", ax=axes[0])
         >>> hyp_b.plot_hypnogram(fill_color="whitesmoke", ax=axes[1])
     """
-    from yasa import Hypnogram  # Avoiding circular import
+    from yasa.hypno import Hypnogram  # Avoiding circular import
 
     assert isinstance(hyp, Hypnogram), "`hypno` must be YASA Hypnogram."
 
@@ -139,7 +139,7 @@ def plot_hypnogram(hyp, lw=1, fill_color=None, highlight=None, ax=None):
 def plot_spectrogram(
     data,
     sf,
-    hyp=None,
+    hypno=None,
     win_sec=30,
     fmin=0.5,
     fmax=25,
@@ -163,11 +163,23 @@ def plot_spectrogram(
         Single-channel EEG data. Must be a 1D NumPy array.
     sf : float
         The sampling frequency of data AND the hypnogram.
-    hyp : :py:class:`yasa.Hypnogram`
-        Hypnogram, optional.
+    hypno : array_like
+        Sleep stage (hypnogram), optional.
 
         The hypnogram must have the exact same number of samples as ``data``.
-        To upsample your hypnogram, please refer to :py:meth:`yasa.Hypnogram.upsample_to_data`.
+        To upsample your hypnogram, please refer to :py:func:`yasa.hypno_upsample_to_data`.
+
+        .. note::
+            The default hypnogram format in YASA is a 1D integer
+            vector where:
+
+            - -2 = Unscored
+            - -1 = Artefact / Movement
+            - 0 = Wake
+            - 1 = N1 sleep
+            - 2 = N2 sleep
+            - 3 = N3 sleep
+            - 4 = REM sleep
     win_sec : int or float
         The length of the sliding window, in seconds, used for multitaper PSD
         calculation. Default is 30 seconds. Note that ``data`` must be at least
@@ -227,10 +239,10 @@ def plot_spectrogram(
         >>> # Load the 30-sec hypnogram and upsample to data
         >>> hypno = np.loadtxt('https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt')
         >>> hypno = yasa.hypno_upsample_to_data(hypno, 1/30, data, sf)
-        >>> hypno = yasa.hypno_int_to_str(hypno)
-        >>> hyp = yasa.Hypnogram(hypno, freq="10ms")
-        >>> fig = yasa.plot_spectrogram(data, sf, hyp, cmap='Spectral_r')
+        >>> fig = yasa.plot_spectrogram(data, sf, hypno, cmap='Spectral_r')
     """
+    from yasa.hypno import Hypnogram, hypno_int_to_str  # Avoiding circular imports
+
     # Increase font size while preserving original
     old_fontsize = plt.rcParams["font.size"]
     plt.rcParams.update({"font.size": 18})
@@ -250,11 +262,8 @@ def plot_spectrogram(
         assert isinstance(vmax, (int, float)), "`vmax` must be int or float if `vmin` is provided."
     if vmax is not None:
         assert isinstance(vmin, (int, float)), "`vmin` must be int or float if `vmax` is provided."
-    if hyp is not None:
-        from yasa.hypno import Hypnogram  # Avoiding circular import
-
-        assert isinstance(hyp, Hypnogram)
-        assert hyp.n_epochs == data.size, "`hyp` must have the same number of samples as data."
+    if hypno is not None:
+        assert hypno.size == data.size, "`hypno` must have the same number of samples as `data`."
 
     # Calculate multi-taper spectrogram
     nperseg = int(win_sec * sf)
@@ -274,7 +283,7 @@ def plot_spectrogram(
     norm = Normalize(vmin=vmin, vmax=vmax)
 
     # Open figure
-    if hyp is None:
+    if hypno is None:
         fig, ax1 = plt.subplots(nrows=1, figsize=(12, 4))
     else:
         fig, (ax0, ax1) = plt.subplots(
@@ -289,7 +298,11 @@ def plot_spectrogram(
     ax1.set_ylabel("Frequency [Hz]")
     ax1.set_xlabel("Time [hrs]")
 
-    if hyp is not None:
+    if hypno is not None:
+        # Convert sampling frequency to pandas timefrequency string (e.g., "30s")
+        freq_str = pd.tseries.frequencies.to_offset(pd.Timedelta(1 / sf, "S")).freqstr
+        # Create Hypnogram instance for plotting
+        hyp = Hypnogram(hypno_int_to_str(hypno), freq=freq_str)
         hypnoplot_kwargs = dict(lw=1.5, fill_color=None)
         hypnoplot_kwargs.update(kwargs)
         # Draw hypnogram
