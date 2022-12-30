@@ -11,12 +11,12 @@ What's new
 v0.7.dev
 --------
 
-**Object-oriented hypnogram manipulation**
+**Object-oriented hypnogram**
 
-This version introduces the new :py:class:`yasa.Hypnogram` class, which will progressively become
+This version introduces the new :py:class:`yasa.Hypnogram` class, which will gradually become
 the standard way to store and manipulate hypnograms in YASA. Put simply, YASA now uses an
 object-oriented approach to hypnograms. That is, hypnograms are now stored as a class (aka object),
-which comes with several pre-built functions (named methods) and attributes. See for example below:
+which comes with several pre-built functions (aka methods) and attributes. See for example below:
 
 .. code-block::  python
 
@@ -25,7 +25,7 @@ which comes with several pre-built functions (named methods) and attributes. See
     values = ["W", "W", "W", "S", "S", "S", "S", "S", "W", "S", "S", "S"]
     hyp = Hypnogram(values, n_stages=2, start="2022-12-23 22:30:00", scorer="RM")
     # Below are some class attributes
-    hyp.hypno  # Hypnogram values (pandas Series)
+    hyp.hypno  # Hypnogram values (a pandas.Series of categorical dtype)
     hyp.duration  # Total duration of the hypnogram, in minutes
     hyp.sampling_frequency  # Sampling frequency of the hypnogram
     hyp.mapping  # Mapping from strings to integers

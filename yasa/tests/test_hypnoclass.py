@@ -1,5 +1,6 @@
 """Test the class Hypnogram."""
 import mne
+import pytest
 import unittest
 import numpy as np
 import pandas as pd
@@ -28,6 +29,7 @@ class TestHypnoClass(unittest.TestCase):
         # Check properties
         np.testing.assert_array_equal(hyp.hypno.str.get(0)[:10], np.repeat(["W", "S"], 5))
         assert isinstance(hyp.hypno.index, pd.RangeIndex)
+        assert hyp.hypno.dtype == "category"
         assert hyp.hypno.index.name == "Epoch"
         assert hyp.sampling_frequency == 1 / 30
         assert hyp.freq == "30s"
@@ -104,7 +106,7 @@ class TestHypnoClass(unittest.TestCase):
         hyp_up = hyp.upsample_to_data(raw)
         assert isinstance(hyp_up, np.ndarray)
         assert hyp_up.size == npts
-        assert hyp_up.dtype == int
+        assert hyp_up.dtype == np.int16
         hyp_up = hyp.upsample_to_data(raw.get_data(), sf=100)
 
         # yasa.Hypnogram.simulate_similar
@@ -144,6 +146,10 @@ class TestHypnoClass(unittest.TestCase):
         assert sstats["TIB"] == 120
         assert "%REM" in sstats.keys()
         assert "Lat_REM" in sstats.keys()
+
+        # Try to set a value that is not a valid category
+        with pytest.raises(TypeError):
+            hyp.hypno.loc[0] = "Dream sleep"
 
     def test_4stages_hypno(self):
         """Test 4-stages Hypnogram class"""

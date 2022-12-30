@@ -9,6 +9,7 @@ import pandas as pd
 from yasa.io import set_log_level
 from yasa.plotting import plot_hypnogram
 from yasa.sleepstats import transition_matrix
+from pandas.api.types import CategoricalDtype
 
 __all__ = [
     "Hypnogram",
@@ -29,7 +30,7 @@ class Hypnogram:
     """
     Main class for manipulating hypnogram in YASA.
 
-    Starting with YASA v0.7, YASA takes a more object-oriented approach to hypnograms. That is,
+    Starting with v0.7, YASA takes a more object-oriented approach to hypnograms. That is,
     hypnograms are now stored as a class (aka object), which comes with its own attributes and
     functions. Furthermore, YASA does not allow integer values to define the stages anymore.
     Instead, users must pass an array of strings with the actual stage names
@@ -96,7 +97,8 @@ class Hypnogram:
     9     SLEEP
     10    SLEEP
     11    SLEEP
-    Name: Stage, dtype: object
+    Name: Stage, dtype: category
+    Categories (4, object): ['WAKE', 'SLEEP', 'ART', 'UNS']
 
     >>> # Number of epochs in the hypnogram
     >>> hyp.n_epochs
@@ -125,7 +127,7 @@ class Hypnogram:
     9     1
     10    1
     11    1
-    Name: Stage, dtype: int64
+    Name: Stage, dtype: int16
 
     >>> # Calculate the summary sleep statistics
     >>> hyp.sleep_statistics()
@@ -157,7 +159,7 @@ class Hypnogram:
     >>> from yasa import simulate_hypno
     >>> hyp = simulate_hypno(
     ...     tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42)
-    >>> hyp
+    >>> hyp  # This is a shortcut to `hyp.hypno`
     Time
     2022-12-15 22:30:00    WAKE
     2022-12-15 22:30:30    WAKE
@@ -170,7 +172,8 @@ class Hypnogram:
     2022-12-16 06:48:30      N2
     2022-12-16 06:49:00      N2
     2022-12-16 06:49:30      N2
-    Freq: 30S, Name: S1, Length: 1000, dtype: object
+    Freq: 30S, Name: S1, Length: 1000, dtype: category
+    Categories (7, object): ['WAKE', 'N1', 'N2', 'N3', 'REM', 'ART', 'UNS']
 
     The summary sleep statistics will include more items with a 5-stages hypnogram than a 2-stages
     hypnogram, i.e. the amount and percentage of each sleep stage, the REM latency, etc.
@@ -238,6 +241,10 @@ class Hypnogram:
         map_accepted = {"S": "SLEEP", "W": "WAKE", "R": "REM"}
         hypno = hypno.replace(map_accepted)
         labels = pd.Series(accepted).replace(map_accepted).unique().tolist()
+        # Change dtype of series to "categorical" (reduces memory)
+        cat_dtype = CategoricalDtype(labels, ordered=False)
+        hypno = hypno.astype(cat_dtype)
+        # Create Index
         if start is not None:
             hypno.index = pd.date_range(start=start, freq=freq, periods=hypno.shape[0])
             hypno.index.name = "Time"
@@ -246,6 +253,7 @@ class Hypnogram:
             fake_dt = pd.date_range(start="2022-12-03 00:00:00", freq=freq, periods=hypno.shape[0])
             hypno.index.name = "Epoch"
             timedelta = fake_dt - fake_dt[0]
+        # Set attributes
         self._hypno = hypno
         self._n_epochs = hypno.shape[0]
         self._freq = freq
@@ -266,7 +274,14 @@ class Hypnogram:
 
     @property
     def hypno(self):
-        """The hypnogram values, stored in a :py:class:`pandas.Series`."""
+        """
+        The hypnogram values, stored in a :py:class:`pandas.Series`. To reduce memory usage, the
+        stages are stored as categories (:py:class:`pandas.Categorical`). ``hypno``
+        inherits all the methods of a standard :py:class:`pandas.Series`, e.g. ``.describe()``,
+        ``.unique()``, ``.to_csv()``, and more.
+
+        .. note:: ``print(Hypnogram)`` is a shortcut to ``print(Hypnogram.hypno)``.
+        """
         return self._hypno
 
     @property
@@ -306,7 +321,8 @@ class Hypnogram:
     def n_stages(self):
         """
         The number of allowed stages in the hypnogram. This is not the number of unique stages
-        in the current hypnogram.
+        in the current hypnogram. This does not include Artefact and Unscored which are always
+        allowed.
         """
         return self._n_stages
 
@@ -344,16 +360,6 @@ class Hypnogram:
         return self._scorer
 
     # CLASS METHODS BELOW
-
-    def copy(self):
-        """Return a new copy of the current Hypnogram."""
-        return type(self)(
-            values=self.hypno.to_numpy(),
-            n_stages=self.n_stages,
-            freq=self.freq,
-            start=self.start,
-            scorer=self.scorer,
-        )
 
     def as_annotations(self):
         """
@@ -397,7 +403,7 @@ class Hypnogram:
         return pd.DataFrame(data).set_index("epoch")
 
     def as_int(self):
-        """Return hypnogram as integers.
+        """Return hypnogram values as integers.
 
         The default mapping from string to integer is:
 
@@ -412,7 +418,7 @@ class Hypnogram:
 
         Examples
         --------
-        Convert a 2-stages hypnogram to integers
+        Convert a 2-stages hypnogram to a pandas.Series of integers
 
         >>> from yasa import Hypnogram
         >>> hyp = Hypnogram(["W", "W", "S", "S", "W", "S"], n_stages=2)
@@ -424,7 +430,7 @@ class Hypnogram:
         3    1
         4    0
         5    1
-        Name: Stage, dtype: int64
+        Name: Stage, dtype: int16
 
         Same with a 4-stages hypnogram
 
@@ -439,9 +445,10 @@ class Hypnogram:
         4    3
         5    4
         6    0
-        Name: Stage, dtype: int64
+        Name: Stage, dtype: int16
         """
-        return self.hypno.replace(self.mapping).astype(int)
+        # Return as int16 (-32768 to 32767) to reduce memory usage
+        return self.hypno.replace(self.mapping).astype(np.int16)
 
     def consolidate_stages(self, new_n_stages):
         """Reduce the number of stages in a hypnogram to match actigraphy or wearables.
@@ -486,7 +493,8 @@ class Hypnogram:
         5    SLEEP
         6    SLEEP
         7     WAKE
-        Name: Stage, dtype: object
+        Name: Stage, dtype: category
+        Categories (4, object): ['WAKE', 'SLEEP', 'ART', 'UNS']
         """
         assert self.n_stages in [3, 4, 5], "`self.n_stages` must be 3, 4, or 5"
         assert new_n_stages in [2, 3, 4], "`new_n_stages` must be 2, 3, or 4"
@@ -515,6 +523,16 @@ class Hypnogram:
         return Hypnogram(
             values=new_hyp,
             n_stages=new_n_stages,
+            freq=self.freq,
+            start=self.start,
+            scorer=self.scorer,
+        )
+
+    def copy(self):
+        """Return a new copy of the current Hypnogram."""
+        return type(self)(
+            values=self.hypno.to_numpy(),
+            n_stages=self.n_stages,
             freq=self.freq,
             start=self.start,
             scorer=self.scorer,
@@ -625,8 +643,8 @@ class Hypnogram:
         --------
         .. plot::
 
-            >>> from yasa import simulate_hypnogram
-            >>> ax = simulate_hypno(tib=480, seed=88).plot_hypnogram(highlight="REM"")
+            >>> from yasa import simulate_hypno
+            >>> ax = simulate_hypno(tib=480, seed=88).plot_hypnogram(highlight="REM")
         """
         return plot_hypnogram(self, **kwargs)
 
@@ -946,7 +964,8 @@ class Hypnogram:
         2022-12-23 23:01:00    SLEEP
         2022-12-23 23:01:30    SLEEP
         2022-12-23 23:02:00     WAKE
-        Freq: 30S, Name: Stage, dtype: object
+        Freq: 30S, Name: Stage, dtype: category
+        Categories (4, object): ['WAKE', 'SLEEP', 'ART', 'UNS']
 
         Upsample to a 15-seconds resolution
 
@@ -963,7 +982,8 @@ class Hypnogram:
         2022-12-23 23:01:45    SLEEP
         2022-12-23 23:02:00     WAKE
         2022-12-23 23:02:15     WAKE
-        Freq: 15S, Name: Stage, dtype: object
+        Freq: 15S, Name: Stage, dtype: category
+        Categories (4, object): ['WAKE', 'SLEEP', 'ART', 'UNS']
         """
         assert pd.Timedelta(new_freq) < pd.Timedelta(self.freq), (
             f"The upsampling `new_freq` ({new_freq}) must be higher than the current frequency of "
