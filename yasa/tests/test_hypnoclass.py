@@ -148,7 +148,7 @@ class TestHypnoClass(unittest.TestCase):
         assert "Lat_REM" in sstats.keys()
 
         # Try to set a value that is not a valid category
-        with pytest.raises(TypeError):
+        with pytest.raises((TypeError, ValueError)):  # TypeError in newer versions of Pandas
             hyp.hypno.loc[0] = "Dream sleep"
 
     def test_4stages_hypno(self):
