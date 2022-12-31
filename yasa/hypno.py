@@ -85,8 +85,8 @@ class Hypnogram:
     >>> hyp = Hypnogram(values, n_stages=2)
     >>> hyp
     <Hypnogram | 12 epochs x 30s (6.00 minutes), 2 stages>
-     - Use .hypno to get the string values as a pandas.Series
-     - Use .as_int() to get the integer values as a pandas.Series
+     - Use `.hypno` to get the string values as a pandas.Series
+     - Use `.as_int()` to get the integer values as a pandas.Series
      - Use `.plot_hypnogram()` to plot the hypnogram
     See the online documentation for more details.
 
@@ -170,8 +170,8 @@ class Hypnogram:
     ...     tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42)
     >>> hyp
     <Hypnogram | 1000 epochs x 30s (500.00 minutes), 5 stages, scored by S1>
-     - Use .hypno to get the string values as a pandas.Series
-     - Use .as_int() to get the integer values as a pandas.Series
+     - Use `.hypno` to get the string values as a pandas.Series
+     - Use `.as_int()` to get the integer values as a pandas.Series
      - Use `.plot_hypnogram()` to plot the hypnogram
     See the online documentation for more details.
 
@@ -288,8 +288,8 @@ class Hypnogram:
         return (
             f"<Hypnogram | {self.n_epochs} epochs x {self.freq} ({self.duration:.2f} minutes), "
             f"{self.n_stages} stages{text_scorer}>\n"
-            " - Use .hypno to get the string values as a pandas.Series\n"
-            " - Use .as_int() to get the integer values as a pandas.Series\n"
+            " - Use `.hypno` to get the string values as a pandas.Series\n"
+            " - Use `.as_int()` to get the integer values as a pandas.Series\n"
             " - Use `.plot_hypnogram()` to plot the hypnogram\n"
             "See the online documentation for more details."
         )
@@ -299,8 +299,8 @@ class Hypnogram:
         return (
             f"<Hypnogram | {self.n_epochs} epochs x {self.freq} ({self.duration:.2f} minutes), "
             f"{self.n_stages} stages{text_scorer}>\n"
-            " - Use .hypno to get the string values as a pandas.Series\n"
-            " - Use .as_int() to get the integer values as a pandas.Series\n"
+            " - Use `.hypno` to get the string values as a pandas.Series\n"
+            " - Use `.as_int()` to get the integer values as a pandas.Series\n"
             " - Use `.plot_hypnogram()` to plot the hypnogram\n"
             "See the online documentation for more details."
         )
@@ -1634,8 +1634,8 @@ def simulate_hypnogram(
     >>> hyp = simulate_hypnogram(tib=5, seed=1)
     >>> hyp
     <Hypnogram | 10 epochs x 30s (5.00 minutes), 5 stages>
-     - Use .hypno to get the string values as a pandas.Series
-     - Use .as_int() to get the integer values as a pandas.Series
+     - Use `.hypno` to get the string values as a pandas.Series
+     - Use `.as_int()` to get the integer values as a pandas.Series
      - Use `.plot_hypnogram()` to plot the hypnogram
     See the online documentation for more details.
 
