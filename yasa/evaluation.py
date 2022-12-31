@@ -117,7 +117,6 @@ class EpochByEpochEvaluation:
         >>>
         >>> acc = ebe.get_agreement().multiply(100).at["accuracy"]
         >>> ax.text(0.01, 1, f"Accuracy = {acc:.0f}%", ha="left", va="bottom", transform=ax.transAxes)
-
     """
     def __init__(self, hypno_ref, hypno_test):
         from yasa.hypno import Hypnogram  # Loading here to avoid circular import
@@ -324,22 +323,20 @@ class SleepStatsEvaluation:
     --------
     >>> import pandas as pd
     >>> import yasa
-    >>> results = []
+    >>>
+    >>> # For this example, generate a fake dataset of sleep statistics from two different raters
+    >>> data = []
     >>> for i in range(1, 21):
-    >>>     hypno_a = yasa.simulate_hypnogram(tib=600, scorer="Human", seed=i)
-    >>>     hypno_b = hypno_a.simulate_similar(scorer="YASA", seed=i + 99)
-    >>>     sstats_a = hypno_a.sleep_statistics()
-    >>>     sstats_b = hypno_b.sleep_statistics()
-    >>>     sstats_a["subject"] = f"sub-{i:03d}"
-    >>>     sstats_b["subject"] = f"sub-{i:03d}"
-    >>>     sstats_a["scorer"] = hypno_a.scorer
-    >>>     sstats_b["scorer"] = hypno_b.scorer
-    >>>     results.extend([sstats_a, sstats_b])
-    >>> 
-    >>> df = (pd.DataFrame(results)
-    >>>     .pivot(index="subject", columns="scorer")
-    >>>     .stack(0).rename_axis(["subject", "sstat"]).reset_index().rename_axis(None, axis=1)
-    >>>     .query("sstat.isin(['%N1', '%N2', '%N3', '%REM', 'SOL', 'SE', 'TST'])")
+    >>>     hypA = yasa.simulate_hypnogram(tib=600, seed=i)
+    >>>     hypB = hypA.simulate_similar(seed=i)
+    >>>     data.append({"subject": f"sub-{i:03d}", "rater": "RaterA"} | hypA.sleep_statistics())
+    >>>     data.append({"subject": f"sub-{i:03d}", "rater": "RaterB"} | hypB.sleep_statistics())
+    >>> df = (pd.json_normalize(data)
+    >>>     .melt(id_vars=["subject", "rater"], var_name="sstat", value_name="score")
+    >>>     .pivot(index=["subject", "sstat"], columns="rater", values="score")
+    >>>     .reset_index().rename_axis(None, axis=1)
+    >>>     .query("sstat.isin(['SE', 'TST', 'SOL', 'WASO', '%N1', '%N2', '%N3', '%REM'])")
+    >>> )
     >>>
     >>> sse = yasa.SleepStatsEvaluation(
     >>>     data=df, reference="RaterA", test="RaterB", subject="subject", statistic="sstat"
