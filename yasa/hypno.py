@@ -84,9 +84,9 @@ class Hypnogram:
     >>> values = ["W", "W", "W", "S", "S", "S", "S", "S", "W", "S", "S", "S"]
     >>> hyp = Hypnogram(values, n_stages=2)
     >>> hyp
-    <Hypnogram | 12 epochs x 30s (6.0 minutes), 2 stages>
-     - Use `.hypno` to get the values as a pandas.Series
-     - Use `.as_int()` to get the values as integers
+    <Hypnogram | 12 epochs x 30s (6.00 minutes), 2 stages>
+     - Use .hypno to get the string values as a pandas.Series
+     - Use .as_int() to get the integer values as a pandas.Series
      - Use `.plot_hypnogram()` to plot the hypnogram
     See the online documentation for more details.
 
@@ -1633,9 +1633,9 @@ def simulate_hypnogram(
     >>> from yasa import simulate_hypnogram
     >>> hyp = simulate_hypnogram(tib=5, seed=1)
     >>> hyp
-    <Hypnogram | 10 epochs x 30s (5.0 minutes), 5 stages>
-     - Use `.hypno` to get the values as a pandas.Series
-     - Use `.as_int()` to get the values as integers
+    <Hypnogram | 10 epochs x 30s (5.00 minutes), 5 stages>
+     - Use .hypno to get the string values as a pandas.Series
+     - Use .as_int() to get the integer values as a pandas.Series
      - Use `.plot_hypnogram()` to plot the hypnogram
     See the online documentation for more details.
 
