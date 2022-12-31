@@ -431,7 +431,11 @@ class SleepStaging:
         X = self._features.copy()[clf.feature_name_]
         # Predict the sleep stages and probabilities
         self._predicted = clf.predict(X)
-        proba = pd.DataFrame(clf.predict_proba(X), columns=clf.classes_)
+        # Predict the probabilities
+        classes = clf.classes_.copy()
+        classes[classes == "W"] = "WAKE"  # Compat for yasa.Hypnogram
+        classes[classes == "R"] = "REM"
+        proba = pd.DataFrame(clf.predict_proba(X), columns=classes)
         proba.index.name = "epoch"
         self._proba = proba
         # Convert to a `yasa.Hypnogram` instance
@@ -488,8 +492,7 @@ class SleepStaging:
         ax = proba.plot(kind="area", color=palette, figsize=(10, 5), alpha=0.8, stacked=True, lw=0)
         # Add confidence
         # confidence = proba.max(1)
-        # ax.plot(confidence, lw=1, color='k', ls='-', alpha=0.5,
-        #         label='Confidence')
+        # ax.plot(confidence, lw=1, color='k', ls='-', alpha=0.5, label='Confidence')
         ax.set_xlim(0, proba.shape[0])
         ax.set_ylim(0, 1)
         ax.set_ylabel("Probability")
