@@ -277,8 +277,8 @@ class EpochByEpochEvaluation:
             If a dictionary, keys are stages and values are corresponding colors.
         ax : :py:class:`matplotlib.axes.Axes`
             Axis on which to draw the plot, optional.
-        kwargs : dict
-            Keyword arguments passed to :py:func:`matplotlib.pyplot.plot`
+        **kwargs : key, value pairs
+            Additional keyword arguments are passed to the :py:func:`matplotlib.pyplot.plot` call.
 
         Returns
         -------
@@ -356,6 +356,32 @@ class SleepStatsEvaluation:
     SOL     False     False           True
     TST      True      True           True
 
+    Access more detailed statistical output of each test.
+
+    >>> sse.normality
+                  W      pval  normal
+    sstat
+    %N1    0.973407  0.824551    True
+    %N2    0.960684  0.557595    True
+    %N3    0.958591  0.516092    True
+    %REM   0.901733  0.044447   False
+    SE     0.926732  0.133580    True
+    SOL    0.774786  0.000372   False
+    TST    0.926733  0.133584    True
+    WASO   0.924288  0.119843    True
+
+    >>> sse.homoscedasticity.head(2)
+                  W      pval  equal_var
+    sstat
+    %N1    0.684833  0.508274       True
+    %N2    0.080359  0.922890       True
+
+    >>> sse.proportional_bias.round(3).head(2)
+            coef     se      T   pval     r2  adj_r2  CI[2.5%]  CI[97.5%]  unbiased
+    sstat
+    %N1   -0.487  0.314 -1.551  0.138  0.118   0.069    -1.146      0.172      True
+    %N2   -0.107  0.262 -0.409  0.688  0.009  -0.046    -0.658      0.444      True
+
     .. plot::
 
         >>> import matplotlib.pyplot as plt
@@ -396,27 +422,40 @@ class SleepStatsEvaluation:
         self.statistic = statistic
 
         # Run tests
-        self.test_normality()
-        self.test_proportional_bias()
-        self.test_homoscedasticity()
+        self.test_normality(method="shapiro", alpha=0.05)
+        self.test_proportional_bias(alpha=0.05)
+        self.test_homoscedasticity(method="levene", alpha=0.05)
 
-    def test_normality(self):
-        """Test reference data for normality at each sleep statistic."""
-        normality = self.data.groupby(self.statistic)[self.reference].apply(pg.normality)
+    def test_normality(self, **kwargs):
+        """Test reference data for normality at each sleep statistic.
+
+        Parameters
+        ----------
+        **kwargs : key, value pairs
+            Additional keyword arguments are passed to the :py:func:`pingouin.normality` call.
+        """
+        normality = self.data.groupby(self.statistic)[self.reference].apply(pg.normality, **kwargs)
         self.normality = normality.droplevel(-1)
 
-    def test_proportional_bias(self):
+    def test_proportional_bias(self, **kwargs):
         """Test each sleep statistic for proportional bias.
         
         For each statistic, regress the device difference score on the reference device score to get
         proportional bias and residuals that will be used for the later homoscedasticity
         calculation. Subject-level residuals for each statistic are added to ``data``.
+
+        Parameters
+        ----------
+        **kwargs : key, value pairs
+            Additional keyword arguments are passed to :py:func:`pingouin.linear_regression`.
         """
+        if "alpha" not in kwargs:
+            kwargs["alpha"] = 0.05
         prop_bias_results = []
         residuals_results = []
         for ss, ss_df in self.data.groupby(self.statistic):
             # Regress the difference score on the reference device
-            model = pg.linear_regression(ss_df[self.reference], ss_df["difference"])
+            model = pg.linear_regression(ss_df[self.reference], ss_df["difference"], **kwargs)
             model.insert(0, self.statistic, ss)
             # Extract the subject-level residuals
             resid = pd.DataFrame(
@@ -438,19 +477,22 @@ class SleepStatsEvaluation:
         # Remove intercept rows
         prop_bias = prop_bias.query("names != 'Intercept'").drop(columns="names")
         # Add True/False passing column for easy access
-        prop_bias["unbiased"] = prop_bias["pval"].ge(0.05)
+        prop_bias["unbiased"] = prop_bias["pval"].ge(kwargs["alpha"])
         self.proportional_bias = prop_bias.set_index(self.statistic)
 
-    def test_homoscedasticity(self, method="levene"):
+    def test_homoscedasticity(self, **kwargs):
         """Test each statistic for homoscedasticity.
 
-        The ``method`` argument is passed to :py:func:`pingouin.homoscedasticity`.
+        Parameters
+        ----------
+        **kwargs : key, value pairs
+            Additional keyword arguments are passed to :py:func:`pingouin.homoscedasticity`.
 
         ..note:: ``self.test_proportional_bias()`` must be run first.
         """
         group = self.data.groupby(self.statistic)
         columns = [self.reference, "difference", "pbias_residual"]
-        homoscedasticity = group.apply(lambda df: pg.homoscedasticity(df[columns], method=method))
+        homoscedasticity = group.apply(lambda df: pg.homoscedasticity(df[columns], **kwargs))
         self.homoscedasticity = homoscedasticity.droplevel(-1)
 
     def summary(self, descriptives=True):
@@ -476,8 +518,8 @@ class SleepStatsEvaluation:
         ----------
         sstats_order : list
             List of sleep statistics to plot. Default (None) is to plot all sleep statistics.
-        kwargs : dict
-            Other keyword arguments are passed through to :py:func:`seaborn.heatmap`.
+        **kwargs : key, value pairs
+            Additional keyword arguments are passed to the :py:func:`seaborn.heatmap` call.
 
         Returns
         -------
@@ -515,8 +557,8 @@ class SleepStatsEvaluation:
             List of sleep statistics to plot. Default (None) is to plot all sleep statistics.
         palette : string, list, dict, or :py:class:`matplotlib.colors.Colormap`
             Color palette passed to :py:class:`seaborn.PairGrid`
-        kwargs : dict
-            Other keyword arguments are passed through to :py:func:`seaborn.stripplot`.
+        **kwargs : key, value pairs
+            Additional keyword arguments are passed to the :py:func:`seaborn.stripplot` call.
 
         Returns
         -------
@@ -568,9 +610,9 @@ class SleepStatsEvaluation:
         sstats_order : list or None
             List of sleep statistics to plot. Default (None) is to plot all sleep statistics.
         facet_kwargs : dict
-            Other keyword arguments are passed through to :py:class:`seaborn.FacetGrid`.
-        kwargs : dict
-            Other keyword arguments are passed through to :py:func:`pingouin.plot_blandaltman`.
+            Keyword arguments passed to :py:class:`seaborn.FacetGrid`.
+        **kwargs : key, value pairs
+            Additional keyword arguments are passed to :py:func:`pingouin.plot_blandaltman`.
 
         Returns
         -------
