@@ -58,10 +58,8 @@ class EpochByEpochEvaluation:
     Examples
     --------
     >>> import yasa
-    >>> hypno_a = yasa.simulate_hypno(tib=90, seed=8)
-    >>> hypno_b = yasa.simulate_hypno(tib=90, seed=9)
-    >>> hypno_a = yasa.Hypnogram(hypno_a, scorer="RaterA")
-    >>> hypno_b = yasa.Hypnogram(hypno_b, scorer="RaterB")
+    >>> hypno_a = yasa.simulate_hypnogram(tib=90, seed=8, scorer="RaterA")
+    >>> hypno_b = yasa.simulate_hypnogram(tib=90, seed=9, scorer="RaterB")
     >>> ebe = yasa.EpochByEpochEvaluation(hypno_a, hypno_b)  # or hypno_a.evaluate(hypno_b)
     >>> ebe.get_confusion_matrix()
     RaterB  WAKE  N1   N2  N3  REM  ART  UNS  Total
@@ -113,26 +111,6 @@ class EpochByEpochEvaluation:
             logger.warning(warn_msg)
         self.hypno_ref = hypno_ref
         self.hypno_test = hypno_test
-
-    def get_confusion_matrix(self):
-        """
-        Return ``hypno_ref``/``hypno_test``confusion matrix dataframe.
-
-        Returns
-        -------
-        matrix : :py:class:`pandas.DataFrame`
-            A confusion matrix with stages of ``hypno_ref`` as indices and stages of
-            ``hypno_test`` as columns.
-        """
-        # Generate confusion matrix.
-        matrix = pd.crosstab(
-            self.hypno_ref.hypno, self.hypno_test.hypno, margins=True, margins_name="Total"
-        )
-        # Reorder indices in sensible order and to include all stages
-        matrix = matrix.reindex(self.hypno_ref.labels + ["Total"], axis=0)
-        matrix = matrix.reindex(self.hypno_test.labels + ["Total"], axis=1)
-        matrix = matrix.fillna(0).astype(int)
-        return matrix
 
     def get_agreement(self):
         """
@@ -190,6 +168,65 @@ class EpochByEpochEvaluation:
         agreement.columns = pd.Index(labels, name="stage")
         return agreement
 
+    def get_confusion_matrix(self):
+        """
+        Return ``hypno_ref``/``hypno_test``confusion matrix dataframe.
+
+        Returns
+        -------
+        matrix : :py:class:`pandas.DataFrame`
+            A confusion matrix with stages of ``hypno_ref`` as indices and stages of
+            ``hypno_test`` as columns.
+        """
+        # Generate confusion matrix.
+        matrix = pd.crosstab(
+            self.hypno_ref.hypno, self.hypno_test.hypno, margins=True, margins_name="Total"
+        )
+        # Reorder indices in sensible order and to include all stages
+        matrix = matrix.reindex(self.hypno_ref.labels + ["Total"], axis=0)
+        matrix = matrix.reindex(self.hypno_test.labels + ["Total"], axis=1)
+        matrix = matrix.fillna(0).astype(int)
+        return matrix
+
+    def plot_hypnograms(
+            self, jitter_test=0.1, legend=True, kwargs_ref={"ls": "dotted"}, kwargs_test={}, ax=None
+        ):
+        """Plot the two hypnograms, ``hypno_test`` overlaid on ``hypno_ref``.
+
+        Parameters
+        ----------
+        kwargs_ref : dict
+            Keyword arguments passed to :py:func:`yasa.plot_hypnogram` when plotting ``hypno_ref``.
+        kwargs_test : dict
+            Keyword arguments passed to :py:func:`yasa.plot_hypnogram` when plotting ``hypno_test``.
+
+        Returns
+        -------
+        ax : :py:class:`matplotlib.axes.Axes`
+            Matplotlib Axes
+        """
+        assert isinstance(legend, (bool, dict)), "`legend` must be True, False, or a dictionary"
+        assert isinstance(jitter_test, (float, int)), "`jitter_test` must be a number"
+        assert isinstance(kwargs_ref, dict), "`kwargs_ref` must be a dictionary"
+        assert isinstance(kwargs_test, dict), "`kwargs_test` must be a dictionary"
+        assert not "ax" in kwargs_ref | kwargs_test, (
+            "ax can't be supplied to `kwargs_ref` or `kwargs_test`, use the `ax` keyword instead"
+        )
+        if "label" not in kwargs_ref:
+            kwargs_ref["label"] = self.hypno_ref.scorer
+        if "label" not in kwargs_test:
+            kwargs_test["label"] = self.hypno_test.scorer
+        if ax is None:
+            ax = plt.gca()
+        self.hypno_ref.plot_hypnogram(ax=ax, **kwargs_ref)
+        self.hypno_test.plot_hypnogram(ax=ax, **kwargs_test)
+        if legend:
+            if isinstance(legend, dict):
+                ax.legend(**legend)
+            else:
+                ax.legend()
+        return ax
+
 
 class SleepStatsEvaluation:
     """
@@ -230,14 +267,14 @@ class SleepStatsEvaluation:
     >>> import yasa
     >>> results = []
     >>> for i in range(1, 21):
-    >>>     hypno_a = yasa.simulate_hypnogram(tib=600, scorer="RaterA", seed=i)
-    >>>     hypno_b = hypno_a.simulate_similar(scorer="RaterB", seed=i + 99)
+    >>>     hypno_a = yasa.simulate_hypnogram(tib=600, scorer="Human", seed=i)
+    >>>     hypno_b = hypno_a.simulate_similar(scorer="YASA", seed=i + 99)
     >>>     sstats_a = hypno_a.sleep_statistics()
     >>>     sstats_b = hypno_b.sleep_statistics()
     >>>     sstats_a["subject"] = f"sub-{i:03d}"
     >>>     sstats_b["subject"] = f"sub-{i:03d}"
-    >>>     sstats_a["scorer"] = "RaterA"
-    >>>     sstats_b["scorer"] = "RaterB"
+    >>>     sstats_a["scorer"] = hypno_a.scorer
+    >>>     sstats_b["scorer"] = hypno_b.scorer
     >>>     results.extend([sstats_a, sstats_b])
     >>> 
     >>> df = (pd.DataFrame(results)

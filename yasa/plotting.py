@@ -13,7 +13,7 @@ from matplotlib.colors import Normalize, ListedColormap
 __all__ = ["plot_hypnogram", "plot_spectrogram", "topoplot"]
 
 
-def plot_hypnogram(hyp, lw=1.5, highlight="REM", fill_color=None, ax=None):
+def plot_hypnogram(hyp, highlight="REM", fill_color=None, ax=None, **kwargs):
     """
     Plot a hypnogram.
 
@@ -23,14 +23,21 @@ def plot_hypnogram(hyp, lw=1.5, highlight="REM", fill_color=None, ax=None):
     ----------
     hyp : :py:class:`yasa.Hypnogram`
         A YASA hypnogram instance.
-    lw : float
-        Linewidth.
     highlight : str or None
         Optional stage to highlight with alternate color.
+    lw : float
+        Linewidth of the hypnogram line.
+    ls : str
+        Linestyle of the hypnogram line.
+    alpha : float or int
+        Alpha transparency of the hypnogram line.
     fill_color : str or None
         Optional color to fill space above hypnogram line.
     ax : :py:class:`matplotlib.axes.Axes`
         Axis on which to draw the plot, optional.
+    **kwargs : dict
+        Keyword arguments controlling hypnogram line display (e.g., ``linewidth``, ``linestyle``).
+        Passed to :py:func:`matplotlib.pyplot.stairs` and py:func:`matplotlib.pyplot.hlines`.
 
     Returns
     -------
@@ -74,20 +81,25 @@ def plot_hypnogram(hyp, lw=1.5, highlight="REM", fill_color=None, ax=None):
     old_fontsize = plt.rcParams["font.size"]
     plt.rcParams.update({"font.size": 18})
 
+    # Open the figure
+    if ax is None:
+        ax = plt.gca()
+
     ## Remap stages to be in desired y-axis order ##
     # Start with default of all allowed labels
     stage_order = hyp.labels.copy()
-    stages_present = hyp.hypno.unique()
-    # Remove Art/Uns from stage order, and place back individually at front to be higher on plot
-    art_str = stage_order.pop(stage_order.index("ART"))
-    uns_str = stage_order.pop(stage_order.index("UNS"))
-    if "ART" in stages_present:
-        stage_order.insert(0, art_str)
-    if "UNS" in stages_present:
-        stage_order.insert(0, uns_str)
+    stages_present = hyp.hypno.unique().tolist()
+    # Reverse order so WAKE is highest, and exclude ART/UNS which are always last
+    stage_order = stage_order[:-2][::-1]
+    # Add ART/UNS back above WAKE if they're present in the current hypnogram or existing axis
+    gca_ylabels = [x.get_text() for x in ax.get_yticklabels()]
+    if "ART" in stages_present or "ART" in gca_ylabels:
+        stage_order += ["ART"]
+    if "UNS" in stages_present or "UNS" in gca_ylabels:
+        stage_order += ["UNS"]
     # Put REM after WAKE if all 5 standard stages are allowed
     if hyp.n_stages == 5:
-        stage_order.insert(stage_order.index("WAKE") + 1, stage_order.pop(stage_order.index("REM")))
+        stage_order.insert(stage_order.index("WAKE") - 1, stage_order.pop(stage_order.index("REM")))
     # Reset the Hypnogram mapping so any future returns have this order
     hyp.mapping = {stage: i for i, stage in enumerate(stage_order)}
 
@@ -111,18 +123,19 @@ def plot_hypnogram(hyp, lw=1.5, highlight="REM", fill_color=None, ax=None):
     # Make mask to draw the highlighted stage
     yvals_highlight = np.ma.masked_not_equal(yvalues, hyp.mapping.get(highlight))
 
-    # Open the figure
-    if ax is None:
-        ax = plt.gca()
-
     # Draw background filling
     if fill_color is not None:
-        bline = hyp.mapping["WAKE"]  # len(stage_order) - 1 to fill from bottom
-        ax.stairs(yvalues.clip(bline), bins, baseline=bline, color=fill_color, fill=True, lw=0)
-    # Draw main hypnogram line, highlighted stage line, and Artefact/Unscored line
-    ax.stairs(yvalues, bins, baseline=None, color="black", lw=lw)
+        bline = hyp.mapping["WAKE"]
+        ax.stairs(yvalues.clip(max=bline), bins, baseline=bline, color=fill_color, fill=True, lw=0)
+    # Draw main hypnogram line and highlighted stage line
+    line_kwargs = {"color": "black", "lw": 1.5, "label": hyp.scorer}
+    if "linewidth" in kwargs:
+        line_kwargs["linewidth"] = line_kwargs.pop("lw")
+    line_kwargs.update(kwargs)
+    ax.stairs(yvalues, bins, baseline=None, **line_kwargs)
     if not yvals_highlight.mask.all():
-        ax.hlines(yvals_highlight, xmin=bins[:-1], xmax=bins[1:], color="red", lw=lw)
+        line_kwargs.update({"color": "red", "label": None})
+        ax.hlines(yvals_highlight, xmin=bins[:-1], xmax=bins[1:], **line_kwargs)
 
     # Aesthetics
     ax.use_sticky_edges = False
@@ -131,7 +144,6 @@ def plot_hypnogram(hyp, lw=1.5, highlight="REM", fill_color=None, ax=None):
     ax.set_yticklabels(stage_order)
     ax.set_ylabel("Stage")
     ax.set_xlabel(xlabel)
-    ax.invert_yaxis()
     ax.spines[["right", "top"]].set_visible(False)
     if hyp.start is not None:
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
