@@ -25,12 +25,6 @@ def plot_hypnogram(hyp, highlight="REM", fill_color=None, ax=None, **kwargs):
         A YASA hypnogram instance.
     highlight : str or None
         Optional stage to highlight with alternate color.
-    lw : float
-        Linewidth of the hypnogram line.
-    ls : str
-        Linestyle of the hypnogram line.
-    alpha : float or int
-        Alpha transparency of the hypnogram line.
     fill_color : str or None
         Optional color to fill space above hypnogram line.
     ax : :py:class:`matplotlib.axes.Axes`
