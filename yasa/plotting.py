@@ -128,9 +128,7 @@ def plot_hypnogram(hyp, highlight="REM", fill_color=None, ax=None, **kwargs):
         bline = hyp.mapping["WAKE"]
         ax.stairs(yvalues.clip(max=bline), bins, baseline=bline, color=fill_color, fill=True, lw=0)
     # Draw main hypnogram line and highlighted stage line
-    line_kwargs = {"color": "black", "lw": 1.5, "label": hyp.scorer}
-    if "linewidth" in kwargs:
-        line_kwargs["linewidth"] = line_kwargs.pop("lw")
+    line_kwargs = {"color": "black", "linewidth": 1.5, "label": hyp.scorer}
     line_kwargs.update(kwargs)
     ax.stairs(yvalues, bins, baseline=None, **line_kwargs)
     if not yvals_highlight.mask.all():

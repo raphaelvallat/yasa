@@ -62,34 +62,62 @@ class EpochByEpochEvaluation:
     >>> hypno_b = yasa.simulate_hypnogram(tib=90, seed=9, scorer="RaterB")
     >>> ebe = yasa.EpochByEpochEvaluation(hypno_a, hypno_b)  # or hypno_a.evaluate(hypno_b)
     >>> ebe.get_confusion_matrix()
-    RaterB  WAKE  N1   N2  N3  REM  ART  UNS  Total
+    RaterB  WAKE   N1   N2  N3  REM  ART  UNS  Total
     RaterA
-    WAKE       1  20   68  12    0    0    0    101
-    N1         1   0    9   0    0    0    0     10
-    N2        15   7   19   0    0    0    0     41
-    N3         0   4   15   0    9    0    0     28
-    REM        0   0    0   0    0    0    0      0
-    ART        0   0    0   0    0    0    0      0
-    UNS        0   0    0   0    0    0    0      0
-    Total     17  31  111  12    9    0    0    180
+    WAKE      52   38  126  23   51    0    0    290
+    N1        59    2   27   8   14    0    0    110
+    N2       117   50  105  15   44    0    0    331
+    N3        34   26   62  42   15    0    0    179
+    REM       15   12   13  10    0    0    0     50
+    ART        0    0    0   0    0    0    0      0
+    UNS        0    0    0   0    0    0    0      0
+    Total    277  128  333  98  124    0    0    960
 
     >>> ebe.get_agreement().round(3)
     metric
-    accuracy              0.111
-    kappa                -0.130
-    weighted_jaccard      0.037
-    weighted_precision    0.072
-    weighted_recall       0.111
-    weighted_f1           0.066
+    accuracy              0.209
+    kappa                -0.051
+    weighted_jaccard      0.130
+    weighted_precision    0.247
+    weighted_recall       0.209
+    weighted_f1           0.223
     Name: agreement, dtype: float64
 
     >>> ebe.get_agreement_by_stage().round(3)
-    stage         WAKE    N1      N2    N3  REM  ART  UNS
+    stage         WAKE       N1       N2       N3   REM  ART  UNS
     metric
-    precision    0.059   0.0   0.171   0.0  0.0  0.0  0.0
-    recall       0.010   0.0   0.463   0.0  0.0  0.0  0.0
-    fscore       0.017   0.0   0.250   0.0  0.0  0.0  0.0
-    support    101.000  10.0  41.000  28.0  0.0  0.0  0.0
+    precision    0.188    0.016    0.315    0.429   0.0  0.0  0.0
+    recall       0.179    0.018    0.317    0.235   0.0  0.0  0.0
+    fscore       0.183    0.017    0.316    0.303   0.0  0.0  0.0
+    support    290.000  110.000  331.000  179.000  50.0  0.0  0.0
+
+    .. plot::
+
+        >>> import matplotlib.pyplot as plt
+        >>> fig, ax = plt.subplots(figsize=(6, 3), constrained_layout=True)
+        >>> ebe.plot_hypnograms()
+
+    .. plot::
+
+        >>> fig, ax = plt.subplots(figsize=(6, 3))
+        >>> ebe.plot_hypnograms(ax=ax, kwargs_test={"color": "black", "lw": 2, "ls": "dotted"})
+        >>> plt.tight_layout()
+
+    .. plot::
+
+        >>> fig, ax = plt.subplots(figsize=(6.5, 2.5), constrained_layout=True)
+        >>> style_a = dict(alpha=1, lw=2.5, ls="solid", color="gainsboro", label="Michel")
+        >>> style_b = dict(alpha=1, lw=2.5, ls="solid", color="cornflowerblue", label="Jouvet")
+        >>> legend_style = dict(
+        >>>     title="Scorer", frameon=False, ncol=2, loc="lower center", bbox_to_anchor=(0.5, 0.9)
+        >>> )
+        >>> ax = ebe.plot_hypnograms(
+        >>>     kwargs_ref=style_a, kwargs_test=style_b, legend=legend_style, ax=ax
+        >>> )
+        >>>
+        >>> acc = ebe.get_agreement().multiply(100).at["accuracy"]
+        >>> ax.text(0.01, 1, f"Accuracy = {acc:.0f}%", ha="left", va="bottom", transform=ax.transAxes)
+
     """
     def __init__(self, hypno_ref, hypno_test):
         from yasa.hypno import Hypnogram  # Loading here to avoid circular import
@@ -188,13 +216,19 @@ class EpochByEpochEvaluation:
         matrix = matrix.fillna(0).astype(int)
         return matrix
 
-    def plot_hypnograms(
-            self, jitter_test=0.1, legend=True, kwargs_ref={"ls": "dotted"}, kwargs_test={}, ax=None
-        ):
+    def plot_hypnograms(self, legend=True, ax=None, kwargs_ref={}, kwargs_test={}):
         """Plot the two hypnograms, ``hypno_test`` overlaid on ``hypno_ref``.
+
+        .. seealso:: :py:func:`yasa.plot_hypnogram`
 
         Parameters
         ----------
+        legend : bool or None
+            If True, a legend with default :py:func:`matplotlib.pyplot.legend` arguments is added.
+            If False, no legend is added. If a dictionary, a legend is added and the dictionary is
+            passed as keyword arguments to :py:func:`matplotlib.pyplot.legend`.
+        ax : :py:class:`matplotlib.axes.Axes`
+            Axis on which to draw the plot, optional.
         kwargs_ref : dict
             Keyword arguments passed to :py:func:`yasa.plot_hypnogram` when plotting ``hypno_ref``.
         kwargs_test : dict
@@ -204,23 +238,30 @@ class EpochByEpochEvaluation:
         -------
         ax : :py:class:`matplotlib.axes.Axes`
             Matplotlib Axes
+
+        Examples
+        --------
+        .. plot::
+
+            >>> from yasa import simulate_hypnogram
+            >>> hyp = simulate_hypnogram(seed=7)
+            >>> ax = hyp.evaluate(hyp.simulate_similar()).plot_hypnograms()
         """
         assert isinstance(legend, (bool, dict)), "`legend` must be True, False, or a dictionary"
-        assert isinstance(jitter_test, (float, int)), "`jitter_test` must be a number"
         assert isinstance(kwargs_ref, dict), "`kwargs_ref` must be a dictionary"
         assert isinstance(kwargs_test, dict), "`kwargs_test` must be a dictionary"
         assert not "ax" in kwargs_ref | kwargs_test, (
             "ax can't be supplied to `kwargs_ref` or `kwargs_test`, use the `ax` keyword instead"
         )
-        if "label" not in kwargs_ref:
-            kwargs_ref["label"] = self.hypno_ref.scorer
-        if "label" not in kwargs_test:
-            kwargs_test["label"] = self.hypno_test.scorer
+        plot_kwargs_ref = {"highlight": None, "alpha": 0.8}
+        plot_kwargs_test = {"highlight": None, "alpha": 0.8, "color": "darkcyan", "ls": "dashed"}
+        plot_kwargs_ref.update(kwargs_ref)
+        plot_kwargs_test.update(kwargs_test)
         if ax is None:
             ax = plt.gca()
-        self.hypno_ref.plot_hypnogram(ax=ax, **kwargs_ref)
-        self.hypno_test.plot_hypnogram(ax=ax, **kwargs_test)
-        if legend:
+        self.hypno_ref.plot_hypnogram(ax=ax, **plot_kwargs_ref)
+        self.hypno_test.plot_hypnogram(ax=ax, **plot_kwargs_test)
+        if legend and "label" in plot_kwargs_ref | plot_kwargs_test:
             if isinstance(legend, dict):
                 ax.legend(**legend)
             else:
@@ -393,7 +434,7 @@ class SleepStatsEvaluation:
 
     def summary(self, descriptives=True):
         """Return a summary dataframe highlighting what statistics pass checks."""
-        assert isinstance(descriptives, bool), "descriptives must be True or False"
+        assert isinstance(descriptives, bool), "`descriptives` must be True or False"
         series_list = [
             self.normality["normal"],
             self.proportional_bias["unbiased"],
