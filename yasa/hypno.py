@@ -169,9 +169,9 @@ class Hypnogram:
     >>> hyp = simulate_hypnogram(
     ...     tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42)
     >>> hyp
-    <Hypnogram | 1000 epochs x 30s (500.0 minutes), 5 stages>
-     - Use `.hypno` to get the values as a pandas.Series
-     - Use `.as_int()` to get the values as integers
+    <Hypnogram | 1000 epochs x 30s (500.00 minutes), 5 stages, scored by S1>
+     - Use .hypno to get the string values as a pandas.Series
+     - Use .as_int() to get the integer values as a pandas.Series
      - Use `.plot_hypnogram()` to plot the hypnogram
     See the online documentation for more details.
 
@@ -284,21 +284,23 @@ class Hypnogram:
 
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
+        text_scorer = f", scored by {self.scorer}" if self.scorer is not None else ""
         return (
             f"<Hypnogram | {self.n_epochs} epochs x {self.freq} ({self.duration:.2f} minutes), "
-            f"{self.n_stages} stages>\n"
-            " - Use `.hypno` to get the values as a pandas.Series\n"
-            " - Use `.as_int()` to get the values as integers\n"
+            f"{self.n_stages} stages{text_scorer}>\n"
+            " - Use .hypno to get the string values as a pandas.Series\n"
+            " - Use .as_int() to get the integer values as a pandas.Series\n"
             " - Use `.plot_hypnogram()` to plot the hypnogram\n"
             "See the online documentation for more details."
         )
 
     def __str__(self):
+        text_scorer = f", scored by {self.scorer}" if self.scorer is not None else ""
         return (
             f"<Hypnogram | {self.n_epochs} epochs x {self.freq} ({self.duration:.2f} minutes), "
-            f"{self.n_stages} stages>\n"
-            " - Use `.hypno` to get the values as a pandas.Series\n"
-            " - Use `.as_int()` to get the values as integers\n"
+            f"{self.n_stages} stages{text_scorer}>\n"
+            " - Use .hypno to get the string values as a pandas.Series\n"
+            " - Use .as_int() to get the integer values as a pandas.Series\n"
             " - Use `.plot_hypnogram()` to plot the hypnogram\n"
             "See the online documentation for more details."
         )
