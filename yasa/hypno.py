@@ -588,7 +588,7 @@ class Hypnogram:
             freq=self.freq,
             start=self.start,
             scorer=self.scorer,
-            proba=None  # TODO: Combine stages probability?
+            proba=None,  # TODO: Combine stages probability?
         )
 
     def copy(self):
@@ -1081,7 +1081,7 @@ class Hypnogram:
             freq=new_freq,
             start=self.start,
             scorer=self.scorer,
-            proba=None  # NOTE: Do not upsample probability
+            proba=None,  # NOTE: Do not upsample probability
         )
 
     def upsample_to_data(self, data, sf=None, verbose=True):
