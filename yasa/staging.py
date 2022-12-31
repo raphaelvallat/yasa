@@ -4,6 +4,7 @@ import mne
 import glob
 import joblib
 import logging
+import warnings
 import numpy as np
 import pandas as pd
 import antropy as ant
@@ -141,12 +142,15 @@ class SleepStaging:
     >>> sls = yasa.SleepStaging(raw, eeg_name="C4-M1", eog_name="LOC-M2",
     ...                         emg_name="EMG1-EMG2",
     ...                         metadata=dict(age=29, male=True))
+    >>> # Print some basic info
+    >>> sls
     >>> # Get the predicted sleep stages
-    >>> hypno = sls.predict()
+    >>> hyp = sls.predict()
+    >>> hyp.hypno
     >>> # Get the predicted probabilities
-    >>> proba = sls.predict_proba()
+    >>> hyp.proba
     >>> # Get the confidence
-    >>> confidence = proba.max(axis=1)
+    >>> confidence = hyp.proba.max(axis=1)
     >>> # Plot the predicted probabilities
     >>> sls.plot_predict_proba()
 
@@ -207,6 +211,22 @@ class SleepStaging:
         self.ch_types = ch_types
         self.data = data
         self.metadata = metadata
+
+    def __repr__(self):
+        n_samples = self.data.shape[-1]
+        duration = (n_samples / self.sf) / 60
+        return (
+            f"<SleepStaging | {len(self.ch_names)} x {n_samples} samples ({duration:.1f} minutes), "
+            f"{self.sf} Hz>"
+        )
+
+    def __str__(self):
+        n_samples = self.data.shape[-1]
+        duration = n_samples / self.sf
+        return (
+            f"<SleepStaging | {len(self.ch_names)} x {n_samples} samples ({duration:.1f} minutes), "
+            f"{self.sf} Hz>"
+        )
 
     def fit(self):
         """Extract features from data.
@@ -419,7 +439,8 @@ class SleepStaging:
         -------
         pred : :py:class:`yasa.Hypnogram`
             The predicted sleep stages. Since YASA v0.7, the predicted sleep stages are now
-            returned as a :py:class:`yasa.Hypnogram` instance.
+            returned as a :py:class:`yasa.Hypnogram` instance, which also includes the
+            probability of each sleep stage for each epoch.
         """
         from yasa.hypno import Hypnogram
 
@@ -436,10 +457,10 @@ class SleepStaging:
         classes[classes == "W"] = "WAKE"  # Compat for yasa.Hypnogram
         classes[classes == "R"] = "REM"
         proba = pd.DataFrame(clf.predict_proba(X), columns=classes)
-        proba.index.name = "epoch"
+        proba.index.name = "Epoch"
         self._proba = proba
-        # Convert to a `yasa.Hypnogram` instance
-        return Hypnogram(values=self._predicted.copy(), freq="30s", n_stages=5)
+        # Convert to a `yasa.Hypnogram` instance (including `proba`)
+        return Hypnogram(values=self._predicted.copy(), freq="30s", n_stages=5, proba=proba.copy())
 
     def predict_proba(self, path_to_model="auto"):
         """
@@ -460,6 +481,12 @@ class SleepStaging:
         proba : :py:class:`pandas.DataFrame`
             The predicted probability for each sleep stage for each 30-sec epoch of data.
         """
+        warnings.warn(
+            "The `predict_proba` function is deprecated and will be removed in v0.8. "
+            "The predicted probabilities can now be accessed with `yasa.Hypnogram.proba` instead, "
+            "e.g `SleepStaging.predict().proba`",
+            FutureWarning,
+        )
         if not hasattr(self, "_proba"):
             self.predict(path_to_model)
         return self._proba.copy()
@@ -481,11 +508,11 @@ class SleepStaging:
             If True, probabilities of the non-majority classes will be set to 0.
         """
         if proba is None and not hasattr(self, "_features"):
-            raise ValueError("Must call .predict_proba before this function")
+            raise ValueError("Must call `.predict` before this function")
         if proba is None:
             proba = self._proba.copy()
         else:
-            assert isinstance(proba, pd.DataFrame), "proba must be a dataframe"
+            assert isinstance(proba, pd.DataFrame), "`proba` must be a pandas.DataFrame"
         if majority_only:
             cond = proba.apply(lambda x: x == x.max(), axis=1)
             proba = proba.where(cond, other=0)

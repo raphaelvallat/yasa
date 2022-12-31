@@ -23,9 +23,12 @@ class TestStaging(unittest.TestCase):
         sls = SleepStaging(
             raw, eeg_name="C4", eog_name="EOG1", emg_name="EMG1", metadata=dict(age=21, male=False)
         )
+        print(sls)
+        print(str(sls))
         sls.get_features()
         y_pred = sls.predict()
         assert isinstance(y_pred, Hypnogram)
+        assert y_pred.proba is not None
         proba = sls.predict_proba()
         assert y_pred.hypno.size == y_true.hypno.size
         assert y_true.duration == y_pred.duration

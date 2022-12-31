@@ -29,18 +29,21 @@ which comes with several pre-built functions (aka methods) and attributes. See f
     hyp.duration  # Total duration of the hypnogram, in minutes
     hyp.sampling_frequency  # Sampling frequency of the hypnogram
     hyp.mapping  # Mapping from strings to integers
+    hyp.proba  # Probability of each sleep stage, if specified
     # Below are some class methods
     hyp.sleep_statistics()  # Calculate the sleep statistics
     hyp.plot_hypnogram()  # Plot the hypnogram
     hyp.upsample_to_data()  # Upsample to data
 
-Please see the documentation of :py:class:`yasa.Hypnogram` for more details.
+This brings along critical changes to several YASA function, for example:
 
-.. important::
-  The adoption of object-oriented :py:class:`yasa.Hypnogram` usage brings along critical changes to several YASA function, for example:
+* :py:class:`yasa.SleepStaging` now returns a :py:class:`yasa.Hypnogram` instead of a :py:class:`numpy.ndarray`. The probability of each sleep stage for each epoch can now be accessed with :py:attr:`yasa.Hypnogram.proba`.
+* :py:func:`yasa.simulate_hypnogram` now returns a :py:class:`yasa.Hypnogram` instead of a :py:class:`numpy.ndarray`.
+* The suggested approach to plotting hypnograms is through the :py:meth:`yasa.Hypnogram.plot_hypnogram` method. The old function :py:func:`yasa.plot_hypnogram` still exists, but now *requires* a :py:class:`yasa.Hypnogram` instance as input.
 
-  * :py:func:`yasa.simulate_hypno` now returns a :py:class:`yasa.Hypnogram` instead of a :py:class:`numpy.ndarray`.
-  * The suggested approach to plotting hypnograms is through the :py:meth:`yasa.Hypnogram.plot_hypnogram` method. The old function :py:func:`yasa.plot_hypnogram` still exists, but now *requires* a :py:class:`yasa.Hypnogram` instance as input.
+**Other improvements**
+
+- Added helpful string representation (__repr__) to :py:class:`yasa.SleepStaging`.
 
 ----------------------------------------------------------------------------------------
 
