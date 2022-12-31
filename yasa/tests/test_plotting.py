@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from yasa.hypno import simulate_hypno
+from yasa.hypno import simulate_hypnogram
 from yasa.plotting import topoplot, plot_hypnogram
 
 
@@ -41,8 +41,8 @@ class TestPlotting(unittest.TestCase):
         with pytest.raises(AssertionError):
             _ = plot_hypnogram(np.repeat([0, 1, 2, 3, 4, -2, -1, -3], 120))
         # Default parameters
-        hyp5 = simulate_hypno(n_stages=5)
-        hyp2 = simulate_hypno(n_stages=2)
+        hyp5 = simulate_hypnogram(n_stages=5)
+        hyp2 = simulate_hypnogram(n_stages=2)
         ax = hyp5.plot_hypnogram()
         assert isinstance(ax, plt.Axes)
         # Aesthetic parameters
@@ -54,7 +54,7 @@ class TestPlotting(unittest.TestCase):
         ax = plt.subplot()
         _ = hyp5.plot_hypnogram(ax=ax)
         # With datetime axis
-        hyp3 = simulate_hypno(n_stages=3, tib=800, start="2020-01-01 20:00:00")
+        hyp3 = simulate_hypnogram(n_stages=3, tib=800, start="2020-01-01 20:00:00")
         hyp3.plot_hypnogram()
         # With Artefacts and Unscored
         hyp3.hypno.iloc[-100:] = "UNS"
