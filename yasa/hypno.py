@@ -10,6 +10,7 @@ import pandas as pd
 from yasa.io import set_log_level
 from yasa.plotting import plot_hypnogram
 from yasa.sleepstats import transition_matrix
+from yasa.evaluation import EpochByEpochEvaluation
 from pandas.api.types import CategoricalDtype
 
 __all__ = [
@@ -569,6 +570,46 @@ class Hypnogram:
             start=self.start,
             scorer=self.scorer,
         )
+
+    def evaluate(self, hypno_test):
+        """Evaluate agreement between two hypnograms.
+
+        Typically the reference hypnogram (i.e., ``self``) is a manually-scored hypnogram and the
+        test hypnogram (i.e., ``hypno_test``) is a hypnogram from an actigraphy/wearable device or
+        automated scorer (e.g., :py:meth:`yasa.SleepStaging.predict`).
+
+        Comparing more than two hypnograms is not currently supported.
+
+        Parameters
+        ----------
+        self : :py:class:`yasa.Hypnogram`
+            Reference or ground-truth hypnogram.
+        hypno_test : :py:class:`yasa.Hypnogram`
+            The test or to-be-evaluated hypnogram.
+            Must have the same ``n_stages`` as the reference hypnogram.
+
+        Returns
+        -------
+        ebe : :py:class:`yasa.EpochByEpochEvaluation`
+            See :py:class:`yasa.EpochByEpochEvaluation` documentation for more detail.
+
+        Examples
+        --------
+        .. plot::
+
+            >>> import yasa
+            >>> hypno_ref = yasa.simulate_hypno(tib=600, seed=11)
+            >>> hypno_ref = yasa.Hypnogram(hypno_ref, scorer="Rater1")
+            >>> _, true_probas = hypno_ref.transition_matrix()
+            >>> hypno_test = yasa.simulate_hypno(tib=600, seed=12, trans_probas=true_probas)
+            >>> hypno_test = yasa.Hypnogram(hypno_test, scorer="Rater2")
+            >>> ebe = hypno_ref.evaluate(hypno_test)
+            >>> conf = ebe.get_confusion_matrix()
+            >>> perf = ebe.get_agreement()
+            >>> # Plot the overlapping hypnograms
+            >>> ebe.plot_hypnograms()
+        """
+        return EpochByEpochEvaluation(self, hypno_test)
 
     def find_periods(self, threshold="5min", equal_length=False):
         """Find sequences of consecutive values exceeding a certain duration in hypnogram.
