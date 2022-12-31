@@ -83,6 +83,15 @@ class Hypnogram:
     >>> from yasa import Hypnogram
     >>> values = ["W", "W", "W", "S", "S", "S", "S", "S", "W", "S", "S", "S"]
     >>> hyp = Hypnogram(values, n_stages=2)
+    >>> hyp
+    <Hypnogram | 12 epochs x 30s (6.0 minutes), 2 stages>
+     - Use `.hypno` to get the values as a pandas.Series
+     - Use `.as_int()` to get the values as integers
+     - Use `.plot_hypnogram()` to plot the hypnogram
+    See the online documentation for more details.
+
+    We can access the actual values, which are stored as a :py:class:`pandas.Series`, with:
+
     >>> hyp.hypno
     Epoch
     0      WAKE
@@ -159,7 +168,14 @@ class Hypnogram:
     >>> from yasa import simulate_hypnogram
     >>> hyp = simulate_hypnogram(
     ...     tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42)
-    >>> hyp  # This is a shortcut to `hyp.hypno`
+    >>> hyp
+    <Hypnogram | 1000 epochs x 30s (500.0 minutes), 5 stages>
+     - Use `.hypno` to get the values as a pandas.Series
+     - Use `.as_int()` to get the values as integers
+     - Use `.plot_hypnogram()` to plot the hypnogram
+    See the online documentation for more details.
+
+    >>> hyp.hypno
     Time
     2022-12-15 22:30:00    WAKE
     2022-12-15 22:30:30    WAKE
@@ -267,10 +283,25 @@ class Hypnogram:
         self._scorer = scorer
 
     def __repr__(self):
-        return f"{self.hypno}"
+        # TODO v0.8: Keep only the text between < and >
+        return (
+            f"<Hypnogram | {self.n_epochs} epochs x {self.freq} ({self.duration:.2f} minutes), "
+            f"{self.n_stages} stages>\n"
+            " - Use `.hypno` to get the values as a pandas.Series\n"
+            " - Use `.as_int()` to get the values as integers\n"
+            " - Use `.plot_hypnogram()` to plot the hypnogram\n"
+            "See the online documentation for more details."
+        )
 
     def __str__(self):
-        return f"{self.hypno}"
+        return (
+            f"<Hypnogram | {self.n_epochs} epochs x {self.freq} ({self.duration:.2f} minutes), "
+            f"{self.n_stages} stages>\n"
+            " - Use `.hypno` to get the values as a pandas.Series\n"
+            " - Use `.as_int()` to get the values as integers\n"
+            " - Use `.plot_hypnogram()` to plot the hypnogram\n"
+            "See the online documentation for more details."
+        )
 
     @property
     def hypno(self):
@@ -1599,7 +1630,14 @@ def simulate_hypnogram(
     --------
     >>> from yasa import simulate_hypnogram
     >>> hyp = simulate_hypnogram(tib=5, seed=1)
-    >>> print(hyp)
+    >>> hyp
+    <Hypnogram | 10 epochs x 30s (5.0 minutes), 5 stages>
+     - Use `.hypno` to get the values as a pandas.Series
+     - Use `.as_int()` to get the values as integers
+     - Use `.plot_hypnogram()` to plot the hypnogram
+    See the online documentation for more details.
+
+    >>> hyp.hypno
     Epoch
     0    WAKE
     1      N1
@@ -1614,7 +1652,7 @@ def simulate_hypnogram(
     Name: Stage, dtype: object
 
     >>> hyp = simulate_hypnogram(tib=5, n_stages=2, seed=1)
-    >>> print(hyp)
+    >>> hyp.hypno
     Epoch
     0     WAKE
     1    SLEEP
@@ -1632,7 +1670,7 @@ def simulate_hypnogram(
 
     >>> hyp = simulate_hypnogram(tib=5, n_stages=2, seed=1)
     >>> hyp.hypno.iloc[-2:] = "UNS"
-    >>> print(hyp)
+    >>> hyp.hypno
     Epoch
     0     WAKE
     1    SLEEP
