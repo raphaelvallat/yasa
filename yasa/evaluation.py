@@ -268,6 +268,24 @@ class EpochByEpochEvaluation:
                 ax.legend()
         return ax
 
+    def plot_roc(self, palette=None, ax=None, **kwargs):
+        """Plot ROC curves for each stage.
+
+        Parameters
+        ----------
+        palette : dict or None
+            If a dictionary, keys are stages and values are corresponding colors.
+        ax : :py:class:`matplotlib.axes.Axes`
+            Axis on which to draw the plot, optional.
+        kwargs : dict
+            Keyword arguments passed to :py:func:`matplotlib.pyplot.plot`
+
+        Returns
+        -------
+        ax : :py:class:`matplotlib.axes.Axes`
+            Matplotlib Axes
+        """
+        raise NotImplementedError("Requires probability/confidence values.")
 
 class SleepStatsEvaluation:
     """
@@ -340,7 +358,10 @@ class SleepStatsEvaluation:
 
     .. plot::
 
-        >>> sse.plot_discrepancies_heatmap()
+        >>> import matplotlib.pyplot as plt
+        >>> ax = sse.plot_discrepancies_heatmap()
+        >>> ax.set_title("Sleep statistic discrepancies")
+        >>> plt.tight_layout()
 
     .. plot::
 
@@ -470,13 +491,14 @@ class SleepStatsEvaluation:
 
         # Merge default heatmap arguments with optional input
         heatmap_kwargs = dict(cmap="binary", annot=True, fmt=".1f", square=False)
+        heatmap_kwargs["cbar_kws"] = dict(label="Normalized discrepancy %")
+        if "cbar_kws" in kwargs:
+            heatmap_kwargs["cbar_kws"].update(kwargs["cbar_kws"])
         heatmap_kwargs.update(kwargs)
         # Pivot for subject-rows and statistic-columns
-        table = self.data.pivot(
-            index=self.subject, columns=self.statistic, values="difference",
-        )
-        # Normalize statistics (i.e., columns) between zero and one
-        table_norm = table.sub(table.min(), axis=1).div(table.apply(np.ptp))
+        table = self.data.pivot(index=self.subject, columns=self.statistic, values="difference")
+        # Normalize statistics (i.e., columns) between zero and one then convert to percentage
+        table_norm = table.sub(table.min(), axis=1).div(table.apply(np.ptp)).multiply(100)
         # If annotating, replace with raw values for writing.
         if heatmap_kwargs["annot"]:
             heatmap_kwargs["annot"] = table[sstats_order].to_numpy()
