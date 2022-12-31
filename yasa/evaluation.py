@@ -1,0 +1,510 @@
+"""
+YASA code for evaluating the agreement between two sleep-measurement systems.
+
+There are two levels of evaluating staging performance:
+- Comparing two hypnograms (e.g., human vs automated scorer)
+- Comparing summary sleep statistics between two scorers (e.g., PSG vs actigraphy)
+
+Analyses are modeled after the standardized framework proposed in Menghini et al., 2021, SLEEP.
+See the following resources:
+- https://doi.org/10.1093/sleep/zsaa170
+- https://sri-human-sleep.github.io/sleep-trackers-performance
+- https://github.com/SRI-human-sleep/sleep-trackers-performance
+"""
+import logging
+
+import numpy as np
+import pandas as pd
+import pingouin as pg
+from sklearn import metrics
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from yasa.plotting import plot_hypnogram
+
+
+logger = logging.getLogger("yasa")
+
+__all__ = [
+    "EpochByEpochEvaluation",
+    "SleepStatsEvaluation",
+]
+
+
+class EpochByEpochEvaluation:
+    """
+    See :py:meth:`yasa.Hypnogram.evaluate`
+
+    Parameters
+    ----------
+    hypno_ref : :py:class:`yasa.Hypnogram`
+        Reference or ground-truth hypnogram.
+    hypno_test : :py:class:`yasa.Hypnogram`
+        The test or to-be-evaluated hypnogram.
+
+    Notes
+    -----
+    Many steps here are modeled after guidelines proposed in Menghini et al., 2021 [Menghini2021]_.
+    See https://sri-human-sleep.github.io/sleep-trackers-performance/AnalyticalPipeline_v1.0.0.html
+
+    References
+    ----------
+    .. [Menghini2021] Menghini, L., Cellini, N., Goldstone, A., Baker, F. C., & de Zambotti, M.
+                      (2021). A standardized framework for testing the performance of sleep-tracking
+                       technology: step-by-step guidelines and open-source code. Sleep, 44(2),
+                       zsaa170. https://doi.org/10.1093/sleep/zsaa170
+
+    Examples
+    --------
+    >>> import yasa
+    >>> hypno_a = yasa.simulate_hypno(tib=90, seed=8)
+    >>> hypno_b = yasa.simulate_hypno(tib=90, seed=9)
+    >>> hypno_a = yasa.Hypnogram(hypno_a, scorer="RaterA")
+    >>> hypno_b = yasa.Hypnogram(hypno_b, scorer="RaterB")
+    >>> ebe = yasa.EpochByEpochEvaluation(hypno_a, hypno_b)  # or hypno_a.evaluate(hypno_b)
+    >>> ebe.get_confusion_matrix()
+    RaterB  WAKE  N1   N2  N3  REM  ART  UNS  Total
+    RaterA
+    WAKE       1  20   68  12    0    0    0    101
+    N1         1   0    9   0    0    0    0     10
+    N2        15   7   19   0    0    0    0     41
+    N3         0   4   15   0    9    0    0     28
+    REM        0   0    0   0    0    0    0      0
+    ART        0   0    0   0    0    0    0      0
+    UNS        0   0    0   0    0    0    0      0
+    Total     17  31  111  12    9    0    0    180
+
+    >>> ebe.get_agreement().round(3)
+    metric
+    accuracy              0.111
+    kappa                -0.130
+    weighted_jaccard      0.037
+    weighted_precision    0.072
+    weighted_recall       0.111
+    weighted_f1           0.066
+    Name: agreement, dtype: float64
+
+    >>> ebe.get_agreement_by_stage().round(3)
+    stage         WAKE    N1      N2    N3  REM  ART  UNS
+    metric
+    precision    0.059   0.0   0.171   0.0  0.0  0.0  0.0
+    recall       0.010   0.0   0.463   0.0  0.0  0.0  0.0
+    fscore       0.017   0.0   0.250   0.0  0.0  0.0  0.0
+    support    101.000  10.0  41.000  28.0  0.0  0.0  0.0
+    """
+    def __init__(self, hypno_ref, hypno_test):
+        from yasa.hypno import Hypnogram  # Loading here to avoid circular import
+        assert isinstance(hypno_ref, Hypnogram), "`hypno_ref` must be a YASA Hypnogram"
+        assert isinstance(hypno_test, Hypnogram), "`hypno_test` must be a YASA Hypnogram"
+        assert hypno_ref.n_stages == hypno_test.n_stages, (
+            "`hypno_ref` and `hypno_test` must have the same `n_stages`")
+        if (n_ref := hypno_ref.n_epochs) != (n_test := hypno_test.n_epochs):
+            ## NOTE: would be nice to have a Hypnogram.trim() method for moments like this.
+            if n_ref > n_test:
+                hypno_ref = Hypnogram(hypno_ref.hypno[:n_test], n_stages=hypno_ref.n_stages)
+                n_trimmed = n_ref - n_test
+                warn_msg = f"`hypno_ref` longer than `hypno_test`, trimmed to {n_test} epochs"
+            else:
+                hypno_test = Hypnogram(hypno_test.hypno[:n_ref], n_stages=hypno_test.n_stages)
+                n_trimmed = n_test - n_ref
+                warn_msg = f"`hypno_test` longer than `hypno_ref`, {n_trimmed} epochs trimmed"
+            ## Q: Should be downplayed as INFO?
+            logger.warning(warn_msg)
+        self.hypno_ref = hypno_ref
+        self.hypno_test = hypno_test
+
+    def get_confusion_matrix(self):
+        """
+        Return ``hypno_ref``/``hypno_test``confusion matrix dataframe.
+
+        Returns
+        -------
+        matrix : :py:class:`pandas.DataFrame`
+            A confusion matrix with stages of ``hypno_ref`` as indices and stages of
+            ``hypno_test`` as columns.
+        """
+        # Generate confusion matrix.
+        matrix = pd.crosstab(
+            self.hypno_ref.hypno, self.hypno_test.hypno, margins=True, margins_name="Total"
+        )
+        # Reorder indices in sensible order and to include all stages
+        matrix = matrix.reindex(self.hypno_ref.labels + ["Total"], axis=0)
+        matrix = matrix.reindex(self.hypno_test.labels + ["Total"], axis=1)
+        matrix = matrix.fillna(0).astype(int)
+        return matrix
+
+    def get_agreement(self):
+        """
+        Return a dataframe of ``hypno_ref``/``hypno_test`` performance
+        across all stages as measured by common classifier agreement methods.
+
+        ## Q: Are there better names to differentiate get_agreement vs get_agreement_by_stage?
+        ##    Maybe should be binary vs multiclass?
+        .. seealso:: :py:meth:`yasa.EpochByEpochResults.get_agreement_by_stage`
+
+        Returns
+        -------
+        agreement : :py:class:`pandas.Series`
+            A :py:class:`pandas.Series` with agreement metrics as indices.
+        """
+        true = self.hypno_ref.hypno.to_numpy()
+        pred = self.hypno_test.hypno.to_numpy()
+        accuracy = metrics.accuracy_score(true, pred)
+        kappa = metrics.cohen_kappa_score(true, pred)
+        jaccard = metrics.jaccard_score(true, pred, average="weighted")
+        precision = metrics.precision_score(true, pred, average="weighted", zero_division=0)
+        recall = metrics.recall_score(true, pred, average="weighted", zero_division=0)
+        f1 = metrics.f1_score(true, pred, average="weighted", zero_division=0)
+        scores = {
+            "accuracy": accuracy,
+            "kappa": kappa,
+            "weighted_jaccard": jaccard,
+            "weighted_precision": precision,
+            "weighted_recall": recall,
+            "weighted_f1": f1,
+        }
+        agreement = pd.Series(scores, name="agreement").rename_axis("metric")
+        return agreement
+
+    def get_agreement_by_stage(self):
+        """
+        Return a dataframe of ``hypno_ref``/``hypno_test`` performance
+        for each stage as measured by common classifier agreement methods.
+
+        .. seealso:: :py:meth:`yasa.EpochByEpochResults.get_agreement`
+
+        Returns
+        -------
+        agreement : :py:class:`pandas.DataFrame`
+            A DataFrame with agreement metrics as indices and stages as columns.
+        """
+        true = self.hypno_ref.hypno.to_numpy()
+        pred = self.hypno_test.hypno.to_numpy()
+        labels = self.hypno_ref.labels  # equivalent to hypno_test.labels
+        scores = metrics.precision_recall_fscore_support(
+            true, pred, labels=labels, average=None, zero_division=0
+        )
+        agreement = pd.DataFrame(scores)
+        agreement.index = pd.Index(["precision", "recall", "fscore", "support"], name="metric")
+        agreement.columns = pd.Index(labels, name="stage")
+        return agreement
+
+
+class SleepStatsEvaluation:
+    """
+    Evaluate agreement between two measurement devices by comparing summary sleep statistics across
+    multiple participants or sessions.
+
+    For example, the reference device might be PSG and the test device might be a wearable device.
+
+    Parameters
+    ----------
+    data : :py:class:`pandas.DataFrame`
+        A pandas dataframe with sleep statistics from two different
+        devices for multiple subjects
+    reference : str
+        Name of column containing the reference device sleep statistics.
+    test : str
+        Name of column containing the test device sleep statistics.
+    subject : str
+        Name of column containing the subject ID.
+    statistic : str
+        Name of column containing the name of the sleep statistics.
+
+    Notes
+    -----
+    Many steps here are modeled after guidelines proposed in Menghini et al., 2021 [Menghini2021]_.
+    See https://sri-human-sleep.github.io/sleep-trackers-performance/AnalyticalPipeline_v1.0.0.html
+
+    References
+    ----------
+    .. [Menghini2021] Menghini, L., Cellini, N., Goldstone, A., Baker, F. C., & de Zambotti, M.
+                      (2021). A standardized framework for testing the performance of sleep-tracking
+                       technology: step-by-step guidelines and open-source code. Sleep, 44(2),
+                       zsaa170. https://doi.org/10.1093/sleep/zsaa170
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> import yasa
+    >>> results = []
+    >>> for i in range(1, 21):
+    >>>     hypno_a = yasa.simulate_hypnogram(tib=600, scorer="RaterA", seed=i)
+    >>>     hypno_b = hypno_a.simulate_similar(scorer="RaterB", seed=i + 99)
+    >>>     sstats_a = hypno_a.sleep_statistics()
+    >>>     sstats_b = hypno_b.sleep_statistics()
+    >>>     sstats_a["subject"] = f"sub-{i:03d}"
+    >>>     sstats_b["subject"] = f"sub-{i:03d}"
+    >>>     sstats_a["scorer"] = "RaterA"
+    >>>     sstats_b["scorer"] = "RaterB"
+    >>>     results.extend([sstats_a, sstats_b])
+    >>> 
+    >>> df = (pd.DataFrame(results)
+    >>>     .pivot(index="subject", columns="scorer")
+    >>>     .stack(0).rename_axis(["subject", "sstat"]).reset_index().rename_axis(None, axis=1)
+    >>>     .query("sstat.isin(['%N1', '%N2', '%N3', '%REM', 'SOL', 'SE', 'TST'])")
+    >>>
+    >>> sse = yasa.SleepStatsEvaluation(
+    >>>     data=df, reference="RaterA", test="RaterB", subject="subject", statistic="sstat"
+    >>> )
+    >>>
+    >>> sse.summary(descriptives=False)
+           normal  unbiased  homoscedastic
+    sstat
+    %N1      True      True           True
+    %N2      True      True           True
+    %N3      True      True           True
+    %REM    False      True           True
+    SE       True      True           True
+    SOL     False     False           True
+    TST      True      True           True
+
+    .. plot::
+
+        >>> sse.plot_discrepancies_heatmap()
+
+    .. plot::
+
+        >>> sse.plot_blandaltman()
+    """
+    def __init__(self, data, reference, test, subject, statistic):
+        assert isinstance(data, pd.DataFrame), "`data` must be a pandas DataFrame"
+        for col in [reference, test, subject, statistic]:
+            assert isinstance(col, str) and col in data, f"`{col}` must be a string and a column in `data`"
+        assert data[subject].nunique() > 1, "`data` must include more than one subject"
+        data = data.copy()
+
+        # Get measurement difference between reference and test devices
+        data["difference"] = data[test].sub(data[reference])
+
+        # Check for sleep statistics that have no differences between measurement devices.
+        # This is most likely to occur with TIB but is possible with any, and will break some functions.
+        stats_nodiff = data.groupby(statistic)["difference"].any().loc[lambda x: ~x].index
+        for s in stats_nodiff:
+            data = data.query(f"{statistic} != '{s}'")
+            logger.warning(f"All {s} differences are zero, removing from evaluation.")
+            ## Q: Should this be logged as just info?
+
+        # Get list of all statistics to be evaluated
+        self.all_sleepstats = data[statistic].unique()
+
+        # Save attributes
+        self.data = data
+        self.reference = reference
+        self.test = test
+        self.subject = subject
+        self.statistic = statistic
+
+        # Run tests
+        self.test_normality()
+        self.test_proportional_bias()
+        self.test_homoscedasticity()
+
+    def test_normality(self):
+        """Test reference data for normality at each sleep statistic."""
+        normality = self.data.groupby(self.statistic)[self.reference].apply(pg.normality)
+        self.normality = normality.droplevel(-1)
+
+    def test_proportional_bias(self):
+        """Test each sleep statistic for proportional bias.
+        
+        For each statistic, regress the device difference score on the reference device score to get
+        proportional bias and residuals that will be used for the later homoscedasticity
+        calculation. Subject-level residuals for each statistic are added to ``data``.
+        """
+        prop_bias_results = []
+        residuals_results = []
+        for ss, ss_df in self.data.groupby(self.statistic):
+            # Regress the difference score on the reference device
+            model = pg.linear_regression(ss_df[self.reference], ss_df["difference"])
+            model.insert(0, self.statistic, ss)
+            # Extract the subject-level residuals
+            resid = pd.DataFrame(
+                {
+                    self.subject: ss_df[self.subject],
+                    self.statistic: ss,
+                    "pbias_residual": model.residuals_
+                }
+            )
+            prop_bias_results.append(model)
+            residuals_results.append(resid)
+        # Add residuals to raw dataframe, used later when testing homoscedasticity
+        residuals = pd.concat(residuals_results)
+        self.data = self.data.merge(residuals, on=[self.subject, self.statistic])
+        # Handle proportional bias results
+        prop_bias = pd.concat(prop_bias_results)
+        # Save all the proportional bias models before removing intercept, for optional user access
+        self.proportional_bias_models_ = prop_bias.reset_index(drop=True)
+        # Remove intercept rows
+        prop_bias = prop_bias.query("names != 'Intercept'").drop(columns="names")
+        # Add True/False passing column for easy access
+        prop_bias["unbiased"] = prop_bias["pval"].ge(0.05)
+        self.proportional_bias = prop_bias.set_index(self.statistic)
+
+    def test_homoscedasticity(self, method="levene"):
+        """Test each statistic for homoscedasticity.
+
+        The ``method`` argument is passed to :py:func:`pingouin.homoscedasticity`.
+
+        ..note:: ``self.test_proportional_bias()`` must be run first.
+        """
+        group = self.data.groupby(self.statistic)
+        columns = [self.reference, "difference", "pbias_residual"]
+        homoscedasticity = group.apply(lambda df: pg.homoscedasticity(df[columns], method=method))
+        self.homoscedasticity = homoscedasticity.droplevel(-1)
+
+    def summary(self, descriptives=True):
+        """Return a summary dataframe highlighting what statistics pass checks."""
+        assert isinstance(descriptives, bool), "descriptives must be True or False"
+        series_list = [
+            self.normality["normal"],
+            self.proportional_bias["unbiased"],
+            self.homoscedasticity["equal_var"].rename("homoscedastic"),
+        ]
+        summary = pd.concat(series_list, axis=1)
+        if descriptives:
+            group = self.data.drop(columns=self.subject).groupby(self.statistic)
+            desc = group.agg(["mean", "std"])
+            desc.columns = desc.columns.map("_".join)
+            summary = summary.join(desc)
+        return summary
+
+    def plot_discrepancies_heatmap(self, sstats_order=None, **kwargs):
+        """Visualize subject-level discrepancies, generally for outlier inspection.
+
+        Parameters
+        ----------
+        sstats_order : list
+            List of sleep statistics to plot. Default (None) is to plot all sleep statistics.
+        kwargs : dict
+            Other keyword arguments are passed through to :py:func:`seaborn.heatmap`.
+
+        Returns
+        -------
+        ax : :py:class:`matplotlib.axes.Axes`
+            Matplotlib Axes
+        """
+        if sstats_order is None:
+            sstats_order = self.all_sleepstats
+        else:
+            assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list"
+
+        # Merge default heatmap arguments with optional input
+        heatmap_kwargs = dict(cmap="binary", annot=True, fmt=".1f", square=False)
+        heatmap_kwargs.update(kwargs)
+        # Pivot for subject-rows and statistic-columns
+        table = self.data.pivot(
+            index=self.subject, columns=self.statistic, values="difference",
+        )
+        # Normalize statistics (i.e., columns) between zero and one
+        table_norm = table.sub(table.min(), axis=1).div(table.apply(np.ptp))
+        # If annotating, replace with raw values for writing.
+        if heatmap_kwargs["annot"]:
+            heatmap_kwargs["annot"] = table[sstats_order].to_numpy()
+        # Draw heatmap
+        ax = sns.heatmap(table_norm[sstats_order], **heatmap_kwargs)
+        return ax
+
+    def plot_discrepancies_dotplot(self, sstats_order=None, palette="winter", **kwargs):
+        """Visualize subject-level discrepancies, generally for outlier inspection.
+
+        Parameters
+        ----------
+        sstats_order : list
+            List of sleep statistics to plot. Default (None) is to plot all sleep statistics.
+        palette : string, list, dict, or :py:class:`matplotlib.colors.Colormap`
+            Color palette passed to :py:class:`seaborn.PairGrid`
+        kwargs : dict
+            Other keyword arguments are passed through to :py:func:`seaborn.stripplot`.
+
+        Returns
+        -------
+        g : :py:class:`seaborn.PairGrid`
+            Seaborn PairGrid
+        """
+        if sstats_order is None:
+            sstats_order = self.all_sleepstats
+        else:
+            assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list"
+
+        # Merge default stripplot arguments with optional input
+        stripplot_kwargs = dict(size=10, linewidth=1, edgecolor="white")
+        stripplot_kwargs.update(kwargs)
+
+        # Pivot data to get subject-rows and statistic-columns
+        table = self.data.pivot(index=self.subject, columns=self.statistic, values="difference")
+
+        # Initialize the PairGrid
+        height = 0.3 * len(table)
+        aspect = 0.6
+        g = sns.PairGrid(
+            table.reset_index(),
+            x_vars=sstats_order,
+            y_vars=[self.subject],
+            hue=self.subject,
+            palette=palette,
+            height=height,
+            aspect=aspect,
+        )
+        # Draw the dots
+        g.map(sns.stripplot, orient="h", jitter=False, **stripplot_kwargs)
+
+        # Adjust aesthetics
+        g.set(xlabel="", ylabel="")
+        for ax, title in zip(g.axes.flat, sstats_order):
+            ax.set(title=title)
+            ax.margins(x=0.3)
+            ax.yaxis.grid(True)
+            ax.tick_params(left=False)
+        sns.despine(left=True, bottom=True)
+
+        return g
+
+    def plot_blandaltman(self, sstats_order=None, facet_kwargs={}, **kwargs):
+        """
+        Parameters
+        ----------
+        sstats_order : list or None
+            List of sleep statistics to plot. Default (None) is to plot all sleep statistics.
+        facet_kwargs : dict
+            Other keyword arguments are passed through to :py:class:`seaborn.FacetGrid`.
+        kwargs : dict
+            Other keyword arguments are passed through to :py:func:`pingouin.plot_blandaltman`.
+
+        Returns
+        -------
+        g : :py:class:`seaborn.FacetGrid`
+            Seaborn FacetGrid
+        """
+        if sstats_order is None:
+            sstats_order = self.all_sleepstats
+        else:
+            assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list"
+
+        # Select scatterplot arguments (passed to blandaltman) and update with optional input
+        blandaltman_kwargs = dict(xaxis="y", annotate=False, edgecolor="black", facecolor="none")
+        blandaltman_kwargs.update(kwargs)
+        # Select FacetGrid arguments and update with optional input
+        col_wrap = 4 if len(sstats_order) > 4 else None
+        facetgrid_kwargs = dict(col_wrap=col_wrap, height=2, aspect=1, sharex=False, sharey=False)
+        facetgrid_kwargs.update(facet_kwargs)
+
+        # Initialize a grid of plots with an Axes for each sleep statistic
+        g = sns.FacetGrid(self.data, col=self.statistic, col_order=sstats_order, **facetgrid_kwargs)
+        # Draw Bland-Altman on each axis
+        g.map(pg.plot_blandaltman, self.test, self.reference, **blandaltman_kwargs)
+
+        # Tidy-up axis limits with symmetric y-axis and minimal ticks
+        for ax in g.axes.flat:
+            bound = max(map(abs, ax.get_ylim()))
+            ax.set_ylim(-bound, bound)
+            ax.yaxis.set_major_locator(plt.MaxNLocator(nbins=2, integer=True, symmetric=True))
+            ax.xaxis.set_major_locator(plt.MaxNLocator(nbins=1, integer=True))
+        # More aesthetics
+        ylabel = " - ".join((self.test, self.reference))
+        g.set_ylabels(ylabel)
+        g.set_titles(col_template="{col_name}")
+        g.tight_layout(w_pad=1, h_pad=2)
+
+        return g

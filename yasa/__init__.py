@@ -1,5 +1,6 @@
 import logging
 from .detection import *
+from .evaluation import *
 from .features import *
 from .heart import *
 from .hypno import *
