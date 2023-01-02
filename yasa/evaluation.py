@@ -344,18 +344,12 @@ class SleepStatsEvaluation:
 
     Parameters
     ----------
-    data : :py:class:`pandas.DataFrame`
-        A :py:class:`pandas.DataFrame` with sleep statistics from two different measurement systems.
-        Each row contains the two different measurements of a single subject and sleep statistic.
-        Of shape (n_subjects x n_sleep_statistics, 4).
-    reference : str
-        Name of column containing the reference device sleep statistics.
-    test : str
-        Name of column containing the test device sleep statistics.
-    subject : str
-        Name of column containing the subject ID.
-    statistic : str
-        Name of column containing the name of the sleep statistic.
+    refr_data : :py:class:`pandas.DataFrame`
+        A :py:class:`pandas.DataFrame` with sleep statistics from the reference measurement system.
+        Rows are individual subjects and columns are individual sleep statistics.
+    test_data : :py:class:`pandas.DataFrame`
+        A :py:class:`pandas.DataFrame` with sleep statistics from the test measurement system.
+        Shape, indices, and columns must be identical to ``refr_data``.
 
     Notes
     -----
@@ -374,23 +368,14 @@ class SleepStatsEvaluation:
     >>> import pandas as pd
     >>> import yasa
     >>>
-    >>> # For this example, generate a fake dataset of sleep statistics from two different raters
-    >>> data = []
-    >>> for i in range(1, 21):
-    >>>     hypA = yasa.simulate_hypnogram(tib=600, seed=i)
-    >>>     hypB = hypA.simulate_similar(seed=i)
-    >>>     data.append({"subject": f"sub-{i:03d}", "rater": "RaterA"} | hypA.sleep_statistics())
-    >>>     data.append({"subject": f"sub-{i:03d}", "rater": "RaterB"} | hypB.sleep_statistics())
-    >>> df = (pd.json_normalize(data)
-    >>>     .melt(id_vars=["subject", "rater"], var_name="sstat", value_name="score")
-    >>>     .pivot(index=["subject", "sstat"], columns="rater", values="score")
-    >>>     .reset_index().rename_axis(None, axis=1)
-    >>>     .query("sstat.isin(['SE', 'TST', 'SOL', 'WASO', '%N1', '%N2', '%N3', '%REM'])")
-    >>> )
+    >>> # For this example, generate two fake datasets of sleep statistics
+    >>> hypsA = [yasa.simulate_hypnogram(tib=600, seed=i) for i in range(20)]
+    >>> hypsB = [h.simulate_similar(tib=600, seed=i) for i, h in enumerate(hypsA)]
+    >>> sstatsA = pd.Series(hypsA).map(lambda h: h.sleep_statistics()).apply(pd.Series)
+    >>> sstatsB = pd.Series(hypsB).map(lambda h: h.sleep_statistics()).apply(pd.Series)
+    >>> sstatsA.index = sstatsB.index = sstatsA.index.map(lambda x: f"sub-{x+1:03d}")
     >>>
-    >>> sse = yasa.SleepStatsEvaluation(
-    >>>     data=df, reference="RaterA", test="RaterB", subject="subject", statistic="sstat"
-    >>> )
+    >>> sse = yasa.SleepStatsEvaluation(sstatsA, sstatsB)
     >>>
     >>> sse.summary(descriptives=False)
            normal  unbiased  homoscedastic
@@ -440,75 +425,93 @@ class SleepStatsEvaluation:
 
         >>> sse.plot_blandaltman()
     """
-    def __init__(self, data, *, reference, test, subject, statistic):
-        assert isinstance(data, pd.DataFrame), "`data` must be a pandas DataFrame"
-        for col in [reference, test, subject, statistic]:
-            assert isinstance(col, str) and col in data, (
-                f"`{col}` must be a string and a column in `data`"
-            )
-        assert data[subject].nunique() > 1, "`data` must include more than one subject"
-        assert not data.groupby("subject")["sstat"].count().diff().any(), "same number of sstats for all subjects"
-        assert not data.groupby("subject")["sstat"].nunique().is_unique, "no repeated sstats per subject"
-        
-        # Don't update this, rename to something else like table.
-        data = data.copy()
+    def __init__(self, refr_data, test_data, *, refr_name="Reference", test_name="Test"):
+
+        assert isinstance(refr_data, pd.DataFrame), "`refr_data` must be a pandas DataFrame"
+        assert isinstance(test_data, pd.DataFrame), "`test_data` must be a pandas DataFrame"
+        assert np.array_equal(refr_data.index, test_data.index), "`refr_data` and `test_data` indices must be identical"
+        assert np.array_equal(refr_data.columns, test_data.columns), "`refr_data` and `test_data` columns must be identical"
+        assert refr_data.index.name == test_data.index.name, "`refr_data` and `test_data` index names must be identical"
+
+        # Set attributes
+        self._refr_data = refr_data
+        self._test_data = test_data
+        self._refr_name = refr_name
+        self._test_name = test_name
+        self._subj_name = "subject" if refr_data.index.name is None else refr_data.index.name
+
+        # Merge dataframes and reshape wide-to-long format
+        # Add levels to index
+        refr_data.index.name = self._subj_name
+        test_data.index.name = self._subj_name
+        df1 = pd.concat({refr_name: refr_data}, names=["measurement"])
+        df2 = pd.concat({test_name: test_data}, names=["measurement"])
+        df = pd.concat([df1, df2])
+        df = df.melt(var_name="sstat", ignore_index=False).reset_index(
+            ).pivot(columns="measurement", index=[self._subj_name, "sstat"], values="value"
+            ).reset_index().rename_axis(columns=None)
 
         # Get measurement difference between reference and test devices
-        data["difference"] = data[test].sub(data[reference])
+        df["difference"] = df[test_name].sub(df[refr_name])
 
         # Remove sleep statistics that have no differences between measurement systems.
         ## TODO: simplify once not manipulating _data
-        stats_nodiff = data.groupby(statistic)["difference"].any().loc[lambda x: ~x].index
+        stats_nodiff = df.groupby("sstat")["difference"].any().loc[lambda x: ~x].index.tolist()
+        df = df.query(f"~sstat.isin({stats_nodiff})")
         for s in stats_nodiff:
-            data = data.query(f"{statistic} != '{s}'")
             logger.warning(f"All {s} differences are zero, removing from evaluation.")
             ## Q: Should this be logged as just info?
 
+        # Set more attributes
+        self._data = df
         # Get list of all statistics to be evaluated
-        self.all_sleepstats = data[statistic].unique()
-
-        # Set attributes
-        self._data = data
-        self._reference = reference
-        self._test = test
-        self._subject = subject
-        self._statistic = statistic
+        self._all_sleepstats = df["sstat"].unique()
 
         # Run tests
         self.test_normality(method="shapiro", alpha=0.05)
         self.test_proportional_bias(alpha=0.05)
         self.test_homoscedasticity(method="levene", alpha=0.05)
 
-    @property
-    def data(self):
-        """The summary dataframe of sleep statistics."""
-        return self._data
+    # @property
+    # def data(self):
+    #     """The summary dataframe of sleep statistics."""
+    #     return self._data
 
     @property
-    def reference(self):
-        """The name of the column containing the reference measurement sleep statistics."""
-        return self._reference
+    def refr_data(self):
+        """The dataframe of reference measurement sleep statistics."""
+        return self._refr_data
 
     @property
-    def test(self):
-        """The name of the column containing the test measurement sleep statistics."""
-        return self._test
+    def test_data(self):
+        """The dataframe of test measurement sleep statistics."""
+        return self._test_data
 
     @property
-    def subject(self):
-        """The name of the column containing the subject identifiers."""
-        return self._subject
+    def refr_name(self):
+        """The name of the reference measurement."""
+        return self._refr_name
 
     @property
-    def statistic(self):
-        """The name of the column containing the sleep statistic name."""
-        return self._statistic
+    def test_name(self):
+        """The name of the test measurement."""
+        return self._test_name
+
+    @property
+    def subj_name(self):
+        """The name of the subject identifier."""
+        return self._subj_name
+
+    @property
+    def all_sleepstats(self):
+        """A list of all sleep statistics included in analysis."""
+        return self._all_sleepstats
 
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
         return (
-            f"<SleepStatsEvaluation | Test measurement '{self.test}' evaluated against reference "
-            f"measurement '{self.reference}'>\n"
+            f"<SleepStatsEvaluation | Test measurement '{self.test_name}' evaluated against "
+            f"reference measurement '{self.refr_name}'>\n"
             " - Use `.summary()` to get pass/fail values from various checks\n"
             " - Use `.plot_blandaltman()` to get a Bland-Altman-plot grid for sleep statistics\n"
             "See the online documentation for more details."
@@ -516,8 +519,8 @@ class SleepStatsEvaluation:
 
     def __str__(self):
         return (
-            f"<SleepStatsEvaluation | Test measurement '{self.test}' evaluated against reference "
-            f"measurement '{self.reference}'>\n"
+            f"<SleepStatsEvaluation | Test measurement '{self.test_name}' evaluated against "
+            f"reference measurement '{self.refr_name}'>\n"
             " - Use `.summary()` to get pass/fail values from various checks\n"
             " - Use `.plot_blandaltman()` to get a Bland-Altman-plot grid for sleep statistics\n"
             "See the online documentation for more details."
@@ -531,7 +534,7 @@ class SleepStatsEvaluation:
         **kwargs : key, value pairs
             Additional keyword arguments are passed to the :py:func:`pingouin.normality` call.
         """
-        normality = self.data.groupby(self.statistic)[self.reference].apply(pg.normality, **kwargs)
+        normality = self._data.groupby("sstat")[self.refr_name].apply(pg.normality, **kwargs)
         self.normality = normality.droplevel(-1)
 
     def test_proportional_bias(self, **kwargs):
@@ -550,15 +553,15 @@ class SleepStatsEvaluation:
             kwargs["alpha"] = 0.05
         prop_bias_results = []
         residuals_results = []
-        for ss, ss_df in self.data.groupby(self.statistic):
-            # Regress the difference score on the reference device
-            model = pg.linear_regression(ss_df[self.reference], ss_df["difference"], **kwargs)
-            model.insert(0, self.statistic, ss)
+        for ss, ss_df in self._data.groupby("sstat"):
+            # Regress the difference score on the reference measurements
+            model = pg.linear_regression(ss_df[self.refr_name], ss_df["difference"], **kwargs)
+            model.insert(0, "sstat", ss)
             # Extract the subject-level residuals
             resid = pd.DataFrame(
                 {
-                    self.subject: ss_df[self.subject],
-                    self.statistic: ss,
+                    self.subj_name: ss_df[self.subj_name],
+                    "sstat": ss,  # Or ss_df["sstat"]?
                     "pbias_residual": model.residuals_
                 }
             )
@@ -566,7 +569,7 @@ class SleepStatsEvaluation:
             residuals_results.append(resid)
         # Add residuals to raw dataframe, used later when testing homoscedasticity
         residuals = pd.concat(residuals_results)
-        self.data = self.data.merge(residuals, on=[self.subject, self.statistic])
+        self._data = self._data.merge(residuals, on=[self.subj_name, "sstat"])
         # Handle proportional bias results
         prop_bias = pd.concat(prop_bias_results)
         # Save all the proportional bias models before removing intercept, for optional user access
@@ -575,7 +578,7 @@ class SleepStatsEvaluation:
         prop_bias = prop_bias.query("names != 'Intercept'").drop(columns="names")
         # Add True/False passing column for easy access
         prop_bias["unbiased"] = prop_bias["pval"].ge(kwargs["alpha"])
-        self.proportional_bias = prop_bias.set_index(self.statistic)
+        self.proportional_bias = prop_bias.set_index("sstat")
 
     def test_homoscedasticity(self, **kwargs):
         """Test each statistic for homoscedasticity.
@@ -587,8 +590,8 @@ class SleepStatsEvaluation:
 
         ..note:: :py:meth:`yasa.SleepStatsEvaluation.test_proportional_bias` must be called first.
         """
-        group = self.data.groupby(self.statistic)
-        columns = [self.reference, "difference", "pbias_residual"]
+        group = self._data.groupby("sstat")
+        columns = [self.refr_name, "difference", "pbias_residual"]
         homoscedasticity = group.apply(lambda df: pg.homoscedasticity(df[columns], **kwargs))
         self.homoscedasticity = homoscedasticity.droplevel(-1)
 
@@ -602,7 +605,7 @@ class SleepStatsEvaluation:
         ]
         summary = pd.concat(series_list, axis=1)
         if descriptives:
-            group = self.data.drop(columns=self.subject).groupby(self.statistic)
+            group = self._data.drop(columns=self.subj_name).groupby("sstat")
             desc = group.agg(["mean", "std"])
             desc.columns = desc.columns.map("_".join)
             summary = summary.join(desc)
@@ -634,7 +637,7 @@ class SleepStatsEvaluation:
             heatmap_kwargs["cbar_kws"].update(kwargs["cbar_kws"])
         heatmap_kwargs.update(kwargs)
         # Pivot for subject-rows and statistic-columns
-        table = self.data.pivot(index=self.subject, columns=self.statistic, values="difference")
+        table = self._data.pivot(index=self.subj_name, columns="sstat", values="difference")
         # Normalize statistics (i.e., columns) between zero and one then convert to percentage
         table_norm = table.sub(table.min(), axis=1).div(table.apply(np.ptp)).multiply(100)
         # If annotating, replace with raw values for writing.
@@ -670,7 +673,7 @@ class SleepStatsEvaluation:
         stripplot_kwargs.update(kwargs)
 
         # Pivot data to get subject-rows and statistic-columns
-        table = self.data.pivot(index=self.subject, columns=self.statistic, values="difference")
+        table = self._data.pivot(index=self.subj_name, columns="sstat", values="difference")
 
         # Initialize the PairGrid
         height = 0.3 * len(table)
@@ -678,8 +681,8 @@ class SleepStatsEvaluation:
         g = sns.PairGrid(
             table.reset_index(),
             x_vars=sstats_order,
-            y_vars=[self.subject],
-            hue=self.subject,
+            y_vars=[self.subj_name],
+            hue=self.subj_name,
             palette=palette,
             height=height,
             aspect=aspect,
@@ -726,9 +729,9 @@ class SleepStatsEvaluation:
         facetgrid_kwargs.update(facet_kwargs)
 
         # Initialize a grid of plots with an Axes for each sleep statistic
-        g = sns.FacetGrid(self.data, col=self.statistic, col_order=sstats_order, **facetgrid_kwargs)
+        g = sns.FacetGrid(self._data, col="sstat", col_order=sstats_order, **facetgrid_kwargs)
         # Draw Bland-Altman on each axis
-        g.map(pg.plot_blandaltman, self.test, self.reference, **blandaltman_kwargs)
+        g.map(pg.plot_blandaltman, self.test_name, self.refr_name, **blandaltman_kwargs)
 
         # Tidy-up axis limits with symmetric y-axis and minimal ticks
         for ax in g.axes.flat:
@@ -737,7 +740,7 @@ class SleepStatsEvaluation:
             ax.yaxis.set_major_locator(plt.MaxNLocator(nbins=2, integer=True, symmetric=True))
             ax.xaxis.set_major_locator(plt.MaxNLocator(nbins=1, integer=True))
         # More aesthetics
-        ylabel = " - ".join((self.test, self.reference))
+        ylabel = " - ".join((self.test_name, self.refr_name))
         g.set_ylabels(ylabel)
         g.set_titles(col_template="{col_name}")
         g.tight_layout(w_pad=1, h_pad=2)
