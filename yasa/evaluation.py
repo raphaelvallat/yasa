@@ -138,10 +138,6 @@ class EpochByEpochEvaluation:
         if isinstance(refr_hyps, Hypnogram):  # As below, picking refr_hyps for checks arbitrarily
             refr_hyps = [refr_hyps]
             test_hyps = [test_hyps]
-        else:
-            assert all(isinstance(hyp, Hypnogram) for hyp in refr_hyps)
-            assert all(isinstance(hyp, Hypnogram) for hyp in test_hyps)
-
         assert len(refr_hyps) == len(test_hyps), "must have same number of subjects"
 
         if isinstance(refr_hyps, dict):
@@ -153,6 +149,7 @@ class EpochByEpochEvaluation:
             subjects = 1 + np.arange(len(refr_hyps))
 
         all_hyps = refr_hyps + test_hyps
+        assert all(isinstance(hyp, Hypnogram) for hyp in all_hyps), "`refr_hyps` and `test_hyps` must only include hypnograms"
         assert all(h.scorer is not None for h in all_hyps), "all hypnograms must have a scorer"
         for h1, h2 in zip(all_hyps[:-1], all_hyps[1:]):
             assert h1.n_stages == h2.n_stages, "all hypnograms must have the same n_stages"
@@ -160,23 +157,10 @@ class EpochByEpochEvaluation:
             assert h1.mapping == h2.mapping, "all hypnograms must have the same mapping"
         assert all(h1.scorer == h2.scorer for h1, h2 in zip(refr_hyps[:-1], refr_hyps[1:])), "all `refr_hyps` must have the same scorer"
         assert all(h1.scorer == h2.scorer for h1, h2 in zip(test_hyps[:-1], test_hyps[1:])), "all `test_hyps` must have the same scorer"
-        assert all(h1.scorer != h2.scorer for h1, h2 in zip(refr_hyps, test_hyps)), "`refr_hyps` and `test_hyps` must have unique scorers"
+        assert all(h1.scorer != h2.scorer for h1, h2 in zip(refr_hyps, test_hyps)), "each `refr_hyps` and `test_hyps` pair must have unique scorers"
+        assert all(h1.n_epochs == h2.n_epochs for h1, h2 in zip(refr_hyps, test_hyps)), "each `refr_hyps` and `test_hyps` pair must have the same n_epochs"
         ## Could use set() for those above
         ## Or set scorer as the first available and check all equal
-
-        ## TODO: trim each hypno
-        # if (n_ref := refr_hyp.n_epochs) != (n_test := test_hyp.n_epochs):
-        #     ## NOTE: would be nice to have a Hypnogram.trim() method for moments like this.
-        #     if n_ref > n_test:
-        #         refr_hyp = Hypnogram(refr_hyp.hypno[:n_test], n_stages=refr_hyp.n_stages)
-        #         n_trimmed = n_ref - n_test
-        #         warn_msg = f"`refr_hyp` longer than `test_hyp`, trimmed to {n_test} epochs"
-        #     else:
-        #         test_hyp = Hypnogram(test_hyp.hypno[:n_ref], n_stages=test_hyp.n_stages)
-        #         n_trimmed = n_test - n_ref
-        #         warn_msg = f"`test_hyp` longer than `refr_hyp`, {n_trimmed} epochs trimmed"
-        #     ## Q: Should be downplayed as INFO?
-        #     logger.warning(warn_msg)
 
         # Convert to dictionaries with subjects and hypnograms
         refr_hyps = { s: h for s, h in zip(subjects, refr_hyps) }
@@ -186,6 +170,13 @@ class EpochByEpochEvaluation:
         refr = pd.concat(pd.concat({s: h.hypno}, names=["subject"]) for s, h in refr_hyps.items())
         test = pd.concat(pd.concat({s: h.hypno}, names=["subject"]) for s, h in test_hyps.items())
         data = pd.concat([refr, test], axis=1)
+
+        # Get summary sleep statistics for each measurement.
+        refr_sstats = pd.Series(refr_hyps).map(lambda h: h.sleep_statistics()).apply(pd.Series)
+        test_sstats = pd.Series(test_hyps).map(lambda h: h.sleep_statistics()).apply(pd.Series)
+        refr_sstats = refr_sstats.set_index(pd.Index(subjects, name="subject"))
+        test_sstats = test_sstats.set_index(pd.Index(subjects, name="subject"))
+        # sse = yasa.SleepStatsEvaluation(refr_sstats, test_sstats)
         
         # Set attributes
         self._data = data
@@ -193,6 +184,8 @@ class EpochByEpochEvaluation:
         self._n_subjects = len(subjects)
         self._refr_hyps = refr_hyps
         self._test_hyps = test_hyps
+        self._refr_sstats = refr_sstats
+        self._test_sstats = test_sstats
         self._refr_name = refr_hyps[subjects[0]].scorer
         self._test_name = test_hyps[subjects[0]].scorer
         self._n_stages = refr_hyps[subjects[0]].n_stages
@@ -222,6 +215,14 @@ class EpochByEpochEvaluation:
     @property
     def data(self):
         return self._data
+
+    @property
+    def refr_sstats(self):
+        return self._refr_sstats
+
+    @property
+    def test_sstats(self):
+        return self._test_sstats
 
     @property
     def refr_hyps(self):
@@ -546,36 +547,37 @@ class SleepStatsEvaluation:
         test_data.index.name = self._subj_name
         df1 = pd.concat({refr_name: refr_data}, names=["measurement"])
         df2 = pd.concat({test_name: test_data}, names=["measurement"])
-        df = pd.concat([df1, df2])
-        df = df.melt(var_name="sstat", ignore_index=False).reset_index(
-            ).pivot(columns="measurement", index=[self._subj_name, "sstat"], values="value"
-            ).reset_index().rename_axis(columns=None)
-
-        # Get measurement difference between reference and test devices
-        df["difference"] = df[test_name].sub(df[refr_name])
+        df3 = pd.concat({"difference": test_data.sub(refr_data)}, names=["measurement"])
+        data = (pd.concat([df1, df2, df3])
+            .melt(var_name="sstat", ignore_index=False).reset_index()
+            .pivot(columns="measurement", index=[self._subj_name, "sstat"], values="value")
+            .reset_index().rename_axis(columns=None)
+        )
+        # # Get measurement difference between reference and test devices
+        # df["difference"] = df[test_name].sub(df[refr_name])
 
         # Remove sleep statistics that have no differences between measurement systems.
         ## TODO: simplify once not manipulating _data
-        stats_nodiff = df.groupby("sstat")["difference"].any().loc[lambda x: ~x].index.tolist()
-        df = df.query(f"~sstat.isin({stats_nodiff})")
+        stats_nodiff = data.groupby("sstat")["difference"].any().loc[lambda x: ~x].index.tolist()
+        data = data.query(f"~sstat.isin({stats_nodiff})")
         for s in stats_nodiff:
             logger.warning(f"All {s} differences are zero, removing from evaluation.")
             ## Q: Should this be logged as just info?
 
         # Set more attributes
-        self._data = df
+        self._data = data
         # Get list of all statistics to be evaluated
-        self._all_sleepstats = df["sstat"].unique()
+        self._all_sleepstats = data["sstat"].unique()
 
         # Run tests
         self.test_normality(method="shapiro", alpha=0.05)
         self.test_proportional_bias(alpha=0.05)
         self.test_homoscedasticity(method="levene", alpha=0.05)
 
-    # @property
-    # def data(self):
-    #     """The summary dataframe of sleep statistics."""
-    #     return self._data
+    @property
+    def data(self):
+        """The summary dataframe of sleep statistics."""
+        return self._data
 
     @property
     def refr_data(self):
@@ -634,7 +636,7 @@ class SleepStatsEvaluation:
         **kwargs : key, value pairs
             Additional keyword arguments are passed to the :py:func:`pingouin.normality` call.
         """
-        normality = self._data.groupby("sstat")[self.refr_name].apply(pg.normality, **kwargs)
+        normality = self.data.groupby("sstat")[self.refr_name].apply(pg.normality, **kwargs)
         self.normality = normality.droplevel(-1)
 
     def test_proportional_bias(self, **kwargs):
@@ -653,7 +655,7 @@ class SleepStatsEvaluation:
             kwargs["alpha"] = 0.05
         prop_bias_results = []
         residuals_results = []
-        for ss, ss_df in self._data.groupby("sstat"):
+        for ss, ss_df in self.data.groupby("sstat"):
             # Regress the difference score on the reference measurements
             model = pg.linear_regression(ss_df[self.refr_name], ss_df["difference"], **kwargs)
             model.insert(0, "sstat", ss)
@@ -669,7 +671,7 @@ class SleepStatsEvaluation:
             residuals_results.append(resid)
         # Add residuals to raw dataframe, used later when testing homoscedasticity
         residuals = pd.concat(residuals_results)
-        self._data = self._data.merge(residuals, on=[self.subj_name, "sstat"])
+        self.residuals_ = self.data.merge(residuals, on=[self.subj_name, "sstat"])
         # Handle proportional bias results
         prop_bias = pd.concat(prop_bias_results)
         # Save all the proportional bias models before removing intercept, for optional user access
@@ -690,7 +692,7 @@ class SleepStatsEvaluation:
 
         ..note:: :py:meth:`yasa.SleepStatsEvaluation.test_proportional_bias` must be called first.
         """
-        group = self._data.groupby("sstat")
+        group = self.residuals_.groupby("sstat")
         columns = [self.refr_name, "difference", "pbias_residual"]
         homoscedasticity = group.apply(lambda df: pg.homoscedasticity(df[columns], **kwargs))
         self.homoscedasticity = homoscedasticity.droplevel(-1)
@@ -705,7 +707,7 @@ class SleepStatsEvaluation:
         ]
         summary = pd.concat(series_list, axis=1)
         if descriptives:
-            group = self._data.drop(columns=self.subj_name).groupby("sstat")
+            group = self.data.drop(columns=self.subj_name).groupby("sstat")
             desc = group.agg(["mean", "std"])
             desc.columns = desc.columns.map("_".join)
             summary = summary.join(desc)
@@ -736,15 +738,16 @@ class SleepStatsEvaluation:
         if "cbar_kws" in kwargs:
             heatmap_kwargs["cbar_kws"].update(kwargs["cbar_kws"])
         heatmap_kwargs.update(kwargs)
-        # Pivot for subject-rows and statistic-columns
-        table = self._data.pivot(index=self.subj_name, columns="sstat", values="difference")
+        # # Pivot for subject-rows and statistic-columns
+        # table = self.data.pivot(index=self.subj_name, columns="sstat", values="difference")
+        table = self.test_data.sub(self.refr_data)[sstats_order]
         # Normalize statistics (i.e., columns) between zero and one then convert to percentage
         table_norm = table.sub(table.min(), axis=1).div(table.apply(np.ptp)).multiply(100)
         # If annotating, replace with raw values for writing.
         if heatmap_kwargs["annot"]:
-            heatmap_kwargs["annot"] = table[sstats_order].to_numpy()
+            heatmap_kwargs["annot"] = table.to_numpy()
         # Draw heatmap
-        ax = sns.heatmap(table_norm[sstats_order], **heatmap_kwargs)
+        ax = sns.heatmap(table_norm, **heatmap_kwargs)
         return ax
 
     def plot_discrepancies_dotplot(self, sstats_order=None, palette="winter", **kwargs):
@@ -773,7 +776,8 @@ class SleepStatsEvaluation:
         stripplot_kwargs.update(kwargs)
 
         # Pivot data to get subject-rows and statistic-columns
-        table = self._data.pivot(index=self.subj_name, columns="sstat", values="difference")
+        # table = self._data.pivot(index=self.subj_name, columns="sstat", values="difference")
+        table = self.test_data.sub(self.refr_data)#[sstats_order]
 
         # Initialize the PairGrid
         height = 0.3 * len(table)
@@ -829,7 +833,7 @@ class SleepStatsEvaluation:
         facetgrid_kwargs.update(facet_kwargs)
 
         # Initialize a grid of plots with an Axes for each sleep statistic
-        g = sns.FacetGrid(self._data, col="sstat", col_order=sstats_order, **facetgrid_kwargs)
+        g = sns.FacetGrid(self.data, col="sstat", col_order=sstats_order, **facetgrid_kwargs)
         # Draw Bland-Altman on each axis
         g.map(pg.plot_blandaltman, self.test_name, self.refr_name, **blandaltman_kwargs)
 
