@@ -32,15 +32,20 @@ __all__ = [
 ]
 
 
+#############################################################################
+# EPOCH BY EPOCH
+#############################################################################
+
+
 class EpochByEpochEvaluation:
     """
     See :py:meth:`yasa.Hypnogram.evaluate`
 
     Parameters
     ----------
-    hypno_ref : :py:class:`yasa.Hypnogram`
-        Reference or ground-truth hypnogram.
-    hypno_test : :py:class:`yasa.Hypnogram`
+    refr_hyp : :py:class:`yasa.Hypnogram`
+        The reference or ground-truth hypnogram.
+    test_hyp : :py:class:`yasa.Hypnogram`
         The test or to-be-evaluated hypnogram.
 
     Notes
@@ -115,46 +120,88 @@ class EpochByEpochEvaluation:
         >>>     kwargs_ref=style_a, kwargs_test=style_b, legend=legend_style, ax=ax
         >>> )
         >>>
-        >>> acc = ebe.get_agreement().multiply(100).at["accuracy"]
-        >>> ax.text(0.01, 1, f"Accuracy = {acc:.0f}%", ha="left", va="bottom", transform=ax.transAxes)
+        >>> acc = ebe.get_agreement().multiply(100).round(0).at["accuracy"]
+        >>> ax.text(0.01, 1, f"Accuracy = {acc}%", ha="left", va="bottom", transform=ax.transAxes)
     """
-    def __init__(self, hypno_ref, hypno_test):
+    def __init__(self, refr_hyp, test_hyp):
         from yasa.hypno import Hypnogram  # Loading here to avoid circular import
-        assert isinstance(hypno_ref, Hypnogram), "`hypno_ref` must be a YASA Hypnogram"
-        assert isinstance(hypno_test, Hypnogram), "`hypno_test` must be a YASA Hypnogram"
-        assert hypno_ref.n_stages == hypno_test.n_stages, (
-            "`hypno_ref` and `hypno_test` must have the same `n_stages`")
-        if (n_ref := hypno_ref.n_epochs) != (n_test := hypno_test.n_epochs):
+        assert isinstance(refr_hyp, Hypnogram), "`refr_hyp` must be a YASA Hypnogram"
+        assert isinstance(test_hyp, Hypnogram), "`test_hyp` must be a YASA Hypnogram"
+        assert refr_hyp.scorer is not None, "`refr_hyp` must have a scorer label"
+        assert test_hyp.scorer is not None, "`test_hyp` must have a scorer label"
+        assert refr_hyp.scorer != test_hyp.scorer, (
+            "scorer must be unique for `refr_hyp` and `test_hyp`"
+        )
+        assert refr_hyp.n_stages == test_hyp.n_stages, (
+            "`refr_hyp` and `test_hyp` must have the same `n_stages`"
+        )
+        assert refr_hyp.labels == test_hyp.labels
+        assert refr_hyp.mapping == test_hyp.mapping
+        if (n_ref := refr_hyp.n_epochs) != (n_test := test_hyp.n_epochs):
             ## NOTE: would be nice to have a Hypnogram.trim() method for moments like this.
             if n_ref > n_test:
-                hypno_ref = Hypnogram(hypno_ref.hypno[:n_test], n_stages=hypno_ref.n_stages)
+                refr_hyp = Hypnogram(refr_hyp.hypno[:n_test], n_stages=refr_hyp.n_stages)
                 n_trimmed = n_ref - n_test
-                warn_msg = f"`hypno_ref` longer than `hypno_test`, trimmed to {n_test} epochs"
+                warn_msg = f"`refr_hyp` longer than `test_hyp`, trimmed to {n_test} epochs"
             else:
-                hypno_test = Hypnogram(hypno_test.hypno[:n_ref], n_stages=hypno_test.n_stages)
+                test_hyp = Hypnogram(test_hyp.hypno[:n_ref], n_stages=test_hyp.n_stages)
                 n_trimmed = n_test - n_ref
-                warn_msg = f"`hypno_test` longer than `hypno_ref`, {n_trimmed} epochs trimmed"
+                warn_msg = f"`test_hyp` longer than `refr_hyp`, {n_trimmed} epochs trimmed"
             ## Q: Should be downplayed as INFO?
             logger.warning(warn_msg)
-        self.hypno_ref = hypno_ref
-        self.hypno_test = hypno_test
+        
+        # Set attributes
+        self._refr_hyp = refr_hyp.copy()
+        self._test_hyp = test_hyp.copy()
+
+    def __repr__(self):
+        # TODO v0.8: Keep only the text between < and >
+        return (
+            f"<EpochByEpochEvaluation | Test Hypnogram scored by {self.refr_hyp.scorer} evaluated "
+            f"against reference Hypnogram scored by {self.test_hyp.scorer}>\n"
+            " - Use `.get_agreement()` to get agreement measures as a pandas.Series\n"
+            " - Use `.plot_hypnograms()` to plot the two hypnograms overlaid\n"
+            "See the online documentation for more details."
+        )
+
+    def __str__(self):
+        return (
+            f"<EpochByEpochEvaluation | Test Hypnogram scored by {self.refr_hyp.scorer} evaluated "
+            f"against reference Hypnogram scored by {self.test_hyp.scorer}>\n"
+            " - Use `.get_agreement()` to get agreement measures as a pandas.Series\n"
+            " - Use `.plot_hypnograms()` to plot the two hypnograms overlaid\n"
+            "See the online documentation for more details."
+        )
+
+    @property
+    def refr_hyp(self):
+        """The reference Hypnogram."""
+        ## Q: Starting to think there should be a clear convention on what we mean
+        ##    when we say "hypnogram". Should hypnogram mean the Series and Hypnogram
+        ##    mean the YASA object? Similarly for hypno/hyp.
+        return self._refr_hyp
+
+    @property
+    def test_hyp(self):
+        """The test Hypnogram."""
+        return self._test_hyp
 
     def get_agreement(self):
         """
-        Return a dataframe of ``hypno_ref``/``hypno_test`` performance
-        across all stages as measured by common classifier agreement methods.
+        Return a dataframe of ``refr_hyp``/``test_hyp`` performance across all stages as measured by
+        common classifier agreement methods.
 
+        .. seealso:: :py:meth:`yasa.EpochByEpochResults.get_agreement_by_stage`
         ## Q: Are there better names to differentiate get_agreement vs get_agreement_by_stage?
         ##    Maybe should be binary vs multiclass?
-        .. seealso:: :py:meth:`yasa.EpochByEpochResults.get_agreement_by_stage`
 
         Returns
         -------
         agreement : :py:class:`pandas.Series`
             A :py:class:`pandas.Series` with agreement metrics as indices.
         """
-        true = self.hypno_ref.hypno.to_numpy()
-        pred = self.hypno_test.hypno.to_numpy()
+        true = self.refr_hyp.hypno.to_numpy()
+        pred = self.test_hyp.hypno.to_numpy()
         accuracy = metrics.accuracy_score(true, pred)
         kappa = metrics.cohen_kappa_score(true, pred)
         jaccard = metrics.jaccard_score(true, pred, average="weighted")
@@ -174,8 +221,8 @@ class EpochByEpochEvaluation:
 
     def get_agreement_by_stage(self):
         """
-        Return a dataframe of ``hypno_ref``/``hypno_test`` performance
-        for each stage as measured by common classifier agreement methods.
+        Return a dataframe of ``refr_hyp``/``test_hyp`` performance for each stage as measured by
+        common classifier agreement methods.
 
         .. seealso:: :py:meth:`yasa.EpochByEpochResults.get_agreement`
 
@@ -184,9 +231,9 @@ class EpochByEpochEvaluation:
         agreement : :py:class:`pandas.DataFrame`
             A DataFrame with agreement metrics as indices and stages as columns.
         """
-        true = self.hypno_ref.hypno.to_numpy()
-        pred = self.hypno_test.hypno.to_numpy()
-        labels = self.hypno_ref.labels  # equivalent to hypno_test.labels
+        true = self.refr_hyp.hypno.to_numpy()
+        pred = self.test_hyp.hypno.to_numpy()
+        labels = self.test_hyp.labels  # Same as refr_hyp.labels
         scores = metrics.precision_recall_fscore_support(
             true, pred, labels=labels, average=None, zero_division=0
         )
@@ -196,42 +243,38 @@ class EpochByEpochEvaluation:
         return agreement
 
     def get_confusion_matrix(self):
-        """
-        Return ``hypno_ref``/``hypno_test``confusion matrix dataframe.
+        """Return a ``refr_hyp``/``test_hyp``confusion matrix.
 
         Returns
         -------
         matrix : :py:class:`pandas.DataFrame`
-            A confusion matrix with stages of ``hypno_ref`` as indices and stages of
-            ``hypno_test`` as columns.
+            A confusion matrix with ``refr_hyp`` stages as indices and ``test_hyp`` stages as columns.
         """
         # Generate confusion matrix.
         matrix = pd.crosstab(
-            self.hypno_ref.hypno, self.hypno_test.hypno, margins=True, margins_name="Total"
+            self.refr_hyp.hypno, self.test_hyp.hypno, margins=True, margins_name="Total"
         )
         # Reorder indices in sensible order and to include all stages
-        matrix = matrix.reindex(self.hypno_ref.labels + ["Total"], axis=0)
-        matrix = matrix.reindex(self.hypno_test.labels + ["Total"], axis=1)
-        matrix = matrix.fillna(0).astype(int)
-        return matrix
+        matrix = matrix.reindex(labels=self.refr_hyp.labels + ["Total"], fill_value=0)
+        matrix = matrix.reindex(columns=self.test_hyp.labels + ["Total"], fill_value=0)
+        return matrix.astype(int)
 
-    def plot_hypnograms(self, legend=True, ax=None, kwargs_ref={}, kwargs_test={}):
-        """Plot the two hypnograms, ``hypno_test`` overlaid on ``hypno_ref``.
+    def plot_hypnograms(self, legend=True, ax=None, refr_kwargs={}, test_kwargs={}):
+        """Plot the two hypnograms, where ``refr_hyp`` is overlaid on ``refr_hyp``.
 
         .. seealso:: :py:func:`yasa.plot_hypnogram`
 
         Parameters
         ----------
-        legend : bool or None
-            If True, a legend with default :py:func:`matplotlib.pyplot.legend` arguments is added.
-            If False, no legend is added. If a dictionary, a legend is added and the dictionary is
-            passed as keyword arguments to :py:func:`matplotlib.pyplot.legend`.
-        ax : :py:class:`matplotlib.axes.Axes`
+        legend : bool or dict
+            If True (default) or a dictionary, a legend is added. If a dictionary, all key/value
+            pairs are passed as keyword arguments to the :py:func:`matplotlib.pyplot.legend` call.
+        ax : :py:class:`matplotlib.axes.Axes` or None
             Axis on which to draw the plot, optional.
-        kwargs_ref : dict
-            Keyword arguments passed to :py:func:`yasa.plot_hypnogram` when plotting ``hypno_ref``.
-        kwargs_test : dict
-            Keyword arguments passed to :py:func:`yasa.plot_hypnogram` when plotting ``hypno_test``.
+        refr_kwargs : dict
+            Keyword arguments passed to :py:func:`yasa.plot_hypnogram` when plotting ``refr_hyp``.
+        test_kwargs : dict
+            Keyword arguments passed to :py:func:`yasa.plot_hypnogram` when plotting ``test_hyp``.
 
         Returns
         -------
@@ -247,20 +290,20 @@ class EpochByEpochEvaluation:
             >>> ax = hyp.evaluate(hyp.simulate_similar()).plot_hypnograms()
         """
         assert isinstance(legend, (bool, dict)), "`legend` must be True, False, or a dictionary"
-        assert isinstance(kwargs_ref, dict), "`kwargs_ref` must be a dictionary"
-        assert isinstance(kwargs_test, dict), "`kwargs_test` must be a dictionary"
-        assert not "ax" in kwargs_ref | kwargs_test, (
-            "ax can't be supplied to `kwargs_ref` or `kwargs_test`, use the `ax` keyword instead"
+        assert isinstance(refr_kwargs, dict), "`refr_kwargs` must be a dictionary"
+        assert isinstance(test_kwargs, dict), "`test_kwargs` must be a dictionary"
+        assert not "ax" in refr_kwargs | test_kwargs, (
+            "ax can't be supplied to `kwargs_ref` or `test_kwargs`, use the `ax` keyword instead"
         )
-        plot_kwargs_ref = {"highlight": None, "alpha": 0.8}
-        plot_kwargs_test = {"highlight": None, "alpha": 0.8, "color": "darkcyan", "ls": "dashed"}
-        plot_kwargs_ref.update(kwargs_ref)
-        plot_kwargs_test.update(kwargs_test)
+        plot_refr_kwargs = {"highlight": None, "alpha": 0.8}
+        plot_test_kwargs = {"highlight": None, "alpha": 0.8, "color": "darkcyan", "ls": "dashed"}
+        plot_refr_kwargs.update(refr_kwargs)
+        plot_test_kwargs.update(test_kwargs)
         if ax is None:
             ax = plt.gca()
-        self.hypno_ref.plot_hypnogram(ax=ax, **plot_kwargs_ref)
-        self.hypno_test.plot_hypnogram(ax=ax, **plot_kwargs_test)
-        if legend and "label" in plot_kwargs_ref | plot_kwargs_test:
+        self.refr_hyp.plot_hypnogram(ax=ax, **plot_refr_kwargs)
+        self.test_hyp.plot_hypnogram(ax=ax, **plot_test_kwargs)
+        if legend and "label" in plot_refr_kwargs | plot_test_kwargs:
             if isinstance(legend, dict):
                 ax.legend(**legend)
             else:
@@ -284,20 +327,27 @@ class EpochByEpochEvaluation:
         ax : :py:class:`matplotlib.axes.Axes`
             Matplotlib Axes
         """
+        # assert self.test_hyp.probas is not None
         raise NotImplementedError("Requires probability/confidence values.")
+
+
+#############################################################################
+# SLEEP STATISTICS
+#############################################################################
+
 
 class SleepStatsEvaluation:
     """
-    Evaluate agreement between two measurement devices by comparing summary sleep statistics across
-    multiple participants or sessions.
-
-    For example, the reference device might be PSG and the test device might be a wearable device.
+    Evaluate agreement between two measurement systems (e.g., two different manual scorers or one
+    one manual scorer againt YASA's automatic staging) by comparing their summary sleep statistics
+    derived from multiple subjects or sessions.
 
     Parameters
     ----------
     data : :py:class:`pandas.DataFrame`
-        A pandas dataframe with sleep statistics from two different
-        devices for multiple subjects
+        A :py:class:`pandas.DataFrame` with sleep statistics from two different measurement systems.
+        Each row contains the two different measurements of a single subject and sleep statistic.
+        Of shape (n_subjects x n_sleep_statistics, 4).
     reference : str
         Name of column containing the reference device sleep statistics.
     test : str
@@ -305,7 +355,7 @@ class SleepStatsEvaluation:
     subject : str
         Name of column containing the subject ID.
     statistic : str
-        Name of column containing the name of the sleep statistics.
+        Name of column containing the name of the sleep statistic.
 
     Notes
     -----
@@ -390,18 +440,24 @@ class SleepStatsEvaluation:
 
         >>> sse.plot_blandaltman()
     """
-    def __init__(self, data, reference, test, subject, statistic):
+    def __init__(self, data, *, reference, test, subject, statistic):
         assert isinstance(data, pd.DataFrame), "`data` must be a pandas DataFrame"
         for col in [reference, test, subject, statistic]:
-            assert isinstance(col, str) and col in data, f"`{col}` must be a string and a column in `data`"
+            assert isinstance(col, str) and col in data, (
+                f"`{col}` must be a string and a column in `data`"
+            )
         assert data[subject].nunique() > 1, "`data` must include more than one subject"
+        assert not data.groupby("subject")["sstat"].count().diff().any(), "same number of sstats for all subjects"
+        assert not data.groupby("subject")["sstat"].nunique().is_unique, "no repeated sstats per subject"
+        
+        # Don't update this, rename to something else like table.
         data = data.copy()
 
         # Get measurement difference between reference and test devices
         data["difference"] = data[test].sub(data[reference])
 
-        # Check for sleep statistics that have no differences between measurement devices.
-        # This is most likely to occur with TIB but is possible with any, and will break some functions.
+        # Remove sleep statistics that have no differences between measurement systems.
+        ## TODO: simplify once not manipulating _data
         stats_nodiff = data.groupby(statistic)["difference"].any().loc[lambda x: ~x].index
         for s in stats_nodiff:
             data = data.query(f"{statistic} != '{s}'")
@@ -411,17 +467,61 @@ class SleepStatsEvaluation:
         # Get list of all statistics to be evaluated
         self.all_sleepstats = data[statistic].unique()
 
-        # Save attributes
-        self.data = data
-        self.reference = reference
-        self.test = test
-        self.subject = subject
-        self.statistic = statistic
+        # Set attributes
+        self._data = data
+        self._reference = reference
+        self._test = test
+        self._subject = subject
+        self._statistic = statistic
 
         # Run tests
         self.test_normality(method="shapiro", alpha=0.05)
         self.test_proportional_bias(alpha=0.05)
         self.test_homoscedasticity(method="levene", alpha=0.05)
+
+    @property
+    def data(self):
+        """The summary dataframe of sleep statistics."""
+        return self._data
+
+    @property
+    def reference(self):
+        """The name of the column containing the reference measurement sleep statistics."""
+        return self._reference
+
+    @property
+    def test(self):
+        """The name of the column containing the test measurement sleep statistics."""
+        return self._test
+
+    @property
+    def subject(self):
+        """The name of the column containing the subject identifiers."""
+        return self._subject
+
+    @property
+    def statistic(self):
+        """The name of the column containing the sleep statistic name."""
+        return self._statistic
+
+    def __repr__(self):
+        # TODO v0.8: Keep only the text between < and >
+        return (
+            f"<SleepStatsEvaluation | Test measurement '{self.test}' evaluated against reference "
+            f"measurement '{self.reference}'>\n"
+            " - Use `.summary()` to get pass/fail values from various checks\n"
+            " - Use `.plot_blandaltman()` to get a Bland-Altman-plot grid for sleep statistics\n"
+            "See the online documentation for more details."
+        )
+
+    def __str__(self):
+        return (
+            f"<SleepStatsEvaluation | Test measurement '{self.test}' evaluated against reference "
+            f"measurement '{self.reference}'>\n"
+            " - Use `.summary()` to get pass/fail values from various checks\n"
+            " - Use `.plot_blandaltman()` to get a Bland-Altman-plot grid for sleep statistics\n"
+            "See the online documentation for more details."
+        )
 
     def test_normality(self, **kwargs):
         """Test reference data for normality at each sleep statistic.
@@ -485,7 +585,7 @@ class SleepStatsEvaluation:
         **kwargs : key, value pairs
             Additional keyword arguments are passed to :py:func:`pingouin.homoscedasticity`.
 
-        ..note:: ``self.test_proportional_bias()`` must be run first.
+        ..note:: :py:meth:`yasa.SleepStatsEvaluation.test_proportional_bias` must be called first.
         """
         group = self.data.groupby(self.statistic)
         columns = [self.reference, "difference", "pbias_residual"]
@@ -523,13 +623,12 @@ class SleepStatsEvaluation:
         ax : :py:class:`matplotlib.axes.Axes`
             Matplotlib Axes
         """
+        assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list or None"
         if sstats_order is None:
             sstats_order = self.all_sleepstats
-        else:
-            assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list"
 
         # Merge default heatmap arguments with optional input
-        heatmap_kwargs = dict(cmap="binary", annot=True, fmt=".1f", square=False)
+        heatmap_kwargs = {"cmap": "binary", "annot": True, "fmt": ".1f", "square": False}
         heatmap_kwargs["cbar_kws"] = dict(label="Normalized discrepancy %")
         if "cbar_kws" in kwargs:
             heatmap_kwargs["cbar_kws"].update(kwargs["cbar_kws"])
@@ -562,13 +661,12 @@ class SleepStatsEvaluation:
         g : :py:class:`seaborn.PairGrid`
             Seaborn PairGrid
         """
+        assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list or None"
         if sstats_order is None:
             sstats_order = self.all_sleepstats
-        else:
-            assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list"
 
         # Merge default stripplot arguments with optional input
-        stripplot_kwargs = dict(size=10, linewidth=1, edgecolor="white")
+        stripplot_kwargs = {"size": 10, "linewidth": 1, "edgecolor": "white"}
         stripplot_kwargs.update(kwargs)
 
         # Pivot data to get subject-rows and statistic-columns
@@ -597,7 +695,6 @@ class SleepStatsEvaluation:
             ax.yaxis.grid(True)
             ax.tick_params(left=False)
         sns.despine(left=True, bottom=True)
-
         return g
 
     def plot_blandaltman(self, sstats_order=None, facet_kwargs={}, **kwargs):
@@ -616,10 +713,9 @@ class SleepStatsEvaluation:
         g : :py:class:`seaborn.FacetGrid`
             Seaborn FacetGrid
         """
+        assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list or None"
         if sstats_order is None:
             sstats_order = self.all_sleepstats
-        else:
-            assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list"
 
         # Select scatterplot arguments (passed to blandaltman) and update with optional input
         blandaltman_kwargs = dict(xaxis="y", annotate=False, edgecolor="black", facecolor="none")
@@ -645,5 +741,4 @@ class SleepStatsEvaluation:
         g.set_ylabels(ylabel)
         g.set_titles(col_template="{col_name}")
         g.tight_layout(w_pad=1, h_pad=2)
-
         return g
