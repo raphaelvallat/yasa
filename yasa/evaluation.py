@@ -451,6 +451,18 @@ class SleepStatsEvaluation:
     test_data : :py:class:`pandas.DataFrame`
         A :py:class:`pandas.DataFrame` with sleep statistics from the test measurement system.
         Shape, indices, and columns must be identical to ``refr_data``.
+    refr_name : str
+        Name of the reference measurement device, used for labeling.
+    test_name : str
+        Name of the test measurement device, used for labeling.
+    alpha : float
+        Alpha cutoff used for all three tests.
+    kwargs_normality : dict
+        Keywords arguments passed to the :py:func:`pingouin.normality` call.
+    kwargs_regression : dict
+        Keywords arguments passed to the :py:func:`pingouin.linear_regression` call.
+    kwargs_homoscedasticity : dict
+        Keywords arguments passed to the :py:func:`pingouin.homoscedasticity` call.
 
     Notes
     -----
@@ -526,68 +538,113 @@ class SleepStatsEvaluation:
 
         >>> sse.plot_blandaltman()
     """
-    def __init__(self, refr_data, test_data, *, refr_name="Reference", test_name="Test"):
-
+    def __init__(
+        self,
+        refr_data,
+        test_data,
+        *,
+        refr_name="Reference",
+        test_name="Test",
+        kwargs_normality={"alpha": 0.05},
+        kwargs_regression={"alpha": 0.05},
+        kwargs_homoscedasticity={"alpha": 0.05},
+    ):
         assert isinstance(refr_data, pd.DataFrame), "`refr_data` must be a pandas DataFrame"
         assert isinstance(test_data, pd.DataFrame), "`test_data` must be a pandas DataFrame"
         assert np.array_equal(refr_data.index, test_data.index), "`refr_data` and `test_data` indices must be identical"
         assert np.array_equal(refr_data.columns, test_data.columns), "`refr_data` and `test_data` columns must be identical"
         assert refr_data.index.name == test_data.index.name, "`refr_data` and `test_data` index names must be identical"
+        assert isinstance(refr_name, str)
+        assert isinstance(test_name, str)
+        assert refr_name != test_name
+        assert isinstance(kwargs_normality, dict)
+        assert isinstance(kwargs_regression, dict)
+        assert isinstance(kwargs_homoscedasticity, dict)
+        assert "alpha" in kwargs_normality
+        assert "alpha" in kwargs_regression
+        assert "alpha" in kwargs_homoscedasticity
 
-        # Set attributes
-        self._refr_data = refr_data
-        self._test_data = test_data
-        self._refr_name = refr_name
-        self._test_name = test_name
-        self._subj_name = "subject" if refr_data.index.name is None else refr_data.index.name
-
-        # Merge dataframes and reshape wide-to-long format
-        # Add levels to index
-        refr_data.index.name = self._subj_name
-        test_data.index.name = self._subj_name
-        df1 = pd.concat({refr_name: refr_data}, names=["measurement"])
-        df2 = pd.concat({test_name: test_data}, names=["measurement"])
-        df3 = pd.concat({"difference": test_data.sub(refr_data)}, names=["measurement"])
-        data = (pd.concat([df1, df2, df3])
+        # Merge dataframes, get differences, and reshape wide-to-long format
+        subj_name = "subject" if refr_data.index.name is None else refr_data.index.name
+        refr_data.index.name = subj_name
+        test_data.index.name = subj_name
+        diff_data = pd.concat({"difference": test_data.sub(refr_data)}, names=["measurement"])
+        refr_data = pd.concat({refr_name: refr_data}, names=["measurement"])
+        test_data = pd.concat({test_name: test_data}, names=["measurement"])
+        data = (pd.concat([refr_data, test_data, diff_data])
             .melt(var_name="sstat", ignore_index=False).reset_index()
-            .pivot(columns="measurement", index=[self._subj_name, "sstat"], values="value")
+            .pivot(columns="measurement", index=[subj_name, "sstat"], values="value")
             .reset_index().rename_axis(columns=None)
         )
-        # # Get measurement difference between reference and test devices
-        # df["difference"] = df[test_name].sub(df[refr_name])
 
-        # Remove sleep statistics that have no differences between measurement systems.
-        ## TODO: simplify once not manipulating _data
+        # Remove sleep statistics that have no differences between measurement systems
+        ## TODO: restructure?
         stats_nodiff = data.groupby("sstat")["difference"].any().loc[lambda x: ~x].index.tolist()
         data = data.query(f"~sstat.isin({stats_nodiff})")
         for s in stats_nodiff:
             logger.warning(f"All {s} differences are zero, removing from evaluation.")
             ## Q: Should this be logged as just info?
 
-        # Set more attributes
-        self._data = data
-        # Get list of all statistics to be evaluated
-        self._all_sleepstats = data["sstat"].unique()
+        ## NORMALITY ## Test reference data for normality at each sleep statistic
+        normality = data.groupby("sstat")[refr_name].apply(pg.normality, **kwargs_normality).droplevel(-1)
 
-        # Run tests
-        self.test_normality(method="shapiro", alpha=0.05)
-        self.test_proportional_bias(alpha=0.05)
-        self.test_homoscedasticity(method="levene", alpha=0.05)
+        ## PROPORTIONAL BIAS ## Test each sleep statistic for proportional bias
+        # Subject-level residuals for each statistic are added to data.
+        prop_bias_results = []
+        residuals_results = []
+        # proportional bias and residuals that will be used for the later  tests.
+        for ss_name, ss_df in data.groupby("sstat"):
+            # Regress the difference scores on the reference scores
+            model = pg.linear_regression(ss_df[refr_name], ss_df["difference"], **kwargs_regression)
+            model.insert(0, "sstat", ss_name)
+            # Extract subject-level residuals for later homoscedasticity tests
+            resid_dict = {subj_name: ss_df[subj_name], "sstat": ss_name, "pbias_residual": model.residuals_}
+            resid = pd.DataFrame(resid_dict)
+            prop_bias_results.append(model)
+            residuals_results.append(resid)
+        # Add residuals to raw dataframe, used later when testing homoscedasticity
+        data = data.merge(pd.concat(residuals_results), on=[subj_name, "sstat"])
+        # Handle proportional bias results
+        prop_bias = pd.concat(prop_bias_results)
+        # Save all the proportional bias models before removing intercept, for optional user access
+        prop_bias_full = prop_bias.reset_index(drop=True)
+        # Now remove intercept rows
+        prop_bias = prop_bias.query("names != 'Intercept'").drop(columns="names").set_index("sstat")
+        # Add True/False passing column for easy access
+        prop_bias["unbiased"] = prop_bias["pval"].ge(kwargs_regression["alpha"])
+
+        ## Test each statistic for homoscedasticity ##
+        columns = [refr_name, "difference", "pbias_residual"]
+        homoscedasticity_func = lambda df: pg.homoscedasticity(df[columns], **kwargs_homoscedasticity)
+        homoscedasticity = data.groupby("sstat").apply(homoscedasticity_func).droplevel(-1)
+
+        # Set attributes
+        self._data = data
+        self._normality = normality
+        self._proportional_bias = prop_bias
+        self._proportional_bias_full = prop_bias_full  # Q: Is this worth saving??
+        self._homoscedasticity = homoscedasticity
+        # These will not be set as properties, as they are only needed internally
+        self._refr_name = refr_name
+        self._test_name = test_name
+        self._subj_name = subj_name
+        # Pivot new to not include removed sstats
+        self._diff_data = data.pivot(index=self.subj_name, columns="sstat", values="difference")
+        self._sleepstats = data["sstat"].unique() ## Q: Rename to self._labels??
 
     @property
     def data(self):
-        """The summary dataframe of sleep statistics."""
+        """
+        ``refr_data`` and ``test_data`` combined in a long-format :py:class:`pandas.DataFrame`.
+        Also includes difference scores (``test_data`` minus ``refr_data``).
+        """
         return self._data
 
     @property
-    def refr_data(self):
-        """The dataframe of reference measurement sleep statistics."""
-        return self._refr_data
-
-    @property
-    def test_data(self):
-        """The dataframe of test measurement sleep statistics."""
-        return self._test_data
+    def diff_data(self):
+        """A :py:class:`pandas.DataFrame` of ``test_data`` minus ``refr_data``."""
+        # # Pivot for subject-rows and statistic-columns
+        return self._diff_data
 
     @property
     def refr_name(self):
@@ -605,9 +662,29 @@ class SleepStatsEvaluation:
         return self._subj_name
 
     @property
-    def all_sleepstats(self):
+    def sleepstats(self):
         """A list of all sleep statistics included in analysis."""
-        return self._all_sleepstats
+        return self._sleepstats
+
+    @property
+    def normality(self):
+        """A :py:class:`pandas.DataFrame` of normality test results for all sleep statistics."""
+        return self._normality
+
+    @property
+    def homoscedasticity(self):
+        """A :py:class:`pandas.DataFrame` of homoscedasticity test results for all sleep statistics."""
+        return self._homoscedasticity
+
+    @property
+    def proportional_bias(self):
+        """A :py:class:`pandas.DataFrame` of proportional bias test results for all sleep statistics."""
+        return self._proportional_bias
+
+    @property
+    def proportional_bias_full(self):
+        """A :py:class:`pandas.DataFrame` of proportional bias test results for all sleep statistics."""
+        return self._proportional_bias_full
 
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
@@ -628,78 +705,25 @@ class SleepStatsEvaluation:
             "See the online documentation for more details."
         )
 
-    def test_normality(self, **kwargs):
-        """Test reference data for normality at each sleep statistic.
-
-        Parameters
-        ----------
-        **kwargs : key, value pairs
-            Additional keyword arguments are passed to the :py:func:`pingouin.normality` call.
-        """
-        normality = self.data.groupby("sstat")[self.refr_name].apply(pg.normality, **kwargs)
-        self.normality = normality.droplevel(-1)
-
-    def test_proportional_bias(self, **kwargs):
-        """Test each sleep statistic for proportional bias.
-        
-        For each statistic, regress the device difference score on the reference device score to get
-        proportional bias and residuals that will be used for the later homoscedasticity
-        calculation. Subject-level residuals for each statistic are added to ``data``.
-
-        Parameters
-        ----------
-        **kwargs : key, value pairs
-            Additional keyword arguments are passed to :py:func:`pingouin.linear_regression`.
-        """
-        if "alpha" not in kwargs:
-            kwargs["alpha"] = 0.05
-        prop_bias_results = []
-        residuals_results = []
-        for ss, ss_df in self.data.groupby("sstat"):
-            # Regress the difference score on the reference measurements
-            model = pg.linear_regression(ss_df[self.refr_name], ss_df["difference"], **kwargs)
-            model.insert(0, "sstat", ss)
-            # Extract the subject-level residuals
-            resid = pd.DataFrame(
-                {
-                    self.subj_name: ss_df[self.subj_name],
-                    "sstat": ss,  # Or ss_df["sstat"]?
-                    "pbias_residual": model.residuals_
-                }
-            )
-            prop_bias_results.append(model)
-            residuals_results.append(resid)
-        # Add residuals to raw dataframe, used later when testing homoscedasticity
-        residuals = pd.concat(residuals_results)
-        self.residuals_ = self.data.merge(residuals, on=[self.subj_name, "sstat"])
-        # Handle proportional bias results
-        prop_bias = pd.concat(prop_bias_results)
-        # Save all the proportional bias models before removing intercept, for optional user access
-        self.proportional_bias_models_ = prop_bias.reset_index(drop=True)
-        # Remove intercept rows
-        prop_bias = prop_bias.query("names != 'Intercept'").drop(columns="names")
-        # Add True/False passing column for easy access
-        prop_bias["unbiased"] = prop_bias["pval"].ge(kwargs["alpha"])
-        self.proportional_bias = prop_bias.set_index("sstat")
-
-    def test_homoscedasticity(self, **kwargs):
-        """Test each statistic for homoscedasticity.
-
-        Parameters
-        ----------
-        **kwargs : key, value pairs
-            Additional keyword arguments are passed to :py:func:`pingouin.homoscedasticity`.
-
-        ..note:: :py:meth:`yasa.SleepStatsEvaluation.test_proportional_bias` must be called first.
-        """
-        group = self.residuals_.groupby("sstat")
-        columns = [self.refr_name, "difference", "pbias_residual"]
-        homoscedasticity = group.apply(lambda df: pg.homoscedasticity(df[columns], **kwargs))
-        self.homoscedasticity = homoscedasticity.droplevel(-1)
-
     def summary(self, descriptives=True):
-        """Return a summary dataframe highlighting what statistics pass checks."""
-        assert isinstance(descriptives, bool), "`descriptives` must be True or False"
+        """Return a summary dataframe highlighting what statistics pass checks.
+
+        Parameters
+        ----------
+        self : :py:class:`SleepStatsEvaluation`
+            A :py:class:`SleepStatsEvaluation` instance.
+        descriptives : bool or dict
+            If True (default) or a dictionary, also include descriptive statistics for reference and
+            test measurements. If a dictionary, all key/value pairs are passed as keyword arguments
+            to the :py:meth:`pandas.DataFrame.agg` call.
+
+        Returns
+        -------
+        summary : :py:class:`pandas.DataFrame`
+            A :py:class:`pandas.DataFrame` with boolean values indicating the pass/fail status for
+            normality, proportional bias, and homoscedasticity tests (for each sleep statistic).
+        """
+        assert isinstance(descriptives, (bool, dict)), "`descriptives` must be True, False, or dict"
         series_list = [
             self.normality["normal"],
             self.proportional_bias["unbiased"],
@@ -707,8 +731,10 @@ class SleepStatsEvaluation:
         ]
         summary = pd.concat(series_list, axis=1)
         if descriptives:
-            group = self.data.drop(columns=self.subj_name).groupby("sstat")
-            desc = group.agg(["mean", "std"])
+            agg_kwargs = {"func": ["mean", "std"]}
+            if isinstance(descriptives, dict):
+                agg_kwargs.update(descriptives)
+            desc = self.data.drop(columns=self.subj_name).groupby("sstat").agg(**agg_kwargs)
             desc.columns = desc.columns.map("_".join)
             summary = summary.join(desc)
         return summary
@@ -730,35 +756,27 @@ class SleepStatsEvaluation:
         """
         assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list or None"
         if sstats_order is None:
-            sstats_order = self.all_sleepstats
-
-        # Merge default heatmap arguments with optional input
+            sstats_order = self.sleepstats
         heatmap_kwargs = {"cmap": "binary", "annot": True, "fmt": ".1f", "square": False}
         heatmap_kwargs["cbar_kws"] = dict(label="Normalized discrepancy %")
         if "cbar_kws" in kwargs:
             heatmap_kwargs["cbar_kws"].update(kwargs["cbar_kws"])
         heatmap_kwargs.update(kwargs)
-        # # Pivot for subject-rows and statistic-columns
-        # table = self.data.pivot(index=self.subj_name, columns="sstat", values="difference")
-        table = self.test_data.sub(self.refr_data)[sstats_order]
+        table = self.diff_data[sstats_order]
         # Normalize statistics (i.e., columns) between zero and one then convert to percentage
         table_norm = table.sub(table.min(), axis=1).div(table.apply(np.ptp)).multiply(100)
-        # If annotating, replace with raw values for writing.
         if heatmap_kwargs["annot"]:
+            # Use raw values for writing
             heatmap_kwargs["annot"] = table.to_numpy()
-        # Draw heatmap
-        ax = sns.heatmap(table_norm, **heatmap_kwargs)
-        return ax
+        return sns.heatmap(table_norm, **heatmap_kwargs)
 
-    def plot_discrepancies_dotplot(self, sstats_order=None, palette="winter", **kwargs):
+    def plot_discrepancies_dotplot(self, kwargs_pairplot={"palette": "winter"}, **kwargs):
         """Visualize subject-level discrepancies, generally for outlier inspection.
 
         Parameters
         ----------
-        sstats_order : list
-            List of sleep statistics to plot. Default (None) is to plot all sleep statistics.
-        palette : string, list, dict, or :py:class:`matplotlib.colors.Colormap`
-            Color palette passed to :py:class:`seaborn.PairGrid`
+        kwargs_pairplot : dict
+            Keywords arguments passed to the :py:class:`seaborn.PairGrid` call.
         **kwargs : key, value pairs
             Additional keyword arguments are passed to the :py:func:`seaborn.stripplot` call.
 
@@ -766,34 +784,30 @@ class SleepStatsEvaluation:
         -------
         g : :py:class:`seaborn.PairGrid`
             Seaborn PairGrid
-        """
-        assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list or None"
-        if sstats_order is None:
-            sstats_order = self.all_sleepstats
 
-        # Merge default stripplot arguments with optional input
+        Examples
+        --------
+        To plot a limited subset of sleep statistics, use the ``x_vars`` keyword argument of
+        :py:class:`seaborn.PairGrid`.
+
+        .. plot::
+            ## TODO: Example using x_vars
+        """
+        assert isinstance(kwargs_pairplot, dict), "`kwargs_pairplot` must be a dict"
+        if sstats_order is None:
+            sstats_order = self.sleepstats
         stripplot_kwargs = {"size": 10, "linewidth": 1, "edgecolor": "white"}
         stripplot_kwargs.update(kwargs)
-
-        # Pivot data to get subject-rows and statistic-columns
-        # table = self._data.pivot(index=self.subj_name, columns="sstat", values="difference")
-        table = self.test_data.sub(self.refr_data)#[sstats_order]
-
         # Initialize the PairGrid
-        height = 0.3 * len(table)
+        height = 0.3 * len(self.diff_data)
         aspect = 0.6
-        g = sns.PairGrid(
-            table.reset_index(),
-            x_vars=sstats_order,
-            y_vars=[self.subj_name],
-            hue=self.subj_name,
-            palette=palette,
-            height=height,
-            aspect=aspect,
+        pairgrid_kwargs = dict(
+            x_vars=sstats_order, hue=self.subj_name, height=height, aspect=aspect
         )
+        pairgrid_kwargs.update(kwargs_pairgrid)
+        g = sns.PairGrid(self.diff_data.reset_index(), y_vars=[self.subj_name], **pairgrid_kwargs)
         # Draw the dots
         g.map(sns.stripplot, orient="h", jitter=False, **stripplot_kwargs)
-
         # Adjust aesthetics
         g.set(xlabel="", ylabel="")
         for ax, title in zip(g.axes.flat, sstats_order):
@@ -822,28 +836,23 @@ class SleepStatsEvaluation:
         """
         assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list or None"
         if sstats_order is None:
-            sstats_order = self.all_sleepstats
-
-        # Select scatterplot arguments (passed to blandaltman) and update with optional input
+            sstats_order = self.sleepstats
         blandaltman_kwargs = dict(xaxis="y", annotate=False, edgecolor="black", facecolor="none")
         blandaltman_kwargs.update(kwargs)
-        # Select FacetGrid arguments and update with optional input
-        col_wrap = 4 if len(sstats_order) > 4 else None
+        col_wrap = None if len(sstats_order) <= 4 else 4
         facetgrid_kwargs = dict(col_wrap=col_wrap, height=2, aspect=1, sharex=False, sharey=False)
         facetgrid_kwargs.update(facet_kwargs)
-
         # Initialize a grid of plots with an Axes for each sleep statistic
         g = sns.FacetGrid(self.data, col="sstat", col_order=sstats_order, **facetgrid_kwargs)
-        # Draw Bland-Altman on each axis
+        # Draw Bland-Altman plot on each axis
         g.map(pg.plot_blandaltman, self.test_name, self.refr_name, **blandaltman_kwargs)
-
-        # Tidy-up axis limits with symmetric y-axis and minimal ticks
+        # Adjust aesthetics
         for ax in g.axes.flat:
+            # Tidy-up axis limits with symmetric y-axis and minimal ticks
             bound = max(map(abs, ax.get_ylim()))
             ax.set_ylim(-bound, bound)
             ax.yaxis.set_major_locator(plt.MaxNLocator(nbins=2, integer=True, symmetric=True))
             ax.xaxis.set_major_locator(plt.MaxNLocator(nbins=1, integer=True))
-        # More aesthetics
         ylabel = " - ".join((self.test_name, self.refr_name))
         g.set_ylabels(ylabel)
         g.set_titles(col_template="{col_name}")
