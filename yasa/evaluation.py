@@ -123,70 +123,146 @@ class EpochByEpochEvaluation:
         >>> acc = ebe.get_agreement().multiply(100).round(0).at["accuracy"]
         >>> ax.text(0.01, 1, f"Accuracy = {acc}%", ha="left", va="bottom", transform=ax.transAxes)
     """
-    def __init__(self, refr_hyp, test_hyp):
+    def __init__(self, refr_hyps, test_hyps):
         from yasa.hypno import Hypnogram  # Loading here to avoid circular import
-        assert isinstance(refr_hyp, Hypnogram), "`refr_hyp` must be a YASA Hypnogram"
-        assert isinstance(test_hyp, Hypnogram), "`test_hyp` must be a YASA Hypnogram"
-        assert refr_hyp.scorer is not None, "`refr_hyp` must have a scorer label"
-        assert test_hyp.scorer is not None, "`test_hyp` must have a scorer label"
-        assert refr_hyp.scorer != test_hyp.scorer, (
-            "scorer must be unique for `refr_hyp` and `test_hyp`"
+
+        assert isinstance(refr_hyps, Hypnogram) or hasattr(refr_hyps, "__iter__"), (
+            "`refr_hyps` must be a YASA hypnogram or iterable containing multiple YASA hypnograms"
         )
-        assert refr_hyp.n_stages == test_hyp.n_stages, (
-            "`refr_hyp` and `test_hyp` must have the same `n_stages`"
+        assert isinstance(test_hyps, Hypnogram) or hasattr(test_hyps, "__iter__"), (
+            "`test_hyps` must be a YASA hypnogram or iterable containing multiple YASA hypnograms"
         )
-        assert refr_hyp.labels == test_hyp.labels
-        assert refr_hyp.mapping == test_hyp.mapping
-        if (n_ref := refr_hyp.n_epochs) != (n_test := test_hyp.n_epochs):
-            ## NOTE: would be nice to have a Hypnogram.trim() method for moments like this.
-            if n_ref > n_test:
-                refr_hyp = Hypnogram(refr_hyp.hypno[:n_test], n_stages=refr_hyp.n_stages)
-                n_trimmed = n_ref - n_test
-                warn_msg = f"`refr_hyp` longer than `test_hyp`, trimmed to {n_test} epochs"
-            else:
-                test_hyp = Hypnogram(test_hyp.hypno[:n_ref], n_stages=test_hyp.n_stages)
-                n_trimmed = n_test - n_ref
-                warn_msg = f"`test_hyp` longer than `refr_hyp`, {n_trimmed} epochs trimmed"
-            ## Q: Should be downplayed as INFO?
-            logger.warning(warn_msg)
+        assert type(refr_hyps) == type(test_hyps), "`refr_hyps` and `test_hyps` must be same type"
+
+        # Convert solo hypnograms to len==1 tuples
+        if isinstance(refr_hyps, Hypnogram):  # As below, picking refr_hyps for checks arbitrarily
+            refr_hyps = [refr_hyps]
+            test_hyps = [test_hyps]
+        else:
+            assert all(isinstance(hyp, Hypnogram) for hyp in refr_hyps)
+            assert all(isinstance(hyp, Hypnogram) for hyp in test_hyps)
+
+        assert len(refr_hyps) == len(test_hyps), "must have same number of subjects"
+
+        if isinstance(refr_hyps, dict):
+            assert refr_hyps.keys() == test_hyps.keys(), "must have same subject identifiers and in same order"
+            subjects, refr_hyps = zip(*refr_hyps.items())
+            # assert all(isinstance(s, str) for s in subjects)
+            test_hyps = tuple(test_hyps.values())
+        else:
+            subjects = 1 + np.arange(len(refr_hyps))
+
+        all_hyps = refr_hyps + test_hyps
+        assert all(h.scorer is not None for h in all_hyps), "all hypnograms must have a scorer"
+        for h1, h2 in zip(all_hyps[:-1], all_hyps[1:]):
+            assert h1.n_stages == h2.n_stages, "all hypnograms must have the same n_stages"
+            assert h1.labels == h2.labels, "all hypnograms must have the same labels"
+            assert h1.mapping == h2.mapping, "all hypnograms must have the same mapping"
+        assert all(h1.scorer == h2.scorer for h1, h2 in zip(refr_hyps[:-1], refr_hyps[1:])), "all `refr_hyps` must have the same scorer"
+        assert all(h1.scorer == h2.scorer for h1, h2 in zip(test_hyps[:-1], test_hyps[1:])), "all `test_hyps` must have the same scorer"
+        assert all(h1.scorer != h2.scorer for h1, h2 in zip(refr_hyps, test_hyps)), "`refr_hyps` and `test_hyps` must have unique scorers"
+        ## Could use set() for those above
+        ## Or set scorer as the first available and check all equal
+
+        ## TODO: trim each hypno
+        # if (n_ref := refr_hyp.n_epochs) != (n_test := test_hyp.n_epochs):
+        #     ## NOTE: would be nice to have a Hypnogram.trim() method for moments like this.
+        #     if n_ref > n_test:
+        #         refr_hyp = Hypnogram(refr_hyp.hypno[:n_test], n_stages=refr_hyp.n_stages)
+        #         n_trimmed = n_ref - n_test
+        #         warn_msg = f"`refr_hyp` longer than `test_hyp`, trimmed to {n_test} epochs"
+        #     else:
+        #         test_hyp = Hypnogram(test_hyp.hypno[:n_ref], n_stages=test_hyp.n_stages)
+        #         n_trimmed = n_test - n_ref
+        #         warn_msg = f"`test_hyp` longer than `refr_hyp`, {n_trimmed} epochs trimmed"
+        #     ## Q: Should be downplayed as INFO?
+        #     logger.warning(warn_msg)
+
+        # Convert to dictionaries with subjects and hypnograms
+        refr_hyps = { s: h for s, h in zip(subjects, refr_hyps) }
+        test_hyps = { s: h for s, h in zip(subjects, test_hyps) }
+
+        # Merge all hypnograms into a single multiindexed dataframe
+        refr = pd.concat(pd.concat({s: h.hypno}, names=["subject"]) for s, h in refr_hyps.items())
+        test = pd.concat(pd.concat({s: h.hypno}, names=["subject"]) for s, h in test_hyps.items())
+        data = pd.concat([refr, test], axis=1)
         
         # Set attributes
-        self._refr_hyp = refr_hyp.copy()
-        self._test_hyp = test_hyp.copy()
+        self._data = data
+        self._subjects = subjects
+        self._n_subjects = len(subjects)
+        self._refr_hyps = refr_hyps
+        self._test_hyps = test_hyps
+        self._refr_name = refr_hyps[subjects[0]].scorer
+        self._test_name = test_hyps[subjects[0]].scorer
+        self._n_stages = refr_hyps[subjects[0]].n_stages
+        self._labels = refr_hyps[subjects[0]].labels
 
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
+        text_subjects = f", {self.n_subjects} subject" + ("s" if self.n_subjects > 1 else "")
         return (
-            f"<EpochByEpochEvaluation | Test Hypnogram scored by {self.refr_hyp.scorer} evaluated "
-            f"against reference Hypnogram scored by {self.test_hyp.scorer}>\n"
+            f"<EpochByEpochEvaluation | Test Hypnogram scored by {self.refr_name} evaluated "
+            f"against reference Hypnogram scored by {self.test_name}{text_subjects}>\n"
             " - Use `.get_agreement()` to get agreement measures as a pandas.Series\n"
             " - Use `.plot_hypnograms()` to plot the two hypnograms overlaid\n"
             "See the online documentation for more details."
         )
 
     def __str__(self):
+        text_subjects = f", {self.n_subjects} subject" + ("s" if self.n_subjects > 1 else "")
         return (
-            f"<EpochByEpochEvaluation | Test Hypnogram scored by {self.refr_hyp.scorer} evaluated "
-            f"against reference Hypnogram scored by {self.test_hyp.scorer}>\n"
+            f"<EpochByEpochEvaluation | Test Hypnogram scored by {self.refr_name} evaluated "
+            f"against reference Hypnogram scored by {self.test_name}{text_subjects}>\n"
             " - Use `.get_agreement()` to get agreement measures as a pandas.Series\n"
             " - Use `.plot_hypnograms()` to plot the two hypnograms overlaid\n"
             "See the online documentation for more details."
         )
 
     @property
-    def refr_hyp(self):
-        """The reference Hypnogram."""
+    def data(self):
+        return self._data
+
+    @property
+    def refr_hyps(self):
+        """The reference Hypnograms."""
         ## Q: Starting to think there should be a clear convention on what we mean
         ##    when we say "hypnogram". Should hypnogram mean the Series and Hypnogram
         ##    mean the YASA object? Similarly for hypno/hyp.
-        return self._refr_hyp
+        return self._refr_hyps
 
     @property
-    def test_hyp(self):
-        """The test Hypnogram."""
-        return self._test_hyp
+    def test_hyps(self):
+        """The test Hypnograms."""
+        return self._test_hyps
 
-    def get_agreement(self):
+    @property
+    def subjects(self):
+        return self._subjects
+
+    @property
+    def n_subjects(self):
+        return self._n_subjects
+
+    @property
+    def refr_name(self):
+        """The name of the reference measurement."""
+        return self._refr_name
+
+    @property
+    def test_name(self):
+        """The name of the test measurement."""
+        return self._test_name
+
+    @property
+    def labels(self):
+        return self._labels
+
+    @property
+    def n_stages(self):
+        return self._n_stages
+
+    def get_agreement(self, subject=None):
         """
         Return a dataframe of ``refr_hyp``/``test_hyp`` performance across all stages as measured by
         common classifier agreement methods.
@@ -195,13 +271,23 @@ class EpochByEpochEvaluation:
         ## Q: Are there better names to differentiate get_agreement vs get_agreement_by_stage?
         ##    Maybe should be binary vs multiclass?
 
+        Parameters
+        ----------
+        self : :py:class:`yasa.EpochByEpochEvaluation`
+            A :py:class:`yasa.EpochByEpochEvaluation` instance.
+        subject : None or a unique subject identifier.
+            Subject identifiers are based on user input, and integers starting from 1 if not provided.
+
         Returns
         -------
         agreement : :py:class:`pandas.Series`
             A :py:class:`pandas.Series` with agreement metrics as indices.
         """
-        true = self.refr_hyp.hypno.to_numpy()
-        pred = self.test_hyp.hypno.to_numpy()
+        true = self.data[self.refr_name]
+        pred = self.data[self.test_name]
+        if subject is not None:
+            true = pred.loc[subject]
+            pred = pred.loc[subject]
         accuracy = metrics.accuracy_score(true, pred)
         kappa = metrics.cohen_kappa_score(true, pred)
         jaccard = metrics.jaccard_score(true, pred, average="weighted")
@@ -219,7 +305,7 @@ class EpochByEpochEvaluation:
         agreement = pd.Series(scores, name="agreement").rename_axis("metric")
         return agreement
 
-    def get_agreement_by_stage(self):
+    def get_agreement_by_stage(self, subject=None):
         """
         Return a dataframe of ``refr_hyp``/``test_hyp`` performance for each stage as measured by
         common classifier agreement methods.
@@ -231,18 +317,20 @@ class EpochByEpochEvaluation:
         agreement : :py:class:`pandas.DataFrame`
             A DataFrame with agreement metrics as indices and stages as columns.
         """
-        true = self.refr_hyp.hypno.to_numpy()
-        pred = self.test_hyp.hypno.to_numpy()
-        labels = self.test_hyp.labels  # Same as refr_hyp.labels
+        true = self.data[self.refr_name]
+        pred = self.data[self.test_name]
+        if subject is not None:
+            true = true.loc[subject]
+            pred = pred.loc[subject]
         scores = metrics.precision_recall_fscore_support(
-            true, pred, labels=labels, average=None, zero_division=0
+            true, pred, labels=self.labels, average=None, zero_division=0
         )
         agreement = pd.DataFrame(scores)
         agreement.index = pd.Index(["precision", "recall", "fscore", "support"], name="metric")
-        agreement.columns = pd.Index(labels, name="stage")
+        agreement.columns = pd.Index(self.labels, name="stage")
         return agreement
 
-    def get_confusion_matrix(self):
+    def get_confusion_matrix(self, subject=None):
         """Return a ``refr_hyp``/``test_hyp``confusion matrix.
 
         Returns
@@ -250,16 +338,19 @@ class EpochByEpochEvaluation:
         matrix : :py:class:`pandas.DataFrame`
             A confusion matrix with ``refr_hyp`` stages as indices and ``test_hyp`` stages as columns.
         """
+        true = self.data[self.refr_name]
+        pred = self.data[self.test_name]
+        if subject is not None:
+            true = true.loc[subject]
+            pred = pred.loc[subject]
         # Generate confusion matrix.
-        matrix = pd.crosstab(
-            self.refr_hyp.hypno, self.test_hyp.hypno, margins=True, margins_name="Total"
-        )
+        matrix = pd.crosstab(true, pred, margins=True, margins_name="Total")
         # Reorder indices in sensible order and to include all stages
-        matrix = matrix.reindex(labels=self.refr_hyp.labels + ["Total"], fill_value=0)
-        matrix = matrix.reindex(columns=self.test_hyp.labels + ["Total"], fill_value=0)
+        index_col_labels = self.labels + ["Total"]
+        matrix = matrix.reindex(index=index_col_labels, columns=index_col_labels, fill_value=0)
         return matrix.astype(int)
 
-    def plot_hypnograms(self, legend=True, ax=None, refr_kwargs={}, test_kwargs={}):
+    def plot_hypnograms(self, subject=None, legend=True, ax=None, refr_kwargs={}, test_kwargs={}):
         """Plot the two hypnograms, where ``refr_hyp`` is overlaid on ``refr_hyp``.
 
         .. seealso:: :py:func:`yasa.plot_hypnogram`
@@ -289,6 +380,15 @@ class EpochByEpochEvaluation:
             >>> hyp = simulate_hypnogram(seed=7)
             >>> ax = hyp.evaluate(hyp.simulate_similar()).plot_hypnograms()
         """
+        if subject is None:
+            if self.n_subjects == 1:
+                refr_hyp = self.refr_hyps[self.subjects[0]]
+                test_hyp = self.test_hyps[self.subjects[0]]
+            else:
+                raise NotImplementedError("Plotting is currently allowed for only one subject")
+        else:
+            refr_hyp = self.refr_hyps[subject]
+            test_hyp = self.test_hyps[subject]
         assert isinstance(legend, (bool, dict)), "`legend` must be True, False, or a dictionary"
         assert isinstance(refr_kwargs, dict), "`refr_kwargs` must be a dictionary"
         assert isinstance(test_kwargs, dict), "`test_kwargs` must be a dictionary"
@@ -301,8 +401,8 @@ class EpochByEpochEvaluation:
         plot_test_kwargs.update(test_kwargs)
         if ax is None:
             ax = plt.gca()
-        self.refr_hyp.plot_hypnogram(ax=ax, **plot_refr_kwargs)
-        self.test_hyp.plot_hypnogram(ax=ax, **plot_test_kwargs)
+        refr_hyp.plot_hypnogram(ax=ax, **plot_refr_kwargs)
+        test_hyp.plot_hypnogram(ax=ax, **plot_test_kwargs)
         if legend and "label" in plot_refr_kwargs | plot_test_kwargs:
             if isinstance(legend, dict):
                 ax.legend(**legend)
@@ -310,7 +410,7 @@ class EpochByEpochEvaluation:
                 ax.legend()
         return ax
 
-    def plot_roc(self, palette=None, ax=None, **kwargs):
+    def plot_roc(self, subject=None, palette=None, ax=None, **kwargs):
         """Plot ROC curves for each stage.
 
         Parameters
