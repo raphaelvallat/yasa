@@ -628,9 +628,9 @@ class SleepStatsEvaluation:
         self._refr_name = refr_name
         self._test_name = test_name
         self._subj_name = subj_name
+        self._n_subjects = data[subj_name].nunique()
         # Pivot new to not include removed sstats
         self._diff_data = data.pivot(index=self.subj_name, columns="sstat", values="difference")
-        self._sleepstats = data["sstat"].unique() ## Q: Rename to self._labels??
 
     @property
     def data(self):
@@ -662,9 +662,9 @@ class SleepStatsEvaluation:
         return self._subj_name
 
     @property
-    def sleepstats(self):
-        """A list of all sleep statistics included in analysis."""
-        return self._sleepstats
+    def n_subjects(self):
+        """The number of subjects."""
+        return self._n_subjects
 
     @property
     def normality(self):
@@ -690,7 +690,7 @@ class SleepStatsEvaluation:
         # TODO v0.8: Keep only the text between < and >
         return (
             f"<SleepStatsEvaluation | Test measurement '{self.test_name}' evaluated against "
-            f"reference measurement '{self.refr_name}'>\n"
+            f"reference measurement '{self.refr_name}', {self.n_subjects} subjects>\n"
             " - Use `.summary()` to get pass/fail values from various checks\n"
             " - Use `.plot_blandaltman()` to get a Bland-Altman-plot grid for sleep statistics\n"
             "See the online documentation for more details."
@@ -699,7 +699,7 @@ class SleepStatsEvaluation:
     def __str__(self):
         return (
             f"<SleepStatsEvaluation | Test measurement '{self.test_name}' evaluated against "
-            f"reference measurement '{self.refr_name}'>\n"
+            f"reference measurement '{self.refr_name}', {self.n_subjects} subjects>\n"
             " - Use `.summary()` to get pass/fail values from various checks\n"
             " - Use `.plot_blandaltman()` to get a Bland-Altman-plot grid for sleep statistics\n"
             "See the online documentation for more details."
@@ -739,12 +739,12 @@ class SleepStatsEvaluation:
             summary = summary.join(desc)
         return summary
 
-    def plot_discrepancies_heatmap(self, sstats_order=None, **kwargs):
+    def plot_discrepancies_heatmap(self, sleep_stats=None, **kwargs):
         """Visualize subject-level discrepancies, generally for outlier inspection.
 
         Parameters
         ----------
-        sstats_order : list
+        sleep_stats : list or None
             List of sleep statistics to plot. Default (None) is to plot all sleep statistics.
         **kwargs : key, value pairs
             Additional keyword arguments are passed to the :py:func:`seaborn.heatmap` call.
@@ -754,15 +754,15 @@ class SleepStatsEvaluation:
         ax : :py:class:`matplotlib.axes.Axes`
             Matplotlib Axes
         """
-        assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list or None"
-        if sstats_order is None:
-            sstats_order = self.sleepstats
+        assert isinstance(sleep_stats, (list, type(None))), "`sleep_stats` must be a list or None"
+        if sleep_stats is None:
+            sleep_stats = self.data["sstat"].unique()  # All available sleep statistics
         heatmap_kwargs = {"cmap": "binary", "annot": True, "fmt": ".1f", "square": False}
         heatmap_kwargs["cbar_kws"] = dict(label="Normalized discrepancy %")
         if "cbar_kws" in kwargs:
             heatmap_kwargs["cbar_kws"].update(kwargs["cbar_kws"])
         heatmap_kwargs.update(kwargs)
-        table = self.diff_data[sstats_order]
+        table = self.diff_data[sleep_stats]
         # Normalize statistics (i.e., columns) between zero and one then convert to percentage
         table_norm = table.sub(table.min(), axis=1).div(table.apply(np.ptp)).multiply(100)
         if heatmap_kwargs["annot"]:
@@ -770,12 +770,12 @@ class SleepStatsEvaluation:
             heatmap_kwargs["annot"] = table.to_numpy()
         return sns.heatmap(table_norm, **heatmap_kwargs)
 
-    def plot_discrepancies_dotplot(self, kwargs_pairplot={"palette": "winter"}, **kwargs):
+    def plot_discrepancies_dotplot(self, kwargs_pairgrid={"palette": "winter"}, **kwargs):
         """Visualize subject-level discrepancies, generally for outlier inspection.
 
         Parameters
         ----------
-        kwargs_pairplot : dict
+        kwargs_pairgrid : dict
             Keywords arguments passed to the :py:class:`seaborn.PairGrid` call.
         **kwargs : key, value pairs
             Additional keyword arguments are passed to the :py:func:`seaborn.stripplot` call.
@@ -783,7 +783,7 @@ class SleepStatsEvaluation:
         Returns
         -------
         g : :py:class:`seaborn.PairGrid`
-            Seaborn PairGrid
+            A :py:class:`seaborn.FacetGrid` with sleep statistics dotplots on each axis.
 
         Examples
         --------
@@ -793,57 +793,50 @@ class SleepStatsEvaluation:
         .. plot::
             ## TODO: Example using x_vars
         """
-        assert isinstance(kwargs_pairplot, dict), "`kwargs_pairplot` must be a dict"
-        if sstats_order is None:
-            sstats_order = self.sleepstats
+        assert isinstance(kwargs_pairgrid, dict), "`kwargs_pairgrid` must be a dict"
         stripplot_kwargs = {"size": 10, "linewidth": 1, "edgecolor": "white"}
         stripplot_kwargs.update(kwargs)
         # Initialize the PairGrid
         height = 0.3 * len(self.diff_data)
         aspect = 0.6
-        pairgrid_kwargs = dict(
-            x_vars=sstats_order, hue=self.subj_name, height=height, aspect=aspect
-        )
+        pairgrid_kwargs = dict(hue=self.subj_name, height=height, aspect=aspect)
         pairgrid_kwargs.update(kwargs_pairgrid)
         g = sns.PairGrid(self.diff_data.reset_index(), y_vars=[self.subj_name], **pairgrid_kwargs)
         # Draw the dots
         g.map(sns.stripplot, orient="h", jitter=False, **stripplot_kwargs)
         # Adjust aesthetics
-        g.set(xlabel="", ylabel="")
-        for ax, title in zip(g.axes.flat, sstats_order):
-            ax.set(title=title)
+        for ax in g.axes.flat:
+            ax.set(title=ax.get_xlabel())
             ax.margins(x=0.3)
             ax.yaxis.grid(True)
             ax.tick_params(left=False)
+        g.set(xlabel="", ylabel="")
         sns.despine(left=True, bottom=True)
         return g
 
-    def plot_blandaltman(self, sstats_order=None, facet_kwargs={}, **kwargs):
+    def plot_blandaltman(self, kwargs_facetgrid={}, **kwargs):
         """
+
+        **Use col_order=sstats_order for plotting a subset.
+
         Parameters
         ----------
-        sstats_order : list or None
-            List of sleep statistics to plot. Default (None) is to plot all sleep statistics.
-        facet_kwargs : dict
-            Keyword arguments passed to :py:class:`seaborn.FacetGrid`.
+        kwargs_facetgrid : dict
+            Keyword arguments passed to the :py:class:`seaborn.FacetGrid` call.
         **kwargs : key, value pairs
             Additional keyword arguments are passed to :py:func:`pingouin.plot_blandaltman`.
 
         Returns
         -------
         g : :py:class:`seaborn.FacetGrid`
-            Seaborn FacetGrid
+            A :py:class:`seaborn.FacetGrid` with sleep statistics Bland-Altman plots on each axis.
         """
-        assert isinstance(sstats_order, (list, type(None))), "`sstats_order` must be a list or None"
-        if sstats_order is None:
-            sstats_order = self.sleepstats
+        facetgrid_kwargs = dict(col_wrap=4, height=2, aspect=1, sharex=False, sharey=False)
+        facetgrid_kwargs.update(kwargs_facetgrid)
         blandaltman_kwargs = dict(xaxis="y", annotate=False, edgecolor="black", facecolor="none")
         blandaltman_kwargs.update(kwargs)
-        col_wrap = None if len(sstats_order) <= 4 else 4
-        facetgrid_kwargs = dict(col_wrap=col_wrap, height=2, aspect=1, sharex=False, sharey=False)
-        facetgrid_kwargs.update(facet_kwargs)
         # Initialize a grid of plots with an Axes for each sleep statistic
-        g = sns.FacetGrid(self.data, col="sstat", col_order=sstats_order, **facetgrid_kwargs)
+        g = sns.FacetGrid(self.data, col="sstat", **facetgrid_kwargs)
         # Draw Bland-Altman plot on each axis
         g.map(pg.plot_blandaltman, self.test_name, self.refr_name, **blandaltman_kwargs)
         # Adjust aesthetics
