@@ -16,7 +16,7 @@ import logging
 import numpy as np
 import pandas as pd
 import pingouin as pg
-from sklearn import metrics
+import sklearn.metrics as skm
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -44,9 +44,9 @@ class EpochByEpochEvaluation:
     Parameters
     ----------
     refr_hyp : :py:class:`yasa.Hypnogram`
-        The reference or ground-truth hypnogram.
+        The reference or ground-truth hypnogram, or sequence of hypnograms.
     test_hyp : :py:class:`yasa.Hypnogram`
-        The test or to-be-evaluated hypnogram.
+        The test or to-be-evaluated hypnogram, or sequence of hypnograms.
 
     Notes
     -----
@@ -171,32 +171,82 @@ class EpochByEpochEvaluation:
         test = pd.concat(pd.concat({s: h.hypno}, names=["subject"]) for s, h in test_hyps.items())
         data = pd.concat([refr, test], axis=1)
 
-        # Get summary sleep statistics for each measurement.
-        refr_sstats = pd.Series(refr_hyps).map(lambda h: h.sleep_statistics()).apply(pd.Series)
-        test_sstats = pd.Series(test_hyps).map(lambda h: h.sleep_statistics()).apply(pd.Series)
-        refr_sstats = refr_sstats.set_index(pd.Index(subjects, name="subject"))
-        test_sstats = test_sstats.set_index(pd.Index(subjects, name="subject"))
-        # sse = yasa.SleepStatsEvaluation(refr_sstats, test_sstats)
-        
+        ########################################################################
+        # INDIVIDUAL-LEVEL AGREEMENT
+        ########################################################################
+
+        # Get individual-level averaged/weighted agreement scores
+        # indiv_agree_avg = pd.DataFrame({s: multi_scorer_avg(refr_hyps[s].as_int(), test_hyps[s].as_int()) for s in subjects })
+        indiv_agree_avg = data.groupby(level=0).apply(self.multi_scorer_avg).apply(pd.Series)
+
+        # Get individual-level one-vs-rest/un-weighted agreement scores
+        # Only include stages that appear in the data
+        # labels = data[refr_scorer].cat.remove_unused_categories().cat.categories
+        labels = [l for l in refr_hyps[subjects[0]].hypno.cat.categories if l in data.values]
+        ############ OPTION 1 (uses staticmethod, slower by 500ms)
+        indiv_agree_ovr = (data
+            # Get multiple metrics for each individual
+            .groupby(level=0).apply(self.multi_scorer_ovr, labels=labels)
+            # Unpack metrics results and reshape
+            .apply(pd.Series).stack().apply(pd.Series)
+            # Convert stages to string labels
+            .rename_axis(columns="stage").rename(columns={i: l for i, l in enumerate(labels)})
+            # Reshape so metrics are columns
+            .stack().unstack(level=1)
+            # Swap MultiIndex levels and sort so stages drive the view
+            .swaplevel().sort_index(level="stage", key=lambda x: x.map(lambda y: labels.index(y)))
+        )
+        # ############ OPTION 2 (does NOT use staticmethod, faster by 500ms)
+        # prfs_func = lambda df: skm.precision_recall_fscore_support(
+        #     *df.values.T, labels=labels, average=None, zero_division=0
+        # )
+        # indiv_agree_ovr = (data
+        #     .groupby(level=0).apply(prfs_func)
+        #     .explode().apply(pd.Series)
+        #     .assign(metric=["precision", "recall", "f1", "support"] * len(refr_hyps)).set_index("metric", append=True)
+        #     .rename_axis(columns="stage").rename(columns={i: l for i, l in enumerate(labels)})
+        #     .stack().unstack("metric").rename_axis(columns=None)
+        # )
+        ## Q: Currently both options will leave some all-zero rows, for when a stage is present
+        ##    in some subjects but not others. Prefer to remove?
+        # agr = agr.loc[agr.any(axis=1)]  # or .pipe
+        # And then could drop the label restriction, just passing all labels to preserve order
+
+        # ac_f = lambda s: skm.accuracy_score(*s.values.T)
+        # ka_f = lambda s: skm.cohen_kappa_score(*s.values.T)
+        # ja_f = lambda s: skm.jaccard_score(*s.values.T, average=average)
+        # pr_f = lambda s: skm.precision_score(*s.values.T, average=average, zero_division=zd)
+        # re_f = lambda s: skm.recall_score(*s.values.T, average=average, zero_division=zd)
+        # f1_f = lambda s: skm.f1_score(*s.values.T, average=average, zero_division=zd)
+        # ac = data.groupby(level=0).apply(ac_f)
+        # ka = data.groupby(level=0).apply(ka_f)
+        # ja = data.groupby(level=0).apply(ja_f)
+        # pr = data.groupby(level=0).apply(pr_f)
+        # re = data.groupby(level=0).apply(re_f)
+        # f1 = data.groupby(level=0).apply(f1_f)
+        # agreement_individuals = pd.DataFrame(
+        #     {"accuracy": ac, "kappa": ka, "jaccard": ja, "precision": pr, "recall": re, "f1": f1}
+        # )
+
         # Set attributes
         self._data = data
         self._subjects = subjects
         self._n_subjects = len(subjects)
         self._refr_hyps = refr_hyps
         self._test_hyps = test_hyps
-        self._refr_sstats = refr_sstats
-        self._test_sstats = test_sstats
-        self._refr_name = refr_hyps[subjects[0]].scorer
-        self._test_name = test_hyps[subjects[0]].scorer
-        self._n_stages = refr_hyps[subjects[0]].n_stages
+        self._refr_scorer = refr_hyps[subjects[0]].scorer
+        self._test_scorer = test_hyps[subjects[0]].scorer
         self._labels = refr_hyps[subjects[0]].labels
+
+        self._indiv_agree_avg = indiv_agree_avg
+        self._indiv_agree_ovr = indiv_agree_ovr
 
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
         text_subjects = f", {self.n_subjects} subject" + ("s" if self.n_subjects > 1 else "")
         return (
-            f"<EpochByEpochEvaluation | Test Hypnogram scored by {self.refr_name} evaluated "
-            f"against reference Hypnogram scored by {self.test_name}{text_subjects}>\n"
+            f"<EpochByEpochEvaluation | Test Hypnogram scored by {self.refr_scorer} evaluated "
+            f"against reference Hypnogram scored by {self.test_scorer}{text_subjects}>\n"
             " - Use `.get_agreement()` to get agreement measures as a pandas.Series\n"
             " - Use `.plot_hypnograms()` to plot the two hypnograms overlaid\n"
             "See the online documentation for more details."
@@ -205,8 +255,8 @@ class EpochByEpochEvaluation:
     def __str__(self):
         text_subjects = f", {self.n_subjects} subject" + ("s" if self.n_subjects > 1 else "")
         return (
-            f"<EpochByEpochEvaluation | Test Hypnogram scored by {self.refr_name} evaluated "
-            f"against reference Hypnogram scored by {self.test_name}{text_subjects}>\n"
+            f"<EpochByEpochEvaluation | Test Hypnogram scored by {self.refr_scorer} evaluated "
+            f"against reference Hypnogram scored by {self.test_scorer}{text_subjects}>\n"
             " - Use `.get_agreement()` to get agreement measures as a pandas.Series\n"
             " - Use `.plot_hypnograms()` to plot the two hypnograms overlaid\n"
             "See the online documentation for more details."
@@ -214,27 +264,17 @@ class EpochByEpochEvaluation:
 
     @property
     def data(self):
+        """A :py:class:`pandas.DataFrame` including all hypnograms."""
         return self._data
 
     @property
-    def refr_sstats(self):
-        return self._refr_sstats
-
-    @property
-    def test_sstats(self):
-        return self._test_sstats
-
-    @property
     def refr_hyps(self):
-        """The reference Hypnograms."""
-        ## Q: Starting to think there should be a clear convention on what we mean
-        ##    when we say "hypnogram". Should hypnogram mean the Series and Hypnogram
-        ##    mean the YASA object? Similarly for hypno/hyp.
+        """The reference YASA hypnograms."""
         return self._refr_hyps
 
     @property
     def test_hyps(self):
-        """The test Hypnograms."""
+        """The test YASA hypnograms."""
         return self._test_hyps
 
     @property
@@ -246,101 +286,212 @@ class EpochByEpochEvaluation:
         return self._n_subjects
 
     @property
-    def refr_name(self):
-        """The name of the reference measurement."""
-        return self._refr_name
+    def refr_scorer(self):
+        """The name of the reference scorer."""
+        return self._refr_scorer
 
     @property
-    def test_name(self):
-        """The name of the test measurement."""
-        return self._test_name
+    def test_scorer(self):
+        """The name of the test scorer."""
+        return self._test_scorer
 
     @property
     def labels(self):
+        """All available sleep stage labels."""
         return self._labels
 
     @property
-    def n_stages(self):
-        return self._n_stages
-
-    def get_agreement(self, subject=None):
+    def indiv_agree_avg(self):
         """
-        Return a dataframe of ``refr_hyp``/``test_hyp`` performance across all stages as measured by
-        common classifier agreement methods.
+        A :py:class:`pandas.DataFrame` of individual-level ``refr_hyp``/``test_hyp`` agreement
+        metrics that average over individual sleep stages.
 
-        .. seealso:: :py:meth:`yasa.EpochByEpochResults.get_agreement_by_stage`
-        ## Q: Are there better names to differentiate get_agreement vs get_agreement_by_stage?
-        ##    Maybe should be binary vs multiclass?
+        .. seealso:: :py:attr:`yasa.EpochByEvaluation.individual_agreement_ovr`
+        
+        .. seealso:: :py:attr:`yasa.EpochByEvaluation.group_agreement_avg`
+        """
+        return self._indiv_agree_avg
+
+    @property
+    def indiv_agree_ovr(self):
+        """
+        A :py:class:`pandas.DataFrame` of individual-level ``refr_hyp``/``test_hyp`` "one-vs-rest"
+        agreement metrics. Metrics for each sleep stage are provided.
+
+        .. seealso:: :py:attr:`yasa.EpochByEvaluation.individual_agreement_ovr`
+        
+        .. seealso:: :py:attr:`yasa.EpochByEvaluation.group_agreement_avg`
+        """
+        return self._indiv_agree_ovr
+
+    @staticmethod
+    def multi_scorer_avg(df):
+        """Compute multiple agreement scores from a 2-column dataframe.
+
+        This function offers convenience when calculating multiple agreement scores using
+        :py:meth:`pandas.DataFrame.groupby.apply`. Scikit-learn doesn't include a function that
+        return multiple scores, and the GroupBy implementation of ``apply`` in pandas does not
+        accept multiple functions.
 
         Parameters
         ----------
-        self : :py:class:`yasa.EpochByEpochEvaluation`
-            A :py:class:`yasa.EpochByEpochEvaluation` instance.
-        subject : None or a unique subject identifier.
-            Subject identifiers are based on user input, and integers starting from 1 if not provided.
+        df : :py:class:`pandas.DataFrame`
+            A :py:class:`pandas.DataFrame` with exactly 2 columns and length of *n_samples*.
+            The first column contains true values and second column contains predicted values.
 
         Returns
         -------
-        agreement : :py:class:`pandas.Series`
-            A :py:class:`pandas.Series` with agreement metrics as indices.
+        scores : dict
+            A dictionary with scorer names (``str``) as keys and scores (``float``) as values.
         """
-        true = self.data[self.refr_name]
-        pred = self.data[self.test_name]
-        if subject is not None:
-            true = pred.loc[subject]
-            pred = pred.loc[subject]
-        accuracy = metrics.accuracy_score(true, pred)
-        kappa = metrics.cohen_kappa_score(true, pred)
-        jaccard = metrics.jaccard_score(true, pred, average="weighted")
-        precision = metrics.precision_score(true, pred, average="weighted", zero_division=0)
-        recall = metrics.recall_score(true, pred, average="weighted", zero_division=0)
-        f1 = metrics.f1_score(true, pred, average="weighted", zero_division=0)
-        scores = {
-            "accuracy": accuracy,
-            "kappa": kappa,
-            "weighted_jaccard": jaccard,
-            "weighted_precision": precision,
-            "weighted_recall": recall,
-            "weighted_f1": f1,
+        true, pred = zip(*df.values)  # Same as (df["col1"], df["col2"]) but teensy bit faster
+        ## Q: The dictionary below be compiled more concisely if we were comfortable accessing
+        ##    "private" attributes. I understand that's a no-no but I'm not exactly sure why.
+        ##     For example:
+        ##     >>> scorers = ["accuracy", "recall"]
+        ##     >>> funcs = { s: skm.__getattribute__(f"{s}_scorer") for s in scorers }
+        ##     >>> scores = { s: f(true, pred) for s, f in funcs.items() }
+        ##     Keywords could be applied as needed by checking f.__kwdefaults__
+        ##     This would offer an easy way for users to add their own scorers with an arg as well.
+        return {
+            "accuracy": skm.accuracy_score(true, pred),
+            "kappa": skm.cohen_kappa_score(true, pred),
+            "micro_jaccard": skm.jaccard_score(true, pred, average="micro"),
+            "macro_jaccard": skm.jaccard_score(true, pred, average="macro"),
+            "weighted_jaccard": skm.jaccard_score(true, pred, average="weighted"),
+            "micro_precision": skm.precision_score(true, pred, average="micro", zero_division=0),
+            "macro_precision": skm.precision_score(true, pred, average="macro", zero_division=0),
+            "weighted_precision": skm.precision_score(true, pred, average="weighted", zero_division=0),
+            "micro_recall": skm.recall_score(true, pred, average="micro", zero_division=0),
+            "macro_recall": skm.recall_score(true, pred, average="macro", zero_division=0),
+            "weighted_recall": skm.recall_score(true, pred, average="weighted", zero_division=0),
+            "micro_f1": skm.f1_score(true, pred, average="micro", zero_division=0),
+            "macro_f1": skm.f1_score(true, pred, average="macro", zero_division=0),
+            "weighted_f1": skm.f1_score(true, pred, average="weighted", zero_division=0),
         }
-        agreement = pd.Series(scores, name="agreement").rename_axis("metric")
-        return agreement
 
-    def get_agreement_by_stage(self, subject=None):
-        """
-        Return a dataframe of ``refr_hyp``/``test_hyp`` performance for each stage as measured by
-        common classifier agreement methods.
+    @staticmethod
+    def multi_scorer_ovr(df, labels):
+        """Compute multiple one-vs-rest agreement scores from a 2-column dataframe.
 
-        .. seealso:: :py:meth:`yasa.EpochByEpochResults.get_agreement`
+        Parameters
+        ----------
+        df : :py:class:`pandas.DataFrame`
+            A :py:class:`pandas.DataFrame` with exactly 2 columns and length of *n_samples*.
+            The first column contains true values and second column contains predicted values.
+        labels : array-like
+            The labels to include in scoring and control the order of returned scores.
 
         Returns
         -------
-        agreement : :py:class:`pandas.DataFrame`
-            A DataFrame with agreement metrics as indices and stages as columns.
+        scores : dict
+            A dictionary with scorer names (``str``) as keys and scores (``np.ndarray``) as values.
         """
-        true = self.data[self.refr_name]
-        pred = self.data[self.test_name]
-        if subject is not None:
-            true = true.loc[subject]
-            pred = pred.loc[subject]
-        scores = metrics.precision_recall_fscore_support(
-            true, pred, labels=self.labels, average=None, zero_division=0
-        )
-        agreement = pd.DataFrame(scores)
-        agreement.index = pd.Index(["precision", "recall", "fscore", "support"], name="metric")
-        agreement.columns = pd.Index(self.labels, name="stage")
-        return agreement
+        true, pred = zip(*df.values)
+        return {
+            "precision": skm.precision_score(true, pred, labels=labels, average=None, zero_division=0),
+            "recall": skm.recall_score(true, pred, labels=labels, average=None, zero_division=0),
+            "f1": skm.f1_score(true, pred, labels=labels, average=None, zero_division=0),
+            "support": pd.Series(true).value_counts().reindex(labels, fill_value=0).to_numpy(),
+        }
+
+    def summary(self, by_stage=False, **kwargs):
+        """Return group-level agreement scores.
+
+        Parameters
+        ----------
+        self : :py:class:`yasa.EpochByEvaluation`
+            A :py:class:`yasa.EpochByEvaluation` instance.
+        by_stage : bool
+            If True, returned ``summary`` :py:class:`pandas.DataFrame` will include agreement scores
+            for each sleep stage, derived from one-vs-rest metrics. If False (default), ``summary``
+            will include agreement scores derived from average-based metrics.
+        **kwargs : key, value pairs
+            Additional keyword arguments are passed to :py:meth:`pandas.DataFrame.groupby.agg`.
+
+        Returns
+        -------
+        summary : :py:class:`pandas.DataFrame`
+            A :py:class:`pandas.DataFrame` summarizing agreement scores across the entire dataset
+            with descriptive statistics.
+
+            >>> ebe = yasa.EpochByEpochEvaluation(...)
+            >>> ebe.summary()
+
+            This will give a :py:class:`pandas.DataFrame` where each row is an agreement metric and
+            each column is a descriptive statistic (e.g., mean, standard deviation).
+            To control the descriptive statistics included as columns:
+
+            >>> ebe.summary(func=["count", "mean", "sem"])
+        """
+        assert isinstance(by_stage, bool), "`by_stage` must be True or False"
+        agg_kwargs = {"func": ["mean", "std", "min", "median", "max"]} | kwargs
+        if by_stage:
+            summary = (self.indiv_agree_ovr
+                .groupby("stage").agg(**agg_kwargs)
+                .stack(0).rename_axis(["stage", "metric"])
+            )
+        else:
+            summary = self.indiv_agree_avg.agg(**agg_kwargs).T.rename_axis("metric")
+            ## Q: Should we include a column that calculates agreement treating all hypnograms as
+            ##    coming from one individual? Others sometimes report it, though I find it mostly
+            ##    meaningless because of possible n_epochs imbalances between subjects. I vote no.
+            # summary.insert(0, "all", self.multi_scorer_avg(self.data))
+        ## Q: Alternatively, we could remove the `by_stage` parameter and stack these into
+        ##    one merged DataFrame where the results that are *not* by-stage are included
+        ##    with an "all" stage label:
+        # summary = summary.assign(stage="all").set_index("stage", append=True).swaplevel()
+        # summary = pd.concat([summary, summary_ovr]).sort_index()
+        return summary
+
+    def get_sleep_stats(self):
+        """Return a :py:class:`pandas.DataFrame` of sleep statistics for each individual derived
+        from both Reference and Test measurement systems.
+
+        .. seealso:: :py:meth:`yasa.Hypnogram.sleep_statistics`
+
+        .. seealso:: :py:class:`yasa.SleepStatsEvaluation`
+
+        Parameters
+        ----------
+        self : :py:class:`yasa.EpochByEvaluation`
+            A :py:class:`yasa.EpochByEvaluation` instance.
+
+        Returns
+        -------
+        sstats : :py:class:`pandas.DataFrame`
+            A :py:class:`pandas.DataFrame` with sleep statistics as columns and two rows for each
+            individual (one from Reference measurement and another from Test measurement).
+        """
+        # refr_sstats = pd.Series(self.refr_hyps).map(lambda h: h.sleep_statistics()).apply(pd.Series)
+        # test_sstats = pd.Series(self.test_hyps).map(lambda h: h.sleep_statistics()).apply(pd.Series)
+        refr_sstats = pd.DataFrame({s: h.sleep_statistics() for s, h in self.refr_hyps.items()})
+        test_sstats = pd.DataFrame({s: h.sleep_statistics() for s, h in self.test_hyps.items()})
+        refr_sstats = pd.concat({self.refr_scorer: refr_sstats.T.rename_axis("subject")}, names=["measurement"])
+        test_sstats = pd.concat({self.test_scorer: test_sstats.T.rename_axis("subject")}, names=["measurement"])
+        sstats = pd.concat([refr_sstats, test_sstats])
+        return sstats
 
     def get_confusion_matrix(self, subject=None):
         """Return a ``refr_hyp``/``test_hyp``confusion matrix.
+
+        Parameters
+        ----------
+        self : :py:class:`yasa.EpochByEvaluation`
+            A :py:class:`yasa.EpochByEvaluation` instance.
+        subject : None or a valid individual identifier
+            If None (default), cross-tabulation is derived from the entire group dataset.
+            If a valid individual identifier, cross-tabulation is derived using only hypnograms
+            from that individual.
 
         Returns
         -------
         matrix : :py:class:`pandas.DataFrame`
             A confusion matrix with ``refr_hyp`` stages as indices and ``test_hyp`` stages as columns.
         """
-        true = self.data[self.refr_name]
-        pred = self.data[self.test_name]
+        assert subject is None or subject in self.subjects, "`subject` must be None or a valid subject ID"
+        true = self.data[self.refr_scorer]
+        pred = self.data[self.test_scorer]
         if subject is not None:
             true = true.loc[subject]
             pred = pred.loc[subject]
@@ -381,6 +532,13 @@ class EpochByEpochEvaluation:
             >>> hyp = simulate_hypnogram(seed=7)
             >>> ax = hyp.evaluate(hyp.simulate_similar()).plot_hypnograms()
         """
+        assert subject is None or subject in self.subjects, "`subject` must be None or a valid subject ID"
+        assert isinstance(legend, (bool, dict)), "`legend` must be True, False, or a dictionary"
+        assert isinstance(refr_kwargs, dict), "`refr_kwargs` must be a dictionary"
+        assert isinstance(test_kwargs, dict), "`test_kwargs` must be a dictionary"
+        assert not "ax" in refr_kwargs | test_kwargs, (
+            "ax can't be supplied to `kwargs_ref` or `test_kwargs`, use the `ax` keyword instead"
+        )
         if subject is None:
             if self.n_subjects == 1:
                 refr_hyp = self.refr_hyps[self.subjects[0]]
@@ -390,12 +548,6 @@ class EpochByEpochEvaluation:
         else:
             refr_hyp = self.refr_hyps[subject]
             test_hyp = self.test_hyps[subject]
-        assert isinstance(legend, (bool, dict)), "`legend` must be True, False, or a dictionary"
-        assert isinstance(refr_kwargs, dict), "`refr_kwargs` must be a dictionary"
-        assert isinstance(test_kwargs, dict), "`test_kwargs` must be a dictionary"
-        assert not "ax" in refr_kwargs | test_kwargs, (
-            "ax can't be supplied to `kwargs_ref` or `test_kwargs`, use the `ax` keyword instead"
-        )
         plot_refr_kwargs = {"highlight": None, "alpha": 0.8}
         plot_test_kwargs = {"highlight": None, "alpha": 0.8, "color": "darkcyan", "ls": "dashed"}
         plot_refr_kwargs.update(refr_kwargs)
@@ -428,6 +580,7 @@ class EpochByEpochEvaluation:
         ax : :py:class:`matplotlib.axes.Axes`
             Matplotlib Axes
         """
+        assert subject is None or subject in self.subjects, "`subject` must be None or a valid subject ID"
         # assert self.test_hyp.probas is not None
         raise NotImplementedError("Requires probability/confidence values.")
 
@@ -451,10 +604,10 @@ class SleepStatsEvaluation:
     test_data : :py:class:`pandas.DataFrame`
         A :py:class:`pandas.DataFrame` with sleep statistics from the test measurement system.
         Shape, indices, and columns must be identical to ``refr_data``.
-    refr_name : str
-        Name of the reference measurement device, used for labeling.
-    test_name : str
-        Name of the test measurement device, used for labeling.
+    refr_scorer : str
+        Name of the reference measurement scorer, used for labeling.
+    test_scorer : str
+        Name of the test measurement scorer, used for labeling.
     alpha : float
         Alpha cutoff used for all three tests.
     kwargs_normality : dict
@@ -543,8 +696,8 @@ class SleepStatsEvaluation:
         refr_data,
         test_data,
         *,
-        refr_name="Reference",
-        test_name="Test",
+        refr_scorer="Reference",
+        test_scorer="Test",
         kwargs_normality={"alpha": 0.05},
         kwargs_regression={"alpha": 0.05},
         kwargs_homoscedasticity={"alpha": 0.05},
@@ -554,9 +707,9 @@ class SleepStatsEvaluation:
         assert np.array_equal(refr_data.index, test_data.index), "`refr_data` and `test_data` indices must be identical"
         assert np.array_equal(refr_data.columns, test_data.columns), "`refr_data` and `test_data` columns must be identical"
         assert refr_data.index.name == test_data.index.name, "`refr_data` and `test_data` index names must be identical"
-        assert isinstance(refr_name, str)
-        assert isinstance(test_name, str)
-        assert refr_name != test_name
+        assert isinstance(refr_scorer, str)
+        assert isinstance(test_scorer, str)
+        assert refr_scorer != test_scorer
         assert isinstance(kwargs_normality, dict)
         assert isinstance(kwargs_regression, dict)
         assert isinstance(kwargs_homoscedasticity, dict)
@@ -569,8 +722,8 @@ class SleepStatsEvaluation:
         refr_data.index.name = subj_name
         test_data.index.name = subj_name
         diff_data = pd.concat({"difference": test_data.sub(refr_data)}, names=["measurement"])
-        refr_data = pd.concat({refr_name: refr_data}, names=["measurement"])
-        test_data = pd.concat({test_name: test_data}, names=["measurement"])
+        refr_data = pd.concat({refr_scorer: refr_data}, names=["measurement"])
+        test_data = pd.concat({test_scorer: test_data}, names=["measurement"])
         data = (pd.concat([refr_data, test_data, diff_data])
             .melt(var_name="sstat", ignore_index=False).reset_index()
             .pivot(columns="measurement", index=[subj_name, "sstat"], values="value")
@@ -586,7 +739,7 @@ class SleepStatsEvaluation:
             ## Q: Should this be logged as just info?
 
         ## NORMALITY ## Test reference data for normality at each sleep statistic
-        normality = data.groupby("sstat")[refr_name].apply(pg.normality, **kwargs_normality).droplevel(-1)
+        normality = data.groupby("sstat")[refr_scorer].apply(pg.normality, **kwargs_normality).droplevel(-1)
 
         ## PROPORTIONAL BIAS ## Test each sleep statistic for proportional bias
         # Subject-level residuals for each statistic are added to data.
@@ -595,7 +748,7 @@ class SleepStatsEvaluation:
         # proportional bias and residuals that will be used for the later  tests.
         for ss_name, ss_df in data.groupby("sstat"):
             # Regress the difference scores on the reference scores
-            model = pg.linear_regression(ss_df[refr_name], ss_df["difference"], **kwargs_regression)
+            model = pg.linear_regression(ss_df[refr_scorer], ss_df["difference"], **kwargs_regression)
             model.insert(0, "sstat", ss_name)
             # Extract subject-level residuals for later homoscedasticity tests
             resid_dict = {subj_name: ss_df[subj_name], "sstat": ss_name, "pbias_residual": model.residuals_}
@@ -614,7 +767,7 @@ class SleepStatsEvaluation:
         prop_bias["unbiased"] = prop_bias["pval"].ge(kwargs_regression["alpha"])
 
         ## Test each statistic for homoscedasticity ##
-        columns = [refr_name, "difference", "pbias_residual"]
+        columns = [refr_scorer, "difference", "pbias_residual"]
         homoscedasticity_func = lambda df: pg.homoscedasticity(df[columns], **kwargs_homoscedasticity)
         homoscedasticity = data.groupby("sstat").apply(homoscedasticity_func).droplevel(-1)
 
@@ -625,8 +778,8 @@ class SleepStatsEvaluation:
         self._proportional_bias_full = prop_bias_full  # Q: Is this worth saving??
         self._homoscedasticity = homoscedasticity
         # These will not be set as properties, as they are only needed internally
-        self._refr_name = refr_name
-        self._test_name = test_name
+        self._refr_scorer = refr_scorer
+        self._test_scorer = test_scorer
         self._subj_name = subj_name
         self._n_subjects = data[subj_name].nunique()
         # Pivot new to not include removed sstats
@@ -647,14 +800,14 @@ class SleepStatsEvaluation:
         return self._diff_data
 
     @property
-    def refr_name(self):
-        """The name of the reference measurement."""
-        return self._refr_name
+    def refr_scorer(self):
+        """The name of the reference measurement scorer."""
+        return self._refr_scorer
 
     @property
-    def test_name(self):
-        """The name of the test measurement."""
-        return self._test_name
+    def test_scorer(self):
+        """The name of the test measurement scorer."""
+        return self._test_scorer
 
     @property
     def subj_name(self):
@@ -689,8 +842,8 @@ class SleepStatsEvaluation:
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
         return (
-            f"<SleepStatsEvaluation | Test measurement '{self.test_name}' evaluated against "
-            f"reference measurement '{self.refr_name}', {self.n_subjects} subjects>\n"
+            f"<SleepStatsEvaluation | Test measurement '{self.test_scorer}' evaluated against "
+            f"reference measurement '{self.refr_scorer}', {self.n_subjects} subjects>\n"
             " - Use `.summary()` to get pass/fail values from various checks\n"
             " - Use `.plot_blandaltman()` to get a Bland-Altman-plot grid for sleep statistics\n"
             "See the online documentation for more details."
@@ -698,8 +851,8 @@ class SleepStatsEvaluation:
 
     def __str__(self):
         return (
-            f"<SleepStatsEvaluation | Test measurement '{self.test_name}' evaluated against "
-            f"reference measurement '{self.refr_name}', {self.n_subjects} subjects>\n"
+            f"<SleepStatsEvaluation | Test measurement '{self.test_scorer}' evaluated against "
+            f"reference measurement '{self.refr_scorer}', {self.n_subjects} subjects>\n"
             " - Use `.summary()` to get pass/fail values from various checks\n"
             " - Use `.plot_blandaltman()` to get a Bland-Altman-plot grid for sleep statistics\n"
             "See the online documentation for more details."
@@ -838,7 +991,7 @@ class SleepStatsEvaluation:
         # Initialize a grid of plots with an Axes for each sleep statistic
         g = sns.FacetGrid(self.data, col="sstat", **facetgrid_kwargs)
         # Draw Bland-Altman plot on each axis
-        g.map(pg.plot_blandaltman, self.test_name, self.refr_name, **blandaltman_kwargs)
+        g.map(pg.plot_blandaltman, self.test_scorer, self.refr_scorer, **blandaltman_kwargs)
         # Adjust aesthetics
         for ax in g.axes.flat:
             # Tidy-up axis limits with symmetric y-axis and minimal ticks
@@ -846,7 +999,7 @@ class SleepStatsEvaluation:
             ax.set_ylim(-bound, bound)
             ax.yaxis.set_major_locator(plt.MaxNLocator(nbins=2, integer=True, symmetric=True))
             ax.xaxis.set_major_locator(plt.MaxNLocator(nbins=1, integer=True))
-        ylabel = " - ".join((self.test_name, self.refr_name))
+        ylabel = " - ".join((self.test_scorer, self.refr_scorer))
         g.set_ylabels(ylabel)
         g.set_titles(col_template="{col_name}")
         g.tight_layout(w_pad=1, h_pad=2)
