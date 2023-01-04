@@ -413,7 +413,9 @@ class EpochByEpochEvaluation:
             >>> ebe.summary(func=["count", "mean", "sem"])
         """
         assert isinstance(by_stage, bool), "`by_stage` must be True or False"
-        agg_kwargs = {"func": ["mean", "std", "min", "median", "max"]} | kwargs
+        mad = lambda df: (df - df.mean()).abs().mean()
+        mad.__name__ = "mad"  # Pandas uses this to name the aggregated column
+        agg_kwargs = {"func": [mad, "mean", "std", "min", "median", "max"]} | kwargs
         if by_stage:
             summary = (
                 self.indiv_agree_ovr.groupby("stage")
@@ -885,17 +887,17 @@ class SleepStatsEvaluation:
     def __str__(self):
         return __repr__()
 
-    def summary(self, descriptives=True):
+    def summary(self, **kwargs):
         """Return a summary dataframe highlighting whether tests passed for each sleep statistic.
 
         Parameters
         ----------
         self : :py:class:`SleepStatsEvaluation`
             A :py:class:`SleepStatsEvaluation` instance.
-        descriptives : bool or dict
-            If True (default) or a dictionary, also include descriptive statistics for reference and
-            test scorers. If a dictionary, all key/value pairs are passed as keyword arguments
-            to the :py:meth:`pandas.DataFrame.agg` call.
+        **kwargs : key, value pairs
+            Additional keyword arguments are passed to :py:meth:`pandas.DataFrame.groupby.agg`.
+
+            >>> ebe.summary(func=["mean", "sem", "min", "max"])
 
         Returns
         -------
@@ -903,21 +905,18 @@ class SleepStatsEvaluation:
             A :py:class:`pandas.DataFrame` with boolean values indicating the pass/fail status for
             normality, proportional bias, and homoscedasticity tests (for each sleep statistic).
         """
-        assert isinstance(descriptives, (bool, dict)), "`descriptives` must be True, False, or dict"
         series_list = [
             self.normality["normal"],
             self.proportional_bias["unbiased"],
             self.homoscedasticity["equal_var"].rename("homoscedastic"),
         ]
         summary = pd.concat(series_list, axis=1)
-        if descriptives:
-            agg_kwargs = {"func": ["mean", "std"]}
-            if isinstance(descriptives, dict):
-                agg_kwargs.update(descriptives)
-            desc = self.data.drop(columns=self.sleep_id_str).groupby("sstat").agg(**agg_kwargs)
-            desc.columns = desc.columns.map("_".join)
-            summary = summary.join(desc)
-        return summary
+        mad = lambda df: (df - df.mean()).abs().mean()
+        mad.__name__ = "mad"  # Pandas uses this to name the aggregated column
+        agg_kwargs = {"func": [mad, "mean", "std"]} | kwargs
+        desc = self.data.drop(columns=self.sleep_id_str).groupby("sstat").agg(**agg_kwargs)
+        desc.columns = desc.columns.map("_".join)
+        return summary.join(desc)
 
     def plot_discrepancies_heatmap(self, sleep_stats=None, **kwargs):
         """Visualize session-level discrepancies, generally for outlier inspection.
