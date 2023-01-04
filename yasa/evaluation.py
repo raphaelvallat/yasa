@@ -181,8 +181,8 @@ class EpochByEpochEvaluation:
         test_hyps = { s: h for s, h in zip(sleep_ids, test_hyps) }
 
         # Merge all hypnograms into a single multiindexed dataframe
-        refr = pd.concat(pd.concat({s: h.hypno}, names=["sleep_id"]) for s, h in refr_hyps.items())
-        test = pd.concat(pd.concat({s: h.hypno}, names=["sleep_id"]) for s, h in test_hyps.items())
+        refr = pd.concat(pd.concat({s: h.as_int()}, names=["sleep_id"]) for s, h in refr_hyps.items())
+        test = pd.concat(pd.concat({s: h.as_int()}, names=["sleep_id"]) for s, h in test_hyps.items())
         data = pd.concat([refr, test], axis=1)
 
         ########################################################################
@@ -196,10 +196,16 @@ class EpochByEpochEvaluation:
         # Get individual-level one-vs-rest/un-weighted agreement scores
         # Labels ensures the order of returned scores is known
         # It also can be used to remove unused labels, but that will be taken care of later anyways
-        # # labels = data[refr_scorer].cat.remove_unused_categories().cat.categories
-        labels = [l for l in refr_hyps[sleep_ids[0]].hypno.cat.categories if l in data.values]
+        # skm_labels = [l for l in refr_hyps[sleep_ids[0]].hypno.cat.categories if l in data.values]
+        # skm will return an array of results, so mapping must be linear without skips
+        ## Q: Another option is to get Series.cat.codes for ints and use cat.categories for mapping
+        skm_labels = np.unique(data).tolist()
+        skm_mapping = {i: l for i, l in enumerate(skm_labels)}  # skm integers to YASA integers
+        mapping_int = refr_hyps[sleep_ids[0]].mapping_int.copy()  # YASA integers to YASA strings
+        # labels = refr_hyps[sleep_ids[0]].labels.copy()  # To preserve YASA ordering
+        # labels = [v for k, v in mapping_int.items() if k in skm_labels]  # To preserve YASA ordering
         prfs_wrapper = lambda df: skm.precision_recall_fscore_support(
-            *df.values.T, labels=labels, average=None, zero_division=0
+            *df.values.T, labels=skm_labels, average=None, zero_division=0
         )
         indiv_agree_ovr = (data
             # Get precision, recall, f1, and support for each individual sleep session
@@ -210,13 +216,15 @@ class EpochByEpochEvaluation:
             .assign(metric=["precision", "recall", "f1", "support"] * len(refr_hyps))
             .set_index("metric", append=True)
             # Convert stage column names to string labels
-            .rename_axis(columns="stage").rename(columns={i: l for i, l in enumerate(labels)})
+            .rename_axis(columns="stage").rename(columns=skm_mapping).rename(columns=mapping_int)
             # Remove all-zero rows (i.e., stages that were not present in the hypnogram)
             .pipe(lambda df: df.loc[:, df.any()])
             # Reshape so metrics are columns
             .stack().unstack("metric").rename_axis(columns=None)
-            # Swap MultiIndex levels and sort so stages drive the view
-            .swaplevel().sort_index(level="stage", key=lambda x: x.map(lambda y: labels.index(y)))
+            # Swap MultiIndex levels and sort so stages in standard YASA order
+            .swaplevel().sort_index(
+                level="stage", key=lambda x: x.map(lambda y: list(mapping_int.values()).index(y))
+            )
         )
 
         # Set attributes
@@ -227,7 +235,7 @@ class EpochByEpochEvaluation:
         self._test_hyps = test_hyps
         self._refr_scorer = refr_hyps[sleep_ids[0]].scorer
         self._test_scorer = test_hyps[sleep_ids[0]].scorer
-        self._labels = refr_hyps[sleep_ids[0]].labels
+        self._mapping_int = mapping_int
         self._indiv_agree_avg = indiv_agree_avg
         self._indiv_agree_ovr = indiv_agree_ovr
         ## Q: Merge these to one individual agreement dataframe?
@@ -281,11 +289,6 @@ class EpochByEpochEvaluation:
     def test_scorer(self):
         """The name of the test scorer."""
         return self._test_scorer
-
-    @property
-    def labels(self):
-        """All available sleep stage labels."""
-        return self._labels
 
     @property
     def indiv_agree_avg(self):
@@ -461,11 +464,11 @@ class EpochByEpochEvaluation:
         if sleep_id is not None:
             true = true.loc[sleep_id]
             pred = pred.loc[sleep_id]
-        matrix = pd.crosstab(true, pred, margins=True, margins_name="Total")
-        # Reorder indices in sensible order and to include all stages
-        index_col_labels = self.labels + ["Total"]
-        matrix = matrix.reindex(index=index_col_labels, columns=index_col_labels, fill_value=0)
-        return matrix.astype(int)
+        matrix = (pd.crosstab(true, pred, margins=True, margins_name="Total")
+            .rename(index=self._mapping_int, columns=self._mapping_int)
+            .astype(int)
+        )
+        return matrix
 
     def plot_hypnograms(self, sleep_id=None, legend=True, ax=None, refr_kwargs={}, test_kwargs={}):
         """Plot the two hypnograms, where the reference hypnogram is overlaid on the test hypnogram.
