@@ -190,42 +190,34 @@ class EpochByEpochEvaluation:
         ########################################################################
 
         # Get individual-level averaged/weighted agreement scores
-        indiv_agree_avg = data.groupby(level=0).apply(self.multi_scorer_avg).apply(pd.Series)
+        indiv_agree_avg = data.groupby(level=0).apply(self.multi_scorer).apply(pd.Series)
         ## Q: Check speed against pd.DataFrame({s: multscore(hyps[s], hyps[s]) for s in subjects})
 
         # Get individual-level one-vs-rest/un-weighted agreement scores
-        # Only include stages that appear in the data
-        # labels = data[refr_scorer].cat.remove_unused_categories().cat.categories
+        # Labels ensures the order of returned scores is known
+        # It also can be used to remove unused labels, but that will be taken care of later anyways
+        # # labels = data[refr_scorer].cat.remove_unused_categories().cat.categories
         labels = [l for l in refr_hyps[sleep_ids[0]].hypno.cat.categories if l in data.values]
-        ############ OPTION 1 (uses staticmethod, slower by 500ms)
+        prfs_wrapper = lambda df: skm.precision_recall_fscore_support(
+            *df.values.T, labels=labels, average=None, zero_division=0
+        )
         indiv_agree_ovr = (data
-            # Get multiple metrics for each individual sleep
-            .groupby(level=0).apply(self.multi_scorer_ovr, labels=labels)
-            # Unpack metrics results and reshape
-            .apply(pd.Series).stack().apply(pd.Series)
-            # Convert stages to string labels
+            # Get precision, recall, f1, and support for each individual sleep session
+            .groupby(level=0).apply(prfs_wrapper)
+            # Unpack arrays
+            .explode().apply(pd.Series)
+            # Add metric labels and prepend to index, creating MultiIndex
+            .assign(metric=["precision", "recall", "f1", "support"] * len(refr_hyps))
+            .set_index("metric", append=True)
+            # Convert stage column names to string labels
             .rename_axis(columns="stage").rename(columns={i: l for i, l in enumerate(labels)})
+            # Remove all-zero rows (i.e., stages that were not present in the hypnogram)
+            .pipe(lambda df: df.loc[:, df.any()])
             # Reshape so metrics are columns
-            .stack().unstack(level=1)
+            .stack().unstack("metric").rename_axis(columns=None)
             # Swap MultiIndex levels and sort so stages drive the view
             .swaplevel().sort_index(level="stage", key=lambda x: x.map(lambda y: labels.index(y)))
         )
-        # ############ OPTION 2 (does NOT use staticmethod, faster by 500ms)
-        # prfs_func = lambda df: skm.precision_recall_fscore_support(
-        #     *df.values.T, labels=labels, average=None, zero_division=0
-        # )
-        # indiv_agree_ovr = (data
-        #     .groupby(level=0).apply(prfs_func)
-        #     .explode().apply(pd.Series)
-        #     .assign(metric=["precision", "recall", "f1", "support"] * len(refr_hyps))
-        #     .set_index("metric", append=True)
-        #     .rename_axis(columns="stage").rename(columns={i: l for i, l in enumerate(labels)})
-        #     .stack().unstack("metric").rename_axis(columns=None)
-        # )
-        ## Q: Currently both options will leave some all-zero rows, for when a stage is present
-        ##    in some subjects but not others. Prefer to remove?
-        # agr = agr.loc[agr.any(axis=1)]  # or .pipe
-        # And then could drop the label restriction, just passing all labels to preserve order
 
         # Set attributes
         self._data = data
@@ -316,7 +308,7 @@ class EpochByEpochEvaluation:
         return self._indiv_agree_ovr
 
     @staticmethod
-    def multi_scorer_avg(df):
+    def multi_scorer(df):
         """Compute multiple agreement scores from a 2-column dataframe.
 
         This function offers convenience when calculating multiple agreement scores using
@@ -335,7 +327,7 @@ class EpochByEpochEvaluation:
         scores : dict
             A dictionary with scorer names (``str``) as keys and scores (``float``) as values.
         """
-        true, pred = zip(*df.values)  # Same as (df["col1"], df["col2"]) but teensy bit faster
+        t, p = zip(*df.values)  # Same as (df["col1"], df["col2"]) but teensy bit faster
         ## Q: The dictionary below be compiled more concisely if we were comfortable accessing
         ##    "private" attributes. I understand that's a no-no but I'm not exactly sure why.
         ##     For example:
@@ -345,47 +337,20 @@ class EpochByEpochEvaluation:
         ##     Keywords could be applied as needed by checking f.__kwdefaults__
         ##     This would offer an easy way for users to add their own scorers with an arg as well.
         return {
-            "accuracy": skm.accuracy_score(true, pred),
-            "kappa": skm.cohen_kappa_score(true, pred),
-            "jaccard_micro": skm.jaccard_score(true, pred, average="micro"),
-            "jaccard_macro": skm.jaccard_score(true, pred, average="macro"),
-            "jaccard_weighted": skm.jaccard_score(true, pred, average="weighted"),
-            "precision_micro": skm.precision_score(true, pred, average="micro", zero_division=0),
-            "precision_macro": skm.precision_score(true, pred, average="macro", zero_division=0),
-            "precision_weighted": skm.precision_score(
-                true, pred, average="weighted", zero_division=0
-            ),
-            "recall_micro": skm.recall_score(true, pred, average="micro", zero_division=0),
-            "recall_macro": skm.recall_score(true, pred, average="macro", zero_division=0),
-            "recall_weighted": skm.recall_score(true, pred, average="weighted", zero_division=0),
-            "f1_micro": skm.f1_score(true, pred, average="micro", zero_division=0),
-            "f1_macro": skm.f1_score(true, pred, average="macro", zero_division=0),
-            "f1_weighted": skm.f1_score(true, pred, average="weighted", zero_division=0),
-        }
-
-    @staticmethod
-    def multi_scorer_ovr(df, labels):
-        """Compute multiple one-vs-rest agreement scores from a 2-column dataframe.
-
-        Parameters
-        ----------
-        df : :py:class:`pandas.DataFrame`
-            A :py:class:`pandas.DataFrame` with exactly 2 columns and length of *n_samples*.
-            The first column contains true values and second column contains predicted values.
-        labels : array-like
-            The labels to include in scoring and control the order of returned scores.
-
-        Returns
-        -------
-        scores : dict
-            A dictionary with scorer names (``str``) as keys and scores (``np.ndarray``) as values.
-        """
-        true, pred = zip(*df.values)
-        return {
-            "precision": skm.precision_score(true, pred, labels=labels, average=None, zero_division=0),
-            "recall": skm.recall_score(true, pred, labels=labels, average=None, zero_division=0),
-            "f1": skm.f1_score(true, pred, labels=labels, average=None, zero_division=0),
-            "support": pd.Series(true).value_counts().reindex(labels, fill_value=0).to_numpy(),
+            "accuracy": skm.accuracy_score(t, p),
+            "kappa": skm.cohen_kappa_score(t, p),
+            "jaccard_micro": skm.jaccard_score(t, p, average="micro"),
+            "jaccard_macro": skm.jaccard_score(t, p, average="macro"),
+            "jaccard_weighted": skm.jaccard_score(t, p, average="weighted"),
+            "precision_micro": skm.precision_score(t, p, average="micro", zero_division=0),
+            "precision_macro": skm.precision_score(t, p, average="macro", zero_division=0),
+            "precision_weighted": skm.precision_score(t, p, average="weighted", zero_division=0),
+            "recall_micro": skm.recall_score(t, p, average="micro", zero_division=0),
+            "recall_macro": skm.recall_score(t, p, average="macro", zero_division=0),
+            "recall_weighted": skm.recall_score(t, p, average="weighted", zero_division=0),
+            "f1_micro": skm.f1_score(t, p, average="micro", zero_division=0),
+            "f1_macro": skm.f1_score(t, p, average="macro", zero_division=0),
+            "f1_weighted": skm.f1_score(t, p, average="weighted", zero_division=0),
         }
 
     def summary(self, by_stage=False, **kwargs):
@@ -429,7 +394,7 @@ class EpochByEpochEvaluation:
             ## Q: Should we include a column that calculates agreement treating all hypnograms as
             ##    coming from one individual? Others sometimes report it, though I find it mostly
             ##    meaningless because of possible n_epochs imbalances between subjects. I vote no.
-            # summary.insert(0, "all", self.multi_scorer_avg(self.data))
+            # summary.insert(0, "all", self.multi_scorer(self.data))
         ## Q: Alternatively, we could remove the `by_stage` parameter and stack these into
         ##    one merged DataFrame where the results that are *not* by-stage are included
         ##    with an "all" stage label:
