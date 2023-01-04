@@ -130,59 +130,64 @@ class EpochByEpochEvaluation:
     UNS        0    0    0   0    0    0    0      0
     Total    277  128  333  98  124    0    0    960
     """
+
     def __init__(self, refr_hyps, test_hyps):
         from yasa.hypno import Hypnogram  # Avoiding circular import
 
         assert hasattr(refr_hyps, "__iter__"), "`refr_hyps` must be a an iterable"
         assert hasattr(test_hyps, "__iter__"), "`test_hyps` must be a an iterable"
         assert type(refr_hyps) == type(test_hyps), "`refr_hyps` and `test_hyps` must be same type"
-        assert len(refr_hyps) == len(test_hyps), (
-            "`refr_hyps` and `test_hyps` must have the same number of hypnograms"
-        )
+        assert len(refr_hyps) == len(
+            test_hyps
+        ), "`refr_hyps` and `test_hyps` must have the same number of hypnograms"
 
         if isinstance(refr_hyps, dict):
             # If user provides dictionaries, split into sleep IDs and hypnograms
-            assert refr_hyps.keys() == test_hyps.keys(), (
-                "hypnograms in `refr_hyps` and `test_hyps` must have identical sleep IDs"
-            )
+            assert (
+                refr_hyps.keys() == test_hyps.keys()
+            ), "hypnograms in `refr_hyps` and `test_hyps` must have identical sleep IDs"
             sleep_ids, refr_hyps = zip(*refr_hyps.items())
             test_hyps = tuple(test_hyps.values())
         else:
             # Create hypnogram_ids
             sleep_ids = tuple(range(1, 1 + len(refr_hyps)))
 
-        assert all(isinstance(hyp, Hypnogram) for hyp in refr_hyps + test_hyps), (
-            "`refr_hyps` and `test_hyps` must only include YASA hypnograms"
-        )
-        assert all(h.scorer is not None for h in refr_hyps + test_hyps), (
-            "all hypnograms must have a scorer name"
-        )
+        assert all(
+            isinstance(hyp, Hypnogram) for hyp in refr_hyps + test_hyps
+        ), "`refr_hyps` and `test_hyps` must only include YASA hypnograms"
+        assert all(
+            h.scorer is not None for h in refr_hyps + test_hyps
+        ), "all hypnograms must have a scorer name"
         for h1, h2 in zip((refr_hyps + test_hyps)[:-1], (refr_hyps + test_hyps)[1:]):
             assert h1.labels == h2.labels, "all hypnograms must have the same labels"
             assert h1.mapping == h2.mapping, "all hypnograms must have the same mapping"
             assert h1.n_stages == h2.n_stages, "all hypnograms must have the same n_stages"
-        assert all(h1.scorer == h2.scorer for h1, h2 in zip(refr_hyps[:-1], refr_hyps[1:])), (
-            "all `refr_hyps` must have the same scorer"
-        )
-        assert all(h1.scorer == h2.scorer for h1, h2 in zip(test_hyps[:-1], test_hyps[1:])), (
-            "all `test_hyps` must have the same scorer"
-        )
-        assert all(h1.scorer != h2.scorer for h1, h2 in zip(refr_hyps, test_hyps)), (
-            "each `refr_hyps` and `test_hyps` pair must have unique scorers"
-        )
-        assert all(h1.n_epochs == h2.n_epochs for h1, h2 in zip(refr_hyps, test_hyps)), (
-            "each `refr_hyps` and `test_hyps` pair must have the same n_epochs"
-        )
+        assert all(
+            h1.scorer == h2.scorer for h1, h2 in zip(refr_hyps[:-1], refr_hyps[1:])
+        ), "all `refr_hyps` must have the same scorer"
+        assert all(
+            h1.scorer == h2.scorer for h1, h2 in zip(test_hyps[:-1], test_hyps[1:])
+        ), "all `test_hyps` must have the same scorer"
+        assert all(
+            h1.scorer != h2.scorer for h1, h2 in zip(refr_hyps, test_hyps)
+        ), "each `refr_hyps` and `test_hyps` pair must have unique scorers"
+        assert all(
+            h1.n_epochs == h2.n_epochs for h1, h2 in zip(refr_hyps, test_hyps)
+        ), "each `refr_hyps` and `test_hyps` pair must have the same n_epochs"
         ## Q: Could use set() for those above.
         ##    Or set scorer as the first available and check all equal.
 
         # Convert to dictionaries with sleep_ids and hypnograms
-        refr_hyps = { s: h for s, h in zip(sleep_ids, refr_hyps) }
-        test_hyps = { s: h for s, h in zip(sleep_ids, test_hyps) }
+        refr_hyps = {s: h for s, h in zip(sleep_ids, refr_hyps)}
+        test_hyps = {s: h for s, h in zip(sleep_ids, test_hyps)}
 
-        # Merge all hypnograms into a single multiindexed dataframe
-        refr = pd.concat(pd.concat({s: h.as_int()}, names=["sleep_id"]) for s, h in refr_hyps.items())
-        test = pd.concat(pd.concat({s: h.as_int()}, names=["sleep_id"]) for s, h in test_hyps.items())
+        # Merge all hypnograms into a single MultiIndexed dataframe
+        refr = pd.concat(
+            pd.concat({s: h.as_int()}, names=["sleep_id"]) for s, h in refr_hyps.items()
+        )
+        test = pd.concat(
+            pd.concat({s: h.as_int()}, names=["sleep_id"]) for s, h in test_hyps.items()
+        )
         data = pd.concat([refr, test], axis=1)
 
         ########################################################################
@@ -207,22 +212,30 @@ class EpochByEpochEvaluation:
         prfs_wrapper = lambda df: skm.precision_recall_fscore_support(
             *df.values.T, labels=skm_labels, average=None, zero_division=0
         )
-        indiv_agree_ovr = (data
+        indiv_agree_ovr = (
+            data
             # Get precision, recall, f1, and support for each individual sleep session
-            .groupby(level=0).apply(prfs_wrapper)
+            .groupby(level=0)
+            .apply(prfs_wrapper)
             # Unpack arrays
-            .explode().apply(pd.Series)
+            .explode()
+            .apply(pd.Series)
             # Add metric labels and prepend to index, creating MultiIndex
             .assign(metric=["precision", "recall", "f1", "support"] * len(refr_hyps))
             .set_index("metric", append=True)
             # Convert stage column names to string labels
-            .rename_axis(columns="stage").rename(columns=skm_mapping).rename(columns=mapping_int)
+            .rename_axis(columns="stage")
+            .rename(columns=skm_mapping)
+            .rename(columns=mapping_int)
             # Remove all-zero rows (i.e., stages that were not present in the hypnogram)
             .pipe(lambda df: df.loc[:, df.any()])
             # Reshape so metrics are columns
-            .stack().unstack("metric").rename_axis(columns=None)
+            .stack()
+            .unstack("metric")
+            .rename_axis(columns=None)
             # Swap MultiIndex levels and sort so stages in standard YASA order
-            .swaplevel().sort_index(
+            .swaplevel()
+            .sort_index(
                 level="stage", key=lambda x: x.map(lambda y: list(mapping_int.values()).index(y))
             )
         )
@@ -388,9 +401,11 @@ class EpochByEpochEvaluation:
         assert isinstance(by_stage, bool), "`by_stage` must be True or False"
         agg_kwargs = {"func": ["mean", "std", "min", "median", "max"]} | kwargs
         if by_stage:
-            summary = (self.indiv_agree_ovr
-                .groupby("stage").agg(**agg_kwargs)
-                .stack(0).rename_axis(["stage", "metric"])
+            summary = (
+                self.indiv_agree_ovr.groupby("stage")
+                .agg(**agg_kwargs)
+                .stack(0)
+                .rename_axis(["stage", "metric"])
             )
         else:
             summary = self.indiv_agree_avg.agg(**agg_kwargs).T.rename_axis("metric")
@@ -456,15 +471,16 @@ class EpochByEpochEvaluation:
             A confusion matrix with ``refr_hyp`` stages as indices and ``test_hyp`` stages as
             columns.
         """
-        assert sleep_id is None or sleep_id in self.sleep_ids, (
-            "`sleep_id` must be None or a valid sleep ID"
-        )
+        assert (
+            sleep_id is None or sleep_id in self.sleep_ids
+        ), "`sleep_id` must be None or a valid sleep ID"
         true = self.data[self.refr_scorer]
         pred = self.data[self.test_scorer]
         if sleep_id is not None:
             true = true.loc[sleep_id]
             pred = pred.loc[sleep_id]
-        matrix = (pd.crosstab(true, pred, margins=True, margins_name="Total")
+        matrix = (
+            pd.crosstab(true, pred, margins=True, margins_name="Total")
             .rename(index=self._mapping_int, columns=self._mapping_int)
             .astype(int)
         )
@@ -504,15 +520,15 @@ class EpochByEpochEvaluation:
             >>> hyp = simulate_hypnogram(seed=7)
             >>> ax = hyp.evaluate(hyp.simulate_similar()).plot_hypnograms()
         """
-        assert sleep_id is None or sleep_id in self.sleep_ids, (
-            "`sleep_id` must be None or a valid sleep ID"
-        )
+        assert (
+            sleep_id is None or sleep_id in self.sleep_ids
+        ), "`sleep_id` must be None or a valid sleep ID"
         assert isinstance(legend, (bool, dict)), "`legend` must be True, False, or a dictionary"
         assert isinstance(refr_kwargs, dict), "`refr_kwargs` must be a dictionary"
         assert isinstance(test_kwargs, dict), "`test_kwargs` must be a dictionary"
-        assert not "ax" in refr_kwargs | test_kwargs, (
-            "ax can't be supplied to `kwargs_ref` or `test_kwargs`, use the `ax` keyword instead"
-        )
+        assert (
+            not "ax" in refr_kwargs | test_kwargs
+        ), "ax can't be supplied to `kwargs_ref` or `test_kwargs`, use the `ax` keyword instead"
         if sleep_id is None:
             if self.n_sleeps == 1:
                 refr_hyp = self.refr_hyps[self.sleep_ids[0]]
@@ -554,9 +570,9 @@ class EpochByEpochEvaluation:
         ax : :py:class:`matplotlib.axes.Axes`
             Matplotlib Axes
         """
-        assert sleep_id is None or sleep_id in self.sleep_ids, (
-            "`sleep_id` must be None or a valid sleep ID"
-        )
+        assert (
+            sleep_id is None or sleep_id in self.sleep_ids
+        ), "`sleep_id` must be None or a valid sleep ID"
         raise NotImplementedError("ROC plots will be implemented once YASA hypnograms have probas.")
 
 
@@ -666,6 +682,7 @@ class SleepStatsEvaluation:
 
         >>> sse.plot_blandaltman()
     """
+
     def __init__(
         self,
         refr_data,
@@ -679,15 +696,15 @@ class SleepStatsEvaluation:
     ):
         assert isinstance(refr_data, pd.DataFrame), "`refr_data` must be a pandas DataFrame"
         assert isinstance(test_data, pd.DataFrame), "`test_data` must be a pandas DataFrame"
-        assert np.array_equal(refr_data.index, test_data.index), (
-            "`refr_data` and `test_data` index values must be identical"
-        )
-        assert refr_data.index.name == test_data.index.name, (
-            "`refr_data` and `test_data` index names must be identical"
-        )
-        assert np.array_equal(refr_data.columns, test_data.columns), (
-            "`refr_data` and `test_data` column values must be identical"
-        )
+        assert np.array_equal(
+            refr_data.index, test_data.index
+        ), "`refr_data` and `test_data` index values must be identical"
+        assert (
+            refr_data.index.name == test_data.index.name
+        ), "`refr_data` and `test_data` index names must be identical"
+        assert np.array_equal(
+            refr_data.columns, test_data.columns
+        ), "`refr_data` and `test_data` column values must be identical"
         assert isinstance(refr_scorer, str), "`refr_scorer` must be a string"
         assert isinstance(test_scorer, str), "`test_scorer` must be a string"
         assert refr_scorer != test_scorer, "`refr_scorer` and `test_scorer` must be unique"
@@ -713,10 +730,12 @@ class SleepStatsEvaluation:
 
         # Merge dataframes and reshape to long format
         data = pd.concat([refr_data, test_data, diff_data])
-        data = (data
-            .melt(var_name="sstat", ignore_index=False).reset_index()
+        data = (
+            data.melt(var_name="sstat", ignore_index=False)
+            .reset_index()
             .pivot(columns="scorer", index=[sleep_id_str, "sstat"], values="value")
-            .reset_index().rename_axis(columns=None)
+            .reset_index()
+            .rename_axis(columns=None)
         )
 
         # Remove sleep statistics that have no differences between scorers
@@ -727,10 +746,8 @@ class SleepStatsEvaluation:
 
         ## NORMALITY ##
         # Test reference data for normality at each sleep statistic
-        normality = (data
-            .groupby("sstat")[refr_scorer]
-            .apply(pg.normality, **kwargs_normality)
-            .droplevel(-1)
+        normality = (
+            data.groupby("sstat")[refr_scorer].apply(pg.normality, **kwargs_normality).droplevel(-1)
         )
 
         ## PROPORTIONAL BIAS ##
