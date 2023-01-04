@@ -572,7 +572,7 @@ class Hypnogram:
         )
 
     def evaluate(self, test_hyp):
-        """Evaluate agreement between two hypnograms.
+        """Evaluate agreement between two hypnograms of the same sleep session.
 
         Typically the reference hypnogram (i.e., ``self``) is a manually-scored hypnogram and the
         test hypnogram (i.e., ``test_hyp``) is a hypnogram from an actigraphy/wearable device or
