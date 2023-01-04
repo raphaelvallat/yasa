@@ -38,20 +38,40 @@ __all__ = [
 
 
 class EpochByEpochEvaluation:
-    """
-    For comparing only 2 hypnograms, use :py:meth:`yasa.Hynogram.evaluate`.
+    """Evaluate agreement between two collections of hypnograms.
+
+    For example, evaluate the agreement between manually-scored hypnograms and automatically-scored
+    hypnograms, or hypnograms derived from actigraphy.
+
+    Many steps here are modeled after guidelines proposed in Menghini et al., 2021 [Menghini2021]_.
+    See https://sri-human-sleep.github.io/sleep-trackers-performance/AnalyticalPipeline_v1.0.0.html
 
     Parameters
     ----------
-    refr_hyps : :py:class:`yasa.Hypnogram`
-        A collection of reference or ground-truth hypnograms.
-    test_hyps : :py:class:`yasa.Hypnogram`
-        A collection of test or to-be-evaluated hypnograms.
+    refr_hyps : iterable of :py:class:`yasa.Hypnogram`
+        A collection of reference (i.e., ground-truth) hypnograms.
 
-    Notes
-    -----
-    Many steps here are modeled after guidelines proposed in Menghini et al., 2021 [Menghini2021]_.
-    See https://sri-human-sleep.github.io/sleep-trackers-performance/AnalyticalPipeline_v1.0.0.html
+        Each :py:class:`yasa.Hypnogram` in ``refr_hyps`` must have the same
+        :py:attr:`~yasa.Hypnogram.scorer`.
+
+        If a ``dict``, key values are use to generate unique sleep session IDs. If any other
+        iterable (e.g., ``list`` or ``tuple``), then unique sleep session IDs are automatically
+        generated.
+    test_hyps : iterable of :py:class:`yasa.Hypnogram`
+        A collection of test (i.e., to-be-evaluated) hypnograms.
+
+        Each :py:class:`yasa.Hypnogram` in ``test_hyps`` must have the same
+        :py:attr:`~yasa.Hypnogram.scorer`, and this scorer must be different than the scorer of
+        hypnograms in ``refr_hyps``.
+
+        If a ``dict``, key values must match those of ``refr_hyps``.
+
+    .. important::
+        It is assumed that the order of hypnograms are the same in ``refr_hyps`` and ``test_hyps``.
+        For example, the third hypnogram in ``refr_hyps`` and ``test_hyps`` come from the same sleep
+        session, and only differ in that they have different scorers.
+
+    .. seealso:: For comparing just two hypnograms, use :py:meth:`yasa.Hynogram.evaluate`.
 
     References
     ----------
@@ -159,6 +179,7 @@ class EpochByEpochEvaluation:
             h.scorer is not None for h in refr_hyps + test_hyps
         ), "all hypnograms must have a scorer name"
         for h1, h2 in zip((refr_hyps + test_hyps)[:-1], (refr_hyps + test_hyps)[1:]):
+            assert h1.freq == h2.freq, "all hypnograms must have the same freq"
             assert h1.labels == h2.labels, "all hypnograms must have the same labels"
             assert h1.mapping == h2.mapping, "all hypnograms must have the same mapping"
             assert h1.n_stages == h2.n_stages, "all hypnograms must have the same n_stages"
@@ -210,7 +231,7 @@ class EpochByEpochEvaluation:
         # labels = refr_hyps[sleep_ids[0]].labels.copy()  # To preserve YASA ordering
         # labels = [v for k, v in mapping_int.items() if k in skm_labels]  # To preserve YASA ordering
         prfs_wrapper = lambda df: skm.precision_recall_fscore_support(
-            *df.values.T, labels=skm_labels, average=None, zero_division=0
+            *df.values.T, beta=1, labels=skm_labels, average=None, zero_division=0
         )
         indiv_agree_ovr = (
             data
@@ -221,7 +242,7 @@ class EpochByEpochEvaluation:
             .explode()
             .apply(pd.Series)
             # Add metric labels and prepend to index, creating MultiIndex
-            .assign(metric=["precision", "recall", "f1", "support"] * len(refr_hyps))
+            .assign(metric=["precision", "recall", "fbeta", "support"] * len(refr_hyps))
             .set_index("metric", append=True)
             # Convert stage column names to string labels
             .rename_axis(columns="stage")
@@ -353,20 +374,13 @@ class EpochByEpochEvaluation:
         ##     Keywords could be applied as needed by checking f.__kwdefaults__
         ##     This would offer an easy way for users to add their own scorers with an arg as well.
         return {
-            "accuracy": skm.accuracy_score(t, p),
-            "kappa": skm.cohen_kappa_score(t, p),
-            "jaccard_micro": skm.jaccard_score(t, p, average="micro"),
-            "jaccard_macro": skm.jaccard_score(t, p, average="macro"),
-            "jaccard_weighted": skm.jaccard_score(t, p, average="weighted"),
-            "precision_micro": skm.precision_score(t, p, average="micro", zero_division=0),
-            "precision_macro": skm.precision_score(t, p, average="macro", zero_division=0),
-            "precision_weighted": skm.precision_score(t, p, average="weighted", zero_division=0),
-            "recall_micro": skm.recall_score(t, p, average="micro", zero_division=0),
-            "recall_macro": skm.recall_score(t, p, average="macro", zero_division=0),
-            "recall_weighted": skm.recall_score(t, p, average="weighted", zero_division=0),
-            "f1_micro": skm.f1_score(t, p, average="micro", zero_division=0),
-            "f1_macro": skm.f1_score(t, p, average="macro", zero_division=0),
-            "f1_weighted": skm.f1_score(t, p, average="weighted", zero_division=0),
+            "accuracy": skm.accuracy_score(t, p, normalize=True, sample_weight=None),
+            "balanced_acc": skm.balanced_accuracy_score(t, p, adjusted=False, sample_weight=None),
+            "kappa": skm.cohen_kappa_score(t, p, labels=None, weights=None, sample_weight=None),
+            "mcc": skm.matthews_corrcoef(t, p, sample_weight=None),
+            "precision": skm.precision_score(t, p, average="weighted", zero_division=0),
+            "recall": skm.recall_score(t, p, average="weighted", zero_division=0),
+            "fbeta": skm.fbeta_score(t, p, beta=1, average="weighted", zero_division=0),
         }
 
     def summary(self, by_stage=False, **kwargs):
@@ -451,7 +465,7 @@ class EpochByEpochEvaluation:
         test_sstats = pd.concat({self.test_scorer: test_sstats}, names=["scorer"])
         return pd.concat([refr_sstats, test_sstats])
 
-    def get_confusion_matrix(self, sleep_id=None):
+    def get_confusion_matrix(self, sleep_id=None, **kwargs):
         """
         Return a ``refr_hyp``/``test_hyp``confusion matrix from either a single session or all
         sessions concatenated together.
@@ -464,12 +478,21 @@ class EpochByEpochEvaluation:
             If None (default), cross-tabulation is derived from the entire group dataset.
             If a valid sleep ID, cross-tabulation is derived using only the reference and test
             scored hypnograms from that sleep session.
+        **kwargs : key, value pairs
+            Additional keyword arguments are passed to the :py:func:`pandas.crosstab` call.
 
         Returns
         -------
-        matrix : :py:class:`pandas.DataFrame`
-            A confusion matrix with ``refr_hyp`` stages as indices and ``test_hyp`` stages as
-            columns.
+        conf_matr : :py:class:`pandas.DataFrame`
+            A confusion matrix with stages from the reference scorer as indices and stages from the
+            test scorer as columns.
+
+        Examples
+        --------
+        Use ``**kwargs`` to add a "Total" column in the margins.
+
+        >>> ebe = yasa.EpochByEpochEvaluation(...)
+        >>> ebe.get_confusion_matrix(margins=True, margins_name="Total")
         """
         assert (
             sleep_id is None or sleep_id in self.sleep_ids
@@ -479,12 +502,7 @@ class EpochByEpochEvaluation:
         if sleep_id is not None:
             true = true.loc[sleep_id]
             pred = pred.loc[sleep_id]
-        matrix = (
-            pd.crosstab(true, pred, margins=True, margins_name="Total")
-            .rename(index=self._mapping_int, columns=self._mapping_int)
-            .astype(int)
-        )
-        return matrix
+        return pd.crosstab(true, pred).rename(index=self._mapping_int, columns=self._mapping_int)
 
     def plot_hypnograms(self, sleep_id=None, legend=True, ax=None, refr_kwargs={}, test_kwargs={}):
         """Plot the two hypnograms, where the reference hypnogram is overlaid on the test hypnogram.
