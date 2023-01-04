@@ -279,7 +279,7 @@ class EpochByEpochEvaluation:
         s = "s" if self._n_sleeps > 1 else ""
         return (
             f"<EpochByEpochEvaluation | Test hypnogram{s} scored by {self.test_scorer} evaluated "
-            f"against reference hypnogram{s} scored by {self.refr_scorer}, {self._n_sleeps} sleep"
+            f"against reference hypnogram{s} scored by {self.refr_scorer}, {self._n_sleeps} sleep "
             f"session{s}>\n"
             " - Use `.get_agreement()` to get agreement measures as a pandas.Series\n"
             " - Use `.plot_hypnograms()` to plot the two hypnograms overlaid\n"
@@ -877,7 +877,7 @@ class SleepStatsEvaluation:
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
         return (
-            f"<SleepStatsEvaluation | Test scorer {self.test_scorer} evaluated against reference"
+            f"<SleepStatsEvaluation | Test scorer {self.test_scorer} evaluated against reference "
             f"scorer {self.refr_scorer}, {self.n_sleeps} sleep sessions>\n"
             " - Use `.summary()` to get pass/fail values from various checks\n"
             " - Use `.plot_blandaltman()` to get a Bland-Altman-plot grid for sleep statistics\n"
