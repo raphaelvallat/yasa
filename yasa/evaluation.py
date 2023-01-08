@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 import pingouin as pg
 import sklearn.metrics as skm
+from scipy.stats import zscore
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -599,6 +600,8 @@ class EpochByEpochEvaluation:
                 refr_hyp = self.refr_hyps[self.sleep_ids[0]]
                 test_hyp = self.test_hyps[self.sleep_ids[0]]
             else:
+                return self.plot_hypnogram_group
+                return self.plot_group_hypno_hist()
                 raise NotImplementedError("Multi-session plotting is not currently supported")
         else:
             refr_hyp = self.refr_hyps[sleep_id]
@@ -617,6 +620,69 @@ class EpochByEpochEvaluation:
             else:
                 ax.legend()
         return ax
+
+    def plot_group_hypnogram_opt1(self, ax=None, **kwargs):
+        if ax is None:
+            ax = plt.gca()
+        palette = {"Inaccurate": "plum", "Accurate": "forestgreen"}
+        hue_order = list(palette)
+        hist_kwargs = dict(multiple="stack", stat="count", element="step", discrete=True, lw=0)
+        ser = self.data[self.refr_scorer].eq(self.data[self.test_scorer])
+        df = ser.rename("acc").replace({True: "Accurate", False: "Inaccurate"}).reset_index()
+        sns.histplot(
+            data=df, x="Epoch", hue="acc", hue_order=hue_order, palette=palette, ax=ax
+        )
+        ax.set_ylabel("Number of unique sleep sessions")
+        ax.set_xlabel("Epochs")
+        ax.margins(x=0, y=0)
+        return ax
+
+    def plot_group_hypnogram_opt2(self, ax=None, **kwargs):
+        from pingouin import compute_bootci
+
+        plot_kwargs = dict(lw=1, color="plum", alpha=1, label="7-epoch rolling average")
+        plot_kwargs.update(kwargs)
+        betw_kwargs = dict(lw=0, alpha=0.3, color=plot_kwargs["color"], label="95% bootstrapped CI")
+        if ax is None:
+            ax = plt.gca()
+        df = self.data[self.refr_scorer].eq(self.data[self.test_scorer]).rename("acc").reset_index()
+        probas =  df.groupby("Epoch")["acc"].mean()
+        ci = df.groupby("Epoch")["acc"].apply(compute_bootci, None, "mean").apply(pd.Series)
+        ci = ci.rename(columns={0: "low", 1: "high"})
+        probas = probas.rolling(10, center=True).mean()
+        ci = ci.rolling(10, center=True).mean()
+        ax.fill_between(ci.index, ci["low"], ci["high"], **betw_kwargs)
+        ax.plot(probas.index, probas, **plot_kwargs)
+        ax.set_ylabel("Accuracy across sleep sessions")
+        ax.set_xlabel("Epochs")
+        ax.set_xlim(0, len(probas))
+        ax.set_ylim(0, 1)
+        ax.legend()
+        return ax
+
+    def plot_group_hypnogram_opt3(self, figsize=(7, 10), **kwargs):
+        imshow_kwargs = dict(cmap="Blues", interpolation="none")
+        imshow_kwargs.update(kwargs)
+        n_rows = self.n_sleeps
+        freq = self.refr_hyps[self.sleep_ids[0]].freq
+        freq_secs = pd.Timedelta(freq).total_seconds()
+        fig, axes = plt.subplots(nrows=n_rows, figsize=figsize, sharex=True, sharey=False)
+        for ax, (subj, data) in zip(axes, self.data.groupby(level=0)):
+            img = data.values.T
+            extent = (0, freq_secs * img.shape[1], img.shape[0]-0.5, -0.5)
+            ax.imshow(img, extent=extent, aspect="auto", origin="upper", **imshow_kwargs)
+            ax.set_yticks([0, 1])
+            ax.set_yticklabels([self.refr_scorer, self.test_scorer])
+            ax.set_ylabel(subj, rotation=0, va="center")
+            ax.spines[["top", "bottom", "left", "right"]].set_visible(False)
+            if not ax.get_subplotspec().is_first_row():
+                ax.tick_params(left=False, labelleft=False)
+            if not ax.get_subplotspec().is_last_row():
+                ax.tick_params(bottom=False)
+                ax.set_xlabel("Time [s]")
+                ax.spines["bottom"].set_visible(False)
+        fig.align_ylabels()
+        return fig
 
     def plot_roc(self, sleep_id=None, palette=None, ax=None, **kwargs):
         """Plot ROC curves for each stage.
@@ -785,7 +851,7 @@ class SleepStatsEvaluation:
         refr_data.index.name = sleep_id_str
         test_data.index.name = sleep_id_str
 
-        # Get scorer differences
+        # Get scorer differences (aka discrepancies)
         diff_data = test_data.sub(refr_data)
 
         # Convert to MultiIndex with new scorer level
