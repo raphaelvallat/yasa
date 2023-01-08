@@ -1196,11 +1196,11 @@ def hypno_int_to_str(
     hypno : array_like
         The corresponding integer hypnogram.
     """
-    warnings.warn(
-        "The `yasa.hypno_int_to_str` function is deprecated and will be removed in v0.8. "
-        "Please use the `yasa.Hypnogram` class to create an hypnogram instead.",
-        FutureWarning,
-    )
+    # warnings.warn(
+    #     "The `yasa.hypno_int_to_str` function is deprecated and will be removed in v0.8. "
+    #     "Please use the `yasa.Hypnogram` class to create an hypnogram instead.",
+    #     FutureWarning,
+    # )
     assert isinstance(hypno, (list, np.ndarray, pd.Series)), "Not an array."
     hypno = pd.Series(np.asarray(hypno, dtype=int))
     return hypno.map(mapping_dict).values
