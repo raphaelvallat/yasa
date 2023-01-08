@@ -17,10 +17,12 @@ import numpy as np
 import pandas as pd
 import pingouin as pg
 import sklearn.metrics as skm
+from scipy.stats import zscore
 
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from yasa.io import set_log_level
 from yasa.plotting import plot_hypnogram
 
 
@@ -45,6 +47,12 @@ class EpochByEpochEvaluation:
 
     Many steps here are modeled after guidelines proposed in Menghini et al., 2021 [Menghini2021]_.
     See https://sri-human-sleep.github.io/sleep-trackers-performance/AnalyticalPipeline_v1.0.0.html
+
+    .. warning::
+        :py:class:`yasa.evaluation.EpochByEpochEvaluation` is a new YASA feature and the API is
+        subject to future change.
+
+    .. versionadded:: 0.7.0
 
     Parameters
     ----------
@@ -275,6 +283,7 @@ class EpochByEpochEvaluation:
         self._indiv_agree_avg = indiv_agree_avg
         self._indiv_agree_ovr = indiv_agree_ovr
         ## Q: Merge these to one individual agreement dataframe?
+        ##    Setting average="binary" to fill extra column in over dataframe
 
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
@@ -371,7 +380,9 @@ class EpochByEpochEvaluation:
         scores : dict
             A dictionary with scorer names (``str``) as keys and scores (``float``) as values.
         """
-        assert isinstance(weights, type(None)) or weights in df, "`weights` must be None or a column in `df`"
+        assert (
+            isinstance(weights, type(None)) or weights in df
+        ), "`weights` must be None or a column in `df`"
         if weights is not None:
             raise NotImplementedError("Custom `weights` not currently supported")
         t, p = zip(*df.values)  # Same as (df["col1"], df["col2"]) but teensy bit faster
@@ -528,16 +539,25 @@ class EpochByEpochEvaluation:
         kwargs = {"labels": self._skm_labels} | kwargs
         # Get confusion matrix for each individual sleep session
         ## Q: Should this be done during __init__ and accessible via attribute?
-        conf_mats = (self.data
+        ##    I'm a little unsure about what should happen in init and be accessed as a property
+        ##    vs what should require a function. Nothing takes so long that it feels like it
+        ##    couldn't just happen during __init__, leaving mostly just plotting functions as
+        ##    methods. But if that's the case, what's the benefit of being a class? Confused!!
+        conf_mats = (
+            self.data
             # Get confusion matrix for each individual sleep session
-            .groupby(level=0).apply(lambda df: skm.confusion_matrix(*df.values.T, **kwargs))
+            .groupby(level=0)
+            .apply(lambda df: skm.confusion_matrix(*df.values.T, **kwargs))
             # Expand results matrix out from single cell
-            .explode().apply(pd.Series)
+            .explode()
+            .apply(pd.Series)
             # Convert to MultiIndex with reference scorer as new level
             .assign(**{self.refr_scorer: self._skm_labels * self.n_sleeps})
-            .set_index(self.refr_scorer, append=True).rename_axis(columns=self.test_scorer)
+            .set_index(self.refr_scorer, append=True)
+            .rename_axis(columns=self.test_scorer)
             # Convert sleep stage columns and indices to strings
-            .rename(columns=self._skm_mapping).rename(columns=self._mapping_int)
+            .rename(columns=self._skm_mapping)
+            .rename(columns=self._mapping_int)
             .rename(index=self._skm_mapping, level=self.refr_scorer)
             .rename(index=self._mapping_int, level=self.refr_scorer)
         )
@@ -593,13 +613,15 @@ class EpochByEpochEvaluation:
         assert isinstance(test_kwargs, dict), "`test_kwargs` must be a dictionary"
         assert (
             not "ax" in refr_kwargs | test_kwargs
-        ), "ax can't be supplied to `kwargs_ref` or `test_kwargs`, use the `ax` keyword instead"
+        ), "'ax' can't be supplied to `refr_kwargs` or `test_kwargs`, use the `ax` keyword instead"
         if sleep_id is None:
             if self.n_sleeps == 1:
                 refr_hyp = self.refr_hyps[self.sleep_ids[0]]
                 test_hyp = self.test_hyps[self.sleep_ids[0]]
             else:
-                raise NotImplementedError("Multi-session plotting is not currently supported")
+                raise NotImplementedError(
+                    "Multi-session plotting is not currently supported. 3 options being tested!"
+                )
         else:
             refr_hyp = self.refr_hyps[sleep_id]
             test_hyp = self.test_hyps[sleep_id]
@@ -617,6 +639,67 @@ class EpochByEpochEvaluation:
             else:
                 ax.legend()
         return ax
+
+    def plot_group_hypnogram_opt1(self, ax=None, **kwargs):
+        if ax is None:
+            ax = plt.gca()
+        palette = {"Inaccurate": "plum", "Accurate": "forestgreen"}
+        hue_order = list(palette)
+        hist_kwargs = dict(multiple="stack", stat="count", element="step", discrete=True, lw=0)
+        ser = self.data[self.refr_scorer].eq(self.data[self.test_scorer])
+        df = ser.rename("acc").replace({True: "Accurate", False: "Inaccurate"}).reset_index()
+        sns.histplot(data=df, x="Epoch", hue="acc", hue_order=hue_order, palette=palette, ax=ax)
+        ax.set_ylabel("Number of unique sleep sessions")
+        ax.set_xlabel("Epochs")
+        ax.margins(x=0, y=0)
+        return ax
+
+    def plot_group_hypnogram_opt2(self, ax=None, **kwargs):
+        from pingouin import compute_bootci
+
+        plot_kwargs = dict(lw=1, color="plum", alpha=1, label="7-epoch rolling average")
+        plot_kwargs.update(kwargs)
+        betw_kwargs = dict(lw=0, alpha=0.3, color=plot_kwargs["color"], label="95% bootstrapped CI")
+        if ax is None:
+            ax = plt.gca()
+        df = self.data[self.refr_scorer].eq(self.data[self.test_scorer]).rename("acc").reset_index()
+        probas = df.groupby("Epoch")["acc"].mean()
+        ci = df.groupby("Epoch")["acc"].apply(compute_bootci, None, "mean").apply(pd.Series)
+        ci = ci.rename(columns={0: "low", 1: "high"})
+        probas = probas.rolling(10, center=True).mean()
+        ci = ci.rolling(10, center=True).mean()
+        ax.fill_between(ci.index, ci["low"], ci["high"], **betw_kwargs)
+        ax.plot(probas.index, probas, **plot_kwargs)
+        ax.set_ylabel("Accuracy across sleep sessions")
+        ax.set_xlabel("Epochs")
+        ax.set_xlim(0, len(probas))
+        ax.set_ylim(0, 1)
+        ax.legend()
+        return ax
+
+    def plot_group_hypnogram_opt3(self, figsize=(7, 10), **kwargs):
+        imshow_kwargs = dict(cmap="Blues", interpolation="none")
+        imshow_kwargs.update(kwargs)
+        n_rows = self.n_sleeps
+        freq = self.refr_hyps[self.sleep_ids[0]].freq
+        freq_secs = pd.Timedelta(freq).total_seconds()
+        fig, axes = plt.subplots(nrows=n_rows, figsize=figsize, sharex=True, sharey=False)
+        for ax, (subj, data) in zip(axes, self.data.groupby(level=0)):
+            img = data.values.T
+            extent = (0, freq_secs * img.shape[1], img.shape[0] - 0.5, -0.5)
+            ax.imshow(img, extent=extent, aspect="auto", origin="upper", **imshow_kwargs)
+            ax.set_yticks([0, 1])
+            ax.set_yticklabels([self.refr_scorer, self.test_scorer])
+            ax.set_ylabel(subj, rotation=0, va="center")
+            ax.spines[["top", "bottom", "left", "right"]].set_visible(False)
+            if not ax.get_subplotspec().is_first_row():
+                ax.tick_params(left=False, labelleft=False)
+            if not ax.get_subplotspec().is_last_row():
+                ax.tick_params(bottom=False)
+                ax.set_xlabel("Time [s]")
+                ax.spines["bottom"].set_visible(False)
+        fig.align_ylabels()
+        return fig
 
     def plot_roc(self, sleep_id=None, palette=None, ax=None, **kwargs):
         """Plot ROC curves for each stage.
@@ -652,6 +735,12 @@ class SleepStatsEvaluation:
     and YASA's automatic staging) by comparing their summary sleep statistics derived from multiple
     subjects or sessions.
 
+    .. warning::
+        :py:class:`yasa.evaluation.SleepStatsEvaluation` is a new YASA feature and the API is
+        subject to future change.
+
+    .. versionadded:: 0.7.0
+
     Parameters
     ----------
     refr_data : :py:class:`pandas.DataFrame`
@@ -666,12 +755,16 @@ class SleepStatsEvaluation:
         Name of the test scorer, used for labeling.
     alpha : float
         Alpha cutoff used for all three tests.
-    kwargs_normality : dict
+    normality_kwargs : dict
         Keywords arguments passed to the :py:func:`pingouin.normality` call.
-    kwargs_regression : dict
+    regression_kwargs : dict
         Keywords arguments passed to the :py:func:`pingouin.linear_regression` call.
-    kwargs_homoscedasticity : dict
+    homoscedasticity_kwargs : dict
         Keywords arguments passed to the :py:func:`pingouin.homoscedasticity` call.
+    verbose : bool or str
+        Verbose level. Default (False) will only print warning and error messages. The logging
+        levels are 'debug', 'info', 'warning', 'error', and 'critical'. For most users the choice is
+        between 'info' (or ``verbose=True``) and warning (``verbose=False``).
 
     Notes
     -----
@@ -691,15 +784,19 @@ class SleepStatsEvaluation:
     >>> import yasa
     >>>
     >>> # For this example, generate two fake datasets of sleep statistics
-    >>> hypsA = [yasa.simulate_hypnogram(tib=600, seed=i) for i in range(20)]
-    >>> hypsB = [h.simulate_similar(tib=600, seed=i) for i, h in enumerate(hypsA)]
-    >>> sstatsA = pd.Series(hypsA).map(lambda h: h.sleep_statistics()).apply(pd.Series)
-    >>> sstatsB = pd.Series(hypsB).map(lambda h: h.sleep_statistics()).apply(pd.Series)
-    >>> sstatsA.index = sstatsB.index = sstatsA.index.map(lambda x: f"sub-{x+1:03d}")
+    >>> hypsA = [yasa.simulate_hypnogram(tib=600, scorer="Ref", seed=i) for i in range(20)]
+    >>> hypsB = [h.simulate_similar(tib=600, scorer="Test", seed=i) for i, h in enumerate(hypsA)]
+    >>> # sstatsA = pd.Series(hypsA).map(lambda h: h.sleep_statistics()).apply(pd.Series)
+    >>> # sstatsB = pd.Series(hypsB).map(lambda h: h.sleep_statistics()).apply(pd.Series)
+    >>> # sstatsA.index = sstatsB.index = sstatsA.index.map(lambda x: f"sub-{x+1:03d}")
+    >>> ebe = yasa.EpochByEpochEvaluation(hypsA, hypsB)
+    >>> sstats = ebe.get_sleepstats()
+    >>> sstatsA = sstats.loc["Ref"]
+    >>> sstatsB = sstats.loc["Test"]
     >>>
     >>> sse = yasa.SleepStatsEvaluation(sstatsA, sstatsB)
     >>>
-    >>> sse.summary(descriptives=False)
+    >>> sse.summary()
            normal  unbiased  homoscedastic
     sstat
     %N1      True      True           True
@@ -755,10 +852,13 @@ class SleepStatsEvaluation:
         *,
         refr_scorer="Reference",
         test_scorer="Test",
-        kwargs_normality={"alpha": 0.05},
-        kwargs_regression={"alpha": 0.05},
-        kwargs_homoscedasticity={"alpha": 0.05},
+        normality_kwargs={"alpha": 0.05},
+        regression_kwargs={"alpha": 0.05},
+        homoscedasticity_kwargs={"alpha": 0.05},
+        verbose=True,
     ):
+        set_log_level(verbose)
+
         assert isinstance(refr_data, pd.DataFrame), "`refr_data` must be a pandas DataFrame"
         assert isinstance(test_data, pd.DataFrame), "`test_data` must be a pandas DataFrame"
         assert np.array_equal(
@@ -773,28 +873,28 @@ class SleepStatsEvaluation:
         assert isinstance(refr_scorer, str), "`refr_scorer` must be a string"
         assert isinstance(test_scorer, str), "`test_scorer` must be a string"
         assert refr_scorer != test_scorer, "`refr_scorer` and `test_scorer` must be unique"
-        assert isinstance(kwargs_normality, dict), "`kwargs_normality` must be a dictionary"
-        assert isinstance(kwargs_regression, dict), "`kwargs_regression` must be a dictionary"
-        assert isinstance(kwargs_homoscedasticity, dict), "`kwargs_homoscedasticity` must be a dict"
-        assert "alpha" in kwargs_normality, "`kwargs_normality` must include 'alpha'"
-        assert "alpha" in kwargs_regression, "`kwargs_regression` must include 'alpha'"
-        assert "alpha" in kwargs_homoscedasticity, "`kwargs_homoscedasticity` must include 'alpha'"
+        assert isinstance(normality_kwargs, dict), "`normality_kwargs` must be a dictionary"
+        assert isinstance(regression_kwargs, dict), "`regression_kwargs` must be a dictionary"
+        assert isinstance(homoscedasticity_kwargs, dict), "`homoscedasticity_kwargs` must be a dict"
+        assert "alpha" in normality_kwargs, "`normality_kwargs` must include 'alpha'"
+        assert "alpha" in regression_kwargs, "`regression_kwargs` must include 'alpha'"
+        assert "alpha" in homoscedasticity_kwargs, "`homoscedasticity_kwargs` must include 'alpha'"
 
         # If refr_data and test_data indices are unnamed, name them
         sleep_id_str = "sleep_id" if refr_data.index.name is None else refr_data.index.name
         refr_data.index.name = sleep_id_str
         test_data.index.name = sleep_id_str
 
-        # Get scorer differences
-        diff_data = test_data.sub(refr_data)
+        # Get scorer discrepancies (i.e., differences, test minus reference)
+        discrepancies = test_data.sub(refr_data)
 
         # Convert to MultiIndex with new scorer level
-        diff_data = pd.concat({"difference": diff_data}, names=["scorer"])
+        discrepancies = pd.concat({"difference": discrepancies}, names=["scorer"])
         refr_data = pd.concat({refr_scorer: refr_data}, names=["scorer"])
         test_data = pd.concat({test_scorer: test_data}, names=["scorer"])
 
         # Merge dataframes and reshape to long format
-        data = pd.concat([refr_data, test_data, diff_data])
+        data = pd.concat([refr_data, test_data, discrepancies])
         data = (
             data.melt(var_name="sstat", ignore_index=False)
             .reset_index()
@@ -810,9 +910,12 @@ class SleepStatsEvaluation:
             logger.warning(f"All {s} differences are zero, removing from evaluation.")
 
         ## NORMALITY ##
-        # Test reference data for normality at each sleep statistic
+        # Test difference data (test - reference) for normality at each sleep statistic
         normality = (
-            data.groupby("sstat")[refr_scorer].apply(pg.normality, **kwargs_normality).droplevel(-1)
+            data
+            .groupby("sstat")["difference"]
+            .apply(pg.normality, **normality_kwargs)
+            .droplevel(-1)
         )
 
         ## PROPORTIONAL BIAS ##
@@ -822,7 +925,7 @@ class SleepStatsEvaluation:
         for ss_name, ss_df in data.groupby("sstat"):
             # Regress the difference scores on the reference scores
             model = pg.linear_regression(
-                ss_df[refr_scorer], ss_df["difference"], **kwargs_regression
+                ss_df[refr_scorer], ss_df["difference"], **regression_kwargs
             )
             model.insert(0, "sstat", ss_name)
             # Extract sleep-level residuals for later homoscedasticity tests
@@ -843,11 +946,11 @@ class SleepStatsEvaluation:
         # Now remove intercept rows
         prop_bias = prop_bias.query("names != 'Intercept'").drop(columns="names").set_index("sstat")
         # Add True/False passing column for easy access
-        prop_bias["unbiased"] = prop_bias["pval"].ge(kwargs_regression["alpha"])
+        prop_bias["unbiased"] = prop_bias["pval"].ge(regression_kwargs["alpha"])
 
         ## Test each statistic for homoscedasticity ##
         columns = [refr_scorer, "difference", "pbias_residual"]
-        homoscedasticity_f = lambda df: pg.homoscedasticity(df[columns], **kwargs_homoscedasticity)
+        homoscedasticity_f = lambda df: pg.homoscedasticity(df[columns], **homoscedasticity_kwargs)
         homoscedasticity = data.groupby("sstat").apply(homoscedasticity_f).droplevel(-1)
 
         # Set attributes
@@ -860,8 +963,7 @@ class SleepStatsEvaluation:
         self._test_scorer = test_scorer
         self._sleep_id_str = sleep_id_str
         self._n_sleeps = data[sleep_id_str].nunique()
-        self._diff_data = diff_data.drop(columns=stats_nodiff)
-        # self._diff_data = data.pivot(index=sleep_id_str, columns="sstat", values="difference")
+        self._discrepancies = discrepancies.drop(columns=stats_nodiff)
 
     @property
     def data(self):
@@ -871,10 +973,10 @@ class SleepStatsEvaluation:
         return self._data
 
     @property
-    def diff_data(self):
+    def discrepancies(self):
         """A :py:class:`pandas.DataFrame` of ``test_data`` minus ``refr_data``."""
         # # Pivot for session-rows and statistic-columns
-        return self._diff_data
+        return self._discrepancies
 
     @property
     def refr_scorer(self):
@@ -986,7 +1088,7 @@ class SleepStatsEvaluation:
         if "cbar_kws" in kwargs:
             heatmap_kwargs["cbar_kws"].update(kwargs["cbar_kws"])
         heatmap_kwargs.update(kwargs)
-        table = self.diff_data[sleep_stats]
+        table = self.discrepancies[sleep_stats]
         # Normalize statistics (i.e., columns) between zero and one then convert to percentage
         table_norm = table.sub(table.min(), axis=1).div(table.apply(np.ptp)).multiply(100)
         if heatmap_kwargs["annot"]:
@@ -994,12 +1096,12 @@ class SleepStatsEvaluation:
             heatmap_kwargs["annot"] = table.to_numpy()
         return sns.heatmap(table_norm, **heatmap_kwargs)
 
-    def plot_discrepancies_dotplot(self, kwargs_pairgrid={"palette": "winter"}, **kwargs):
+    def plot_discrepancies_dotplot(self, pairgrid_kwargs={"palette": "winter"}, **kwargs):
         """Visualize session-level discrepancies, generally for outlier inspection.
 
         Parameters
         ----------
-        kwargs_pairgrid : dict
+        pairgrid_kwargs : dict
             Keywords arguments passed to the :py:class:`seaborn.PairGrid` call.
         **kwargs : key, value pairs
             Additional keyword arguments are passed to the :py:func:`seaborn.stripplot` call.
@@ -1017,19 +1119,19 @@ class SleepStatsEvaluation:
         .. plot::
             ## TODO: Example using x_vars
         """
-        assert isinstance(kwargs_pairgrid, dict), "`kwargs_pairgrid` must be a dict"
-        stripplot_kwargs = {"size": 10, "linewidth": 1, "edgecolor": "white"}
-        stripplot_kwargs.update(kwargs)
+        assert isinstance(pairgrid_kwargs, dict), "`pairgrid_kwargs` must be a dict"
+        kwargs_stripplot = {"size": 10, "linewidth": 1, "edgecolor": "white"}
+        kwargs_stripplot.update(kwargs)
         # Initialize the PairGrid
-        height = 0.3 * len(self.diff_data)
+        height = 0.3 * len(self.discrepancies)
         aspect = 0.6
-        pairgrid_kwargs = dict(hue=self.sleep_id_str, height=height, aspect=aspect)
-        pairgrid_kwargs.update(kwargs_pairgrid)
+        kwargs_pairgrid = dict(hue=self.sleep_id_str, height=height, aspect=aspect)
+        kwargs_pairgrid.update(pairgrid_kwargs)
         g = sns.PairGrid(
-            self.diff_data.reset_index(), y_vars=[self.sleep_id_str], **pairgrid_kwargs
+            self.discrepancies.reset_index(), y_vars=[self.sleep_id_str], **kwargs_pairgrid
         )
         # Draw the dots
-        g.map(sns.stripplot, orient="h", jitter=False, **stripplot_kwargs)
+        g.map(sns.stripplot, orient="h", jitter=False, **kwargs_stripplot)
         # Adjust aesthetics
         for ax in g.axes.flat:
             ax.set(title=ax.get_xlabel())
@@ -1040,14 +1142,14 @@ class SleepStatsEvaluation:
         sns.despine(left=True, bottom=True)
         return g
 
-    def plot_blandaltman(self, kwargs_facetgrid={}, **kwargs):
+    def plot_blandaltman(self, facetgrid_kwargs={}, **kwargs):
         """
 
         **Use col_order=sstats_order for plotting a subset.
 
         Parameters
         ----------
-        kwargs_facetgrid : dict
+        facetgrid_kwargs : dict
             Keyword arguments passed to the :py:class:`seaborn.FacetGrid` call.
         **kwargs : key, value pairs
             Additional keyword arguments are passed to :py:func:`pingouin.plot_blandaltman`.
@@ -1057,14 +1159,14 @@ class SleepStatsEvaluation:
         g : :py:class:`seaborn.FacetGrid`
             A :py:class:`seaborn.FacetGrid` with sleep statistics Bland-Altman plots on each axis.
         """
-        facetgrid_kwargs = dict(col_wrap=4, height=2, aspect=1, sharex=False, sharey=False)
-        facetgrid_kwargs.update(kwargs_facetgrid)
-        blandaltman_kwargs = dict(xaxis="y", annotate=False, edgecolor="black", facecolor="none")
-        blandaltman_kwargs.update(kwargs)
+        kwargs_facetgrid = dict(col_wrap=4, height=2, aspect=1, sharex=False, sharey=False)
+        kwargs_facetgrid.update(facetgrid_kwargs)
+        kwargs_blandaltman = dict(xaxis="y", annotate=False, edgecolor="black", facecolor="none")
+        kwargs_blandaltman.update(kwargs)
         # Initialize a grid of plots with an Axes for each sleep statistic
-        g = sns.FacetGrid(self.data, col="sstat", **facetgrid_kwargs)
+        g = sns.FacetGrid(self.data, col="sstat", **kwargs_facetgrid)
         # Draw Bland-Altman plot on each axis
-        g.map(pg.plot_blandaltman, self.test_scorer, self.refr_scorer, **blandaltman_kwargs)
+        g.map(pg.plot_blandaltman, self.test_scorer, self.refr_scorer, **kwargs_blandaltman)
         # Adjust aesthetics
         for ax in g.axes.flat:
             # Tidy-up axis limits with symmetric y-axis and minimal ticks
