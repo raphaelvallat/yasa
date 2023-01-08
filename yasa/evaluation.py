@@ -374,7 +374,9 @@ class EpochByEpochEvaluation:
         scores : dict
             A dictionary with scorer names (``str``) as keys and scores (``float``) as values.
         """
-        assert isinstance(weights, type(None)) or weights in df, "`weights` must be None or a column in `df`"
+        assert (
+            isinstance(weights, type(None)) or weights in df
+        ), "`weights` must be None or a column in `df`"
         if weights is not None:
             raise NotImplementedError("Custom `weights` not currently supported")
         t, p = zip(*df.values)  # Same as (df["col1"], df["col2"]) but teensy bit faster
@@ -531,16 +533,21 @@ class EpochByEpochEvaluation:
         kwargs = {"labels": self._skm_labels} | kwargs
         # Get confusion matrix for each individual sleep session
         ## Q: Should this be done during __init__ and accessible via attribute?
-        conf_mats = (self.data
+        conf_mats = (
+            self.data
             # Get confusion matrix for each individual sleep session
-            .groupby(level=0).apply(lambda df: skm.confusion_matrix(*df.values.T, **kwargs))
+            .groupby(level=0)
+            .apply(lambda df: skm.confusion_matrix(*df.values.T, **kwargs))
             # Expand results matrix out from single cell
-            .explode().apply(pd.Series)
+            .explode()
+            .apply(pd.Series)
             # Convert to MultiIndex with reference scorer as new level
             .assign(**{self.refr_scorer: self._skm_labels * self.n_sleeps})
-            .set_index(self.refr_scorer, append=True).rename_axis(columns=self.test_scorer)
+            .set_index(self.refr_scorer, append=True)
+            .rename_axis(columns=self.test_scorer)
             # Convert sleep stage columns and indices to strings
-            .rename(columns=self._skm_mapping).rename(columns=self._mapping_int)
+            .rename(columns=self._skm_mapping)
+            .rename(columns=self._mapping_int)
             .rename(index=self._skm_mapping, level=self.refr_scorer)
             .rename(index=self._mapping_int, level=self.refr_scorer)
         )
@@ -631,9 +638,7 @@ class EpochByEpochEvaluation:
         hist_kwargs = dict(multiple="stack", stat="count", element="step", discrete=True, lw=0)
         ser = self.data[self.refr_scorer].eq(self.data[self.test_scorer])
         df = ser.rename("acc").replace({True: "Accurate", False: "Inaccurate"}).reset_index()
-        sns.histplot(
-            data=df, x="Epoch", hue="acc", hue_order=hue_order, palette=palette, ax=ax
-        )
+        sns.histplot(data=df, x="Epoch", hue="acc", hue_order=hue_order, palette=palette, ax=ax)
         ax.set_ylabel("Number of unique sleep sessions")
         ax.set_xlabel("Epochs")
         ax.margins(x=0, y=0)
@@ -648,7 +653,7 @@ class EpochByEpochEvaluation:
         if ax is None:
             ax = plt.gca()
         df = self.data[self.refr_scorer].eq(self.data[self.test_scorer]).rename("acc").reset_index()
-        probas =  df.groupby("Epoch")["acc"].mean()
+        probas = df.groupby("Epoch")["acc"].mean()
         ci = df.groupby("Epoch")["acc"].apply(compute_bootci, None, "mean").apply(pd.Series)
         ci = ci.rename(columns={0: "low", 1: "high"})
         probas = probas.rolling(10, center=True).mean()
@@ -671,7 +676,7 @@ class EpochByEpochEvaluation:
         fig, axes = plt.subplots(nrows=n_rows, figsize=figsize, sharex=True, sharey=False)
         for ax, (subj, data) in zip(axes, self.data.groupby(level=0)):
             img = data.values.T
-            extent = (0, freq_secs * img.shape[1], img.shape[0]-0.5, -0.5)
+            extent = (0, freq_secs * img.shape[1], img.shape[0] - 0.5, -0.5)
             ax.imshow(img, extent=extent, aspect="auto", origin="upper", **imshow_kwargs)
             ax.set_yticks([0, 1])
             ax.set_yticklabels([self.refr_scorer, self.test_scorer])
@@ -902,7 +907,9 @@ class SleepStatsEvaluation:
         ## NORMALITY ##
         # Test difference data (test - reference) for normality at each sleep statistic
         normality = (
-            data.groupby("sstat")["difference"].apply(pg.normality, **kwargs_normality).droplevel(-1)
+            data.groupby("sstat")["difference"]
+            .apply(pg.normality, **kwargs_normality)
+            .droplevel(-1)
         )
 
         ## PROPORTIONAL BIAS ##
