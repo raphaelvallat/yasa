@@ -900,9 +900,9 @@ class SleepStatsEvaluation:
             logger.warning(f"All {s} differences are zero, removing from evaluation.")
 
         ## NORMALITY ##
-        # Test reference data for normality at each sleep statistic
+        # Test difference data (test - reference) for normality at each sleep statistic
         normality = (
-            data.groupby("sstat")[refr_scorer].apply(pg.normality, **kwargs_normality).droplevel(-1)
+            data.groupby("sstat")["difference"].apply(pg.normality, **kwargs_normality).droplevel(-1)
         )
 
         ## PROPORTIONAL BIAS ##
