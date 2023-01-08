@@ -22,6 +22,7 @@ from scipy.stats import zscore
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from yasa.io import set_log_level
 from yasa.plotting import plot_hypnogram
 
 
@@ -276,6 +277,7 @@ class EpochByEpochEvaluation:
         self._indiv_agree_avg = indiv_agree_avg
         self._indiv_agree_ovr = indiv_agree_ovr
         ## Q: Merge these to one individual agreement dataframe?
+        ##    Setting average="binary" to fill extra column in over dataframe
 
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
@@ -600,9 +602,9 @@ class EpochByEpochEvaluation:
                 refr_hyp = self.refr_hyps[self.sleep_ids[0]]
                 test_hyp = self.test_hyps[self.sleep_ids[0]]
             else:
-                return self.plot_hypnogram_group
-                return self.plot_group_hypno_hist()
-                raise NotImplementedError("Multi-session plotting is not currently supported")
+                raise NotImplementedError(
+                    "Multi-session plotting is not currently supported. 3 options being tested!"
+                )
         else:
             refr_hyp = self.refr_hyps[sleep_id]
             test_hyp = self.test_hyps[sleep_id]
@@ -738,6 +740,10 @@ class SleepStatsEvaluation:
         Keywords arguments passed to the :py:func:`pingouin.linear_regression` call.
     kwargs_homoscedasticity : dict
         Keywords arguments passed to the :py:func:`pingouin.homoscedasticity` call.
+    verbose : bool or str
+        Verbose level. Default (False) will only print warning and error messages. The logging
+        levels are 'debug', 'info', 'warning', 'error', and 'critical'. For most users the choice is
+        between 'info' (or ``verbose=True``) and warning (``verbose=False``).
 
     Notes
     -----
@@ -757,14 +763,29 @@ class SleepStatsEvaluation:
     >>> import yasa
     >>>
     >>> # For this example, generate two fake datasets of sleep statistics
-    >>> hypsA = [yasa.simulate_hypnogram(tib=600, seed=i) for i in range(20)]
-    >>> hypsB = [h.simulate_similar(tib=600, seed=i) for i, h in enumerate(hypsA)]
-    >>> sstatsA = pd.Series(hypsA).map(lambda h: h.sleep_statistics()).apply(pd.Series)
-    >>> sstatsB = pd.Series(hypsB).map(lambda h: h.sleep_statistics()).apply(pd.Series)
-    >>> sstatsA.index = sstatsB.index = sstatsA.index.map(lambda x: f"sub-{x+1:03d}")
+    >>> hypsA = [yasa.simulate_hypnogram(tib=600, scorer="Ref", seed=i) for i in range(20)]
+    >>> hypsB = [h.simulate_similar(tib=600, scorer="Test", seed=i) for i, h in enumerate(hypsA)]
+    >>> # sstatsA = pd.Series(hypsA).map(lambda h: h.sleep_statistics()).apply(pd.Series)
+    >>> # sstatsB = pd.Series(hypsB).map(lambda h: h.sleep_statistics()).apply(pd.Series)
+    >>> # sstatsA.index = sstatsB.index = sstatsA.index.map(lambda x: f"sub-{x+1:03d}")
+    >>> ebe = yasa.EpochByEpochEvaluation(hypsA, hypsB)
+    >>> sstats = ebe.get_sleepstats()
+    >>> sstatsA = sstats.loc["Ref"]
+    >>> sstatsB = sstats.loc["Test"]
     >>>
     >>> sse = yasa.SleepStatsEvaluation(sstatsA, sstatsB)
     >>>
+    >>> sse.summary()
+           normal  unbiased  homoscedastic
+    sstat
+    %N1      True      True           True
+    %N2      True      True           True
+    %N3      True      True           True
+    %REM    False      True           True
+    SE       True      True           True
+    SOL     False     False           True
+    TST      True      True           True
+
     >>> sse.summary(descriptives=False)
            normal  unbiased  homoscedastic
     sstat
@@ -824,7 +845,10 @@ class SleepStatsEvaluation:
         kwargs_normality={"alpha": 0.05},
         kwargs_regression={"alpha": 0.05},
         kwargs_homoscedasticity={"alpha": 0.05},
+        verbose=True,
     ):
+        set_log_level(verbose)
+
         assert isinstance(refr_data, pd.DataFrame), "`refr_data` must be a pandas DataFrame"
         assert isinstance(test_data, pd.DataFrame), "`test_data` must be a pandas DataFrame"
         assert np.array_equal(
