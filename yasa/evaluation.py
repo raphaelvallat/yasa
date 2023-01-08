@@ -269,6 +269,8 @@ class EpochByEpochEvaluation:
         self._test_hyps = test_hyps
         self._refr_scorer = refr_hyps[sleep_ids[0]].scorer
         self._test_scorer = test_hyps[sleep_ids[0]].scorer
+        self._skm_labels = skm_labels
+        self._skm_mapping = skm_mapping
         self._mapping_int = mapping_int
         self._indiv_agree_avg = indiv_agree_avg
         self._indiv_agree_ovr = indiv_agree_ovr
@@ -345,7 +347,7 @@ class EpochByEpochEvaluation:
         return self._indiv_agree_ovr
 
     @staticmethod
-    def multi_scorer(df):
+    def multi_scorer(df, weights=None):
         """Compute multiple agreement scores from a 2-column dataframe.
 
         This function offers convenience when calculating multiple agreement scores using
@@ -359,12 +361,23 @@ class EpochByEpochEvaluation:
             A :py:class:`pandas.DataFrame` with exactly 2 columns and length of *n_samples*.
             The first column contains true values and second column contains predicted values.
 
+        weights : None or :py:class:`pandas.Series`
+            Sample weights passed to underlying :py:mod:`sklearn.metrics` functions when possible.
+            If a :py:class:`pandas.Series`, the index must match exactly that of
+            :py:attr:`~yasa.Hypnogram.data`.
+
         Returns
         -------
         scores : dict
             A dictionary with scorer names (``str``) as keys and scores (``float``) as values.
         """
+        assert isinstance(weights, type(None)) or weights in df, "`weights` must be None or a column in `df`"
+        if weights is not None:
+            raise NotImplementedError("Custom `weights` not currently supported")
         t, p = zip(*df.values)  # Same as (df["col1"], df["col2"]) but teensy bit faster
+        # t = df["col1"].to_numpy()
+        # p = df["col2"].to_numpy()
+        w = df["col3"].to_numpy() if weights is not None else weights
         ## Q: The dictionary below be compiled more concisely if we were comfortable accessing
         ##    "private" attributes. I understand that's a no-no but I'm not exactly sure why.
         ##     For example:
@@ -374,13 +387,17 @@ class EpochByEpochEvaluation:
         ##     Keywords could be applied as needed by checking f.__kwdefaults__
         ##     This would offer an easy way for users to add their own scorers with an arg as well.
         return {
-            "accuracy": skm.accuracy_score(t, p, normalize=True, sample_weight=None),
-            "balanced_acc": skm.balanced_accuracy_score(t, p, adjusted=False, sample_weight=None),
-            "kappa": skm.cohen_kappa_score(t, p, labels=None, weights=None, sample_weight=None),
-            "mcc": skm.matthews_corrcoef(t, p, sample_weight=None),
-            "precision": skm.precision_score(t, p, average="weighted", zero_division=0),
-            "recall": skm.recall_score(t, p, average="weighted", zero_division=0),
-            "fbeta": skm.fbeta_score(t, p, beta=1, average="weighted", zero_division=0),
+            "accuracy": skm.accuracy_score(t, p, normalize=True, sample_weight=w),
+            "balanced_acc": skm.balanced_accuracy_score(t, p, adjusted=False, sample_weight=w),
+            "kappa": skm.cohen_kappa_score(t, p, labels=None, weights=None, sample_weight=w),
+            "mcc": skm.matthews_corrcoef(t, p, sample_weight=w),
+            "precision": skm.precision_score(
+                t, p, average="weighted", sample_weight=w, zero_division=0
+            ),
+            "recall": skm.recall_score(t, p, average="weighted", sample_weight=w, zero_division=0),
+            "fbeta": skm.fbeta_score(
+                t, p, beta=1, average="weighted", sample_weight=w, zero_division=0
+            ),
         }
 
     def summary(self, by_stage=False, **kwargs):
@@ -467,7 +484,7 @@ class EpochByEpochEvaluation:
         test_sstats = pd.concat({self.test_scorer: test_sstats}, names=["scorer"])
         return pd.concat([refr_sstats, test_sstats])
 
-    def get_confusion_matrix(self, sleep_id=None, **kwargs):
+    def get_confusion_matrix(self, sleep_id=None, agg_func=None, **kwargs):
         """
         Return a ``refr_hyp``/``test_hyp``confusion matrix from either a single session or all
         sessions concatenated together.
@@ -480,8 +497,17 @@ class EpochByEpochEvaluation:
             If None (default), cross-tabulation is derived from the entire group dataset.
             If a valid sleep ID, cross-tabulation is derived using only the reference and test
             scored hypnograms from that sleep session.
+        ## Q: This keyword (agg_func) is too complicated, but I wanted your opinion on the best
+        ##    approach. And I wanted you to see the returned value when agg_func=None because it
+        ##    might be best to generate during __init__ to set and access as an attribute.
+        agg_func : str, list, or None
+            If None (default), group results returns a :py:class:`~pandas.DataFrame` complete with
+            all individual sleep session results. If not None, group results returns a
+            :py:class:`~pandas.DataFrame` aggregated across individual sleep sessions where
+            ``agg_func`` is passed as ``func`` parameter in :py:meth:`pandas.DataFrame.groupby.agg`.
+            Ignored if ``sleep_id`` is not None.
         **kwargs : key, value pairs
-            Additional keyword arguments are passed to the :py:func:`pandas.crosstab` call.
+            Additional keyword arguments are passed to :py:func:`sklearn.metrics.confusion_matrix`.
 
         Returns
         -------
@@ -491,20 +517,39 @@ class EpochByEpochEvaluation:
 
         Examples
         --------
-        Use ``**kwargs`` to add a "Total" column in the margins.
-
         >>> ebe = yasa.EpochByEpochEvaluation(...)
-        >>> ebe.get_confusion_matrix(margins=True, margins_name="Total")
+        >>> ebe.get_confusion_matrix()  # Return results from all individual subjects
+        >>> ebe.get_confusion_matrix(agg_func=["mean", "std"])  # Return summary results
+        >>> ebe.get_confusion_matrix(sleep_id="sub-002")  # Return results from one subject
         """
         assert (
             sleep_id is None or sleep_id in self.sleep_ids
         ), "`sleep_id` must be None or a valid sleep ID"
-        true = self.data[self.refr_scorer]
-        pred = self.data[self.test_scorer]
-        if sleep_id is not None:
-            true = true.loc[sleep_id]
-            pred = pred.loc[sleep_id]
-        return pd.crosstab(true, pred).rename(index=self._mapping_int, columns=self._mapping_int)
+        kwargs = {"labels": self._skm_labels} | kwargs
+        # Get confusion matrix for each individual sleep session
+        ## Q: Should this be done during __init__ and accessible via attribute?
+        conf_mats = (self.data
+            # Get confusion matrix for each individual sleep session
+            .groupby(level=0).apply(lambda df: skm.confusion_matrix(*df.values.T, **kwargs))
+            # Expand results matrix out from single cell
+            .explode().apply(pd.Series)
+            # Convert to MultiIndex with reference scorer as new level
+            .assign(**{self.refr_scorer: self._skm_labels * self.n_sleeps})
+            .set_index(self.refr_scorer, append=True).rename_axis(columns=self.test_scorer)
+            # Convert sleep stage columns and indices to strings
+            .rename(columns=self._skm_mapping).rename(columns=self._mapping_int)
+            .rename(index=self._skm_mapping, level=self.refr_scorer)
+            .rename(index=self._mapping_int, level=self.refr_scorer)
+        )
+        if sleep_id is None:
+            if agg_func is None:
+                mat = conf_mats
+            else:
+                mat = conf_mats.groupby(self.refr_scorer).agg(agg_func)
+                mat.columns = mat.columns.map("_".join).set_names(self.test_scorer)
+        else:
+            mat = conf_mats.loc[sleep_id]
+        return mat
 
     def plot_hypnograms(self, sleep_id=None, legend=True, ax=None, refr_kwargs={}, test_kwargs={}):
         """Plot the two hypnograms, where the reference hypnogram is overlaid on the test hypnogram.
