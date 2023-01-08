@@ -316,15 +316,7 @@ class Hypnogram:
         )
 
     def __str__(self):
-        text_scorer = f", scored by {self.scorer}" if self.scorer is not None else ""
-        return (
-            f"<Hypnogram | {self.n_epochs} epochs x {self.freq} ({self.duration:.2f} minutes), "
-            f"{self.n_stages} stages{text_scorer}>\n"
-            " - Use `.hypno` to get the string values as a pandas.Series\n"
-            " - Use `.as_int()` to get the integer values as a pandas.Series\n"
-            " - Use `.plot_hypnogram()` to plot the hypnogram\n"
-            "See the online documentation for more details."
-        )
+        return self.__repr__()
 
     @property
     def hypno(self):
