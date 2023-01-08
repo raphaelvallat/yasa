@@ -533,6 +533,10 @@ class EpochByEpochEvaluation:
         kwargs = {"labels": self._skm_labels} | kwargs
         # Get confusion matrix for each individual sleep session
         ## Q: Should this be done during __init__ and accessible via attribute?
+        ##    I'm a little unsure about what should happen in init and be accessed as a property
+        ##    vs what should require a function. Nothing takes so long that it feels like it
+        ##    couldn't just happen during __init__, leaving mostly just plotting functions as
+        ##    methods. But if that's the case, what's the benefit of being a class? Confused!!
         conf_mats = (
             self.data
             # Get confusion matrix for each individual sleep session
@@ -791,17 +795,6 @@ class SleepStatsEvaluation:
     SOL     False     False           True
     TST      True      True           True
 
-    >>> sse.summary(descriptives=False)
-           normal  unbiased  homoscedastic
-    sstat
-    %N1      True      True           True
-    %N2      True      True           True
-    %N3      True      True           True
-    %REM    False      True           True
-    SE       True      True           True
-    SOL     False     False           True
-    TST      True      True           True
-
     Access more detailed statistical output of each test.
 
     >>> sse.normality
@@ -880,16 +873,16 @@ class SleepStatsEvaluation:
         refr_data.index.name = sleep_id_str
         test_data.index.name = sleep_id_str
 
-        # Get scorer differences (aka discrepancies)
-        diff_data = test_data.sub(refr_data)
+        # Get scorer discrepancies (i.e., differences, test minus reference)
+        discrepancies = test_data.sub(refr_data)
 
         # Convert to MultiIndex with new scorer level
-        diff_data = pd.concat({"difference": diff_data}, names=["scorer"])
+        discrepancies = pd.concat({"difference": discrepancies}, names=["scorer"])
         refr_data = pd.concat({refr_scorer: refr_data}, names=["scorer"])
         test_data = pd.concat({test_scorer: test_data}, names=["scorer"])
 
         # Merge dataframes and reshape to long format
-        data = pd.concat([refr_data, test_data, diff_data])
+        data = pd.concat([refr_data, test_data, discrepancies])
         data = (
             data.melt(var_name="sstat", ignore_index=False)
             .reset_index()
@@ -957,8 +950,7 @@ class SleepStatsEvaluation:
         self._test_scorer = test_scorer
         self._sleep_id_str = sleep_id_str
         self._n_sleeps = data[sleep_id_str].nunique()
-        self._diff_data = diff_data.drop(columns=stats_nodiff)
-        # self._diff_data = data.pivot(index=sleep_id_str, columns="sstat", values="difference")
+        self._discrepancies = discrepancies.drop(columns=stats_nodiff)
 
     @property
     def data(self):
@@ -968,10 +960,10 @@ class SleepStatsEvaluation:
         return self._data
 
     @property
-    def diff_data(self):
+    def discrepancies(self):
         """A :py:class:`pandas.DataFrame` of ``test_data`` minus ``refr_data``."""
         # # Pivot for session-rows and statistic-columns
-        return self._diff_data
+        return self._discrepancies
 
     @property
     def refr_scorer(self):
@@ -1083,7 +1075,7 @@ class SleepStatsEvaluation:
         if "cbar_kws" in kwargs:
             heatmap_kwargs["cbar_kws"].update(kwargs["cbar_kws"])
         heatmap_kwargs.update(kwargs)
-        table = self.diff_data[sleep_stats]
+        table = self.discrepancies[sleep_stats]
         # Normalize statistics (i.e., columns) between zero and one then convert to percentage
         table_norm = table.sub(table.min(), axis=1).div(table.apply(np.ptp)).multiply(100)
         if heatmap_kwargs["annot"]:
@@ -1118,12 +1110,12 @@ class SleepStatsEvaluation:
         stripplot_kwargs = {"size": 10, "linewidth": 1, "edgecolor": "white"}
         stripplot_kwargs.update(kwargs)
         # Initialize the PairGrid
-        height = 0.3 * len(self.diff_data)
+        height = 0.3 * len(self.discrepancies)
         aspect = 0.6
         pairgrid_kwargs = dict(hue=self.sleep_id_str, height=height, aspect=aspect)
         pairgrid_kwargs.update(kwargs_pairgrid)
         g = sns.PairGrid(
-            self.diff_data.reset_index(), y_vars=[self.sleep_id_str], **pairgrid_kwargs
+            self.discrepancies.reset_index(), y_vars=[self.sleep_id_str], **pairgrid_kwargs
         )
         # Draw the dots
         g.map(sns.stripplot, orient="h", jitter=False, **stripplot_kwargs)
