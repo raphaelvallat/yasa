@@ -48,6 +48,12 @@ class EpochByEpochEvaluation:
     Many steps here are modeled after guidelines proposed in Menghini et al., 2021 [Menghini2021]_.
     See https://sri-human-sleep.github.io/sleep-trackers-performance/AnalyticalPipeline_v1.0.0.html
 
+    .. warning::
+        :py:class:`yasa.evaluation.EpochByEpochEvaluation` is a new YASA feature and the API is
+        subject to future change.
+
+    .. versionadded:: 0.7.0
+
     Parameters
     ----------
     refr_hyps : iterable of :py:class:`yasa.Hypnogram`
@@ -607,7 +613,7 @@ class EpochByEpochEvaluation:
         assert isinstance(test_kwargs, dict), "`test_kwargs` must be a dictionary"
         assert (
             not "ax" in refr_kwargs | test_kwargs
-        ), "ax can't be supplied to `kwargs_ref` or `test_kwargs`, use the `ax` keyword instead"
+        ), "'ax' can't be supplied to `refr_kwargs` or `test_kwargs`, use the `ax` keyword instead"
         if sleep_id is None:
             if self.n_sleeps == 1:
                 refr_hyp = self.refr_hyps[self.sleep_ids[0]]
@@ -729,6 +735,12 @@ class SleepStatsEvaluation:
     and YASA's automatic staging) by comparing their summary sleep statistics derived from multiple
     subjects or sessions.
 
+    .. warning::
+        :py:class:`yasa.evaluation.SleepStatsEvaluation` is a new YASA feature and the API is
+        subject to future change.
+
+    .. versionadded:: 0.7.0
+
     Parameters
     ----------
     refr_data : :py:class:`pandas.DataFrame`
@@ -743,11 +755,11 @@ class SleepStatsEvaluation:
         Name of the test scorer, used for labeling.
     alpha : float
         Alpha cutoff used for all three tests.
-    kwargs_normality : dict
+    normality_kwargs : dict
         Keywords arguments passed to the :py:func:`pingouin.normality` call.
-    kwargs_regression : dict
+    regression_kwargs : dict
         Keywords arguments passed to the :py:func:`pingouin.linear_regression` call.
-    kwargs_homoscedasticity : dict
+    homoscedasticity_kwargs : dict
         Keywords arguments passed to the :py:func:`pingouin.homoscedasticity` call.
     verbose : bool or str
         Verbose level. Default (False) will only print warning and error messages. The logging
@@ -840,9 +852,9 @@ class SleepStatsEvaluation:
         *,
         refr_scorer="Reference",
         test_scorer="Test",
-        kwargs_normality={"alpha": 0.05},
-        kwargs_regression={"alpha": 0.05},
-        kwargs_homoscedasticity={"alpha": 0.05},
+        normality_kwargs={"alpha": 0.05},
+        regression_kwargs={"alpha": 0.05},
+        homoscedasticity_kwargs={"alpha": 0.05},
         verbose=True,
     ):
         set_log_level(verbose)
@@ -861,12 +873,12 @@ class SleepStatsEvaluation:
         assert isinstance(refr_scorer, str), "`refr_scorer` must be a string"
         assert isinstance(test_scorer, str), "`test_scorer` must be a string"
         assert refr_scorer != test_scorer, "`refr_scorer` and `test_scorer` must be unique"
-        assert isinstance(kwargs_normality, dict), "`kwargs_normality` must be a dictionary"
-        assert isinstance(kwargs_regression, dict), "`kwargs_regression` must be a dictionary"
-        assert isinstance(kwargs_homoscedasticity, dict), "`kwargs_homoscedasticity` must be a dict"
-        assert "alpha" in kwargs_normality, "`kwargs_normality` must include 'alpha'"
-        assert "alpha" in kwargs_regression, "`kwargs_regression` must include 'alpha'"
-        assert "alpha" in kwargs_homoscedasticity, "`kwargs_homoscedasticity` must include 'alpha'"
+        assert isinstance(normality_kwargs, dict), "`normality_kwargs` must be a dictionary"
+        assert isinstance(regression_kwargs, dict), "`regression_kwargs` must be a dictionary"
+        assert isinstance(homoscedasticity_kwargs, dict), "`homoscedasticity_kwargs` must be a dict"
+        assert "alpha" in normality_kwargs, "`normality_kwargs` must include 'alpha'"
+        assert "alpha" in regression_kwargs, "`regression_kwargs` must include 'alpha'"
+        assert "alpha" in homoscedasticity_kwargs, "`homoscedasticity_kwargs` must include 'alpha'"
 
         # If refr_data and test_data indices are unnamed, name them
         sleep_id_str = "sleep_id" if refr_data.index.name is None else refr_data.index.name
@@ -900,8 +912,9 @@ class SleepStatsEvaluation:
         ## NORMALITY ##
         # Test difference data (test - reference) for normality at each sleep statistic
         normality = (
-            data.groupby("sstat")["difference"]
-            .apply(pg.normality, **kwargs_normality)
+            data
+            .groupby("sstat")["difference"]
+            .apply(pg.normality, **normality_kwargs)
             .droplevel(-1)
         )
 
@@ -912,7 +925,7 @@ class SleepStatsEvaluation:
         for ss_name, ss_df in data.groupby("sstat"):
             # Regress the difference scores on the reference scores
             model = pg.linear_regression(
-                ss_df[refr_scorer], ss_df["difference"], **kwargs_regression
+                ss_df[refr_scorer], ss_df["difference"], **regression_kwargs
             )
             model.insert(0, "sstat", ss_name)
             # Extract sleep-level residuals for later homoscedasticity tests
@@ -933,11 +946,11 @@ class SleepStatsEvaluation:
         # Now remove intercept rows
         prop_bias = prop_bias.query("names != 'Intercept'").drop(columns="names").set_index("sstat")
         # Add True/False passing column for easy access
-        prop_bias["unbiased"] = prop_bias["pval"].ge(kwargs_regression["alpha"])
+        prop_bias["unbiased"] = prop_bias["pval"].ge(regression_kwargs["alpha"])
 
         ## Test each statistic for homoscedasticity ##
         columns = [refr_scorer, "difference", "pbias_residual"]
-        homoscedasticity_f = lambda df: pg.homoscedasticity(df[columns], **kwargs_homoscedasticity)
+        homoscedasticity_f = lambda df: pg.homoscedasticity(df[columns], **homoscedasticity_kwargs)
         homoscedasticity = data.groupby("sstat").apply(homoscedasticity_f).droplevel(-1)
 
         # Set attributes
@@ -1083,12 +1096,12 @@ class SleepStatsEvaluation:
             heatmap_kwargs["annot"] = table.to_numpy()
         return sns.heatmap(table_norm, **heatmap_kwargs)
 
-    def plot_discrepancies_dotplot(self, kwargs_pairgrid={"palette": "winter"}, **kwargs):
+    def plot_discrepancies_dotplot(self, pairgrid_kwargs={"palette": "winter"}, **kwargs):
         """Visualize session-level discrepancies, generally for outlier inspection.
 
         Parameters
         ----------
-        kwargs_pairgrid : dict
+        pairgrid_kwargs : dict
             Keywords arguments passed to the :py:class:`seaborn.PairGrid` call.
         **kwargs : key, value pairs
             Additional keyword arguments are passed to the :py:func:`seaborn.stripplot` call.
@@ -1106,19 +1119,19 @@ class SleepStatsEvaluation:
         .. plot::
             ## TODO: Example using x_vars
         """
-        assert isinstance(kwargs_pairgrid, dict), "`kwargs_pairgrid` must be a dict"
-        stripplot_kwargs = {"size": 10, "linewidth": 1, "edgecolor": "white"}
-        stripplot_kwargs.update(kwargs)
+        assert isinstance(pairgrid_kwargs, dict), "`pairgrid_kwargs` must be a dict"
+        kwargs_stripplot = {"size": 10, "linewidth": 1, "edgecolor": "white"}
+        kwargs_stripplot.update(kwargs)
         # Initialize the PairGrid
         height = 0.3 * len(self.discrepancies)
         aspect = 0.6
-        pairgrid_kwargs = dict(hue=self.sleep_id_str, height=height, aspect=aspect)
-        pairgrid_kwargs.update(kwargs_pairgrid)
+        kwargs_pairgrid = dict(hue=self.sleep_id_str, height=height, aspect=aspect)
+        kwargs_pairgrid.update(pairgrid_kwargs)
         g = sns.PairGrid(
-            self.discrepancies.reset_index(), y_vars=[self.sleep_id_str], **pairgrid_kwargs
+            self.discrepancies.reset_index(), y_vars=[self.sleep_id_str], **kwargs_pairgrid
         )
         # Draw the dots
-        g.map(sns.stripplot, orient="h", jitter=False, **stripplot_kwargs)
+        g.map(sns.stripplot, orient="h", jitter=False, **kwargs_stripplot)
         # Adjust aesthetics
         for ax in g.axes.flat:
             ax.set(title=ax.get_xlabel())
@@ -1129,14 +1142,14 @@ class SleepStatsEvaluation:
         sns.despine(left=True, bottom=True)
         return g
 
-    def plot_blandaltman(self, kwargs_facetgrid={}, **kwargs):
+    def plot_blandaltman(self, facetgrid_kwargs={}, **kwargs):
         """
 
         **Use col_order=sstats_order for plotting a subset.
 
         Parameters
         ----------
-        kwargs_facetgrid : dict
+        facetgrid_kwargs : dict
             Keyword arguments passed to the :py:class:`seaborn.FacetGrid` call.
         **kwargs : key, value pairs
             Additional keyword arguments are passed to :py:func:`pingouin.plot_blandaltman`.
@@ -1146,14 +1159,14 @@ class SleepStatsEvaluation:
         g : :py:class:`seaborn.FacetGrid`
             A :py:class:`seaborn.FacetGrid` with sleep statistics Bland-Altman plots on each axis.
         """
-        facetgrid_kwargs = dict(col_wrap=4, height=2, aspect=1, sharex=False, sharey=False)
-        facetgrid_kwargs.update(kwargs_facetgrid)
-        blandaltman_kwargs = dict(xaxis="y", annotate=False, edgecolor="black", facecolor="none")
-        blandaltman_kwargs.update(kwargs)
+        kwargs_facetgrid = dict(col_wrap=4, height=2, aspect=1, sharex=False, sharey=False)
+        kwargs_facetgrid.update(facetgrid_kwargs)
+        kwargs_blandaltman = dict(xaxis="y", annotate=False, edgecolor="black", facecolor="none")
+        kwargs_blandaltman.update(kwargs)
         # Initialize a grid of plots with an Axes for each sleep statistic
-        g = sns.FacetGrid(self.data, col="sstat", **facetgrid_kwargs)
+        g = sns.FacetGrid(self.data, col="sstat", **kwargs_facetgrid)
         # Draw Bland-Altman plot on each axis
-        g.map(pg.plot_blandaltman, self.test_scorer, self.refr_scorer, **blandaltman_kwargs)
+        g.map(pg.plot_blandaltman, self.test_scorer, self.refr_scorer, **kwargs_blandaltman)
         # Adjust aesthetics
         for ax in g.axes.flat:
             # Tidy-up axis limits with symmetric y-axis and minimal ticks
