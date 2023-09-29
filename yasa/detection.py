@@ -2330,6 +2330,7 @@ def rem_detect(
     include=4,
     amplitude=(50, 325),
     duration=(0.3, 1.2),
+    relative_prominence=0.8,
     freq_rem=(0.5, 5),
     remove_outliers=False,
     verbose=False,
@@ -2387,6 +2388,9 @@ def rem_detect(
     duration : tuple or list
         The minimum and maximum duration of the REMs.
         Default is 0.3 to 1.2 seconds.
+    relative_prominence : float
+        Relative prominence used to detect the peaks. The actual prominence is computed
+        by multiplying relative prominence by the minimal amplitude. Default is 0.8.
     freq_rem : tuple or list
         Frequency range of REMs. Default is 0.5 to 5 Hz.
     remove_outliers : boolean
@@ -2493,7 +2497,7 @@ def rem_detect(
         negp,
         height=(hmin, hmax),
         distance=(duration[0] * sf),
-        prominence=(0.8 * hmin),
+        prominence=(relative_prominence * hmin),
         wlen=(duration[1] * sf),
     )
 
