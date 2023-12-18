@@ -443,115 +443,6 @@ class EpochByEpochAgreement:
             agreement = agreement.reset_index(level=1, drop=True)
         return agreement
 
-    def summary(self, by_stage=False, **kwargs):
-        """Return group-level agreement scores.
-
-        Default aggregated measures are
-
-        Parameters
-        ----------
-        self : :py:class:`~yasa.evaluation.EpochByEpochAgreement`
-            A :py:class:`~yasa.evaluation.EpochByEpochAgreement` instance.
-        by_stage : bool
-            If ``False`` (default), ``summary`` will include agreement scores derived from
-            average-based metrics. If ``True``, returned ``summary`` :py:class:`~pandas.DataFrame`
-            will include agreement scores for each sleep stage, derived from one-vs-rest metrics.
-        **kwargs : key, value pairs
-            Additional keyword arguments are passed to :py:meth:`pandas.DataFrame.groupby.agg`.
-            This can be used to customize the descriptive statistics returned.
-
-        Returns
-        -------
-        summary : :py:class:`pandas.DataFrame`
-            A :py:class:`pandas.DataFrame` summarizing agreement scores across the entire dataset
-            with descriptive statistics.
-
-            >>> ebe = yasa.EpochByEpochAgreement(...)
-            >>> agreement = ebe.get_agreement()
-            >>> ebe.summary()
-
-            This will give a :py:class:`~pandas.DataFrame` where each row is an agreement metric and
-            each column is a descriptive statistic (e.g., mean, standard deviation).
-            To control the descriptive statistics included as columns:
-
-            >>> ebe.summary(func=["count", "mean", "sem"])
-        """
-        assert self.n_sleeps > 1, (
-            "Summary scores can not be computed with only one hypnogram pair."
-        )
-        assert isinstance(by_stage, bool), "`by_stage` must be True or False"
-        if by_stage:
-            assert hasattr(self, "_agreement_bystage"), (
-                "Must run `self.get_agreement_bystage` before obtaining by_stage summary results."
-            )
-        else:
-            assert hasattr(self, "_agreement"), (
-                "Must run `self.get_agreement` before obtaining summary results."
-            )
-        # Create a function for getting mean absolute deviation
-        mad = lambda df: (df - df.mean()).abs().mean()
-        mad.__name__ = "mad"  # Pandas uses this lambda attribute to name the aggregated column
-        # Merge default and user kwargs
-        agg_kwargs = {"func": [mad, "mean", "std", "min", "median", "max"]} | kwargs
-        if by_stage:
-            summary = (
-                self
-                .agreement_bystage.groupby("stage")
-                .agg(**agg_kwargs)
-                .stack(level=0)
-                .rename_axis(["stage", "metric"])
-            )
-        else:
-            summary = self._agreement.agg(**agg_kwargs).T.rename_axis("metric")
-            ## Q: Should we include a column that calculates agreement treating all hypnograms as
-            ##    coming from one individual? Others sometimes report it, though I find it mostly
-            ##    meaningless because of possible n_epochs imbalances between subjects. I vote no.
-            ##    >> summary.insert(0, "all", self.multi_scorer(self.data))
-            ##    Alternatively, we could remove the `by_stage` parameter and stack these into
-            ##    one merged DataFrame where the results that are *not* by-stage are included
-            ##    with an "all" stage label:
-            ##    >>> summary = (
-            ##    >>>     summary.assign(stage="all").set_index("stage", append=True).swaplevel()
-            ##    >>> )
-            ##    >>> summary = pd.concat([summary, summary_ovr]).sort_index()
-        return summary
-
-    def get_sleep_stats(self):
-        """
-        Return a :py:class:`pandas.DataFrame` of sleep statistics for each hypnogram derived from
-        both reference and observed scorers.
-
-        .. seealso:: :py:meth:`yasa.Hypnogram.sleep_statistics`
-
-        .. seealso:: :py:class:`yasa.SleepStatsAgreement`
-
-        Parameters
-        ----------
-        self : :py:class:`yasa.EpochByEpochAgreement`
-            A :py:class:`yasa.EpochByEpochAgreement` instance.
-
-        Returns
-        -------
-        sstats : :py:class:`pandas.DataFrame`
-            A :py:class:`~pandas.DataFrame` with sleep statistics as columns and two rows for each
-            individual (one for reference scorer and another for test scorer).
-        """
-        # Get all sleep statistics
-        ref_sstats = pd.DataFrame({s: h.sleep_statistics() for s, h in self._ref_hyps.items()})
-        obs_sstats = pd.DataFrame({s: h.sleep_statistics() for s, h in self._obs_hyps.items()})
-        # Reshape and name axis
-        ref_sstats = ref_sstats.T.rename_axis("sleep_id")
-        obs_sstats = obs_sstats.T.rename_axis("sleep_id")
-        # Convert to MultiIndex with new scorer level
-        ref_sstats = pd.concat({self.ref_scorer: ref_sstats}, names=["scorer"])
-        obs_sstats = pd.concat({self.obs_scorer: obs_sstats}, names=["scorer"])
-        # Concatenate into one DataFrame
-        sstats = pd.concat([ref_sstats, obs_sstats])
-        # Remove the MultiIndex if just one session being evaluated
-        if self.n_sleeps == 1:
-            sstats = sstats.reset_index(level=1, drop=True)
-        return sstats
-
     def get_confusion_matrix(self, sleep_id=None, agg_func=None, **kwargs):
         """
         Return a ``ref_hyp``/``obs_hyp``confusion matrix from either a single session or all
@@ -665,6 +556,42 @@ class EpochByEpochAgreement:
             mat = confusion_matrices.loc[sleep_id]
         return mat
 
+    def get_sleep_stats(self):
+        """
+        Return a :py:class:`pandas.DataFrame` of sleep statistics for each hypnogram derived from
+        both reference and observed scorers.
+
+        .. seealso:: :py:meth:`yasa.Hypnogram.sleep_statistics`
+
+        .. seealso:: :py:class:`yasa.SleepStatsAgreement`
+
+        Parameters
+        ----------
+        self : :py:class:`yasa.EpochByEpochAgreement`
+            A :py:class:`yasa.EpochByEpochAgreement` instance.
+
+        Returns
+        -------
+        sstats : :py:class:`pandas.DataFrame`
+            A :py:class:`~pandas.DataFrame` with sleep statistics as columns and two rows for each
+            individual (one for reference scorer and another for test scorer).
+        """
+        # Get all sleep statistics
+        ref_sstats = pd.DataFrame({s: h.sleep_statistics() for s, h in self._ref_hyps.items()})
+        obs_sstats = pd.DataFrame({s: h.sleep_statistics() for s, h in self._obs_hyps.items()})
+        # Reshape and name axis
+        ref_sstats = ref_sstats.T.rename_axis("sleep_id")
+        obs_sstats = obs_sstats.T.rename_axis("sleep_id")
+        # Convert to MultiIndex with new scorer level
+        ref_sstats = pd.concat({self.ref_scorer: ref_sstats}, names=["scorer"])
+        obs_sstats = pd.concat({self.obs_scorer: obs_sstats}, names=["scorer"])
+        # Concatenate into one DataFrame
+        sstats = pd.concat([ref_sstats, obs_sstats])
+        # Remove the MultiIndex if just one session being evaluated
+        if self.n_sleeps == 1:
+            sstats = sstats.reset_index(level=1, drop=True)
+        return sstats
+
     def plot_hypnograms(self, sleep_id=None, legend=True, ax=None, ref_kwargs={}, obs_kwargs={}):
         """Plot the two hypnograms of one session overlapping on the same axis.
 
@@ -750,6 +677,68 @@ class EpochByEpochAgreement:
             else:
                 ax.legend()
         return ax
+
+    def summary(self, by_stage=False, **kwargs):
+        """Return group-level agreement scores.
+
+        Default aggregated measures are
+
+        Parameters
+        ----------
+        self : :py:class:`~yasa.evaluation.EpochByEpochAgreement`
+            A :py:class:`~yasa.evaluation.EpochByEpochAgreement` instance.
+        by_stage : bool
+            If ``False`` (default), ``summary`` will include agreement scores derived from
+            average-based metrics. If ``True``, returned ``summary`` :py:class:`~pandas.DataFrame`
+            will include agreement scores for each sleep stage, derived from one-vs-rest metrics.
+        **kwargs : key, value pairs
+            Additional keyword arguments are passed to :py:meth:`pandas.DataFrame.groupby.agg`.
+            This can be used to customize the descriptive statistics returned.
+
+        Returns
+        -------
+        summary : :py:class:`pandas.DataFrame`
+            A :py:class:`pandas.DataFrame` summarizing agreement scores across the entire dataset
+            with descriptive statistics.
+
+            >>> ebe = yasa.EpochByEpochAgreement(...)
+            >>> agreement = ebe.get_agreement()
+            >>> ebe.summary()
+
+            This will give a :py:class:`~pandas.DataFrame` where each row is an agreement metric and
+            each column is a descriptive statistic (e.g., mean, standard deviation).
+            To control the descriptive statistics included as columns:
+
+            >>> ebe.summary(func=["count", "mean", "sem"])
+        """
+        assert self.n_sleeps > 1, (
+            "Summary scores can not be computed with only one hypnogram pair."
+        )
+        assert isinstance(by_stage, bool), "`by_stage` must be True or False"
+        if by_stage:
+            assert hasattr(self, "_agreement_bystage"), (
+                "Must run `self.get_agreement_bystage` before obtaining by_stage summary results."
+            )
+        else:
+            assert hasattr(self, "_agreement"), (
+                "Must run `self.get_agreement` before obtaining summary results."
+            )
+        # Create a function for getting mean absolute deviation
+        mad = lambda df: (df - df.mean()).abs().mean()
+        mad.__name__ = "mad"  # Pandas uses this lambda attribute to name the aggregated column
+        # Merge default and user kwargs
+        agg_kwargs = {"func": [mad, "mean", "std", "min", "median", "max"]} | kwargs
+        if by_stage:
+            summary = (
+                self
+                .agreement_bystage.groupby("stage")
+                .agg(**agg_kwargs)
+                .stack(level=0)
+                .rename_axis(["stage", "metric"])
+            )
+        else:
+            summary = self._agreement.agg(**agg_kwargs).T.rename_axis("metric")
+        return summary
 
 
 ################################################################################
