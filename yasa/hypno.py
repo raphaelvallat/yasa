@@ -10,7 +10,7 @@ import pandas as pd
 from yasa.io import set_log_level
 from yasa.plotting import plot_hypnogram
 from yasa.sleepstats import transition_matrix
-from yasa.evaluation import EpochByEpochEvaluation
+from yasa.evaluation import EpochByEpochAgreement
 from pandas.api.types import CategoricalDtype
 
 __all__ = [
@@ -571,42 +571,46 @@ class Hypnogram:
             scorer=self.scorer,
         )
 
-    def evaluate(self, test_hyp):
+    def evaluate(self, obs_hyp):
         """Evaluate agreement between two hypnograms of the same sleep session.
 
-        Typically the reference hypnogram (i.e., ``self``) is a manually-scored hypnogram and the
-        test hypnogram (i.e., ``test_hyp``) is a hypnogram from an actigraphy/wearable device or
-        automated scorer (e.g., :py:meth:`yasa.SleepStaging.predict`).
+        For example, the reference hypnogram (i.e., ``self``) might be a manually-scored hypnogram
+        and the reference hypnogram (i.e., ``ref_hyp``) might be a hypnogram from actigraphy, a
+        wearable device, or an automated scorer (e.g., :py:meth:`yasa.SleepStaging.predict`).
 
         Parameters
         ----------
         self : :py:class:`yasa.Hypnogram`
             Reference or ground-truth hypnogram.
-        test_hyp : :py:class:`yasa.Hypnogram`
-            The test or to-be-evaluated hypnogram.
+        obs_hyp : :py:class:`yasa.Hypnogram`
+            The observed or to-be-evaluated hypnogram.
 
         Returns
         -------
-        ebe : :py:class:`yasa.EpochByEpochEvaluation`
-            See :py:class:`yasa.EpochByEpochEvaluation` documentation for more detail.
+        ebe : :py:class:`yasa.EpochByEpochAgreement`
+            See :py:class:`~yasa.EpochByEpochAgreement` documentation for more detail.
 
         Examples
         --------
+        >>> from yasa import simulate_hypnogram
+        >>> hyp_a = simulate_hypnogram(tib=90, scorer="AASM", seed=8)
+        >>> hyp_b = hyp_a.simulate_similar(scorer="YASA", seed=9)
+        >>> ebe = hyp_a.evaluate(hyp_b)
+        >>> ebe.get_agreement().round(3)
+        accuracy        0.550
+        balanced_acc    0.355
+        kappa           0.227
+        mcc             0.231
+        precision       0.515
+        recall          0.550
+        fbeta           0.524
+        Name: agreement, dtype: float64
+
         .. plot::
 
-            >>> import yasa
-            >>> hypno_ref = yasa.simulate_hypno(tib=600, seed=11)
-            >>> hypno_ref = yasa.Hypnogram(hypno_ref, scorer="Rater1")
-            >>> _, true_probas = hypno_ref.transition_matrix()
-            >>> hypno_test = yasa.simulate_hypno(tib=600, seed=12, trans_probas=true_probas)
-            >>> hypno_test = yasa.Hypnogram(hypno_test, scorer="Rater2")
-            >>> ebe = hypno_ref.evaluate(hypno_test)
-            >>> conf = ebe.get_confusion_matrix()
-            >>> perf = ebe.summary()
-            >>> # Plot the overlapping hypnograms
             >>> ebe.plot_hypnograms()
         """
-        return EpochByEpochEvaluation([self], [test_hyp])
+        return EpochByEpochAgreement([self], [obs_hyp])
 
     def find_periods(self, threshold="5min", equal_length=False):
         """Find sequences of consecutive values exceeding a certain duration in hypnogram.
