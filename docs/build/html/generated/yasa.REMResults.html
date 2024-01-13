@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.REMResults &#8212; yasa 0.6.3 documentation</title>
-    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>yasa.REMResults &#8212; yasa 0.6.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
     <script src="../_static/clipboard.min.js"></script>
     <script src="../_static/copybutton.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -26,10 +26,10 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js "></script>
-<script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
 
   </head><body>
 
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.3</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -93,16 +93,16 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="yasa-remresults">
+  <section id="yasa-remresults">
 <h1>yasa.REMResults<a class="headerlink" href="#yasa-remresults" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
-<dt id="yasa.REMResults">
-<em class="property">class </em><code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">REMResults</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">events</span></em>, <em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf</span></em>, <em class="sig-param"><span class="n">ch_names</span></em>, <em class="sig-param"><span class="n">hypno</span></em>, <em class="sig-param"><span class="n">data_filt</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#REMResults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.REMResults" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.REMResults">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">yasa.</span></span><span class="sig-name descname"><span class="pre">REMResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">events</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ch_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hypno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_filt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#REMResults"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.REMResults" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output class for REMs detection.</p>
 <dl class="field-list">
 <dt class="field-odd">Attributes</dt>
 <dd class="field-odd"><dl>
-<dt><strong>_events</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.5.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output detection dataframe</p>
+<dt><strong>_events</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output detection dataframe</p>
 </dd>
 <dt><strong>_data</strong><span class="classifier">array_like</span></dt><dd><p>EOG data of shape <em>(n_chan, n_samples)</em>, where the two channels are
 LOC and ROC.</p>
@@ -120,10 +120,9 @@ channels are LOC and ROC.</p>
 </dd>
 </dl>
 <dl class="py method">
-<dt id="yasa.REMResults.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">events</span></em>, <em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf</span></em>, <em class="sig-param"><span class="n">ch_names</span></em>, <em class="sig-param"><span class="n">hypno</span></em>, <em class="sig-param"><span class="n">data_filt</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#REMResults.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.REMResults.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
-</dd></dl>
+<dt class="sig sig-object py" id="yasa.REMResults.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">events</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ch_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hypno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_filt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#REMResults.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.REMResults.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <p class="rubric">Methods</p>
 <table class="longtable docutils align-default">
@@ -132,13 +131,13 @@ channels are LOC and ROC.</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.REMResults.__init__" title="yasa.REMResults.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(events, data, sf, ch_names, hypno, …)</p></td>
-<td><p>Initialize self.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.REMResults.__init__" title="yasa.REMResults.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(events, data, sf, ch_names, hypno, ...)</p></td>
+<td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_channels</span></code>([score, max_distance_sec])</p></td>
 <td><p>Compare detected events across channels.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_detection</span></code>(other[, max_distance_sec, …])</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_detection</span></code>(other[, max_distance_sec, ...])</p></td>
 <td><p>Compare detected events between two detection methods, or against a ground-truth scoring.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_coincidence_matrix</span></code>([scaled])</p></td>
@@ -147,10 +146,10 @@ channels are LOC and ROC.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#yasa.REMResults.get_mask" title="yasa.REMResults.get_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_mask</span></code></a>()</p></td>
 <td><p>Return a boolean array indicating for each sample in data if this sample is part of a detected event (True) or not (False).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#yasa.REMResults.get_sync_events" title="yasa.REMResults.get_sync_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sync_events</span></code></a>([center, time_before, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.REMResults.get_sync_events" title="yasa.REMResults.get_sync_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sync_events</span></code></a>([center, time_before, ...])</p></td>
 <td><p>Return the raw or filtered data of each detected event after centering to a specific timepoint.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.REMResults.plot_average" title="yasa.REMResults.plot_average"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_average</span></code></a>([center, time_before, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.REMResults.plot_average" title="yasa.REMResults.plot_average"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_average</span></code></a>([center, time_before, ...])</p></td>
 <td><p>Plot the average REM.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_detection</span></code>()</p></td>
@@ -162,15 +161,15 @@ channels are LOC and ROC.</p>
 </tbody>
 </table>
 <dl class="py method">
-<dt id="yasa.REMResults.get_mask">
-<code class="sig-name descname">get_mask</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#REMResults.get_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.REMResults.get_mask" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.REMResults.get_mask">
+<span class="sig-name descname"><span class="pre">get_mask</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#REMResults.get_mask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.REMResults.get_mask" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a boolean array indicating for each sample in data if this
 sample is part of a detected event (True) or not (False).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="yasa.REMResults.get_sync_events">
-<code class="sig-name descname">get_sync_events</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">center</span><span class="o">=</span><span class="default_value">'Peak'</span></em>, <em class="sig-param"><span class="n">time_before</span><span class="o">=</span><span class="default_value">0.4</span></em>, <em class="sig-param"><span class="n">time_after</span><span class="o">=</span><span class="default_value">0.4</span></em>, <em class="sig-param"><span class="n">filt</span><span class="o">=</span><span class="default_value">None, None</span></em>, <em class="sig-param"><span class="n">mask</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#REMResults.get_sync_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.REMResults.get_sync_events" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.REMResults.get_sync_events">
+<span class="sig-name descname"><span class="pre">get_sync_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">center</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Peak'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_before</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(None,</span> <span class="pre">None)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#REMResults.get_sync_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.REMResults.get_sync_events" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the raw or filtered data of each detected event after centering to a specific
 timepoint.</p>
 <dl class="field-list">
@@ -186,7 +185,7 @@ Default is to use the peak of the REM.</p>
 <dt><strong>filt</strong><span class="classifier">tuple</span></dt><dd><p>Optional filtering to apply to data. For instance, <code class="docutils literal notranslate"><span class="pre">filt=(1,</span> <span class="pre">30)</span></code>
 will apply a 1 to 30 Hz bandpass filter, and <code class="docutils literal notranslate"><span class="pre">filt=(None,</span> <span class="pre">40)</span></code>
 will apply a 40 Hz lowpass filter. Filtering is done using default
-parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.2)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
+parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
 </dd>
 <dt><strong>mask</strong><span class="classifier">array_like or None</span></dt><dd><p>Custom boolean mask. Only the detected events for which mask is True will be
 included. Default is None, i.e. no masking (all events are included).</p>
@@ -195,7 +194,7 @@ included. Default is None, i.e. no masking (all events are included).</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>df_sync</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.5.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput long-format dataframe:</p>
+<dt><strong>df_sync</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput long-format dataframe:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Event&#39;</span> <span class="p">:</span> <span class="n">Event</span> <span class="n">number</span>
 <span class="s1">&#39;Time&#39;</span> <span class="p">:</span> <span class="n">Timing</span> <span class="n">of</span> <span class="n">the</span> <span class="n">events</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;Amplitude&#39;</span> <span class="p">:</span> <span class="n">Raw</span> <span class="ow">or</span> <span class="n">filtered</span> <span class="n">data</span> <span class="k">for</span> <span class="n">event</span>
@@ -210,8 +209,8 @@ included. Default is None, i.e. no masking (all events are included).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="yasa.REMResults.plot_average">
-<code class="sig-name descname">plot_average</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">center</span><span class="o">=</span><span class="default_value">'Peak'</span></em>, <em class="sig-param"><span class="n">time_before</span><span class="o">=</span><span class="default_value">0.4</span></em>, <em class="sig-param"><span class="n">time_after</span><span class="o">=</span><span class="default_value">0.4</span></em>, <em class="sig-param"><span class="n">filt</span><span class="o">=</span><span class="default_value">None, None</span></em>, <em class="sig-param"><span class="n">mask</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">figsize</span><span class="o">=</span><span class="default_value">6, 4.5</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#REMResults.plot_average"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.REMResults.plot_average" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.REMResults.plot_average">
+<span class="sig-name descname"><span class="pre">plot_average</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">center</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Peak'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_before</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(None,</span> <span class="pre">None)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(6,</span> <span class="pre">4.5)</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#REMResults.plot_average"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.REMResults.plot_average" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the average REM.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -226,14 +225,14 @@ Default is to use the peak of the REM.</p>
 <dt><strong>filt</strong><span class="classifier">tuple</span></dt><dd><p>Optional filtering to apply to data. For instance, <code class="docutils literal notranslate"><span class="pre">filt=(1,</span> <span class="pre">30)</span></code>
 will apply a 1 to 30 Hz bandpass filter, and <code class="docutils literal notranslate"><span class="pre">filt=(None,</span> <span class="pre">40)</span></code>
 will apply a 40 Hz lowpass filter. Filtering is done using default
-parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.2)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
+parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
 </dd>
 <dt><strong>mask</strong><span class="classifier">array_like or None</span></dt><dd><p>Custom boolean mask. Only the detected events for which mask is True will be
 included. Default is None, i.e. no masking (all events are included).</p>
 </dd>
 <dt><strong>figsize</strong><span class="classifier">tuple</span></dt><dd><p>Figure size in inches.</p>
 </dd>
-<dt><strong>**kwargs</strong><span class="classifier">dict</span></dt><dd><p>Optional argument that are passed to <a class="reference external" href="https://seaborn.pydata.org/generated/seaborn.lineplot.html#seaborn.lineplot" title="(in seaborn v0.12.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">seaborn.lineplot()</span></code></a>.</p>
+<dt><strong>**kwargs</strong><span class="classifier">dict</span></dt><dd><p>Optional argument that are passed to <a class="reference external" href="https://seaborn.pydata.org/generated/seaborn.lineplot.html#seaborn.lineplot" title="(in seaborn v0.13.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">seaborn.lineplot()</span></code></a>.</p>
 </dd>
 </dl>
 </dd>
@@ -241,8 +240,8 @@ included. Default is None, i.e. no masking (all events are included).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="yasa.REMResults.summary">
-<code class="sig-name descname">summary</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grp_stage</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">mask</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">aggfunc</span><span class="o">=</span><span class="default_value">'mean'</span></em>, <em class="sig-param"><span class="n">sort</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#REMResults.summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.REMResults.summary" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.REMResults.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grp_stage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aggfunc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#REMResults.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.REMResults.summary" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a summary of the REM detection, optionally grouped across stage.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -264,7 +263,7 @@ included in the summary. Default is None, i.e. no masking (all events are includ
 
 </dd></dl>
 
-</div>
+</section>
 
 
     </div>
@@ -281,8 +280,8 @@ included in the summary. Default is None, i.e. no masking (all events are includ
       
     </p>
     <p>
-        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
+        &copy; Copyright 2018-2024, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br/>
     </p>
   </div>
 </footer>

@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.hypno_find_periods &#8212; yasa 0.6.3 documentation</title>
-    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>yasa.hypno_find_periods &#8212; yasa 0.6.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
     <script src="../_static/clipboard.min.js"></script>
     <script src="../_static/copybutton.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -26,10 +26,10 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js "></script>
-<script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
 
   </head><body>
 
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.3</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -93,11 +93,11 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="yasa-hypno-find-periods">
+  <section id="yasa-hypno-find-periods">
 <h1>yasa.hypno_find_periods<a class="headerlink" href="#yasa-hypno-find-periods" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
-<dt id="yasa.hypno_find_periods">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">hypno_find_periods</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">hypno</span></em>, <em class="sig-param"><span class="n">sf_hypno</span></em>, <em class="sig-param"><span class="n">threshold</span><span class="o">=</span><span class="default_value">'5min'</span></em>, <em class="sig-param"><span class="n">equal_length</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/hypno.html#hypno_find_periods"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.hypno_find_periods" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.hypno_find_periods">
+<span class="sig-prename descclassname"><span class="pre">yasa.</span></span><span class="sig-name descname"><span class="pre">hypno_find_periods</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hypno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sf_hypno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'5min'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">equal_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/hypno.html#hypno_find_periods"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.hypno_find_periods" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find sequences of consecutive values exceeding a certain duration in hypnogram.</p>
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 0.6.2.</span></p>
@@ -123,7 +123,7 @@ into sub-periods of exactly the length of <code class="docutils literal notransl
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>periods</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.5.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output dataframe</p>
+<dt><strong>periods</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output dataframe</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">values</span></code> : The value in hypno of the current period</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">start</span></code> : The index of the start of the period in hypno</p></li>
@@ -189,7 +189,7 @@ removed to keep only a segment of 2 exactly minutes. In other words, the remaind
 division of a given segment by the desired duration is discarded.</p>
 </dd></dl>
 
-</div>
+</section>
 
 
     </div>
@@ -206,8 +206,8 @@ division of a given segment by the desired duration is discarded.</p>
       
     </p>
     <p>
-        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
+        &copy; Copyright 2018-2024, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br/>
     </p>
   </div>
 </footer>

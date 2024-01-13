@@ -1,24 +1,23 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.plotting &#8212; yasa 0.6.3 documentation</title>
-    <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>yasa.plotting &#8212; yasa 0.6.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
     <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
     <script src="../../_static/clipboard.min.js"></script>
     <script src="../../_static/copybutton.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -26,10 +25,10 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../../_static/js/jquery-1.12.4.min.js "></script>
-<script type="text/javascript" src="../../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../../_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
-<script type="text/javascript" src="../../_static/bootstrap-sphinx.js "></script>
+<script type="text/javascript" src="../../_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="../../_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="../../_static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../../_static/bootstrap-sphinx.js"></script>
 
   </head><body>
 
@@ -44,7 +43,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.3</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -102,13 +101,14 @@
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.dates</span> <span class="k">as</span> <span class="nn">mdates</span>
 <span class="kn">from</span> <span class="nn">lspopt</span> <span class="kn">import</span> <span class="n">spectrogram_lspopt</span>
 <span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">Normalize</span><span class="p">,</span> <span class="n">ListedColormap</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;plot_hypnogram&quot;</span><span class="p">,</span> <span class="s2">&quot;plot_spectrogram&quot;</span><span class="p">,</span> <span class="s2">&quot;topoplot&quot;</span><span class="p">]</span>
 
 
-<div class="viewcode-block" id="plot_hypnogram"><a class="viewcode-back" href="../../generated/yasa.plot_hypnogram.html#yasa.plot_hypnogram">[docs]</a><span class="k">def</span> <span class="nf">plot_hypnogram</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hypno</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">30</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_hypnogram"><a class="viewcode-back" href="../../generated/yasa.plot_hypnogram.html#yasa.plot_hypnogram">[docs]</a><span class="k">def</span> <span class="nf">plot_hypnogram</span><span class="p">(</span><span class="n">hyp</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">highlight</span><span class="o">=</span><span class="s2">&quot;REM&quot;</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Plot a hypnogram.</span>
 
@@ -116,28 +116,14 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    hypno : array_like</span>
-<span class="sd">        Sleep stage (hypnogram).</span>
-
-<span class="sd">        .. note::</span>
-<span class="sd">            The default hypnogram format in YASA is a 1D integer vector where:</span>
-
-<span class="sd">            * -2 = Unscored</span>
-<span class="sd">            * -1 = Artefact / Movement</span>
-<span class="sd">            * 0 = Wake</span>
-<span class="sd">            * 1 = N1 sleep</span>
-<span class="sd">            * 2 = N2 sleep</span>
-<span class="sd">            * 3 = N3 sleep</span>
-<span class="sd">            * 4 = REM sleep</span>
-<span class="sd">    sf_hypno : float</span>
-<span class="sd">        The current sampling frequency of the hypnogram, in Hz, e.g.</span>
-
-<span class="sd">        * 1/30 = 1 value per each 30 seconds of EEG data,</span>
-<span class="sd">        * 1 = 1 value per second of EEG data</span>
+<span class="sd">    hyp : :py:class:`yasa.Hypnogram`</span>
+<span class="sd">        A YASA hypnogram instance.</span>
 <span class="sd">    lw : float</span>
 <span class="sd">        Linewidth.</span>
-<span class="sd">    fill_color : str</span>
-<span class="sd">        Color to fill space above hypnogram line, optional.</span>
+<span class="sd">    highlight : str or None</span>
+<span class="sd">        Optional stage to highlight with alternate color.</span>
+<span class="sd">    fill_color : str or None</span>
+<span class="sd">        Optional color to fill space above hypnogram line.</span>
 <span class="sd">    ax : :py:class:`matplotlib.axes.Axes`</span>
 <span class="sd">        Axis on which to draw the plot, optional.</span>
 
@@ -150,79 +136,101 @@
 <span class="sd">    --------</span>
 <span class="sd">    .. plot::</span>
 
-<span class="sd">        &gt;&gt;&gt; import yasa</span>
-<span class="sd">        &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">        &gt;&gt;&gt; from yasa import simulate_hypnogram</span>
 <span class="sd">        &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<span class="sd">        &gt;&gt;&gt; hypno = np.loadtxt(&quot;https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt&quot;)</span>
-<span class="sd">        &gt;&gt;&gt; fig, ax = plt.subplots(1, 1, figsize=(7, 3), constrained_layout=True)</span>
-<span class="sd">        &gt;&gt;&gt; ax = yasa.plot_hypnogram(hypno, fill_color=&quot;gainsboro&quot;, ax=ax)</span>
+<span class="sd">        &gt;&gt;&gt; hyp = simulate_hypnogram(tib=300, seed=11)</span>
+<span class="sd">        &gt;&gt;&gt; ax = hyp.plot_hypnogram()</span>
+<span class="sd">        &gt;&gt;&gt; plt.tight_layout()</span>
+
+<span class="sd">    .. plot::</span>
+
+<span class="sd">        &gt;&gt;&gt; from yasa import Hypnogram</span>
+<span class="sd">        &gt;&gt;&gt; values = 4 * [&quot;W&quot;, &quot;N1&quot;, &quot;N2&quot;, &quot;N3&quot;, &quot;REM&quot;] + [&quot;ART&quot;, &quot;N2&quot;, &quot;REM&quot;, &quot;W&quot;, &quot;UNS&quot;]</span>
+<span class="sd">        &gt;&gt;&gt; hyp = Hypnogram(values, freq=&quot;24min&quot;).upsample(&quot;30s&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; ax = hyp.plot_hypnogram(lw=2, fill_color=&quot;thistle&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; plt.tight_layout()</span>
+
+<span class="sd">    .. plot::</span>
+
+<span class="sd">        &gt;&gt;&gt; fig, axes = plt.subplots(nrows=2, figsize=(6, 4), constrained_layout=True)</span>
+<span class="sd">        &gt;&gt;&gt; hyp_a = simulate_hypnogram(n_stages=3, seed=99)</span>
+<span class="sd">        &gt;&gt;&gt; hyp_b = simulate_hypnogram(n_stages=3, seed=99, start=&quot;2022-01-31 23:30:00&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; hyp_a.plot_hypnogram(lw=1, fill_color=&quot;whitesmoke&quot;, highlight=None, ax=axes[0])</span>
+<span class="sd">        &gt;&gt;&gt; hyp_b.plot_hypnogram(lw=1, fill_color=&quot;whitesmoke&quot;, highlight=None, ax=axes[1])</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">yasa.hypno</span> <span class="kn">import</span> <span class="n">Hypnogram</span>  <span class="c1"># Avoiding circular import</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hyp</span><span class="p">,</span> <span class="n">Hypnogram</span><span class="p">),</span> <span class="s2">&quot;`hypno` must be YASA Hypnogram.&quot;</span>
+
+    <span class="c1"># Work with a copy of the Hypnogram to not alter the original</span>
+    <span class="n">hyp</span> <span class="o">=</span> <span class="n">hyp</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
     <span class="c1"># Increase font size while preserving original</span>
     <span class="n">old_fontsize</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;font.size&quot;</span><span class="p">]</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;font.size&quot;</span><span class="p">:</span> <span class="mi">18</span><span class="p">})</span>
 
-    <span class="c1"># Safety checks</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="nb">list</span><span class="p">)),</span> <span class="s2">&quot;hypno must be an array.&quot;</span>
-    <span class="n">hypno</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="p">(</span><span class="n">hypno</span> <span class="o">&gt;=</span> <span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">and</span> <span class="p">(</span><span class="n">hypno</span> <span class="o">&lt;=</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span> <span class="s2">&quot;hypno values must be between -2 to 4.&quot;</span>
-    <span class="k">assert</span> <span class="n">hypno</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;hypno must be a 1D array.&quot;</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sf_hypno</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;sf must be int or float.&quot;</span>
+    <span class="c1">## Remap stages to be in desired y-axis order ##</span>
+    <span class="c1"># Start with default of all allowed labels</span>
+    <span class="n">stage_order</span> <span class="o">=</span> <span class="n">hyp</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">stages_present</span> <span class="o">=</span> <span class="n">hyp</span><span class="o">.</span><span class="n">hypno</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    <span class="c1"># Remove Art/Uns from stage order, and place back individually at front to be higher on plot</span>
+    <span class="n">art_str</span> <span class="o">=</span> <span class="n">stage_order</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">stage_order</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;ART&quot;</span><span class="p">))</span>
+    <span class="n">uns_str</span> <span class="o">=</span> <span class="n">stage_order</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">stage_order</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;UNS&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="s2">&quot;ART&quot;</span> <span class="ow">in</span> <span class="n">stages_present</span><span class="p">:</span>
+        <span class="n">stage_order</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">art_str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;UNS&quot;</span> <span class="ow">in</span> <span class="n">stages_present</span><span class="p">:</span>
+        <span class="n">stage_order</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">uns_str</span><span class="p">)</span>
+    <span class="c1"># Put REM after WAKE if all 5 standard stages are allowed</span>
+    <span class="k">if</span> <span class="n">hyp</span><span class="o">.</span><span class="n">n_stages</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+        <span class="n">stage_order</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">stage_order</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;WAKE&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">stage_order</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">stage_order</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;REM&quot;</span><span class="p">)))</span>
+    <span class="c1"># Reset the Hypnogram mapping so any future returns have this order</span>
+    <span class="n">hyp</span><span class="o">.</span><span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span><span class="n">stage</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">stage</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">stage_order</span><span class="p">)}</span>
 
-    <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">hypno</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">sf_hypno</span> <span class="o">*</span> <span class="mi">3600</span><span class="p">)</span>
-    <span class="c1"># Make sure that REM is displayed after Wake</span>
-    <span class="n">hypno</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">({</span><span class="o">-</span><span class="mi">2</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span><span class="o">.</span><span class="n">values</span>
+    <span class="c1">## Extract values to plot ##</span>
+    <span class="n">hypno</span> <span class="o">=</span> <span class="n">hyp</span><span class="o">.</span><span class="n">as_int</span><span class="p">()</span>
+    <span class="c1"># Reduce to breakpoints (where stages change) to avoid drawing individual lines for every epoch</span>
+    <span class="n">hypno</span> <span class="o">=</span> <span class="n">hypno</span><span class="p">[</span><span class="n">hypno</span><span class="o">.</span><span class="n">shift</span><span class="p">()</span><span class="o">.</span><span class="n">ne</span><span class="p">(</span><span class="n">hypno</span><span class="p">)]</span>
+    <span class="c1"># Extract x-values (bins) and y-values to plot</span>
+    <span class="n">yvalues</span> <span class="o">=</span> <span class="n">hypno</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">hyp</span><span class="o">.</span><span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">final_bin_edge</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">hyp</span><span class="o">.</span><span class="n">start</span><span class="p">)</span> <span class="o">+</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="n">hyp</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+        <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hypno</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">to_list</span><span class="p">(),</span> <span class="n">final_bin_edge</span><span class="p">)</span>
+        <span class="n">bins</span> <span class="o">=</span> <span class="p">[</span><span class="n">mdates</span><span class="o">.</span><span class="n">date2num</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bins</span><span class="p">]</span>
+        <span class="n">xlabel</span> <span class="o">=</span> <span class="s2">&quot;Time&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">final_bin_edge</span> <span class="o">=</span> <span class="n">hyp</span><span class="o">.</span><span class="n">duration</span> <span class="o">*</span> <span class="mi">60</span>
+        <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hyp</span><span class="o">.</span><span class="n">timedelta</span><span class="p">[</span><span class="n">hypno</span><span class="o">.</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">(),</span> <span class="n">final_bin_edge</span><span class="p">)</span>
+        <span class="n">bins</span> <span class="o">/=</span> <span class="mi">60</span> <span class="k">if</span> <span class="n">hyp</span><span class="o">.</span><span class="n">duration</span> <span class="o">&lt;=</span> <span class="mi">90</span> <span class="k">else</span> <span class="mi">3600</span>
+        <span class="n">xlabel</span> <span class="o">=</span> <span class="s2">&quot;Time [mins]&quot;</span> <span class="k">if</span> <span class="n">hyp</span><span class="o">.</span><span class="n">duration</span> <span class="o">&lt;=</span> <span class="mi">90</span> <span class="k">else</span> <span class="s2">&quot;Time [hrs]&quot;</span>
 
-    <span class="c1"># Reduce data and bin edges to only moments of change in the hypnogram</span>
-    <span class="c1"># (to avoid drawing thousands of tiny individual lines when sf is high)</span>
-    <span class="n">change_points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ediff1d</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">to_end</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
-    <span class="n">hypno</span> <span class="o">=</span> <span class="n">hypno</span><span class="p">[</span><span class="n">change_points</span><span class="p">]</span>
-    <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">bins</span><span class="p">[</span><span class="n">change_points</span><span class="p">])</span>
+    <span class="c1"># Make mask to draw the highlighted stage</span>
+    <span class="n">yvals_highlight</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_not_equal</span><span class="p">(</span><span class="n">yvalues</span><span class="p">,</span> <span class="n">hyp</span><span class="o">.</span><span class="n">mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">highlight</span><span class="p">))</span>
 
-    <span class="c1"># Make masks for REM and Artefact/Unscored</span>
-    <span class="n">hypno_rem</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_not_equal</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">hypno_art_uns</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_greater</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">hypno_sleep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_less</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-
-    <span class="c1"># Start the plot</span>
+    <span class="c1"># Open the figure</span>
     <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
 
     <span class="c1"># Draw background filling</span>
     <span class="k">if</span> <span class="n">fill_color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">stairs</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">hypno</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">bins</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">fill_color</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="c1"># Draw main hypnogram line</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">stairs</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">hypno</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">lw</span><span class="p">)</span>
-    <span class="c1"># Draw REM and Artefact/Unscored highlighting</span>
-    <span class="k">if</span> <span class="mi">1</span> <span class="ow">in</span> <span class="n">hypno</span><span class="p">:</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">hlines</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">hypno_rem</span><span class="p">,</span> <span class="n">xmin</span><span class="o">=</span><span class="n">bins</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">xmax</span><span class="o">=</span><span class="n">bins</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">lw</span><span class="p">)</span>
-    <span class="k">if</span> <span class="o">-</span><span class="mi">2</span> <span class="ow">in</span> <span class="n">hypno</span> <span class="ow">or</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">in</span> <span class="n">hypno</span><span class="p">:</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">hlines</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">hypno_art_uns</span><span class="p">,</span> <span class="n">xmin</span><span class="o">=</span><span class="n">bins</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">xmax</span><span class="o">=</span><span class="n">bins</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">lw</span><span class="p">)</span>
-    <span class="c1"># Determine y-axis labels and limits</span>
-    <span class="k">if</span> <span class="o">-</span><span class="mi">2</span> <span class="ow">in</span> <span class="n">hypno</span> <span class="ow">and</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">in</span> <span class="n">hypno</span><span class="p">:</span>
-        <span class="c1"># Both Unscored and Artefacts are present</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">])</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([</span><span class="s2">&quot;Uns&quot;</span><span class="p">,</span> <span class="s2">&quot;Art&quot;</span><span class="p">,</span> <span class="s2">&quot;W&quot;</span><span class="p">,</span> <span class="s2">&quot;R&quot;</span><span class="p">,</span> <span class="s2">&quot;N1&quot;</span><span class="p">,</span> <span class="s2">&quot;N2&quot;</span><span class="p">,</span> <span class="s2">&quot;N3&quot;</span><span class="p">])</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">4.5</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="o">-</span><span class="mi">2</span> <span class="ow">in</span> <span class="n">hypno</span> <span class="ow">and</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">hypno</span><span class="p">:</span>
-        <span class="c1"># Only Unscored are present</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">])</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([</span><span class="s2">&quot;Uns&quot;</span><span class="p">,</span> <span class="s2">&quot;W&quot;</span><span class="p">,</span> <span class="s2">&quot;R&quot;</span><span class="p">,</span> <span class="s2">&quot;N1&quot;</span><span class="p">,</span> <span class="s2">&quot;N2&quot;</span><span class="p">,</span> <span class="s2">&quot;N3&quot;</span><span class="p">])</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">4.5</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="o">-</span><span class="mi">2</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">hypno</span> <span class="ow">and</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">in</span> <span class="n">hypno</span><span class="p">:</span>
-        <span class="c1"># Only Artefacts are present</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">])</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([</span><span class="s2">&quot;Art&quot;</span><span class="p">,</span> <span class="s2">&quot;W&quot;</span><span class="p">,</span> <span class="s2">&quot;R&quot;</span><span class="p">,</span> <span class="s2">&quot;N1&quot;</span><span class="p">,</span> <span class="s2">&quot;N2&quot;</span><span class="p">,</span> <span class="s2">&quot;N3&quot;</span><span class="p">])</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">4.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="c1"># No artefacts or Unscored</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">])</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([</span><span class="s2">&quot;W&quot;</span><span class="p">,</span> <span class="s2">&quot;R&quot;</span><span class="p">,</span> <span class="s2">&quot;N1&quot;</span><span class="p">,</span> <span class="s2">&quot;N2&quot;</span><span class="p">,</span> <span class="s2">&quot;N3&quot;</span><span class="p">])</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">4.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">bins</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+        <span class="n">bline</span> <span class="o">=</span> <span class="n">hyp</span><span class="o">.</span><span class="n">mapping</span><span class="p">[</span><span class="s2">&quot;WAKE&quot;</span><span class="p">]</span>  <span class="c1"># len(stage_order) - 1 to fill from bottom</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">stairs</span><span class="p">(</span><span class="n">yvalues</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">bline</span><span class="p">),</span> <span class="n">bins</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="n">bline</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">fill_color</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="c1"># Draw main hypnogram line, highlighted stage line, and Artefact/Unscored line</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">stairs</span><span class="p">(</span><span class="n">yvalues</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">lw</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">yvals_highlight</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">hlines</span><span class="p">(</span><span class="n">yvals_highlight</span><span class="p">,</span> <span class="n">xmin</span><span class="o">=</span><span class="n">bins</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">xmax</span><span class="o">=</span><span class="n">bins</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">lw</span><span class="p">)</span>
+
+    <span class="c1"># Aesthetics</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">use_sticky_edges</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">margins</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">stage_order</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># 1/n_epochs/2 gives half-unit margins</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stage_order</span><span class="p">)))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">(</span><span class="n">stage_order</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Stage&quot;</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time [hrs]&quot;</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;right&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[[</span><span class="s2">&quot;right&quot;</span><span class="p">,</span> <span class="s2">&quot;top&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">hyp</span><span class="o">.</span><span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">mdates</span><span class="o">.</span><span class="n">DateFormatter</span><span class="p">(</span><span class="s2">&quot;%H:%M&quot;</span><span class="p">))</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">mdates</span><span class="o">.</span><span class="n">AutoDateLocator</span><span class="p">())</span>
     <span class="c1"># Revert font-size</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;font.size&quot;</span><span class="p">:</span> <span class="n">old_fontsize</span><span class="p">})</span>
     <span class="k">return</span> <span class="n">ax</span></div>
@@ -291,7 +299,7 @@
 <span class="sd">    vmax : int or float</span>
 <span class="sd">        The upper range of color scale. Overwrites ``trimperc``</span>
 <span class="sd">    **kwargs : dict</span>
-<span class="sd">        Other arguments that are passed to :py:func:`yasa.plot_hypnogram`.</span>
+<span class="sd">        Other arguments that are passed to :py:meth:`yasa.Hypnogram.plot_hypnogram`.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -333,32 +341,33 @@
 <span class="sd">        &gt;&gt;&gt; hypno = yasa.hypno_upsample_to_data(hypno, 1/30, data, sf)</span>
 <span class="sd">        &gt;&gt;&gt; fig = yasa.plot_spectrogram(data, sf, hypno, cmap=&#39;Spectral_r&#39;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">yasa.hypno</span> <span class="kn">import</span> <span class="n">Hypnogram</span><span class="p">,</span> <span class="n">hypno_int_to_str</span>  <span class="c1"># Avoiding circular imports</span>
+
     <span class="c1"># Increase font size while preserving original</span>
     <span class="n">old_fontsize</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;font.size&quot;</span><span class="p">]</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;font.size&quot;</span><span class="p">:</span> <span class="mi">18</span><span class="p">})</span>
 
     <span class="c1"># Safety checks</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span> <span class="s2">&quot;Data must be a 1D NumPy array.&quot;</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;sf must be int or float.&quot;</span>
-    <span class="k">assert</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Data must be a 1D (single-channel) NumPy array.&quot;</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">win_sec</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;win_sec must be int or float.&quot;</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fmin</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;fmin must be int or float.&quot;</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fmax</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;fmax must be int or float.&quot;</span>
-    <span class="k">assert</span> <span class="n">fmin</span> <span class="o">&lt;</span> <span class="n">fmax</span><span class="p">,</span> <span class="s2">&quot;fmin must be strictly inferior to fmax.&quot;</span>
-    <span class="k">assert</span> <span class="n">fmax</span> <span class="o">&lt;</span> <span class="n">sf</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;fmax must be less than Nyquist (sf / 2).&quot;</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vmin</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))),</span> <span class="s2">&quot;vmin must be int, float, or None.&quot;</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vmax</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))),</span> <span class="s2">&quot;vmax must be int, float, or None.&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span> <span class="s2">&quot;`data` must be a 1D NumPy array.&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sf</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;`sf` must be int or float.&quot;</span>
+    <span class="k">assert</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;`data` must be a 1D (single-channel) NumPy array.&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">win_sec</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;`win_sec` must be int or float.&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fmin</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;`fmin` must be int or float.&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fmax</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;`fmax` must be int or float.&quot;</span>
+    <span class="k">assert</span> <span class="n">fmin</span> <span class="o">&lt;</span> <span class="n">fmax</span><span class="p">,</span> <span class="s2">&quot;`fmin` must be strictly inferior to `fmax`.&quot;</span>
+    <span class="k">assert</span> <span class="n">fmax</span> <span class="o">&lt;</span> <span class="n">sf</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;`fmax` must be less than Nyquist (sf / 2).&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vmin</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))),</span> <span class="s2">&quot;`vmin` must be int, float, or None.&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vmax</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))),</span> <span class="s2">&quot;`vmax` must be int, float, or None.&quot;</span>
     <span class="k">if</span> <span class="n">vmin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vmax</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;vmax must be int or float if vmin is provided&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vmax</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;`vmax` must be int or float if `vmin` is provided.&quot;</span>
     <span class="k">if</span> <span class="n">vmax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vmin</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;vmin must be int or float if vmax is provided&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vmin</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)),</span> <span class="s2">&quot;`vmin` must be int or float if `vmax` is provided.&quot;</span>
     <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="c1"># Validate and handle hypnogram-related inputs</span>
-        <span class="k">assert</span> <span class="n">hypno</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="s2">&quot;Hypno must have the same sf as data.&quot;</span>
+        <span class="k">assert</span> <span class="n">hypno</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="s2">&quot;`hypno` must have the same number of samples as `data`.&quot;</span>
 
     <span class="c1"># Calculate multi-taper spectrogram</span>
     <span class="n">nperseg</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">win_sec</span> <span class="o">*</span> <span class="n">sf</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">nperseg</span><span class="p">,</span> <span class="s2">&quot;Data length must be at least 2 * win_sec.&quot;</span>
+    <span class="k">assert</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">nperseg</span><span class="p">,</span> <span class="s2">&quot;`data` length must be at least 2 * `win_sec`.&quot;</span>
     <span class="n">f</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">Sxx</span> <span class="o">=</span> <span class="n">spectrogram_lspopt</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sf</span><span class="p">,</span> <span class="n">nperseg</span><span class="o">=</span><span class="n">nperseg</span><span class="p">,</span> <span class="n">noverlap</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">Sxx</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">Sxx</span><span class="p">)</span>  <span class="c1"># Convert uV^2 / Hz --&gt; dB / Hz</span>
 
@@ -390,10 +399,14 @@
     <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time [hrs]&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">hypno</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Convert sampling frequency to pandas timefrequency string (e.g., &quot;30s&quot;)</span>
+        <span class="n">freq_str</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">frequencies</span><span class="o">.</span><span class="n">to_offset</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">sf</span><span class="p">,</span> <span class="s2">&quot;S&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">freqstr</span>
+        <span class="c1"># Create Hypnogram instance for plotting</span>
+        <span class="n">hyp</span> <span class="o">=</span> <span class="n">Hypnogram</span><span class="p">(</span><span class="n">hypno_int_to_str</span><span class="p">(</span><span class="n">hypno</span><span class="p">),</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq_str</span><span class="p">)</span>
         <span class="n">hypnoplot_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
         <span class="n">hypnoplot_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="c1"># Draw hypnogram</span>
-        <span class="n">ax0</span> <span class="o">=</span> <span class="n">plot_hypnogram</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">sf_hypno</span><span class="o">=</span><span class="n">sf</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax0</span><span class="p">,</span> <span class="o">**</span><span class="n">hypnoplot_kwargs</span><span class="p">)</span>
+        <span class="n">ax0</span> <span class="o">=</span> <span class="n">hyp</span><span class="o">.</span><span class="n">plot_hypnogram</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax0</span><span class="p">,</span> <span class="o">**</span><span class="n">hypnoplot_kwargs</span><span class="p">)</span>
         <span class="n">ax0</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># Add colorbar</span>
@@ -502,13 +515,13 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;savefig.transparent&quot;</span><span class="p">:</span> <span class="s2">&quot;True&quot;</span><span class="p">})</span>
 
     <span class="c1"># Make sure we don&#39;t do any in-place modification</span>
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">),</span> <span class="s2">&quot;Data must be a Pandas Series&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">),</span> <span class="s2">&quot;`data` must be a Pandas Series&quot;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
     <span class="c1"># Add mask, if present</span>
     <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">),</span> <span class="s2">&quot;mask must be a Pandas Series&quot;</span>
-        <span class="k">assert</span> <span class="n">mask</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="s2">&quot;bi&quot;</span><span class="p">,</span> <span class="s2">&quot;mask must be True/False or 0/1.&quot;</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">),</span> <span class="s2">&quot;`mask` must be a Pandas Series&quot;</span>
+        <span class="k">assert</span> <span class="n">mask</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="s2">&quot;bi&quot;</span><span class="p">,</span> <span class="s2">&quot;`mask` must be True/False or 0/1.&quot;</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">mask</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mask&quot;</span><span class="p">)</span>
 
@@ -546,8 +559,6 @@
         <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;res&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">256</span>
     <span class="k">if</span> <span class="s2">&quot;names&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;names&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">chan</span>
-    <span class="k">if</span> <span class="s2">&quot;show_names&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;show_names&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="k">if</span> <span class="s2">&quot;mask_params&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;mask_params&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">marker</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
@@ -558,17 +569,37 @@
     <span class="c1"># Start the plot</span>
     <span class="k">with</span> <span class="n">sns</span><span class="o">.</span><span class="n">axes_style</span><span class="p">(</span><span class="s2">&quot;white&quot;</span><span class="p">):</span>
         <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">)</span>
-        <span class="n">im</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">mne</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">plot_topomap</span><span class="p">(</span>
-            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">][</span><span class="n">chan</span><span class="p">],</span>
-            <span class="n">pos</span><span class="o">=</span><span class="n">Info</span><span class="p">,</span>
-            <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span>
-            <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span>
-            <span class="n">mask</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">][</span><span class="n">chan</span><span class="p">],</span>
-            <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
-            <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="n">axes</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-        <span class="p">)</span>
+
+        <span class="c1"># vmin, vmax and show_names have been deprecated in MNE v1.3</span>
+        <span class="n">mne_version</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">mne</span><span class="o">.</span><span class="n">__version__</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">mne_version</span> <span class="o">&gt;=</span> <span class="mf">1.3</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;show_names&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;show_names&quot;</span><span class="p">)</span>
+            <span class="n">im</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">mne</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">plot_topomap</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">][</span><span class="n">chan</span><span class="p">],</span>
+                <span class="n">pos</span><span class="o">=</span><span class="n">Info</span><span class="p">,</span>
+                <span class="n">vlim</span><span class="o">=</span><span class="p">(</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="p">),</span>
+                <span class="n">mask</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">][</span><span class="n">chan</span><span class="p">],</span>
+                <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+                <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">axes</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;show_names&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;show_names&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">im</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">mne</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">plot_topomap</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">][</span><span class="n">chan</span><span class="p">],</span>
+                <span class="n">pos</span><span class="o">=</span><span class="n">Info</span><span class="p">,</span>
+                <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span>
+                <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span>
+                <span class="n">mask</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">][</span><span class="n">chan</span><span class="p">],</span>
+                <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+                <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">axes</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
@@ -600,8 +631,8 @@
       
     </p>
     <p>
-        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
+        &copy; Copyright 2018-2024, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br/>
     </p>
   </div>
 </footer>

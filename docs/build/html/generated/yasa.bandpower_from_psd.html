@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.bandpower_from_psd &#8212; yasa 0.6.3 documentation</title>
-    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>yasa.bandpower_from_psd &#8212; yasa 0.6.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
     <script src="../_static/clipboard.min.js"></script>
     <script src="../_static/copybutton.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -26,10 +26,10 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js "></script>
-<script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
 
   </head><body>
 
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.3</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -93,11 +93,11 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="yasa-bandpower-from-psd">
+  <section id="yasa-bandpower-from-psd">
 <h1>yasa.bandpower_from_psd<a class="headerlink" href="#yasa-bandpower-from-psd" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
-<dt id="yasa.bandpower_from_psd">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">bandpower_from_psd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">psd</span></em>, <em class="sig-param"><span class="n">freqs</span></em>, <em class="sig-param"><span class="n">ch_names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bands</span><span class="o">=</span><span class="default_value">[0.5, 4, 'Delta', 4, 8, 'Theta', 8, 12, 'Alpha', 12, 16, 'Sigma', 16, 30, 'Beta', 30, 40, 'Gamma']</span></em>, <em class="sig-param"><span class="n">relative</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/spectral.html#bandpower_from_psd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.bandpower_from_psd" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.bandpower_from_psd">
+<span class="sig-prename descclassname"><span class="pre">yasa.</span></span><span class="sig-name descname"><span class="pre">bandpower_from_psd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freqs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ch_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bands</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[(0.5,</span> <span class="pre">4,</span> <span class="pre">'Delta'),</span> <span class="pre">(4,</span> <span class="pre">8,</span> <span class="pre">'Theta'),</span> <span class="pre">(8,</span> <span class="pre">12,</span> <span class="pre">'Alpha'),</span> <span class="pre">(12,</span> <span class="pre">16,</span> <span class="pre">'Sigma'),</span> <span class="pre">(16,</span> <span class="pre">30,</span> <span class="pre">'Beta'),</span> <span class="pre">(30,</span> <span class="pre">40,</span> <span class="pre">'Gamma')]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relative</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/spectral.html#bandpower_from_psd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.bandpower_from_psd" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the average power of the EEG in specified frequency band(s)
 given a pre-computed PSD.</p>
 <div class="versionadded">
@@ -107,7 +107,7 @@ given a pre-computed PSD.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>psd</strong><span class="classifier">array_like</span></dt><dd><p>Power spectral density of data, in uV^2/Hz. Must be of shape (n_channels, n_freqs).
-See <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.welch.html#scipy.signal.welch" title="(in SciPy v1.9.3)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.signal.welch()</span></code></a> for more details.</p>
+See <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.welch.html#scipy.signal.welch" title="(in SciPy v1.11.4)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.signal.welch()</span></code></a> for more details.</p>
 </dd>
 <dt><strong>freqs</strong><span class="classifier">array_like</span></dt><dd><p>Array of frequencies.</p>
 </dd>
@@ -124,14 +124,14 @@ max frequencies defined in <code class="docutils literal notranslate"><span clas
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.5.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Bandpower dataframe, in which each row is a channel and each column a spectral band.</p>
+<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Bandpower dataframe, in which each row is a channel and each column a spectral band.</p>
 </dd>
 </dl>
 </dd>
 </dl>
 </dd></dl>
 
-</div>
+</section>
 
 
     </div>
@@ -148,8 +148,8 @@ max frequencies defined in <code class="docutils literal notranslate"><span clas
       
     </p>
     <p>
-        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
+        &copy; Copyright 2018-2024, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br/>
     </p>
   </div>
 </footer>

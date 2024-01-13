@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
-    <title>FAQ &#8212; yasa 0.6.3 documentation</title>
-    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>FAQ &#8212; yasa 0.6.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
     <link rel="stylesheet" type="text/css" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
     <link rel="stylesheet" type="text/css" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
     <link rel="stylesheet" type="text/css" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     <script src="_static/clipboard.min.js"></script>
     <script src="_static/copybutton.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -26,10 +26,10 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="_static/js/jquery-1.12.4.min.js "></script>
-<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
-<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+<script type="text/javascript" src="_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="_static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
 
   </head><body>
 
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="index.html"><span><img src="_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.3</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -93,9 +93,9 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="faq">
+  <section id="faq">
 <span id="id1"></span><h1>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="loading-and-visualizing-polysomnography-data">
+<section id="loading-and-visualizing-polysomnography-data">
 <h2>Loading and visualizing polysomnography data<a class="headerlink" href="#loading-and-visualizing-polysomnography-data" title="Permalink to this headline">¶</a></h2>
 <div class="panel-group">
   <div class="panel panel-default">
@@ -129,12 +129,12 @@
   </div>
   <div id="visualize" class="panel-collapse collapse">
     <div class="panel-body"><p>YASA is a command-line software and does not support data visualization. To scroll through your data, we recommend the free software EDFBrowser (<a class="reference external" href="https://www.teuniz.net/edfbrowser/">https://www.teuniz.net/edfbrowser/</a>):</p>
-<div class="figure align-center">
+<figure class="align-center">
 <img alt="_images/edfbrowser_with_hypnogram.png" src="_images/edfbrowser_with_hypnogram.png" />
-</div>
+</figure>
   </div>
-</div></div>
-<div class="section" id="event-detection">
+</div></section>
+<section id="event-detection">
 <h2>Event detection<a class="headerlink" href="#event-detection" title="Permalink to this headline">¶</a></h2>
 <div class="panel panel-default">
   <div class="panel-heading">
@@ -181,8 +181,8 @@
   <div id="edit_detection" class="panel-collapse collapse">
     <div class="panel-body"><p>YASA does not currently support visual editing of the detected events. However, you can import the events as annotations in <a class="reference external" href="https://www.teuniz.net/edfbrowser/">EDFBrowser</a> and edit the events from there. If you simply want to visualize the detected events (no editing), you can also use the <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/generated/yasa.SpindlesResults.html#yasa.SpindlesResults.plot_detection">plot_detection</a> method.</p>
   </div>
-</div></div>
-<div class="section" id="sleep-staging">
+</div></section>
+<section id="sleep-staging">
 <h2>Sleep staging<a class="headerlink" href="#sleep-staging" title="Permalink to this headline">¶</a></h2>
 <div class="panel panel-default">
   <div class="panel-heading">
@@ -197,9 +197,9 @@
 </ul>
 <p>However, our recommendation is that <strong>YASA should not replace human scoring, but rather serve as a starting point to speed up sleep staging</strong>. If possible, you should always have a trained sleep scorer visually check the predictions of YASA, with a particular emphasis on low-confidence epochs and/or N1 sleep epochs, as these are the epochs most often misclassified by the algorithm.
 Finally, users can also leverage the <a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.plot_spectrogram()</span></code></a> function to plot the predicted hypnogram on top of the full-night spectrogram. Such plots are very useful to quickly identify blatant errors in the hypnogram.</p>
-<div class="figure align-center">
+<figure class="align-center">
 <img alt="_images/spectrogram.png" src="_images/spectrogram.png" />
-</div>
+</figure>
     </div>
   </div>
 </div><div class="panel panel-default">
@@ -225,14 +225,14 @@ Finally, users can also leverage the <a class="reference internal" href="generat
 </pre></div>
 </div>
 <p>You can then import the hypnogram in EDFBrowser by clicking on the “Import annotations/events” in the “Tools” menu. Then, select the “ASCII/CSV” tab and change the parameters as follow:</p>
-<div class="figure align-center">
+<figure class="align-center">
 <img alt="_images/edfbrowser_import_annotations.png" src="_images/edfbrowser_import_annotations.png" />
-</div>
+</figure>
 <p>Click “Import”. Once it’s done, the hypnogram can be enabled via the “Window” menu. A dialog will appear where you can setup the labels for the different sleep stages and the mapping to the annotations in the file. The default parameters should work.
 When using the Annotation editor, the hypnogram will be updated realtime when adding, moving or deleting annotations. Once you’re done editing, you can export the edited hypnogram with “Export anotations/events” in the “Tools” menu.</p>
-<div class="figure align-center">
+<figure class="align-center">
 <img alt="_images/edfbrowser_with_hypnogram.png" src="_images/edfbrowser_with_hypnogram.png" />
-</div>
+</figure>
 <hr class="docutils" />
 <p><strong>SpiSOP</strong></p>
 <p><a class="reference external" href="https://www.spisop.org/">SpiSOP</a> is an open-source Matlab toolbox for the analysis and visualization of polysomnography sleep data. It comes with a sleep scoring GUI.
@@ -245,9 +245,9 @@ As explained in <a class="reference external" href="https://www.spisop.org/faq/#
 <hr class="docutils" />
 <p><strong>Visbrain</strong></p>
 <p><a class="reference external" href="https://visbrain.org/sleep.html">Visbrain</a> is an open-source Python toolbox that includes a module for visualizing polysomnography sleep data and scoring sleep (see screenshot below).</p>
-<div class="figure align-center">
+<figure class="align-center">
 <img alt="_images/visbrain.PNG" src="_images/visbrain.PNG" />
-</div>
+</figure>
 <p>Visbrain accepts several <a class="reference external" href="https://visbrain.org/sleep.html#hypnogram">formats for the hypnogram</a>. The code below show how to export the hypnogram in the <a class="reference external" href="https://pubmed.ncbi.nlm.nih.gov/21687568/">Elan software format</a> (i.e. a text file with the <em>.hyp</em> extension):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">hypno_int</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">hypno</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">({</span><span class="s2">&quot;W&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;N1&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;N2&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;N3&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
 <span class="n">header</span> <span class="o">=</span> <span class="s2">&quot;time_base 30</span><span class="se">\n</span><span class="s2">sampling_period 1/30</span><span class="se">\n</span><span class="s2">epoch_nb </span><span class="si">%i</span><span class="se">\n</span><span class="s2">epoch_list&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">hypno_int</span><span class="p">)</span>
@@ -272,8 +272,8 @@ As explained in <a class="reference external" href="https://www.spisop.org/faq/#
 <p>Despite these required changes, one advantage of YASA is that it provides a useful framework for implementing such sleep staging algorithms. For example, one can save a huge amount of time by simply re-using and adapting the built-in <a class="reference internal" href="generated/yasa.SleepStaging.html#yasa.SleepStaging" title="yasa.SleepStaging"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.SleepStaging</span></code></a> class.
 In addition, all the code used to train YASA is freely available at <a class="reference external" href="https://github.com/raphaelvallat/yasa_classifier">https://github.com/raphaelvallat/yasa_classifier</a> and can be re-used to re-train the classifier on non-human data.</p>
   </div>
-</div></div>
-<div class="section" id="others">
+</div></section>
+<section id="others">
 <h2>Others<a class="headerlink" href="#others" title="Permalink to this headline">¶</a></h2>
 <div class="panel panel-default">
   <div class="panel-heading">
@@ -329,8 +329,8 @@ Whenever a new release is out there, you can upgrade your version by typing the 
 </div>
     </div>
   </div>
-</div></div>
-</div>
+</div></section>
+</section>
 
 
     </div>
@@ -347,8 +347,8 @@ Whenever a new release is out there, you can upgrade your version by typing the 
       
     </p>
     <p>
-        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
+        &copy; Copyright 2018-2024, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br/>
     </p>
   </div>
 </footer>

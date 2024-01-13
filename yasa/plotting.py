@@ -475,36 +475,18 @@ def topoplot(
     with sns.axes_style("white"):
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
-        # vmin, vmax and show_names have been deprecated in MNE v1.3
-        mne_version = float(mne.__version__[:3])
-
-        if mne_version >= 1.3:
-            if "show_names" in kwargs:
-                kwargs.pop("show_names")
-            im, _ = mne.viz.plot_topomap(
-                data=data.iloc[:, 0][chan],
-                pos=Info,
-                vlim=(vmin, vmax),
-                mask=data.iloc[:, 1][chan],
-                cmap=cmap,
-                show=False,
-                axes=ax,
-                **kwargs,
-            )
-        else:
-            if "show_names" not in kwargs:
-                kwargs["show_names"] = True
-            im, _ = mne.viz.plot_topomap(
-                data=data.iloc[:, 0][chan],
-                pos=Info,
-                vmin=vmin,
-                vmax=vmax,
-                mask=data.iloc[:, 1][chan],
-                cmap=cmap,
-                show=False,
-                axes=ax,
-                **kwargs,
-            )
+        if "show_names" in kwargs:
+            kwargs.pop("show_names")
+        im, _ = mne.viz.plot_topomap(
+            data=data.iloc[:, 0][chan],
+            pos=Info,
+            vlim=(vmin, vmax),
+            mask=data.iloc[:, 1][chan],
+            cmap=cmap,
+            show=False,
+            axes=ax,
+            **kwargs,
+        )
 
         if title is not None:
             ax.set_title(title)
