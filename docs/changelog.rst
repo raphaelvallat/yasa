@@ -39,8 +39,21 @@ Please see the documentation of :py:class:`yasa.Hypnogram` for more details.
 .. important::
   The adoption of object-oriented :py:class:`yasa.Hypnogram` usage brings along critical changes to several YASA function, for example:
 
-  * :py:func:`yasa.simulate_hypno` now returns a :py:class:`yasa.Hypnogram` instead of a :py:class:`numpy.ndarray`.
+  * :py:func:`yasa.simulate_hypnogram` now returns a :py:class:`yasa.Hypnogram` instead of a :py:class:`numpy.ndarray`.
   * The suggested approach to plotting hypnograms is through the :py:meth:`yasa.Hypnogram.plot_hypnogram` method. The old function :py:func:`yasa.plot_hypnogram` still exists, but now *requires* a :py:class:`yasa.Hypnogram` instance as input.
+
+----------------------------------------------------------------------------------------
+
+v0.6.4 (January 2024)
+---------------------
+
+Minor release with one bugfix and one improvement to an existing function.
+
+- Fix MNE plot_topomap deprecation (`PR 119 <https://github.com/raphaelvallat/yasa/pull/119>`_)
+- Pass `relative_prominence` parameters in :py:func:`yasa.rem_detect` (`PR 151 <https://github.com/raphaelvallat/yasa/pull/151>`_)
+- Rename `yasa.simulate_hypno` function to :py:func:`yasa.simulate_hypnogram`
+- Add Hypnogram class in public API (see `v0.7.dev`).
+- Requires mne>=1.3, numpy>=1.18.1, numba>=0.57.1
 
 ----------------------------------------------------------------------------------------
 
@@ -55,7 +68,7 @@ Solved a bug in the spindles detection which resulted in no spindle being detect
 
 **New functions**
 
-Added the :py:func:`yasa.simulate_hypno` function to generate a simulated hypnogram, primarily for testing purposes and tutorials. The hypnogram is simulated as a Markov sequence based on sleep stage transition probabilities. Transition probabilities can be user-defined or will default to those published in Metzner et al., 2021, *Commun Biol* (see `Figure 5b <https://www.nature.com/articles/s42003-021-02912-6#Fig5>`_).
+Added the `yasa.simulate_hypno` function to generate a simulated hypnogram, primarily for testing purposes and tutorials. The hypnogram is simulated as a Markov sequence based on sleep stage transition probabilities. Transition probabilities can be user-defined or will default to those published in Metzner et al., 2021, *Commun Biol* (see `Figure 5b <https://www.nature.com/articles/s42003-021-02912-6#Fig5>`_).
 
 **Improvements**
 

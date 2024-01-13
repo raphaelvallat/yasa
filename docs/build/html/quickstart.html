@@ -1,24 +1,25 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
-    <title>Quickstart &#8212; yasa 0.6.3 documentation</title>
-    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Quickstart &#8212; yasa 0.6.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
     <link rel="stylesheet" type="text/css" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
     <link rel="stylesheet" type="text/css" href="_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
     <link rel="stylesheet" type="text/css" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     <script src="_static/clipboard.min.js"></script>
     <script src="_static/copybutton.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -26,10 +27,10 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="_static/js/jquery-1.12.4.min.js "></script>
-<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
-<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+<script type="text/javascript" src="_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="_static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
 
   </head><body>
 
@@ -44,7 +45,7 @@
         </button>
         <a class="navbar-brand" href="index.html"><span><img src="_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.3</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -93,7 +94,7 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="quickstart">
+  <section id="quickstart">
 <span id="id1"></span><h1><a class="toc-backref" href="#id3">Quickstart</a><a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
 <div class="contents topic" id="contents">
 <p class="topic-title">Contents</p>
@@ -125,7 +126,7 @@
 </li>
 </ul>
 </div>
-<div class="section" id="prerequisites">
+<section id="prerequisites">
 <h2><a class="toc-backref" href="#id4">Prerequisites</a><a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
 <p>This is an introduction to <a class="reference external" href="https://github.com/raphaelvallat/yasa">YASA</a>, geared mainly for new users. However, you’ll need to know a bit of Python, and especially scientific libraries such as <a class="reference external" href="https://numpy.org/doc/stable/user/quickstart.html">NumPy</a> and <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/10min.html">Pandas</a>. This tutorial also assumes that you are familiar with basic sleep research and methods for analyzing <a class="reference external" href="https://en.wikipedia.org/wiki/Polysomnography">polysomnography</a> (PSG) data.</p>
 <p>Make sure to install the latest version of YASA, by opening a terminal or Anaconda command prompt and entering: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">--upgrade</span> <span class="pre">yasa</span></code></p>
@@ -134,11 +135,11 @@
 <li><p>Full-night <a class="reference download external" download="" href="https://drive.google.com/uc?id=13YFQrvAGvcz77Qm8kFXu1nyRKhTti3VB"><code class="xref download docutils literal notranslate"><span class="pre">polysomnography</span> <span class="pre">data</span> <span class="pre">(.edf</span> <span class="pre">format,</span> <span class="pre">266MB)</span></code></a> from a 22-years-old healthy female. The PSG recording includes 19 EEGs, 2 EOGs, 1 EMG and 1 EKG. The recording spans an entire night of sleep from 11:59 PM to 08:01 AM.</p></li>
 <li><p><a class="reference download external" download="" href="https://drive.google.com/uc?id=1s-XXBIXt0YKsbihMa1imBo4oftpb1Ds_"><code class="xref download docutils literal notranslate"><span class="pre">Sleep</span> <span class="pre">stages</span> <span class="pre">(aka</span> <span class="pre">hypnogram,</span> <span class="pre">.csv</span> <span class="pre">format,</span> <span class="pre">3KB)</span></code></a>, in 30-seconds epoch. The sleep stages are encoded as follow: 0 = Wake, 1 = N1, 2 = N2, 3 = N3, and 4 = REM.</p></li>
 </ul>
-</div>
+</section>
 <hr class="docutils" />
-<div class="section" id="data-loading-and-preprocessing">
+<section id="data-loading-and-preprocessing">
 <h2><a class="toc-backref" href="#id5">Data loading and preprocessing</a><a class="headerlink" href="#data-loading-and-preprocessing" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="polysomnography-data">
+<section id="polysomnography-data">
 <h3><a class="toc-backref" href="#id6">Polysomnography data</a><a class="headerlink" href="#polysomnography-data" title="Permalink to this headline">¶</a></h3>
 <p>We will use the <a class="reference external" href="https://mne.tools/stable/index.html">MNE package</a> to load and preprocess the data in Python:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">mne</span>
@@ -192,12 +193,12 @@
 </pre></div>
 </div>
 <p>In this example, <code class="docutils literal notranslate"><span class="pre">data</span></code> is a two-dimensional NumPy array where the rows represent the channels (19 EEG channels) and the columns represent the data samples (~3 million samples per channel).</p>
-</div>
-<div class="section" id="hypnogram">
+</section>
+<section id="hypnogram">
 <h3><a class="toc-backref" href="#id7">Hypnogram</a><a class="headerlink" href="#hypnogram" title="Permalink to this headline">¶</a></h3>
 <p>Sleep staging (aka hypnogram) for this example night was performed by a trained technician following the standard rules of the American Academy of Sleep Medicine (AASM).
 The output is saved in a .csv file, where each row represents 30 seconds of data. The stages are mapped to integers such that 0 = Wake, 1 = N1 sleep, 2 = N2 sleep, 3 = N3 sleep and 4 = REM sleep.
-We can load this file using the <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html#pandas.read_csv" title="(in pandas v1.5.2)"><code class="xref py py-func docutils literal notranslate"><span class="pre">pandas.read_csv()</span></code></a> function:</p>
+We can load this file using the <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html#pandas.read_csv" title="(in pandas v2.1.4)"><code class="xref py py-func docutils literal notranslate"><span class="pre">pandas.read_csv()</span></code></a> function:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">hypno</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;yasa_example_night_young_hypno.csv&quot;</span><span class="p">,</span> <span class="n">squeeze</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">hypno</span>
@@ -224,13 +225,13 @@ We can load this file using the <a class="reference external" href="https://pand
 <span class="gp">&gt;&gt;&gt; </span><span class="n">yasa</span><span class="o">.</span><span class="n">plot_hypnogram</span><span class="p">(</span><span class="n">hypno</span><span class="p">);</span>
 </pre></div>
 </div>
-<div class="figure align-center">
+<figure class="align-center">
 <img alt="_images/hypnogram.png" src="_images/hypnogram.png" />
-</div>
-</div>
-</div>
+</figure>
+</section>
+</section>
 <hr class="docutils" />
-<div class="section" id="sleep-statistics-and-stage-transition-matrix">
+<section id="sleep-statistics-and-stage-transition-matrix">
 <h2><a class="toc-backref" href="#id8">Sleep statistics and stage-transition matrix</a><a class="headerlink" href="#sleep-statistics-and-stage-transition-matrix" title="Permalink to this headline">¶</a></h2>
 <p>Using the hypnogram, we can calculate standard sleep statistics using the <a class="reference internal" href="generated/yasa.sleep_statistics.html#yasa.sleep_statistics" title="yasa.sleep_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sleep_statistics()</span></code></a> function.
 Importantly, this function has an <code class="docutils literal notranslate"><span class="pre">sf_hyp</span></code> argument, which is the sampling frequency of the hypnogram. Since we have one value every 30-seconds, the sampling frequency is 0.3333 Hz, or 1 / 30 Hz.</p>
@@ -270,11 +271,11 @@ Importantly, this function has an <code class="docutils literal notranslate"><sp
 <span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">probs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="mi">2</span><span class="p">:,</span> <span class="mi">2</span><span class="p">:])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
+</section>
 <hr class="docutils" />
-<div class="section" id="spectral-analyses">
+<section id="spectral-analyses">
 <h2><a class="toc-backref" href="#id9">Spectral analyses</a><a class="headerlink" href="#spectral-analyses" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="full-night-spectrogram-plot">
+<section id="full-night-spectrogram-plot">
 <h3><a class="toc-backref" href="#id10">Full-night spectrogram plot</a><a class="headerlink" href="#full-night-spectrogram-plot" title="Permalink to this headline">¶</a></h3>
 <p>The current sampling frequency of the hypnogram is one value every 30-seconds, i.e. ~0.3333 Hz. However, most YASA functions requires the sampling frequency of the hypnogram to be the same as the sampling frequency of the PSG data. In this example, we therefore need to upsample our hypnogram from 0.333 Hz to 100 Hz.
 This can be done with the <a class="reference internal" href="generated/yasa.hypno_upsample_to_data.html#yasa.hypno_upsample_to_data" title="yasa.hypno_upsample_to_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.hypno_upsample_to_data()</span></code></a> function:</p>
@@ -293,8 +294,8 @@ Warmer colors indicate higher spectral power in this specific frequency band at 
 <p class="admonition-title">Note</p>
 <p>Whenever you start a new analysis in YASA, we always recommend that you the <a class="reference internal" href="generated/yasa.plot_spectrogram.html#yasa.plot_spectrogram" title="yasa.plot_spectrogram"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.plot_spectrogram()</span></code></a> function to check your data. This can help you easily identify artefact in the data or misalignement between the PSG data and hypnogram.</p>
 </div>
-</div>
-<div class="section" id="eeg-power-in-specific-frequency-bands">
+</section>
+<section id="eeg-power-in-specific-frequency-bands">
 <h3><a class="toc-backref" href="#id11">EEG power in specific frequency bands</a><a class="headerlink" href="#eeg-power-in-specific-frequency-bands" title="Permalink to this headline">¶</a></h3>
 <p>For a primer on EEG spectral bandpower please refer to <a class="reference external" href="https://raphaelvallat.com/bandpower.html">https://raphaelvallat.com/bandpower.html</a>.</p>
 <p>Spectral analysis quantifies the power (or amplitude) of the EEG signal in different frequency bands. In neuroscience, the most common frequency bands are <strong>delta</strong> (0.5–4 Hz), <strong>theta</strong> (4–8 Hz), <strong>alpha</strong> (8–12 Hz), <strong>beta</strong> (12–30 Hz), and <strong>gamma</strong> (30–~100 Hz). There are numerous studies that have reported significant relationship between the EEG power spectrum and human behavior, cognitive state, or mental illnesses, and EEG spectral analysis is now one of the principal analysis methods in the field of neuroscience and sleep research.
@@ -313,21 +314,21 @@ It is especially relevant for sleep analysis, as it is well-known that the diffe
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bandpower</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">bandpower</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno_up</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
 </pre></div>
 </div>
-<p>If desired, we can then export the <code class="docutils literal notranslate"><span class="pre">bandpower</span></code> dataframe to a CSV file using <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html#pandas.DataFrame.to_csv" title="(in pandas v1.5.2)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pandas.DataFrame.to_csv()</span></code></a>:</p>
+<p>If desired, we can then export the <code class="docutils literal notranslate"><span class="pre">bandpower</span></code> dataframe to a CSV file using <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html#pandas.DataFrame.to_csv" title="(in pandas v2.1.4)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pandas.DataFrame.to_csv()</span></code></a>:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bandpower</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;bandpower.csv&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Finally, we can use the <a class="reference internal" href="generated/yasa.topoplot.html#yasa.topoplot" title="yasa.topoplot"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.topoplot()</span></code></a> function to visualize the spectral powers across all electrodes. In the example below, we only plot the spectral values of stage N3, using the <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.xs.html#pandas.DataFrame.xs" title="(in pandas v1.5.2)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pandas.DataFrame.xs()</span></code></a> function. As expected, the relative delta power is higher in frontal channels.</p>
+<p>Finally, we can use the <a class="reference internal" href="generated/yasa.topoplot.html#yasa.topoplot" title="yasa.topoplot"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.topoplot()</span></code></a> function to visualize the spectral powers across all electrodes. In the example below, we only plot the spectral values of stage N3, using the <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.xs.html#pandas.DataFrame.xs" title="(in pandas v2.1.4)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pandas.DataFrame.xs()</span></code></a> function. As expected, the relative delta power is higher in frontal channels.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">topoplot</span><span class="p">(</span><span class="n">bandpower</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="mi">3</span><span class="p">)[</span><span class="s1">&#39;Delta&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
 <a class="reference internal image-reference" href="_images/topoplot.png"><img alt="_images/topoplot.png" class="align-center" src="_images/topoplot.png" style="width: 522.6px; height: 372.59999999999997px;" /></a>
-</div>
-</div>
+</section>
+</section>
 <hr class="docutils" />
-<div class="section" id="events-detection">
+<section id="events-detection">
 <h2><a class="toc-backref" href="#id12">Events detection</a><a class="headerlink" href="#events-detection" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="spindles">
+<section id="spindles">
 <h3><a class="toc-backref" href="#id13">Spindles</a><a class="headerlink" href="#spindles" title="Permalink to this headline">¶</a></h3>
 <p>Automatic spindles detection can be performed with the <a class="reference internal" href="generated/yasa.spindles_detect.html#yasa.spindles_detect" title="yasa.spindles_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.spindles_detect()</span></code></a> function. The detection is based on the algorithm described in <a class="reference external" href="https://pubmed.ncbi.nlm.nih.gov/30107208/">Lacourse et al 2018</a>, and a step-by-step explanation is provided in <a class="reference external" href="https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb">this notebook</a>. For the sake of this tutorial, we’ll use the default detection thresholds, but these can (and should) be adjusted based on your own data. In the example below, we’ll specify the hypnogram and limit the detection to stage N2 and 3 (<code class="docutils literal notranslate"><span class="pre">include=(2,</span> <span class="pre">3)</span></code>).</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sp</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">spindles_detect</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno_up</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
@@ -348,8 +349,8 @@ It is especially relevant for sleep analysis, as it is well-known that the diffe
 </pre></div>
 </div>
 <a class="reference internal image-reference" href="_images/avg_spindles.png"><img alt="_images/avg_spindles.png" class="align-center" src="_images/avg_spindles.png" style="width: 559.0px; height: 424.0px;" /></a>
-</div>
-<div class="section" id="slow-waves">
+</section>
+<section id="slow-waves">
 <h3><a class="toc-backref" href="#id14">Slow-waves</a><a class="headerlink" href="#slow-waves" title="Permalink to this headline">¶</a></h3>
 <p>The exact same steps can be applied with the <a class="reference internal" href="generated/yasa.sw_detect.html#yasa.sw_detect" title="yasa.sw_detect"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.sw_detect()</span></code></a> function to automatically detect slow-waves:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sw</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">sw_detect</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">hypno</span><span class="o">=</span><span class="n">hypno_up</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
@@ -362,10 +363,10 @@ It is especially relevant for sleep analysis, as it is well-known that the diffe
 </div>
 <a class="reference internal image-reference" href="_images/avg_sw.png"><img alt="_images/avg_sw.png" class="align-center" src="_images/avg_sw.png" style="width: 554.5px; height: 424.0px;" /></a>
 <p>For more details on the output of the slow-waves detection, be sure to read the <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/generated/yasa.sw_detect.html">documentation</a> and try the <a class="reference external" href="https://github.com/raphaelvallat/yasa/tree/master/notebooks">Jupyter notebooks</a>.</p>
-</div>
-</div>
+</section>
+</section>
 <hr class="docutils" />
-<div class="section" id="automatic-sleep-staging">
+<section id="automatic-sleep-staging">
 <h2><a class="toc-backref" href="#id15">Automatic sleep staging</a><a class="headerlink" href="#automatic-sleep-staging" title="Permalink to this headline">¶</a></h2>
 <p>In this final section, we’ll see how to perform automatic sleep staging in YASA. As shown below, this takes no more than a few lines of code! Here, we’ll use a single EEG channel to predict a full-night hypnogram. For more details on the algorithm, check out the <a class="reference external" href="https://elifesciences.org/articles/70092">eLife publication</a> or the <a class="reference external" href="https://raphaelvallat.com/yasa/build/html/generated/yasa.SleepStaging.html#yasa.SleepStaging">documentation</a> of the function.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sls</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">SleepStaging</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">eeg_name</span><span class="o">=</span><span class="s1">&#39;C3-A2&#39;</span><span class="p">)</span>
@@ -374,9 +375,9 @@ It is especially relevant for sleep analysis, as it is well-known that the diffe
 <span class="gp">&gt;&gt;&gt; </span><span class="n">yasa</span><span class="o">.</span><span class="n">plot_hypnogram</span><span class="p">(</span><span class="n">hypno_pred</span><span class="p">);</span>  <span class="c1"># Plot</span>
 </pre></div>
 </div>
-<div class="figure align-center">
+<figure class="align-center">
 <img alt="_images/hypno_pred.png" src="_images/hypno_pred.png" />
-</div>
+</figure>
 <p>Let’s calculate the agreement against the ground-truth expert scoring:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">accuracy_score</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The accuracy is </span><span class="si">{</span><span class="mi">100</span> <span class="o">*</span> <span class="n">accuracy_score</span><span class="p">(</span><span class="n">hypno</span><span class="p">,</span> <span class="n">hypno_pred</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
@@ -386,8 +387,8 @@ It is especially relevant for sleep analysis, as it is well-known that the diffe
 <div class="line-block">
 <div class="line"><br /></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
     </div>
@@ -404,8 +405,8 @@ It is especially relevant for sleep analysis, as it is well-known that the diffe
       
     </p>
     <p>
-        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
+        &copy; Copyright 2018-2024, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br/>
     </p>
   </div>
 </footer>

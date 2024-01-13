@@ -31,7 +31,6 @@ Hypnogram & sleep statistics
 .. autosummary::
    :toctree: generated/
 
-    Hypnogram
     hypno_upsample_to_data
     hypno_upsample_to_sf
     hypno_str_to_int
@@ -42,7 +41,8 @@ Hypnogram & sleep statistics
     plot_spectrogram
     transition_matrix
     sleep_statistics
-    simulate_hypno
+    Hypnogram
+    simulate_hypnogram
 
 Spectral analyses
 -----------------

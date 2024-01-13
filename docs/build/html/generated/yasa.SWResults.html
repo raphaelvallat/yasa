@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.SWResults &#8212; yasa 0.6.3 documentation</title>
-    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>yasa.SWResults &#8212; yasa 0.6.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
     <script src="../_static/clipboard.min.js"></script>
     <script src="../_static/copybutton.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -26,10 +26,10 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js "></script>
-<script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
 
   </head><body>
 
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.3</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -93,16 +93,16 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="yasa-swresults">
+  <section id="yasa-swresults">
 <h1>yasa.SWResults<a class="headerlink" href="#yasa-swresults" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
-<dt id="yasa.SWResults">
-<em class="property">class </em><code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">SWResults</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">events</span></em>, <em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf</span></em>, <em class="sig-param"><span class="n">ch_names</span></em>, <em class="sig-param"><span class="n">hypno</span></em>, <em class="sig-param"><span class="n">data_filt</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SWResults" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.SWResults">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">yasa.</span></span><span class="sig-name descname"><span class="pre">SWResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">events</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ch_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hypno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_filt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.SWResults" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output class for slow-waves detection.</p>
 <dl class="field-list">
 <dt class="field-odd">Attributes</dt>
 <dd class="field-odd"><dl>
-<dt><strong>_events</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.5.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output detection dataframe</p>
+<dt><strong>_events</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output detection dataframe</p>
 </dd>
 <dt><strong>_data</strong><span class="classifier">array_like</span></dt><dd><p>EEG data of shape <em>(n_chan, n_samples)</em>.</p>
 </dd>
@@ -118,10 +118,9 @@
 </dd>
 </dl>
 <dl class="py method">
-<dt id="yasa.SWResults.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">events</span></em>, <em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">sf</span></em>, <em class="sig-param"><span class="n">ch_names</span></em>, <em class="sig-param"><span class="n">hypno</span></em>, <em class="sig-param"><span class="n">data_filt</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SWResults.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
-</dd></dl>
+<dt class="sig sig-object py" id="yasa.SWResults.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">events</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ch_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hypno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_filt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.SWResults.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <p class="rubric">Methods</p>
 <table class="longtable docutils align-default">
@@ -130,13 +129,13 @@
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SWResults.__init__" title="yasa.SWResults.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(events, data, sf, ch_names, hypno, …)</p></td>
-<td><p>Initialize self.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SWResults.__init__" title="yasa.SWResults.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(events, data, sf, ch_names, hypno, ...)</p></td>
+<td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#yasa.SWResults.compare_channels" title="yasa.SWResults.compare_channels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_channels</span></code></a>([score, max_distance_sec])</p></td>
 <td><p>Compare detected slow-waves across channels.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SWResults.compare_detection" title="yasa.SWResults.compare_detection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_detection</span></code></a>(other[, max_distance_sec, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SWResults.compare_detection" title="yasa.SWResults.compare_detection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_detection</span></code></a>(other[, max_distance_sec, ...])</p></td>
 <td><p>Compare the detected slow-waves against either another YASA detection or against custom annotations (e.g.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#yasa.SWResults.find_cooccurring_spindles" title="yasa.SWResults.find_cooccurring_spindles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_cooccurring_spindles</span></code></a>(spindles[, lookaround])</p></td>
@@ -148,23 +147,23 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#yasa.SWResults.get_mask" title="yasa.SWResults.get_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_mask</span></code></a>()</p></td>
 <td><p>Return a boolean array indicating for each sample in data if this sample is part of a detected event (True) or not (False).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SWResults.get_sync_events" title="yasa.SWResults.get_sync_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sync_events</span></code></a>([center, time_before, …])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SWResults.get_sync_events" title="yasa.SWResults.get_sync_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sync_events</span></code></a>([center, time_before, ...])</p></td>
 <td><p>Return the raw data of each detected event after centering to a specific timepoint.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SWResults.plot_average" title="yasa.SWResults.plot_average"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_average</span></code></a>([center, hue, time_before, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SWResults.plot_average" title="yasa.SWResults.plot_average"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_average</span></code></a>([center, hue, time_before, ...])</p></td>
 <td><p>Plot the average slow-wave.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#yasa.SWResults.plot_detection" title="yasa.SWResults.plot_detection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_detection</span></code></a>()</p></td>
 <td><p>Plot an overlay of the detected slow-waves on the EEG signal.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SWResults.summary" title="yasa.SWResults.summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary</span></code></a>([grp_chan, grp_stage, mask, …])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.SWResults.summary" title="yasa.SWResults.summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary</span></code></a>([grp_chan, grp_stage, mask, ...])</p></td>
 <td><p>Return a summary of the SW detection, optionally grouped across channels and/or stage.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt id="yasa.SWResults.compare_channels">
-<code class="sig-name descname">compare_channels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">score</span><span class="o">=</span><span class="default_value">'f1'</span></em>, <em class="sig-param"><span class="n">max_distance_sec</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.compare_channels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SWResults.compare_channels" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.SWResults.compare_channels">
+<span class="sig-name descname"><span class="pre">compare_channels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'f1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_distance_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.compare_channels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.SWResults.compare_channels" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compare detected slow-waves across channels.</p>
 <p>This is a wrapper around the <a class="reference internal" href="yasa.compare_detection.html#yasa.compare_detection" title="yasa.compare_detection"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.compare_detection()</span></code></a> function. Please
 refer to the documentation of this function for more details.</p>
@@ -191,7 +190,7 @@ considered the same event, even when max_distance_sec=0.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>scores</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.5.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>A Pandas DataFrame with the output scores, of shape (n_chan, n_chan).</p>
+<dt><strong>scores</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>A Pandas DataFrame with the output scores, of shape (n_chan, n_chan).</p>
 </dd>
 </dl>
 </dd>
@@ -207,8 +206,8 @@ another channel (if using <code class="docutils literal notranslate"><span class
 </dd></dl>
 
 <dl class="py method">
-<dt id="yasa.SWResults.compare_detection">
-<code class="sig-name descname">compare_detection</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">other</span></em>, <em class="sig-param"><span class="n">max_distance_sec</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">other_is_groundtruth</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.compare_detection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SWResults.compare_detection" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.SWResults.compare_detection">
+<span class="sig-name descname"><span class="pre">compare_detection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_distance_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other_is_groundtruth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.compare_detection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.SWResults.compare_detection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compare the detected slow-waves against either another YASA detection or against custom
 annotations (e.g. ground-truth human scoring).</p>
 <p>This function is a wrapper around the <a class="reference internal" href="yasa.compare_detection.html#yasa.compare_detection" title="yasa.compare_detection"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.compare_detection()</span></code></a> function. Please
@@ -247,7 +246,7 @@ current detection that are also present in other.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>scores</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.5.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>A Pandas DataFrame with the channel names as index, and the following columns</p>
+<dt><strong>scores</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>A Pandas DataFrame with the channel names as index, and the following columns</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">precision</span></code>: Precision score, aka positive predictive value</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">recall</span></code>: Recall score, aka sensitivity</p></li>
@@ -270,8 +269,8 @@ those obtained with the default parameters?</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="yasa.SWResults.find_cooccurring_spindles">
-<code class="sig-name descname">find_cooccurring_spindles</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">spindles</span></em>, <em class="sig-param"><span class="n">lookaround</span><span class="o">=</span><span class="default_value">1.2</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.find_cooccurring_spindles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SWResults.find_cooccurring_spindles" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.SWResults.find_cooccurring_spindles">
+<span class="sig-name descname"><span class="pre">find_cooccurring_spindles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spindles</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lookaround</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.find_cooccurring_spindles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.SWResults.find_cooccurring_spindles" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a spindles detection summary dataframe, find slow-waves that co-occur with
 sleep spindles.</p>
 <div class="versionadded">
@@ -280,7 +279,7 @@ sleep spindles.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>spindles</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.5.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output dataframe of <a class="reference internal" href="yasa.SpindlesResults.html#yasa.SpindlesResults.summary" title="yasa.SpindlesResults.summary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">yasa.SpindlesResults.summary()</span></code></a>.</p>
+<dt><strong>spindles</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output dataframe of <a class="reference internal" href="yasa.SpindlesResults.html#yasa.SpindlesResults.summary" title="yasa.SpindlesResults.summary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">yasa.SpindlesResults.summary()</span></code></a>.</p>
 </dd>
 <dt><strong>lookaround</strong><span class="classifier">float</span></dt><dd><p>Lookaround window, in seconds. The default is +/- 1.2 seconds around the
 negative peak of the slow-wave, as in <a class="reference internal" href="#r6111fe3ae02e-1" id="id1">[1]</a>. This means that YASA will look for a
@@ -290,7 +289,7 @@ spindle in a 2.4 seconds window centered around the downstate of the slow-wave.<
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>_events</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.5.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>The slow-wave detection is modified IN-PLACE (see Notes). To see the updated dataframe,
+<dt><strong>_events</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>The slow-wave detection is modified IN-PLACE (see Notes). To see the updated dataframe,
 call the <a class="reference internal" href="#yasa.SWResults.summary" title="yasa.SWResults.summary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">yasa.SWResults.summary()</span></code></a> method.</p>
 </dd>
 </dl>
@@ -326,8 +325,8 @@ A study of slow oscillation–spindle coupling. Sleep, 44(6), zsaa290.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="yasa.SWResults.get_coincidence_matrix">
-<code class="sig-name descname">get_coincidence_matrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scaled</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.get_coincidence_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SWResults.get_coincidence_matrix" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.SWResults.get_coincidence_matrix">
+<span class="sig-name descname"><span class="pre">get_coincidence_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scaled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.get_coincidence_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.SWResults.get_coincidence_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the (scaled) coincidence matrix.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -378,15 +377,15 @@ networks or quickly find outlier channels.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="yasa.SWResults.get_mask">
-<code class="sig-name descname">get_mask</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.get_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SWResults.get_mask" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.SWResults.get_mask">
+<span class="sig-name descname"><span class="pre">get_mask</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.get_mask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.SWResults.get_mask" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a boolean array indicating for each sample in data if this
 sample is part of a detected event (True) or not (False).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="yasa.SWResults.get_sync_events">
-<code class="sig-name descname">get_sync_events</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">center</span><span class="o">=</span><span class="default_value">'NegPeak'</span></em>, <em class="sig-param"><span class="n">time_before</span><span class="o">=</span><span class="default_value">0.4</span></em>, <em class="sig-param"><span class="n">time_after</span><span class="o">=</span><span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">filt</span><span class="o">=</span><span class="default_value">None, None</span></em>, <em class="sig-param"><span class="n">mask</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">as_dataframe</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.get_sync_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SWResults.get_sync_events" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.SWResults.get_sync_events">
+<span class="sig-name descname"><span class="pre">get_sync_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">center</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'NegPeak'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_before</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(None,</span> <span class="pre">None)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_dataframe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.get_sync_events"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.SWResults.get_sync_events" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the raw data of each detected event after centering to a specific timepoint.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
@@ -401,7 +400,7 @@ Default is to use the negative peak of the slow-wave.</p>
 <dt><strong>filt</strong><span class="classifier">tuple</span></dt><dd><p>Optional filtering to apply to data. For instance, <code class="docutils literal notranslate"><span class="pre">filt=(1,</span> <span class="pre">30)</span></code>
 will apply a 1 to 30 Hz bandpass filter, and <code class="docutils literal notranslate"><span class="pre">filt=(None,</span> <span class="pre">40)</span></code>
 will apply a 40 Hz lowpass filter. Filtering is done using default
-parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.2)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
+parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
 </dd>
 <dt><strong>mask</strong><span class="classifier">array_like or None</span></dt><dd><p>Custom boolean mask. Only the detected events for which mask is True will be
 included. Default is None, i.e. no masking (all events are included).</p>
@@ -414,7 +413,7 @@ arrays within the list is (n_events, n_times).</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>df_sync</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v1.5.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> or list</span></dt><dd><p>Ouput long-format dataframe (if <code class="docutils literal notranslate"><span class="pre">as_dataframe=True</span></code>):</p>
+<dt><strong>df_sync</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> or list</span></dt><dd><p>Ouput long-format dataframe (if <code class="docutils literal notranslate"><span class="pre">as_dataframe=True</span></code>):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Event&#39;</span> <span class="p">:</span> <span class="n">Event</span> <span class="n">number</span>
 <span class="s1">&#39;Time&#39;</span> <span class="p">:</span> <span class="n">Timing</span> <span class="n">of</span> <span class="n">the</span> <span class="n">events</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;Amplitude&#39;</span> <span class="p">:</span> <span class="n">Raw</span> <span class="ow">or</span> <span class="n">filtered</span> <span class="n">data</span> <span class="k">for</span> <span class="n">event</span>
@@ -430,8 +429,8 @@ arrays within the list is (n_events, n_times).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="yasa.SWResults.plot_average">
-<code class="sig-name descname">plot_average</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">center</span><span class="o">=</span><span class="default_value">'NegPeak'</span></em>, <em class="sig-param"><span class="n">hue</span><span class="o">=</span><span class="default_value">'Channel'</span></em>, <em class="sig-param"><span class="n">time_before</span><span class="o">=</span><span class="default_value">0.4</span></em>, <em class="sig-param"><span class="n">time_after</span><span class="o">=</span><span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">filt</span><span class="o">=</span><span class="default_value">None, None</span></em>, <em class="sig-param"><span class="n">mask</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">figsize</span><span class="o">=</span><span class="default_value">6, 4.5</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.plot_average"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SWResults.plot_average" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.SWResults.plot_average">
+<span class="sig-name descname"><span class="pre">plot_average</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">center</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'NegPeak'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Channel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_before</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(None,</span> <span class="pre">None)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(6,</span> <span class="pre">4.5)</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.plot_average"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.SWResults.plot_average" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the average slow-wave.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -449,14 +448,14 @@ Can be either ‘Channel’ or ‘Stage’.</p>
 <dt><strong>filt</strong><span class="classifier">tuple</span></dt><dd><p>Optional filtering to apply to data. For instance, <code class="docutils literal notranslate"><span class="pre">filt=(1,</span> <span class="pre">30)</span></code>
 will apply a 1 to 30 Hz bandpass filter, and <code class="docutils literal notranslate"><span class="pre">filt=(None,</span> <span class="pre">40)</span></code>
 will apply a 40 Hz lowpass filter. Filtering is done using default
-parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.2)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
+parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
 </dd>
 <dt><strong>mask</strong><span class="classifier">array_like or None</span></dt><dd><p>Custom boolean mask. Only the detected events for which mask is True will be
 plotted. Default is None, i.e. no masking (all events are included).</p>
 </dd>
 <dt><strong>figsize</strong><span class="classifier">tuple</span></dt><dd><p>Figure size in inches.</p>
 </dd>
-<dt><strong>**kwargs</strong><span class="classifier">dict</span></dt><dd><p>Optional argument that are passed to <a class="reference external" href="https://seaborn.pydata.org/generated/seaborn.lineplot.html#seaborn.lineplot" title="(in seaborn v0.12.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">seaborn.lineplot()</span></code></a>.</p>
+<dt><strong>**kwargs</strong><span class="classifier">dict</span></dt><dd><p>Optional argument that are passed to <a class="reference external" href="https://seaborn.pydata.org/generated/seaborn.lineplot.html#seaborn.lineplot" title="(in seaborn v0.13.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">seaborn.lineplot()</span></code></a>.</p>
 </dd>
 </dl>
 </dd>
@@ -464,8 +463,8 @@ plotted. Default is None, i.e. no masking (all events are included).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="yasa.SWResults.plot_detection">
-<code class="sig-name descname">plot_detection</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.plot_detection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SWResults.plot_detection" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.SWResults.plot_detection">
+<span class="sig-name descname"><span class="pre">plot_detection</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.plot_detection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.SWResults.plot_detection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot an overlay of the detected slow-waves on the EEG signal.</p>
 <p>This only works in Jupyter and it requires the ipywidgets
 (<a class="reference external" href="https://ipywidgets.readthedocs.io/en/latest/">https://ipywidgets.readthedocs.io/en/latest/</a>) package.</p>
@@ -479,8 +478,8 @@ plotted. Default is None, i.e. no masking (all events are included).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="yasa.SWResults.summary">
-<code class="sig-name descname">summary</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">grp_chan</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">grp_stage</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">mask</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">aggfunc</span><span class="o">=</span><span class="default_value">'mean'</span></em>, <em class="sig-param"><span class="n">sort</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.SWResults.summary" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.SWResults.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grp_chan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grp_stage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aggfunc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/detection.html#SWResults.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.SWResults.summary" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a summary of the SW detection, optionally grouped across
 channels and/or stage.</p>
 <dl class="field-list simple">
@@ -504,7 +503,7 @@ included in the summary. Default is None, i.e. no masking (all events are includ
 
 </dd></dl>
 
-</div>
+</section>
 
 
     </div>
@@ -521,8 +520,8 @@ included in the summary. Default is None, i.e. no masking (all events are includ
       
     </p>
     <p>
-        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
+        &copy; Copyright 2018-2024, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br/>
     </p>
   </div>
 </footer>

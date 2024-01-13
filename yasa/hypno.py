@@ -3,7 +3,8 @@ Hypnogram-related functions and class.
 """
 import mne
 import logging
-import warnings
+
+# import warnings
 import numpy as np
 import pandas as pd
 from yasa.io import set_log_level
@@ -28,15 +29,13 @@ logger = logging.getLogger("yasa")
 
 class Hypnogram:
     """
-    Main class for manipulating hypnogram in YASA.
+    Experimental class for manipulating hypnogram in YASA (dev).
 
-    Starting with v0.7, YASA takes a more object-oriented approach to hypnograms. That is,
+    Starting with v0.7, YASA will take a more object-oriented approach to hypnograms. That is,
     hypnograms are now stored as a class (aka object), which comes with its own attributes and
     functions. Furthermore, YASA does not allow integer values to define the stages anymore.
     Instead, users must pass an array of strings with the actual stage names
     (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]).
-
-    .. seealso:: :py:func:`yasa.simulate_hypnogram`
 
     .. versionadded:: 0.7.0
 
@@ -1145,11 +1144,11 @@ def hypno_str_to_int(
     hypno : array_like
         The corresponding integer hypnogram.
     """
-    warnings.warn(
-        "The `yasa.hypno_str_to_int` function is deprecated and will be removed in v0.8. "
-        "Please use the `yasa.Hypnogram.as_int` method instead.",
-        FutureWarning,
-    )
+    # warnings.warn(
+    #     "The `yasa.hypno_str_to_int` function is deprecated and will be removed in v0.8. "
+    #     "Please use the `yasa.Hypnogram.as_int` method instead.",
+    #     FutureWarning,
+    # )
     assert isinstance(hypno, (list, np.ndarray, pd.Series)), "Not an array."
     hypno = pd.Series(np.asarray(hypno, dtype=str))
     assert not hypno.str.isnumeric().any(), "Hypno contains numeric values."
@@ -1178,11 +1177,11 @@ def hypno_int_to_str(
     hypno : array_like
         The corresponding integer hypnogram.
     """
-    warnings.warn(
-        "The `yasa.hypno_int_to_str` function is deprecated and will be removed in v0.8. "
-        "Please use the `yasa.Hypnogram` class to create an hypnogram instead.",
-        FutureWarning,
-    )
+    # warnings.warn(
+    #     "The `yasa.hypno_int_to_str` function is deprecated and will be removed in v0.8. "
+    #     "Please use the `yasa.Hypnogram` class to create an hypnogram instead.",
+    #     FutureWarning,
+    # )
     assert isinstance(hypno, (list, np.ndarray, pd.Series)), "Not an array."
     hypno = pd.Series(np.asarray(hypno, dtype=int))
     return hypno.map(mapping_dict).values
@@ -1215,11 +1214,11 @@ def hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
     hypno : array_like
         The hypnogram, upsampled to ``sf_data``.
     """
-    warnings.warn(
-        "The `yasa.hypno_upsample_to_sf` function is deprecated and will be removed in v0.8. "
-        "Please use the `yasa.Hypnogram.upsample` method instead.",
-        FutureWarning,
-    )
+    # warnings.warn(
+    #     "The `yasa.hypno_upsample_to_sf` function is deprecated and will be removed in v0.8. "
+    #     "Please use the `yasa.Hypnogram.upsample` method instead.",
+    #     FutureWarning,
+    # )
     repeats = sf_data / sf_hypno
     assert sf_hypno <= sf_data, "sf_hypno must be less than sf_data."
     assert repeats.is_integer(), "sf_hypno / sf_data must be a whole number."
