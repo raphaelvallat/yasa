@@ -823,7 +823,6 @@ def spindles_detect(
     df = pd.DataFrame()
 
     for i in range(n_chan):
-
         # ####################################################################
         # START SINGLE CHANNEL DETECTION
         # ####################################################################
