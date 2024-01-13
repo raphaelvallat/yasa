@@ -226,11 +226,11 @@ def sleep_statistics(hypno, sf_hyp):
      'SE': 80.0,
      'SME': 100.0}
     """
-    warnings.warn(
-        "The `yasa.sleep_statistics` function is deprecated and will be removed in v0.8. "
-        "Please use the `yasa.Hypnogram.sleep_statistics` method instead.",
-        FutureWarning,
-    )
+    # warnings.warn(
+    #     "The `yasa.sleep_statistics` function is deprecated and will be removed in v0.8. "
+    #     "Please use the `yasa.Hypnogram.sleep_statistics` method instead.",
+    #     FutureWarning,
+    # )
     stats = {}
     hypno = np.asarray(hypno)
     assert hypno.ndim == 1, "hypno must have only one dimension."

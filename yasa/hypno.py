@@ -1145,11 +1145,11 @@ def hypno_str_to_int(
     hypno : array_like
         The corresponding integer hypnogram.
     """
-    warnings.warn(
-        "The `yasa.hypno_str_to_int` function is deprecated and will be removed in v0.8. "
-        "Please use the `yasa.Hypnogram.as_int` method instead.",
-        FutureWarning,
-    )
+    # warnings.warn(
+    #     "The `yasa.hypno_str_to_int` function is deprecated and will be removed in v0.8. "
+    #     "Please use the `yasa.Hypnogram.as_int` method instead.",
+    #     FutureWarning,
+    # )
     assert isinstance(hypno, (list, np.ndarray, pd.Series)), "Not an array."
     hypno = pd.Series(np.asarray(hypno, dtype=str))
     assert not hypno.str.isnumeric().any(), "Hypno contains numeric values."
@@ -1178,11 +1178,11 @@ def hypno_int_to_str(
     hypno : array_like
         The corresponding integer hypnogram.
     """
-    warnings.warn(
-        "The `yasa.hypno_int_to_str` function is deprecated and will be removed in v0.8. "
-        "Please use the `yasa.Hypnogram` class to create an hypnogram instead.",
-        FutureWarning,
-    )
+    # warnings.warn(
+    #     "The `yasa.hypno_int_to_str` function is deprecated and will be removed in v0.8. "
+    #     "Please use the `yasa.Hypnogram` class to create an hypnogram instead.",
+    #     FutureWarning,
+    # )
     assert isinstance(hypno, (list, np.ndarray, pd.Series)), "Not an array."
     hypno = pd.Series(np.asarray(hypno, dtype=int))
     return hypno.map(mapping_dict).values
@@ -1215,11 +1215,11 @@ def hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
     hypno : array_like
         The hypnogram, upsampled to ``sf_data``.
     """
-    warnings.warn(
-        "The `yasa.hypno_upsample_to_sf` function is deprecated and will be removed in v0.8. "
-        "Please use the `yasa.Hypnogram.upsample` method instead.",
-        FutureWarning,
-    )
+    # warnings.warn(
+    #     "The `yasa.hypno_upsample_to_sf` function is deprecated and will be removed in v0.8. "
+    #     "Please use the `yasa.Hypnogram.upsample` method instead.",
+    #     FutureWarning,
+    # )
     repeats = sf_data / sf_hypno
     assert sf_hypno <= sf_data, "sf_hypno must be less than sf_data."
     assert repeats.is_integer(), "sf_hypno / sf_data must be a whole number."
