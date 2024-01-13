@@ -178,6 +178,12 @@ def sleep_statistics(hypno, sf_hyp):
         total sleep time (TST). Previously, YASA calculated TST as SPT - WASO, thus including
         Art and Uns. TST is now calculated as the sum of all REM and NREM sleep in SPT.
 
+    .. warning::
+        The definition of REM latency in the AASM scoring manual differs from the REM latency
+        reported here. The former uses the time from first epoch of sleep, while YASA uses the
+        time from the beginning of the recording. The AASM definition of the REM latency can be
+        found with `SOL - Lat_REM`.
+
     References
     ----------
     * Iber, C. (2007). The AASM manual for the scoring of sleep and
