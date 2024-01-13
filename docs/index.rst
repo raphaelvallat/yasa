@@ -125,7 +125,7 @@ Below some plots demonstrating the functionalities of YASA. To reproduce these, 
 Development
 ~~~~~~~~~~~
 
-YASA was created and is maintained by `Raphael Vallat <https://raphaelvallat.com>`_, a postdoctoral researcher in `Matthew Walker's lab <https://www.humansleepscience.com/>`_ at UC Berkeley. Contributions are more than welcome so feel free to contact me, open an issue or submit a pull request!
+YASA was created and is maintained by `Raphael Vallat <https://raphaelvallat.com>`_, a former postdoctoral researcher in `Matthew Walker's lab <https://www.humansleepscience.com/>`_ at UC Berkeley. Contributions are more than welcome so feel free to contact me, open an issue or submit a pull request!
 
 To see the code or report a bug, please visit the `GitHub repository <https://github.com/raphaelvallat/yasa>`_.
 
