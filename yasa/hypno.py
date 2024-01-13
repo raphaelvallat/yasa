@@ -29,15 +29,13 @@ logger = logging.getLogger("yasa")
 
 class Hypnogram:
     """
-    Main class for manipulating hypnogram in YASA.
+    Experimental class for manipulating hypnogram in YASA (dev).
 
-    Starting with v0.7, YASA takes a more object-oriented approach to hypnograms. That is,
+    Starting with v0.7, YASA will take a more object-oriented approach to hypnograms. That is,
     hypnograms are now stored as a class (aka object), which comes with its own attributes and
     functions. Furthermore, YASA does not allow integer values to define the stages anymore.
     Instead, users must pass an array of strings with the actual stage names
     (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]).
-
-    .. seealso:: :py:func:`yasa.simulate_hypnogram`
 
     .. versionadded:: 0.7.0
 

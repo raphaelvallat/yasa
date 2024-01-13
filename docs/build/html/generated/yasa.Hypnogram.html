@@ -98,16 +98,12 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="yasa.Hypnogram">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">yasa.</span></span><span class="sig-name descname"><span class="pre">Hypnogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_stages</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'30s'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/hypno.html#Hypnogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.Hypnogram" title="Permalink to this definition">¶</a></dt>
-<dd><p>Main class for manipulating hypnogram in YASA.</p>
-<p>Starting with v0.7, YASA takes a more object-oriented approach to hypnograms. That is,
+<dd><p>Experimental class for manipulating hypnogram in YASA (dev).</p>
+<p>Starting with v0.7, YASA will take a more object-oriented approach to hypnograms. That is,
 hypnograms are now stored as a class (aka object), which comes with its own attributes and
 functions. Furthermore, YASA does not allow integer values to define the stages anymore.
 Instead, users must pass an array of strings with the actual stage names
 (e.g. [“WAKE”, “WAKE”, “N1”, …, “REM”, “REM”]).</p>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="yasa.simulate_hypnogram.html#yasa.simulate_hypnogram" title="yasa.simulate_hypnogram"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.simulate_hypnogram()</span></code></a></p>
-</div>
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 0.7.0.</span></p>
 </div>

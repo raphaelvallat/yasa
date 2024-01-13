@@ -44,8 +44,8 @@ Please see the documentation of :py:class:`yasa.Hypnogram` for more details.
 
 ----------------------------------------------------------------------------------------
 
-v0.6.4 (December 2023)
-----------------------
+v0.6.4 (January 2024)
+---------------------
 
 Minor release with one bugfix and one improvement to an existing function.
 
