@@ -16,13 +16,13 @@ VERSION = "0.6.4"
 PACKAGE_DATA = {"yasa.data.icons": ["*.svg"]}
 
 INSTALL_REQUIRES = [
-    "numpy>=1.16.5",
+    "numpy>=1.18.1",
     "scipy",
     "pandas",
     "matplotlib",
     "seaborn",
-    "mne>=0.23",
-    "numba",
+    "mne>=1.3",
+    "numba>=0.57.1",
     "antropy",
     "scikit-learn",
     "tensorpac>=0.6.5",
@@ -40,9 +40,10 @@ PACKAGES = [
 
 CLASSIFIERS = [
     "Intended Audience :: Science/Research",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: BSD License",
     "Operating System :: POSIX",
     "Operating System :: Unix",
@@ -51,8 +52,6 @@ CLASSIFIERS = [
 
 try:
     from setuptools import setup
-
-    _has_setuptools = True
 except ImportError:
     from distutils.core import setup
 
