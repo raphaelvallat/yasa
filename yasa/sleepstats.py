@@ -2,7 +2,7 @@
 This file contains several helper functions to calculate sleep statistics from
 a one-dimensional sleep staging vector (hypnogram).
 """
-import warnings
+# import warnings
 import numpy as np
 import pandas as pd
 
@@ -178,6 +178,12 @@ def sleep_statistics(hypno, sf_hyp):
         total sleep time (TST). Previously, YASA calculated TST as SPT - WASO, thus including
         Art and Uns. TST is now calculated as the sum of all REM and NREM sleep in SPT.
 
+    .. warning::
+        The definition of REM latency in the AASM scoring manual differs from the REM latency
+        reported here. The former uses the time from first epoch of sleep, while YASA uses the
+        time from the beginning of the recording. The AASM definition of the REM latency can be
+        found with `SOL - Lat_REM`.
+
     References
     ----------
     * Iber, C. (2007). The AASM manual for the scoring of sleep and
@@ -220,11 +226,11 @@ def sleep_statistics(hypno, sf_hyp):
      'SE': 80.0,
      'SME': 100.0}
     """
-    warnings.warn(
-        "The `yasa.sleep_statistics` function is deprecated and will be removed in v0.8. "
-        "Please use the `yasa.Hypnogram.sleep_statistics` method instead.",
-        FutureWarning,
-    )
+    # warnings.warn(
+    #     "The `yasa.sleep_statistics` function is deprecated and will be removed in v0.8. "
+    #     "Please use the `yasa.Hypnogram.sleep_statistics` method instead.",
+    #     FutureWarning,
+    # )
     stats = {}
     hypno = np.asarray(hypno)
     assert hypno.ndim == 1, "hypno must have only one dimension."

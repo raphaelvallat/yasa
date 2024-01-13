@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
-    <title>yasa.hypno_str_to_int &#8212; yasa 0.6.3 documentation</title>
-    <link rel="stylesheet" href="../_static/bootstrap-sphinx.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>yasa.hypno_str_to_int &#8212; yasa 0.6.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
     <link rel="stylesheet" type="text/css" href="../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
     <script src="../_static/clipboard.min.js"></script>
     <script src="../_static/copybutton.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -26,10 +26,10 @@
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js "></script>
-<script type="text/javascript" src="../_static/js/jquery-fix.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js "></script>
-<script type="text/javascript" src="../_static/bootstrap-sphinx.js "></script>
+<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
 
   </head><body>
 
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.3</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -93,11 +93,11 @@
   <div class="row">
     <div class="body col-md-12 content" role="main">
       
-  <div class="section" id="yasa-hypno-str-to-int">
+  <section id="yasa-hypno-str-to-int">
 <h1>yasa.hypno_str_to_int<a class="headerlink" href="#yasa-hypno-str-to-int" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
-<dt id="yasa.hypno_str_to_int">
-<code class="sig-prename descclassname">yasa.</code><code class="sig-name descname">hypno_str_to_int</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">hypno</span></em>, <em class="sig-param"><span class="n">mapping_dict</span><span class="o">=</span><span class="default_value">{'art': - 1, 'mt': - 1, 'n1': 1, 'n2': 2, 'n3': 3, 'nd': - 2, 'r': 4, 'rem': 4, 's1': 1, 's2': 2, 's3': 3, 's4': 3, 'uns': - 2, 'w': 0, 'wake': 0}</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/hypno.html#hypno_str_to_int"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yasa.hypno_str_to_int" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="yasa.hypno_str_to_int">
+<span class="sig-prename descclassname"><span class="pre">yasa.</span></span><span class="sig-name descname"><span class="pre">hypno_str_to_int</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hypno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mapping_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'art':</span> <span class="pre">-</span> <span class="pre">1,</span> <span class="pre">'mt':</span> <span class="pre">-</span> <span class="pre">1,</span> <span class="pre">'n1':</span> <span class="pre">1,</span> <span class="pre">'n2':</span> <span class="pre">2,</span> <span class="pre">'n3':</span> <span class="pre">3,</span> <span class="pre">'nd':</span> <span class="pre">-</span> <span class="pre">2,</span> <span class="pre">'r':</span> <span class="pre">4,</span> <span class="pre">'rem':</span> <span class="pre">4,</span> <span class="pre">'s1':</span> <span class="pre">1,</span> <span class="pre">'s2':</span> <span class="pre">2,</span> <span class="pre">'s3':</span> <span class="pre">3,</span> <span class="pre">'s4':</span> <span class="pre">3,</span> <span class="pre">'uns':</span> <span class="pre">-</span> <span class="pre">2,</span> <span class="pre">'w':</span> <span class="pre">0,</span> <span class="pre">'wake':</span> <span class="pre">0}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/hypno.html#hypno_str_to_int"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.hypno_str_to_int" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert a string hypnogram array to integer.</p>
 <p>[‘W’, ‘N2’, ‘N2’, ‘N3’, ‘R’] ==&gt; [0, 2, 2, 3, 4]</p>
 <div class="versionadded">
@@ -109,7 +109,7 @@
 <dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>The sleep staging (hypnogram) 1D array.</p>
 </dd>
 <dt><strong>mapping_dict</strong><span class="classifier">dict</span></dt><dd><p>The mapping dictionnary, in lowercase. Note that this function is essentially a wrapper
-around <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.map.html#pandas.Series.map" title="(in pandas v1.5.2)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pandas.Series.map()</span></code></a>.</p>
+around <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.map.html#pandas.Series.map" title="(in pandas v2.1.4)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pandas.Series.map()</span></code></a>.</p>
 </dd>
 </dl>
 </dd>
@@ -122,7 +122,7 @@ around <a class="reference external" href="https://pandas.pydata.org/pandas-docs
 </dl>
 </dd></dl>
 
-</div>
+</section>
 
 
     </div>
@@ -139,8 +139,8 @@ around <a class="reference external" href="https://pandas.pydata.org/pandas-docs
       
     </p>
     <p>
-        &copy; Copyright 2018-2022, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.0.<br/>
+        &copy; Copyright 2018-2024, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br/>
     </p>
   </div>
 </footer>
