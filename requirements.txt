@@ -1,8 +1,8 @@
-numpy>=1.16.5
+numpy>=1.18.1
 scipy
 pandas
-mne>=0.23
-numba
+mne>=1.3
+numba>=0.57.1
 outdated
 matplotlib
 ipywidgets
