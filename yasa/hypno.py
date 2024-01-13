@@ -3,6 +3,7 @@ Hypnogram-related functions and class.
 """
 import mne
 import logging
+
 # import warnings
 import numpy as np
 import pandas as pd
