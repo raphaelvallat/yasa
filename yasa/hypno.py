@@ -3,7 +3,7 @@ Hypnogram-related functions and class.
 """
 import mne
 import logging
-import warnings
+# import warnings
 import numpy as np
 import pandas as pd
 from yasa.io import set_log_level
