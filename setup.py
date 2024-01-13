@@ -23,7 +23,6 @@ INSTALL_REQUIRES = [
     "seaborn",
     "mne>=0.23",
     "numba",
-    "outdated",
     "antropy",
     "scikit-learn",
     "tensorpac>=0.6.5",
