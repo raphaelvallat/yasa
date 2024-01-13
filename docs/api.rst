@@ -31,7 +31,6 @@ Hypnogram & sleep statistics
 .. autosummary::
    :toctree: generated/
 
-    Hypnogram
     hypno_upsample_to_data
     hypno_upsample_to_sf
     hypno_str_to_int

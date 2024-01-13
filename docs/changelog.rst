@@ -44,6 +44,16 @@ Please see the documentation of :py:class:`yasa.Hypnogram` for more details.
 
 ----------------------------------------------------------------------------------------
 
+v0.6.4 (December 2023)
+----------------------
+
+Minor release with one bugfix and one improvement to an existing function.
+
+- Fix MNE plot_topomap deprecation (`PR 119 <https://github.com/raphaelvallat/yasa/pull/119>`_)
+- Pass `relative_prominence` parameters in :py:func:`yasa.rem_detect` (`PR 151 <https://github.com/raphaelvallat/yasa/pull/151>`_)
+
+----------------------------------------------------------------------------------------
+
 v0.6.3 (December 2022)
 ----------------------
 
