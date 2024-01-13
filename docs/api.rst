@@ -41,7 +41,8 @@ Hypnogram & sleep statistics
     plot_spectrogram
     transition_matrix
     sleep_statistics
-    simulate_hypno
+    Hypnogram
+    simulate_hypnogram
 
 Spectral analyses
 -----------------
