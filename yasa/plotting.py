@@ -57,6 +57,8 @@ def plot_hypnogram(hyp, lw=1.5, highlight="REM", fill_color=None, ax=None):
 
     .. plot::
 
+        >>> from yasa import simulate_hypnogram
+        >>> import matplotlib.pyplot as plt
         >>> fig, axes = plt.subplots(nrows=2, figsize=(6, 4), constrained_layout=True)
         >>> hyp_a = simulate_hypnogram(n_stages=3, seed=99)
         >>> hyp_b = simulate_hypnogram(n_stages=3, seed=99, start="2022-01-31 23:30:00")
