@@ -1,5 +1,4 @@
 """Test the functions in the yasa/others.py file."""
-
 import mne
 import unittest
 import numpy as np
