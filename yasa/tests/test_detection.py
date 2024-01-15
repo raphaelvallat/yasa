@@ -1,4 +1,17 @@
 """Test the functions in yasa/spectral.py."""
+#  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#   Copyright (c) 2024. Simon J. Guillot. All rights reserved.                            +
+#   Redistribution and use in source and binary forms, with or without modification, are strictly prohibited.
+#                                                                                         +
+#   THIS CODE IS PROVIDED BY THE COPYRIGHT HOLDER "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+#   BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+#   IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+#   OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+#   STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS CODE,
+#   EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 import mne
 import pytest
 import unittest
@@ -41,7 +54,7 @@ hypno_sw = hypno_full[666000:672000]
 # MNE Raw
 data_mne = mne.io.read_raw_fif("notebooks/sub-02_mne_raw.fif", preload=True, verbose=0)
 data_mne.pick_types(eeg=True)
-data_mne_single = data_mne.copy().pick_channels(["F3"])
+data_mne_single = data_mne.copy().pick(["F3"])
 hypno_mne = np.loadtxt("notebooks/sub-02_hypno_30s.txt", dtype=str)
 hypno_mne = hypno_str_to_int(hypno_mne)
 hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30), data=data_mne)
