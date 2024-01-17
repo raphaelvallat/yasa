@@ -31,7 +31,7 @@ If you have polysomnography data in European Data Format (.edf), you can use the
   # Apply a bandpass filter from 0.1 to 40 Hz
   raw.filter(0.1, 40)
   # Select a subset of EEG channels
-  raw.pick_channels(['C4-A1', 'C3-A2'])
+  raw.pick(['C4-A1', 'C3-A2'])
 
 .. ----------------------------- VISUALIZE -----------------------------
 .. raw:: html

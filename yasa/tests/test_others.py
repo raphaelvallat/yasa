@@ -31,7 +31,7 @@ hypno_full = np.load("notebooks/data_full_6hrs_100Hz_hypno.npz").get("hypno")
 # Using MNE
 data_mne = mne.io.read_raw_fif("notebooks/sub-02_mne_raw.fif", preload=True, verbose=0)
 data_mne.pick_types(eeg=True)
-data_mne_single = data_mne.copy().pick_channels(["F3"])
+data_mne_single = data_mne.copy().pick(["F3"])
 hypno_mne = np.loadtxt("notebooks/sub-02_hypno_30s.txt", dtype=str)
 hypno_mne = hypno_str_to_int(hypno_mne)
 hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30), data=data_mne)

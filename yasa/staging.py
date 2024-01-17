@@ -188,7 +188,7 @@ class SleepStaging:
         ch_names = ch_names[keep_chan].tolist()
         ch_types = ch_types[keep_chan].tolist()
         # Keep only selected channels (creating a copy of Raw)
-        raw_pick = raw.copy().pick_channels(ch_names, ordered=True)
+        raw_pick = raw.copy().pick(ch_names)
 
         # Downsample if sf != 100
         assert sf > 80, "Sampling frequency must be at least 80 Hz."
