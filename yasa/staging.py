@@ -201,7 +201,12 @@ class SleepStaging:
 
         # Extract duration of recording in minutes
         duration_minutes = data.shape[1] / sf / 60
-        assert duration_minutes >= 5, "At least 5 minutes of data is required."
+        if duration_minutes < 5:
+            msg = (
+                "Insufficient data. A minimum of 5 minutes of data is recommended "
+                "otherwise results may be unreliable."
+            )
+            logger.warning(msg)
 
         # Add to self
         self.sf = sf
