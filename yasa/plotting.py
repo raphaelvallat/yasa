@@ -14,7 +14,7 @@ from matplotlib.colors import Normalize, ListedColormap
 __all__ = ["plot_hypnogram", "plot_spectrogram", "topoplot"]
 
 
-def plot_hypnogram(hyp, lw=1.5, highlight="REM", fill_color=None, ax=None):
+def plot_hypnogram(hyp, sf_hypno=1 / 30, lw=1.5, highlight="REM", fill_color=None, ax=None):
     """
     Plot a hypnogram.
 
@@ -22,8 +22,23 @@ def plot_hypnogram(hyp, lw=1.5, highlight="REM", fill_color=None, ax=None):
 
     Parameters
     ----------
-    hyp : :py:class:`yasa.Hypnogram`
-        A YASA hypnogram instance.
+    hyp : :py:class:`yasa.Hypnogram` or array_like
+        A YASA hypnogram instance, or a 1D integer array where:
+
+            * -2 = Unscored
+            * -1 = Artefact / Movement
+            * 0 = Wake
+            * 1 = N1 sleep
+            * 2 = N2 sleep
+            * 3 = N3 sleep
+            * 4 = REM sleep
+    sf_hypno : float
+        The current sampling frequency of the hypnogram, in Hz, e.g.
+
+        * 1/30 = 1 value per each 30 seconds of EEG data,
+        * 1 = 1 value per second of EEG data
+
+        This has no impact if `hyp` is a :py:class:`yasa.Hypnogram`.
     lw : float
         Linewidth.
     highlight : str or None
@@ -66,9 +81,13 @@ def plot_hypnogram(hyp, lw=1.5, highlight="REM", fill_color=None, ax=None):
         >>> hyp_a.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[0])
         >>> hyp_b.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[1])
     """
-    from yasa.hypno import Hypnogram  # Avoiding circular import
+    from yasa.hypno import Hypnogram, hypno_int_to_str  # Avoiding circular imports
 
-    assert isinstance(hyp, Hypnogram), "`hypno` must be YASA Hypnogram."
+    if not isinstance(hyp, Hypnogram):
+        # Convert sampling frequency to pandas timefrequency string (e.g., "30s")
+        freq_str = pd.tseries.frequencies.to_offset(pd.Timedelta(1 / sf_hypno, "S")).freqstr
+        # Create Hypnogram instance for plotting
+        hyp = Hypnogram(hypno_int_to_str(hyp), freq=freq_str)
 
     # Work with a copy of the Hypnogram to not alter the original
     hyp = hyp.copy()
