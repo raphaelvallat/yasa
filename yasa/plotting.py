@@ -1,6 +1,7 @@
 """
 Plotting functions of YASA.
 """
+
 import mne
 import numpy as np
 import pandas as pd

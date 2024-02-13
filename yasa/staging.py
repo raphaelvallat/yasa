@@ -1,4 +1,5 @@
 """Automatic sleep staging of polysomnography data."""
+
 import os
 import mne
 import glob

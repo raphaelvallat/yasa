@@ -1,6 +1,7 @@
 """
 This file contains several helper functions to manipulate 1D and 2D EEG data.
 """
+
 import logging
 import numpy as np
 from scipy.interpolate import interp1d

@@ -1,6 +1,7 @@
 """
 Hypnogram-related functions and class.
 """
+
 import mne
 import logging
 
