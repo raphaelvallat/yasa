@@ -1,4 +1,5 @@
 """Test the functions in the yasa/heart.py file."""
+
 import unittest
 import numpy as np
 from yasa.heart import hrv_stage

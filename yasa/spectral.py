@@ -2,6 +2,7 @@
 This file contains several helper functions to calculate spectral power from
 1D and 2D EEG data.
 """
+
 import mne
 import logging
 import numpy as np

@@ -2,6 +2,7 @@
 This file contains several helper functions to calculate sleep statistics from
 a one-dimensional sleep staging vector (hypnogram).
 """
+
 # import warnings
 import numpy as np
 import pandas as pd

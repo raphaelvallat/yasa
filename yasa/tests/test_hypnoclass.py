@@ -1,4 +1,5 @@
 """Test the class Hypnogram."""
+
 import mne
 import pytest
 import unittest
