@@ -12,8 +12,8 @@ import logging
 
 import numpy as np
 import pandas as pd
+import scipy.stats as sps
 import sklearn.metrics as skm
-from scipy import stats
 
 
 logger = logging.getLogger("yasa")
@@ -164,50 +164,49 @@ class EpochByEpochAgreement:
     """
 
     def __init__(self, ref_hyps, obs_hyps):
-        from yasa.hypno import Hypnogram  # Avoiding circular import
+        from yasa.hypno import Hypnogram  # Avoiding circular import, bc hypno imports this class
 
         assert hasattr(ref_hyps, "__iter__"), "`ref_hyps` must be a an iterable"
         assert hasattr(obs_hyps, "__iter__"), "`obs_hyps` must be a an iterable"
         assert type(ref_hyps) is type(obs_hyps), "`ref_hyps` and `obs_hyps` must be the same type"
-        assert len(ref_hyps) == len(
-            obs_hyps
-        ), "`ref_hyps` and `obs_hyps` must have the same number of hypnograms"
+        assert len(ref_hyps) == len(obs_hyps), (
+            "`ref_hyps` and `obs_hyps` must have the same number of hypnograms"
+        )
 
         if isinstance(ref_hyps, dict):
             # If user provides dictionaries, split into sleep IDs and hypnograms
-            assert (
-                ref_hyps.keys() == obs_hyps.keys()
-            ), "keys in `ref_hyps` must be the same as keys in `obs_hyps`"
+            assert ref_hyps.keys() == obs_hyps.keys(), (
+                "keys in `ref_hyps` must be the same as keys in `obs_hyps`"
+            )
             sleep_ids, ref_hyps = zip(*ref_hyps.items())
             obs_hyps = tuple(obs_hyps.values())
         else:
             # Create hypnogram_ids
             sleep_ids = tuple(range(1, 1 + len(ref_hyps)))
 
-        assert all(
-            isinstance(hyp, Hypnogram) for hyp in ref_hyps + obs_hyps
-        ), "`ref_hyps` and `obs_hyps` must only contain YASA hypnograms"
-        assert all(
-            h.scorer is not None for h in ref_hyps + obs_hyps
-        ), "all hypnograms must have a scorer name"
+        assert all(isinstance(hyp, Hypnogram) for hyp in ref_hyps + obs_hyps), (
+            "`ref_hyps` and `obs_hyps` must only contain YASA hypnograms"
+        )
+        assert all(h.scorer is not None for h in ref_hyps + obs_hyps), (
+            "all hypnograms in `ref_hyps` and `obs_hyps` must have a scorer name"
+        )
         for h1, h2 in zip((ref_hyps + obs_hyps)[:-1], (ref_hyps + obs_hyps)[1:]):
             assert h1.freq == h2.freq, "all hypnograms must have the same freq"
             assert h1.labels == h2.labels, "all hypnograms must have the same labels"
             assert h1.mapping == h2.mapping, "all hypnograms must have the same mapping"
             assert h1.n_stages == h2.n_stages, "all hypnograms must have the same n_stages"
-        assert all(
-            h1.scorer == h2.scorer for h1, h2 in zip(ref_hyps[:-1], ref_hyps[1:])
-        ), "all `ref_hyps` must have the same scorer"
-        assert all(
-            h1.scorer == h2.scorer for h1, h2 in zip(obs_hyps[:-1], obs_hyps[1:])
-        ), "all `obs_hyps` must have the same scorer"
-        assert all(
-            h1.scorer != h2.scorer for h1, h2 in zip(ref_hyps, obs_hyps)
-        ), "each `ref_hyps` and `obs_hyps` pair must have unique scorers"
-        assert all(
-            h1.n_epochs == h2.n_epochs for h1, h2 in zip(ref_hyps, obs_hyps)
-        ), "each `ref_hyps` and `obs_hyps` pair must have the same n_epochs"
-
+        assert all(h1.scorer == h2.scorer for h1, h2 in zip(ref_hyps[:-1], ref_hyps[1:])), (
+            "all `ref_hyps` must have the same scorer"
+        )
+        assert all(h1.scorer == h2.scorer for h1, h2 in zip(obs_hyps[:-1], obs_hyps[1:])), (
+            "all `obs_hyps` must have the same scorer"
+        )
+        assert all(h1.scorer != h2.scorer for h1, h2 in zip(ref_hyps, obs_hyps)), (
+            "each `ref_hyps` and `obs_hyps` pair must have unique scorers"
+        )
+        assert all(h1.n_epochs == h2.n_epochs for h1, h2 in zip(ref_hyps, obs_hyps)), (
+            "each `ref_hyps` and `obs_hyps` pair must have the same n_epochs"
+        )
         # Convert ref_hyps and obs_hyps to dictionaries with sleep_id keys and hypnogram values
         ref_hyps = {s: h for s, h in zip(sleep_ids, ref_hyps)}
         obs_hyps = {s: h for s, h in zip(sleep_ids, obs_hyps)}
@@ -274,7 +273,9 @@ class EpochByEpochAgreement:
 
     @staticmethod
     def multi_scorer(df, scorers):
-        """Compute multiple agreement scores from a 2-column dataframe.
+        """
+        Compute multiple agreement scores from a 2-column dataframe (an optional 3rd column may
+        contain sample weights).
 
         This function offers convenience when calculating multiple agreement scores using
         :py:meth:`pandas.DataFrame.groupby.apply`. Scikit-learn doesn't include a function that
@@ -336,9 +337,9 @@ class EpochByEpochAgreement:
         agreement : :py:class:`pandas.DataFrame`
             A :py:class:`~pandas.DataFrame` with agreement metrics as columns and sessions as rows.
         """
-        assert (
-            isinstance(sample_weight, (type(None), pd.Series))
-        ), "`sample_weight` must be None or pandas Series"
+        assert isinstance(sample_weight, (type(None), pd.Series)), (
+            "`sample_weight` must be None or pandas Series"
+        )
         assert isinstance(scorers, (type(None), list, dict))
         if isinstance(scorers, list):
             assert all(isinstance(x, str) for x in scorers)
@@ -516,9 +517,9 @@ class EpochByEpochAgreement:
         N3         0  13  58  11    0
         REM        2  23  40  18   17
         """
-        assert (
-            sleep_id is None or sleep_id in self._sleep_ids
-        ), "`sleep_id` must be None or a valid sleep ID"
+        assert sleep_id is None or sleep_id in self._sleep_ids, (
+            "`sleep_id` must be None or a valid sleep ID"
+        )
         assert isinstance(agg_func, (type(None), str)), "`agg_func` must be None or a str"
         assert not ((self.n_sleeps == 1 or sleep_id is not None) and agg_func is not None), (
             "`agg_func` must be None if plotting a single session."
@@ -982,7 +983,7 @@ class SleepStatsAgreement:
         # Generate standard CIs for parametric Bias and LoA for all sleep stats
         ########################################################################
         # Get critical t and standard error used to calculate parametric CIs for parametric Bias/LoA
-        t_parm = stats.t.ppf((1 + confidence) / 2, n_sessions - 1)
+        t_parm = sps.t.ppf((1 + confidence) / 2, n_sessions - 1)
         sem = grouper["difference"].sem(ddof=1)
         # Parametric CIs for parametric Bias and LoA
         parm_ci = pd.DataFrame({
@@ -1006,7 +1007,7 @@ class SleepStatsAgreement:
         predicted_values = data[ref_scorer].to_numpy() * slopes + intercepts
         data["residuals"] = data[obs_scorer].to_numpy() - predicted_values
         data["residuals_abs"] = data["residuals"].abs()
-        # Run regression used to (b) model LoA and (b) test for heteroscedasticity/homoscedasticity
+        # Run regression used to (a) model LoA and (b) test for heteroscedasticity/homoscedasticity
         loa_regr = grouper[[ref_scorer, "residuals_abs"]].apply(self._linregr_dict).apply(pd.Series)
         # Stack the two regression dataframes together
         regr = pd.concat({"bias": bias_regr, "loa": loa_regr}, axis=0)
@@ -1015,7 +1016,7 @@ class SleepStatsAgreement:
         # Generate parametric CIs for regression/modeled Bias and LoA for all sleep stats
         ########################################################################
         # Get critical t used used to calculate parametric CIs for regression Bias/LoA
-        t_regr = stats.t.ppf((1 + confidence) / 2, n_sessions - 2)  # dof=n-2 for regression
+        t_regr = sps.t.ppf((1 + confidence) / 2, n_sessions - 2)  # dof=n-2 for regression
         # Parametric CIs for modeled Bias and LoA
         regr_ci = pd.DataFrame({
             "intercept-lower": regr["intercept"] - regr["intercept_stderr"] * t_regr,
@@ -1029,9 +1030,9 @@ class SleepStatsAgreement:
         ########################################################################
         assumptions = pd.DataFrame({
             "unbiased": (
-                grouper["difference"].apply(lambda a: stats.ttest_1samp(a, 0).pvalue).ge(alpha)
+                grouper["difference"].apply(lambda a: sps.ttest_1samp(a, 0).pvalue).ge(alpha)
             ),
-            "normal": grouper["difference"].apply(lambda a: stats.shapiro(a).pvalue).ge(alpha),
+            "normal": grouper["difference"].apply(lambda a: sps.shapiro(a).pvalue).ge(alpha),
             "constant_bias": bias_regr["pvalue"].ge(alpha),
             "homoscedastic": loa_regr["pvalue"].ge(alpha),
         })
@@ -1108,8 +1109,8 @@ class SleepStatsAgreement:
 
     @property
     def auto_methods(self):
-        """A :py:class:`pandas.DataFrame` containing the methods applied when ``'auto'`` is
-        selected.
+        """
+        A :py:class:`pandas.DataFrame` containing the methods applied when ``'auto'`` is selected.
         """
         return pd.concat(
             [
@@ -1153,7 +1154,7 @@ class SleepStatsAgreement:
         not included when converting the named tuple, so this allows it to be included when using
         something like groupby.
         """
-        regr = stats.linregress(*args, **kwargs)
+        regr = sps.linregress(*args, **kwargs)
         return {
             "slope": regr.slope,
             "intercept": regr.intercept,
@@ -1195,9 +1196,9 @@ class SleepStatsAgreement:
             """A function to get all variables at once and avoid redundant stats.bootstrap calls."""
             bias_parm = np.mean(diff_arr)
             lloa_parm, uloa_parm = self._arr_to_loa(diff_arr, self._agreement)
-            bias_slope, bias_inter = stats.linregress(ref_arr, diff_arr)[:2]
+            bias_slope, bias_inter = sps.linregress(ref_arr, diff_arr)[:2]
             # Note this is NOT recalculating residuals each time for the next regression
-            loa_slope, loa_inter = stats.linregress(ref_arr, rabs_arr)[:2]
+            loa_slope, loa_inter = sps.linregress(ref_arr, rabs_arr)[:2]
             return bias_parm, lloa_parm, uloa_parm, bias_inter, bias_slope, loa_inter, loa_slope
 
         # !! Column order MUST match the order of arrays boot_stats expects as INPUT
@@ -1219,7 +1220,7 @@ class SleepStatsAgreement:
             .groupby("sleep_stat")  # Group so the bootstrapping is applied once to each sleep stat
             # Apply the bootstrap function, where tuple(df.to_numpy().T) convert the 3 columns
             # of the passed dataframe to a tuple of 3 1D arrays
-            .apply(lambda df: stats.bootstrap(tuple(df.to_numpy().T), get_vars, **bs_kwargs))
+            .apply(lambda df: sps.bootstrap(tuple(df.to_numpy().T), get_vars, **bs_kwargs))
             .map(lambda res: res.confidence_interval)  # Pull high/low CIs out of the results object
             .explode()  # Break high and low CIs into separate rows
             .to_frame("value")  # Convert to dataframe and name column
@@ -1469,8 +1470,8 @@ class SleepStatsAgreement:
         >>> calibrate_rem(new_obs_rem_vals, bias_test=False, method="regr")
         array([ -9.33878878,  -9.86815607, -10.39752335, -10.92689064])
         """
-        assert isinstance(sleep_stat, str)
-        assert sleep_stat in self.sleep_statistics
+        assert isinstance(sleep_stat, str), "`sleep_stat` must be a string"
+        assert sleep_stat in self.sleep_statistics, "`sleep_stat` must be a valid sleep statistic"
         columns = ["bias_parm", "bias_slope", "bias_intercept"]
         parm, slope, intercept = self._vals.loc[sleep_stat, columns]
         auto_method = self.auto_methods.at[sleep_stat, "bias"]
