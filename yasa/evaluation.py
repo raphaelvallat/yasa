@@ -85,7 +85,7 @@ class EpochByEpochAgreement:
     >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
     >>> agr = ebe.get_agreement()
     >>> agr.head(5).round(2)
-              accuracy  balanced_acc  kappa   mcc  precision  recall  fbeta
+              accuracy  balanced_acc  kappa   mcc  precision  recall     f1
     sleep_id
     1             0.31          0.26   0.07  0.07       0.31    0.31   0.31
     2             0.33          0.33   0.14  0.14       0.35    0.33   0.34
@@ -297,11 +297,15 @@ class EpochByEpochAgreement:
         scores : dict
             A dictionary with scorer names (``str``) as keys and scores (``float``) as values.
         """
-        assert isinstance(scorers, dict)
-        assert all(isinstance(k, str) and callable(v) for k, v in scorers.items())
+        assert isinstance(df, pd.DataFrame), "`df` must be a pandas DataFrame"
+        assert df.shape[1] in [2, 3], "`df` must have either 2 or 3 columns"
+        assert isinstance(scorers, dict), "`scorers` must be a dictionary"
+        assert all(isinstance(k, str) and callable(v) for k, v in scorers.items()), (
+            "Each key of `scorers` must be a string, and each value must be a callable function"
+        )
         if df.shape[1] == 3:
             true, pred, weights = zip(*df.values)
-        else:
+        elif df.shape[1] == 2:
             true, pred = zip(*df.values)  # Same as (df["col1"], df["col2"]) but teensy bit faster
             weights = None
         scores = {s: f(true, pred, weights) for s, f in scorers.items()}
@@ -359,8 +363,8 @@ class EpochByEpochAgreement:
                 "recall": lambda t, p, w: skm.recall_score(
                     t, p, average="weighted", sample_weight=w, zero_division=0
                 ),
-                "fbeta": lambda t, p, w: skm.fbeta_score(
-                    t, p, beta=1, average="weighted", sample_weight=w, zero_division=0
+                "f1": lambda t, p, w: skm.f1_score(
+                    t, p, average="weighted", sample_weight=w, zero_division=0
                 ),
             }
         elif isinstance(scorers, list):
