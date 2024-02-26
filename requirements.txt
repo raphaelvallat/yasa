@@ -14,4 +14,3 @@ sleepecg>=0.5.0
 joblib
 antropy
 lightgbm
-pingouin>=0.5.3
