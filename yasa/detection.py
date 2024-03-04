@@ -6,6 +6,7 @@ slow-waves, and rapid eye movements from sleep EEG recordings.
 - GitHub: https://github.com/raphaelvallat/yasa
 - License: BSD 3-Clause License
 """
+
 import mne
 import logging
 import numpy as np

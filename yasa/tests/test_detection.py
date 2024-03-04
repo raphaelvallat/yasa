@@ -1,4 +1,5 @@
 """Test the functions in yasa/spectral.py."""
+
 import mne
 import pytest
 import unittest
@@ -73,7 +74,7 @@ class TestDetection(unittest.TestCase):
         sp.get_mask()
         sp.get_sync_events()
         sp.get_sync_events(time_before=10)  # Invalid time window
-        sp.plot_average(ci=None, filt=(None, 30))  # Skip bootstrapping
+        sp.plot_average(errorbar=None, filt=(None, 30))  # Skip bootstrapping
         np.testing.assert_array_equal(np.squeeze(sp._data), data)
         # Compare channels return dataframe with single cell
         assert sp.compare_channels().shape == (1, 1)
@@ -153,7 +154,7 @@ class TestDetection(unittest.TestCase):
         sp.get_sync_events(filt=(12, 15))
         sp.summary()
         sp.summary(grp_chan=True)
-        sp.plot_average(ci=None)
+        sp.plot_average(errorbar=None)
         sp.get_coincidence_matrix()
         sp.get_coincidence_matrix(scaled=False)
         sp.plot_detection()
@@ -188,8 +189,8 @@ class TestDetection(unittest.TestCase):
         sp.summary(grp_chan=False, grp_stage=True, aggfunc="median")
         sp.summary(grp_chan=True, grp_stage=False)
         sp.summary(grp_chan=True, grp_stage=True, sort=False)
-        sp.plot_average(ci=None)
-        sp.plot_average(hue="Stage", ci=None)
+        sp.plot_average(errorbar=None)
+        sp.plot_average(hue="Stage", errorbar=None)
         sp.plot_detection()
 
         # Test compare_channels function
@@ -233,7 +234,7 @@ class TestDetection(unittest.TestCase):
         sw.summary()
         sw.get_mask()
         sw.get_sync_events()
-        sw.plot_average(ci=None)
+        sw.plot_average(errorbar=None)
         sw.plot_detection()
         np.testing.assert_array_equal(np.squeeze(sw._data), data_sw)
         np.testing.assert_array_equal(sw._hypno, hypno_sw)
@@ -258,7 +259,7 @@ class TestDetection(unittest.TestCase):
         sw = sw_detect(data_full, sf, chan_full)
         sw.get_mask()
         sw.get_sync_events()
-        sw.plot_average(ci=None)
+        sw.plot_average(errorbar=None)
         sw.plot_detection()
         sw.get_coincidence_matrix()
         sw.get_coincidence_matrix(scaled=False)
@@ -275,8 +276,8 @@ class TestDetection(unittest.TestCase):
         sw.summary(grp_chan=False, grp_stage=True, aggfunc="median")
         sw.summary(grp_chan=True, grp_stage=False)
         sw.summary(grp_chan=True, grp_stage=True, sort=False)
-        sw.plot_average(ci=None)
-        sw.plot_average(hue="Stage", ci=None)
+        sw.plot_average(errorbar=None)
+        sw.plot_average(hue="Stage", errorbar=None)
         sw.plot_detection()
         # Check coupling
         sw_sum = sw.summary()
@@ -334,8 +335,8 @@ class TestDetection(unittest.TestCase):
         rem.summary()
         rem.get_mask()
         rem.get_sync_events()
-        rem.plot_average(ci=None)
-        rem.plot_average(filt=(0.5, 5), ci=None)
+        rem.plot_average(errorbar=None)
+        rem.plot_average(filt=(0.5, 5), errorbar=None)
 
         # With REM hypnogram
         hypno_rem = 4 * np.ones_like(loc)

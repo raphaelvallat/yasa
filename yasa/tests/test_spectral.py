@@ -1,4 +1,5 @@
 """Test the functions in the yasa/spectral.py file."""
+
 import mne
 import pytest
 import unittest

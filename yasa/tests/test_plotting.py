@@ -1,4 +1,5 @@
 """Test the functions in the yasa/plotting.py file."""
+
 import pytest
 import unittest
 import numpy as np
@@ -37,9 +38,12 @@ class TestPlotting(unittest.TestCase):
 
     def test_plot_hypnogram(self):
         """Test plot_hypnogram function."""
+        # Old format: array of integer
+        hypno = np.loadtxt("notebooks/data_full_6hrs_100Hz_hypno_30s.txt")
+        _ = plot_hypnogram(hypno)
         # Error because of input is not a yasa.Hypnogram
-        with pytest.raises(AssertionError):
-            _ = plot_hypnogram(np.repeat([0, 1, 2, 3, 4, -2, -1, -3], 120))
+        # with pytest.raises(AssertionError):
+        #     _ = plot_hypnogram(np.repeat([0, 1, 2, 3, 4, -2, -1, -3], 120))
         # Default parameters
         hyp5 = simulate_hypnogram(n_stages=5)
         hyp2 = simulate_hypnogram(n_stages=2)
