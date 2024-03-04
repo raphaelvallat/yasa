@@ -11,6 +11,7 @@ import pandas as pd
 from yasa.io import set_log_level
 from yasa.plotting import plot_hypnogram
 from yasa.sleepstats import transition_matrix
+from yasa.evaluation import EpochByEpochAgreement
 from pandas.api.types import CategoricalDtype
 
 __all__ = [
@@ -570,6 +571,47 @@ class Hypnogram:
             start=self.start,
             scorer=self.scorer,
         )
+
+    def evaluate(self, obs_hyp):
+        """Evaluate agreement between two hypnograms of the same sleep session.
+
+        For example, the reference hypnogram (i.e., ``self``) might be a manually-scored hypnogram
+        and the reference hypnogram (i.e., ``ref_hyp``) might be a hypnogram from actigraphy, a
+        wearable device, or an automated scorer (e.g., :py:meth:`yasa.SleepStaging.predict`).
+
+        Parameters
+        ----------
+        self : :py:class:`yasa.Hypnogram`
+            Reference or ground-truth hypnogram.
+        obs_hyp : :py:class:`yasa.Hypnogram`
+            The observed or to-be-evaluated hypnogram.
+
+        Returns
+        -------
+        ebe : :py:class:`yasa.EpochByEpochAgreement`
+            See :py:class:`~yasa.EpochByEpochAgreement` documentation for more detail.
+
+        Examples
+        --------
+        >>> from yasa import simulate_hypnogram
+        >>> hyp_a = simulate_hypnogram(tib=90, scorer="AASM", seed=8)
+        >>> hyp_b = hyp_a.simulate_similar(scorer="YASA", seed=9)
+        >>> ebe = hyp_a.evaluate(hyp_b)
+        >>> ebe.get_agreement().round(3)
+        accuracy        0.550
+        balanced_acc    0.355
+        kappa           0.227
+        mcc             0.231
+        precision       0.515
+        recall          0.550
+        fbeta           0.524
+        Name: agreement, dtype: float64
+
+        .. plot::
+
+            >>> ebe.plot_hypnograms()
+        """
+        return EpochByEpochAgreement([self], [obs_hyp])
 
     def find_periods(self, threshold="5min", equal_length=False):
         """Find sequences of consecutive values exceeding a certain duration in hypnogram.
