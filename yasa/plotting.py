@@ -331,7 +331,7 @@ def plot_spectrogram(
 
     if hypno is not None:
         # Convert sampling frequency to pandas timefrequency string (e.g., "30s")
-        freq_str = pd.tseries.frequencies.to_offset(pd.Timedelta(1 / sf, "S")).freqstr
+        freq_str = pd.tseries.frequencies.to_offset(pd.Timedelta(1 / sf, "s")).freqstr
         # Create Hypnogram instance for plotting
         hyp = Hypnogram(hypno_int_to_str(hypno), freq=freq_str)
         hypnoplot_kwargs = dict(lw=1.5, fill_color=None)
