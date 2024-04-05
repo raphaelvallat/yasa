@@ -482,7 +482,7 @@ class Hypnogram:
         Name: Stage, dtype: int16
         """
         # Return as int16 (-32768 to 32767) to reduce memory usage
-        return self.hypno.replace(self.mapping).astype(np.int16)
+        return self.hypno.cat.rename_categories(self.mapping).astype(np.int16)
 
     def consolidate_stages(self, new_n_stages):
         """Reduce the number of stages in a hypnogram to match actigraphy or wearables.
