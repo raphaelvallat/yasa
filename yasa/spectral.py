@@ -8,7 +8,7 @@ import logging
 import numpy as np
 import pandas as pd
 from scipy import signal
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.interpolate import RectBivariateSpline
 from .io import set_log_level
 
@@ -232,7 +232,7 @@ def bandpower_from_psd(
         ch_names = ["CHAN" + str(i).zfill(3) for i in range(nchan)]
     bp = np.zeros((nchan, len(bands)), dtype=np.float64)
     psd = psd[:, idx_good_freq]
-    total_power = simps(psd, dx=res)
+    total_power = simpson(psd, dx=res)
     total_power = total_power[..., np.newaxis]
 
     # Check if there are negative values in PSD
@@ -251,7 +251,7 @@ def bandpower_from_psd(
         b0, b1, la = band
         labels.append(la)
         idx_band = np.logical_and(freqs >= b0, freqs <= b1)
-        bp[:, i] = simps(psd[:, idx_band], dx=res)
+        bp[:, i] = simpson(psd[:, idx_band], dx=res)
 
     if relative:
         bp /= total_power
@@ -340,7 +340,7 @@ def bandpower_from_psd_ndarray(
         logger.warning(msg)
 
     # Calculate total power
-    total_power = simps(psd, dx=res, axis=-1)
+    total_power = simpson(psd, dx=res, axis=-1)
     total_power = total_power[np.newaxis, ...]
 
     # Initialize empty array
@@ -352,7 +352,7 @@ def bandpower_from_psd_ndarray(
         b0, b1, la = band
         labels.append(la)
         idx_band = np.logical_and(freqs >= b0, freqs <= b1)
-        bp[i] = simps(psd[..., idx_band], dx=res, axis=-1)
+        bp[i] = simpson(psd[..., idx_band], dx=res, axis=-1)
 
     if relative:
         bp /= total_power
