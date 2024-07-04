@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>yasa.EpochByEpochAgreement &#8212; yasa 0.6.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/panels-bootstrap.5fd3999ee7762ccc51105388f4a9d115.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
+          yasa</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.5</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../quickstart.html">Quickstart</a></li>
+                <li><a href="../faq.html">FAQ</a></li>
+                <li><a href="../changelog.html">What's new</a></li>
+                <li><a href="../contributing.html">Contribute</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <section id="yasa-epochbyepochagreement">
+<h1>yasa.EpochByEpochAgreement<a class="headerlink" href="#yasa-epochbyepochagreement" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="yasa.EpochByEpochAgreement">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">yasa.</span></span><span class="sig-name descname"><span class="pre">EpochByEpochAgreement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref_hyps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_hyps</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/evaluation.html#EpochByEpochAgreement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.EpochByEpochAgreement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate agreement between two hypnograms or two collections of hypnograms.</p>
+<p>Evaluation includes averaged agreement scores, one-vs-rest agreement scores, agreement scores
+summarized across all sleep and summarized by sleep stage, and various plotting options to
+visualize the two hypnograms simultaneously. See examples for more detail.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.7.0.</span></p>
+</div>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>ref_hyps</strong><span class="classifier">iterable of <a class="reference internal" href="yasa.Hypnogram.html#yasa.Hypnogram" title="yasa.Hypnogram"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.Hypnogram</span></code></a></span></dt><dd><p>A collection of reference hypnograms (i.e., those considered ground-truth).</p>
+<p>Each <a class="reference internal" href="yasa.Hypnogram.html#yasa.Hypnogram" title="yasa.Hypnogram"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.Hypnogram</span></code></a> in <code class="docutils literal notranslate"><span class="pre">ref_hyps</span></code> must have the same
+<a class="reference internal" href="yasa.Hypnogram.html#yasa.Hypnogram.scorer" title="yasa.Hypnogram.scorer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">scorer</span></code></a>.</p>
+<p>If a <code class="docutils literal notranslate"><span class="pre">dict</span></code>, key values are use to generate unique sleep session IDs. If any other
+iterable (e.g., <code class="docutils literal notranslate"><span class="pre">list</span></code> or <code class="docutils literal notranslate"><span class="pre">tuple</span></code>), then unique sleep session IDs are automatically
+generated.</p>
+</dd>
+<dt><strong>obs_hyps</strong><span class="classifier">iterable of <a class="reference internal" href="yasa.Hypnogram.html#yasa.Hypnogram" title="yasa.Hypnogram"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.Hypnogram</span></code></a></span></dt><dd><p>A collection of observed hypnograms (i.e., those to be evaluated).</p>
+<p>Each <a class="reference internal" href="yasa.Hypnogram.html#yasa.Hypnogram" title="yasa.Hypnogram"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.Hypnogram</span></code></a> in <code class="docutils literal notranslate"><span class="pre">obs_hyps</span></code> must have the same
+<a class="reference internal" href="yasa.Hypnogram.html#yasa.Hypnogram.scorer" title="yasa.Hypnogram.scorer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">scorer</span></code></a>, and this scorer must be different than the scorer of
+hypnograms in <code class="docutils literal notranslate"><span class="pre">ref_hyps</span></code>.</p>
+<p>If a <code class="docutils literal notranslate"><span class="pre">dict</span></code>, key values must match those of <code class="docutils literal notranslate"><span class="pre">ref_hyps</span></code>.</p>
+</dd>
+<dt><strong>.. important::</strong></dt><dd><p>It is assumed that the order of hypnograms are the same in <code class="docutils literal notranslate"><span class="pre">ref_hyps</span></code> and <code class="docutils literal notranslate"><span class="pre">obs_hyps</span></code>.
+For example, the third hypnogram in <code class="docutils literal notranslate"><span class="pre">ref_hyps</span></code> and <code class="docutils literal notranslate"><span class="pre">obs_hyps</span></code> must come from the same
+sleep session, and they must only differ in that they have different scorers.</p>
+</dd>
+<dt><strong>.. seealso:: For comparing just two hypnograms, use :py:meth:`yasa.Hynogram.evaluate`.</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Many steps here are influenced by guidelines proposed in Menghini et al., 2021 <a class="reference internal" href="#r6bcafc9d9f84-menghini2021" id="id1">[Menghini2021]</a>.
+See <a class="reference external" href="https://sri-human-sleep.github.io/sleep-trackers-performance/AnalyticalPipeline_v1.0.0.html">https://sri-human-sleep.github.io/sleep-trackers-performance/AnalyticalPipeline_v1.0.0.html</a></p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r6bcafc9d9f84-menghini2021"><span class="brackets"><a class="fn-backref" href="#id1">Menghini2021</a></span></dt>
+<dd><p>Menghini, L., Cellini, N., Goldstone, A., Baker, F. C., &amp; de Zambotti, M.
+(2021). A standardized framework for testing the performance of sleep-tracking
+technology: step-by-step guidelines and open-source code. SLEEP, 44(2),
+zsaa170. <a class="reference external" href="https://doi.org/10.1093/sleep/zsaa170">https://doi.org/10.1093/sleep/zsaa170</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">yasa</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ref_hyps</span> <span class="o">=</span> <span class="p">[</span><span class="n">yasa</span><span class="o">.</span><span class="n">simulate_hypnogram</span><span class="p">(</span><span class="n">tib</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span> <span class="n">scorer</span><span class="o">=</span><span class="s2">&quot;Human&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">obs_hyps</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">simulate_similar</span><span class="p">(</span><span class="n">scorer</span><span class="o">=</span><span class="s2">&quot;YASA&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ref_hyps</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">EpochByEpochAgreement</span><span class="p">(</span><span class="n">ref_hyps</span><span class="p">,</span> <span class="n">obs_hyps</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">agr</span> <span class="o">=</span> <span class="n">ebe</span><span class="o">.</span><span class="n">get_agreement</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">agr</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="go">          accuracy  balanced_acc  kappa   mcc  precision  recall     f1</span>
+<span class="go">sleep_id</span>
+<span class="go">1             0.31          0.26   0.07  0.07       0.31    0.31   0.31</span>
+<span class="go">2             0.33          0.33   0.14  0.14       0.35    0.33   0.34</span>
+<span class="go">3             0.35          0.24   0.06  0.06       0.35    0.35   0.35</span>
+<span class="go">4             0.22          0.21   0.01  0.01       0.21    0.22   0.21</span>
+<span class="go">5             0.21          0.17  -0.06 -0.06       0.20    0.21   0.21</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span><span class="o">.</span><span class="n">get_agreement_bystage</span><span class="p">()</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">                fbeta  precision  recall  support</span>
+<span class="go">stage sleep_id</span>
+<span class="go">WAKE  1         0.391      0.371   0.413    189.0</span>
+<span class="go">      2         0.299      0.276   0.326    184.0</span>
+<span class="go">      3         0.234      0.204   0.275    255.0</span>
+<span class="go">      4         0.268      0.285   0.252    321.0</span>
+<span class="go">      5         0.228      0.230   0.227    181.0</span>
+<span class="go">      6         0.407      0.384   0.433    284.0</span>
+<span class="go">      7         0.362      0.296   0.467    287.0</span>
+<span class="go">      8         0.298      0.519   0.209    263.0</span>
+<span class="go">      9         0.210      0.191   0.233    313.0</span>
+<span class="go">      10        0.369      0.420   0.329    362.0</span>
+<span class="go">N1    1         0.185      0.185   0.185    124.0</span>
+<span class="go">      2         0.121      0.131   0.112    160.0</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span><span class="o">.</span><span class="n">get_confusion_matrix</span><span class="p">(</span><span class="n">sleep_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">YASA   WAKE  N1   N2  N3  REM</span>
+<span class="go">Human</span>
+<span class="go">WAKE     78  24   50   3   34</span>
+<span class="go">N1       23  23   43  15   20</span>
+<span class="go">N2       60  58  183  43  139</span>
+<span class="go">N3       30  10   50   5   32</span>
+<span class="go">REM      19   9  121  50   78</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span><span class="o">.</span><span class="n">plot_hypnograms</span><span class="p">(</span><span class="n">sleep_id</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span><span class="o">.</span><span class="n">plot_hypnograms</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">sleep_id</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">obs_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="s2">&quot;lw&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;ls&quot;</span><span class="p">:</span> <span class="s2">&quot;dotted&quot;</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">session</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">6.5</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">),</span> <span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">style_a</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;solid&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;gainsboro&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Michel&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">style_b</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;solid&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;cornflowerblue&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Jouvet&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">legend_style</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Scorer&quot;</span><span class="p">,</span> <span class="n">frameon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;lower center&quot;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ax</span> <span class="o">=</span> <span class="n">ebe</span><span class="o">.</span><span class="n">plot_hypnograms</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">sleep_id</span><span class="o">=</span><span class="n">session</span><span class="p">,</span> <span class="n">ref_kwargs</span><span class="o">=</span><span class="n">style_a</span><span class="p">,</span> <span class="n">obs_kwargs</span><span class="o">=</span><span class="n">style_b</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="n">legend_style</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">acc</span> <span class="o">=</span> <span class="n">ebe</span><span class="o">.</span><span class="n">get_agreement</span><span class="p">()</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">session</span><span class="p">,</span> <span class="s2">&quot;accuracy&quot;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="mf">0.01</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Accuracy = </span><span class="si">{</span><span class="n">acc</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;bottom&quot;</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When comparing only 2 hypnograms, use the <code class="xref py py-meth docutils literal notranslate"><span class="pre">evaluate()</span></code> method:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">hypno_a</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">simulate_hypnogram</span><span class="p">(</span><span class="n">tib</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span> <span class="n">scorer</span><span class="o">=</span><span class="s2">&quot;RaterA&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hypno_b</span> <span class="o">=</span> <span class="n">hypno_a</span><span class="o">.</span><span class="n">simulate_similar</span><span class="p">(</span><span class="n">scorer</span><span class="o">=</span><span class="s2">&quot;RaterB&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span> <span class="o">=</span> <span class="n">hypno_a</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">hypno_b</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span><span class="o">.</span><span class="n">get_confusion_matrix</span><span class="p">()</span>
+<span class="go">RaterB  WAKE  N1  N2  N3</span>
+<span class="go">RaterA</span>
+<span class="go">WAKE      71   2  20   8</span>
+<span class="go">N1         1   0   9   0</span>
+<span class="go">N2        12   4  25   0</span>
+<span class="go">N3        24   0   1   3</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="yasa.EpochByEpochAgreement.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref_hyps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_hyps</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/evaluation.html#EpochByEpochAgreement.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.EpochByEpochAgreement.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.EpochByEpochAgreement.__init__" title="yasa.EpochByEpochAgreement.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(ref_hyps, obs_hyps)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.EpochByEpochAgreement.get_agreement" title="yasa.EpochByEpochAgreement.get_agreement"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_agreement</span></code></a>([sample_weight, scorers])</p></td>
+<td><p>Return a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> of weighted (i.e., averaged) agreement scores.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.EpochByEpochAgreement.get_agreement_bystage" title="yasa.EpochByEpochAgreement.get_agreement_bystage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_agreement_bystage</span></code></a>([beta])</p></td>
+<td><p>Return a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> of unweighted (i.e., one-vs-rest) agreement scores.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.EpochByEpochAgreement.get_confusion_matrix" title="yasa.EpochByEpochAgreement.get_confusion_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_confusion_matrix</span></code></a>([sleep_id, agg_func])</p></td>
+<td><p>Return a <code class="docutils literal notranslate"><span class="pre">ref_hyp</span></code>/<a href="#id3"><span class="problematic" id="id4">``</span></a>obs_hyp``confusion matrix from either a single session or all sessions concatenated together.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.EpochByEpochAgreement.get_sleep_stats" title="yasa.EpochByEpochAgreement.get_sleep_stats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sleep_stats</span></code></a>()</p></td>
+<td><p>Return a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> of sleep statistics for each hypnogram derived from both reference and observed scorers.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.EpochByEpochAgreement.multi_scorer" title="yasa.EpochByEpochAgreement.multi_scorer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">multi_scorer</span></code></a>(df, scorers)</p></td>
+<td><p>Compute multiple agreement scores from a 2-column dataframe (an optional 3rd column may contain sample weights).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.EpochByEpochAgreement.plot_hypnograms" title="yasa.EpochByEpochAgreement.plot_hypnograms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_hypnograms</span></code></a>([sleep_id, legend, ax, ...])</p></td>
+<td><p>Plot the two hypnograms of one session overlapping on the same axis.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.EpochByEpochAgreement.summary" title="yasa.EpochByEpochAgreement.summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary</span></code></a>([by_stage])</p></td>
+<td><p>Return group-level agreement scores.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.EpochByEpochAgreement.data" title="yasa.EpochByEpochAgreement.data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">data</span></code></a></p></td>
+<td><p>A <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> including all hypnograms.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.EpochByEpochAgreement.n_sleeps" title="yasa.EpochByEpochAgreement.n_sleeps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_sleeps</span></code></a></p></td>
+<td><p>The number of unique sleep sessions.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#yasa.EpochByEpochAgreement.obs_scorer" title="yasa.EpochByEpochAgreement.obs_scorer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obs_scorer</span></code></a></p></td>
+<td><p>The name of the observed scorer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#yasa.EpochByEpochAgreement.ref_scorer" title="yasa.EpochByEpochAgreement.ref_scorer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ref_scorer</span></code></a></p></td>
+<td><p>The name of the reference scorer.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="yasa.EpochByEpochAgreement.get_agreement">
+<span class="sig-name descname"><span class="pre">get_agreement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/evaluation.html#EpochByEpochAgreement.get_agreement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.EpochByEpochAgreement.get_agreement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> of weighted (i.e., averaged) agreement scores.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>self</strong><span class="classifier"><code class="xref py py-class docutils literal notranslate"><span class="pre">EpochByEvaluation</span></code></span></dt><dd><p>A <code class="xref py py-class docutils literal notranslate"><span class="pre">EpochByEvaluation</span></code> instance.</p>
+</dd>
+<dt><strong>sample_weight</strong><span class="classifier">None or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code></a></span></dt><dd><p>Sample weights passed to underlying <a class="reference external" href="https://scikit-learn.org/stable/api/sklearn.metrics.html#module-sklearn.metrics" title="(in scikit-learn v1.5)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sklearn.metrics</span></code></a> functions where possible.
+If a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code></a>, the index must match exactly that of
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">data</span></code>.</p>
+</dd>
+<dt><strong>scorers</strong><span class="classifier">None, list, or dictionary</span></dt><dd><p>The scorers to be used for evaluating agreement. If None (default), default scorers are
+used. If a list, the list must contain strings that represent metrics from the sklearn
+metrics module (e.g., <code class="docutils literal notranslate"><span class="pre">accuracy</span></code>, <code class="docutils literal notranslate"><span class="pre">precision</span></code>). If more customization is desired, a
+dictionary can be passed with scorer names (str) as keys and custom functions as values.
+The custom functions should take 3 positional arguments (true values, predicted values,
+and sample weights).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>agreement</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>A <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a> with agreement metrics as columns and sessions as rows.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="yasa.EpochByEpochAgreement.get_agreement_bystage">
+<span class="sig-name descname"><span class="pre">get_agreement_bystage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/evaluation.html#EpochByEpochAgreement.get_agreement_bystage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.EpochByEpochAgreement.get_agreement_bystage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> of unweighted (i.e., one-vs-rest) agreement scores.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>self</strong><span class="classifier"><code class="xref py py-class docutils literal notranslate"><span class="pre">EpochByEvaluation</span></code></span></dt><dd><p>A <code class="xref py py-class docutils literal notranslate"><span class="pre">EpochByEvaluation</span></code> instance.</p>
+</dd>
+<dt><strong>beta</strong><span class="classifier">float</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_recall_fscore_support.html#sklearn.metrics.precision_recall_fscore_support" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.metrics.precision_recall_fscore_support()</span></code></a>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>agreement</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>A <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a> with agreement metrics as columns and a
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.MultiIndex.html#pandas.MultiIndex" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiIndex</span></code></a> with session and sleep stage as rows.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="yasa.EpochByEpochAgreement.get_confusion_matrix">
+<span class="sig-name descname"><span class="pre">get_confusion_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sleep_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agg_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/evaluation.html#EpochByEpochAgreement.get_confusion_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.EpochByEpochAgreement.get_confusion_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a <code class="docutils literal notranslate"><span class="pre">ref_hyp</span></code>/<a href="#id5"><span class="problematic" id="id6">``</span></a>obs_hyp``confusion matrix from either a single session or all
+sessions concatenated together.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>self</strong><span class="classifier"><a class="reference internal" href="#yasa.EpochByEpochAgreement" title="yasa.EpochByEpochAgreement"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.EpochByEpochAgreement</span></code></a></span></dt><dd><p>A <a class="reference internal" href="#yasa.EpochByEpochAgreement" title="yasa.EpochByEpochAgreement"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.EpochByEpochAgreement</span></code></a> instance.</p>
+</dd>
+<dt><strong>sleep_id</strong><span class="classifier">None or a valid sleep ID</span></dt><dd><p>If None (default), cross-tabulation is derived from the entire group dataset.
+If a valid sleep ID, cross-tabulation is derived using only the reference and observed
+scored hypnograms from that sleep session.</p>
+</dd>
+<dt><strong>agg_func</strong><span class="classifier">None or str</span></dt><dd><p>If None (default), group results returns a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a> complete with
+all individual session results. If not None, group results returns a
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a> aggregated across sessions where <code class="docutils literal notranslate"><span class="pre">agg_func</span></code> is passed as
+<code class="docutils literal notranslate"><span class="pre">func</span></code> parameter in <code class="xref py py-meth docutils literal notranslate"><span class="pre">pandas.DataFrame.groupby.agg()</span></code>. For example, set
+<code class="docutils literal notranslate"><span class="pre">agg_func=&quot;sum&quot;</span></code> to get a single confusion matrix across all epochs that does not take
+session into account.</p>
+</dd>
+<dt><strong>**kwargs</strong><span class="classifier">key, value pairs</span></dt><dd><p>Additional keyword arguments are passed to <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html#sklearn.metrics.confusion_matrix" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.metrics.confusion_matrix()</span></code></a>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>conf_matr</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>A confusion matrix with stages from the reference scorer as indices and stages from the
+test scorer as columns.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">yasa</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ref_hyps</span> <span class="o">=</span> <span class="p">[</span><span class="n">yasa</span><span class="o">.</span><span class="n">simulate_hypnogram</span><span class="p">(</span><span class="n">tib</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span> <span class="n">scorer</span><span class="o">=</span><span class="s2">&quot;Rater1&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">obs_hyps</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">simulate_similar</span><span class="p">(</span><span class="n">scorer</span><span class="o">=</span><span class="s2">&quot;Rater2&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ref_hyps</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">EpochByEpochAgreement</span><span class="p">(</span><span class="n">ref_hyps</span><span class="p">,</span> <span class="n">obs_hyps</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span><span class="o">.</span><span class="n">get_confusion_matrix</span><span class="p">(</span><span class="n">sleep_id</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="go">Rater2  WAKE  N1  N2  N3  REM</span>
+<span class="go">Rater1</span>
+<span class="go">WAKE       1   2  23   0    0</span>
+<span class="go">N1         0   9  13   0    0</span>
+<span class="go">N2         0   6  71   0    0</span>
+<span class="go">N3         0  13  42   0    0</span>
+<span class="go">REM        0   0   0   0    0</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span><span class="o">.</span><span class="n">get_confusion_matrix</span><span class="p">()</span>
+<span class="go">Rater2           WAKE  N1  N2  N3  REM</span>
+<span class="go">sleep_id Rater1</span>
+<span class="go">1        WAKE      30   0   3   0   35</span>
+<span class="go">         N1         3   2   7   0    0</span>
+<span class="go">         N2        21  12   7   0    4</span>
+<span class="go">         N3         0   0   0   0    0</span>
+<span class="go">         REM        2   8  29   0   17</span>
+<span class="go">2        WAKE       1   2  23   0    0</span>
+<span class="go">         N1         0   9  13   0    0</span>
+<span class="go">         N2         0   6  71   0    0</span>
+<span class="go">         N3         0  13  42   0    0</span>
+<span class="go">         REM        0   0   0   0    0</span>
+<span class="go">3        WAKE      16   0   7  19   19</span>
+<span class="go">         N1         0   7   2   0    5</span>
+<span class="go">         N2         0  10  12   7    5</span>
+<span class="go">         N3         0   0  16  11    0</span>
+<span class="go">         REM        0  15  11  18    0</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span><span class="o">.</span><span class="n">get_confusion_matrix</span><span class="p">(</span><span class="n">agg_func</span><span class="o">=</span><span class="s2">&quot;sum&quot;</span><span class="p">)</span>
+<span class="go">Rater2  WAKE  N1  N2  N3  REM</span>
+<span class="go">Rater1</span>
+<span class="go">WAKE      47   2  33  19   54</span>
+<span class="go">N1         3  18  22   0    5</span>
+<span class="go">N2        21  28  90   7    9</span>
+<span class="go">N3         0  13  58  11    0</span>
+<span class="go">REM        2  23  40  18   17</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="yasa.EpochByEpochAgreement.get_sleep_stats">
+<span class="sig-name descname"><span class="pre">get_sleep_stats</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/evaluation.html#EpochByEpochAgreement.get_sleep_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.EpochByEpochAgreement.get_sleep_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> of sleep statistics for each hypnogram derived from
+both reference and observed scorers.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="yasa.Hypnogram.html#yasa.Hypnogram.sleep_statistics" title="yasa.Hypnogram.sleep_statistics"><code class="xref py py-meth docutils literal notranslate"><span class="pre">yasa.Hypnogram.sleep_statistics()</span></code></a></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="yasa.SleepStatsAgreement.html#yasa.SleepStatsAgreement" title="yasa.SleepStatsAgreement"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.SleepStatsAgreement</span></code></a></p>
+</div>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>self</strong><span class="classifier"><a class="reference internal" href="#yasa.EpochByEpochAgreement" title="yasa.EpochByEpochAgreement"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.EpochByEpochAgreement</span></code></a></span></dt><dd><p>A <a class="reference internal" href="#yasa.EpochByEpochAgreement" title="yasa.EpochByEpochAgreement"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.EpochByEpochAgreement</span></code></a> instance.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>sstats</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>A <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a> with sleep statistics as columns and two rows for each
+individual (one for reference scorer and another for test scorer).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="yasa.EpochByEpochAgreement.multi_scorer">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">multi_scorer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorers</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/evaluation.html#EpochByEpochAgreement.multi_scorer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.EpochByEpochAgreement.multi_scorer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute multiple agreement scores from a 2-column dataframe (an optional 3rd column may
+contain sample weights).</p>
+<p>This function offers convenience when calculating multiple agreement scores using
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">pandas.DataFrame.groupby.apply()</span></code>. Scikit-learn doesn’t include a function that
+returns multiple scores, and the GroupBy implementation of <code class="docutils literal notranslate"><span class="pre">apply</span></code> in pandas does not
+accept multiple functions.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>df</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>A <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a> with 2 columns and length of <em>n_samples</em>.
+The first column contains reference values and second column contains observed values.
+If a third column, it must contain sample weights to be passed to underlying
+<a class="reference external" href="https://scikit-learn.org/stable/api/sklearn.metrics.html#module-sklearn.metrics" title="(in scikit-learn v1.5)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sklearn.metrics</span></code></a> functions as <code class="docutils literal notranslate"><span class="pre">sample_weight</span></code> where applicable.</p>
+</dd>
+<dt><strong>scorers</strong><span class="classifier">dictionary</span></dt><dd><p>The scorers to be used for evaluating agreement. A dictionary with scorer names (str) as
+keys and functions as values.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>scores</strong><span class="classifier">dict</span></dt><dd><p>A dictionary with scorer names (<code class="docutils literal notranslate"><span class="pre">str</span></code>) as keys and scores (<code class="docutils literal notranslate"><span class="pre">float</span></code>) as values.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="yasa.EpochByEpochAgreement.plot_hypnograms">
+<span class="sig-name descname"><span class="pre">plot_hypnograms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sleep_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/evaluation.html#EpochByEpochAgreement.plot_hypnograms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.EpochByEpochAgreement.plot_hypnograms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the two hypnograms of one session overlapping on the same axis.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="yasa.plot_hypnogram.html#yasa.plot_hypnogram" title="yasa.plot_hypnogram"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.plot_hypnogram()</span></code></a></p>
+</div>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>self</strong><span class="classifier"><a class="reference internal" href="#yasa.EpochByEpochAgreement" title="yasa.EpochByEpochAgreement"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.EpochByEpochAgreement</span></code></a></span></dt><dd><p>A <a class="reference internal" href="#yasa.EpochByEpochAgreement" title="yasa.EpochByEpochAgreement"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.EpochByEpochAgreement</span></code></a> instance.</p>
+</dd>
+<dt><strong>sleep_id</strong><span class="classifier">a valid sleep ID or None</span></dt><dd><p>The sleep session to plot. If multiple sessions are included in the
+<a class="reference internal" href="#yasa.EpochByEpochAgreement" title="yasa.EpochByEpochAgreement"><code class="xref py py-class docutils literal notranslate"><span class="pre">EpochByEpochAgreement</span></code></a> instance, a <code class="docutils literal notranslate"><span class="pre">sleep_id</span></code> must be provided. If
+only one session is present, <code class="docutils literal notranslate"><span class="pre">None</span></code> (default) will plot the two hypnograms of the
+only session.</p>
+</dd>
+<dt><strong>legend</strong><span class="classifier">bool or dict</span></dt><dd><p>If True (default) or a dictionary, a legend is added. If a dictionary, all key/value
+pairs are passed as keyword arguments to the <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.legend.html#matplotlib.pyplot.legend" title="(in Matplotlib v3.9.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.pyplot.legend()</span></code></a> call.</p>
+</dd>
+<dt><strong>ax</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="(in Matplotlib v3.9.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a> or None</span></dt><dd><p>Axis on which to draw the plot, optional.</p>
+</dd>
+<dt><strong>ref_kwargs</strong><span class="classifier">dict</span></dt><dd><p>Keyword arguments passed to <a class="reference internal" href="yasa.plot_hypnogram.html#yasa.plot_hypnogram" title="yasa.plot_hypnogram"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.plot_hypnogram()</span></code></a> when plotting the reference
+hypnogram.</p>
+</dd>
+<dt><strong>obs_kwargs</strong><span class="classifier">dict</span></dt><dd><p>Keyword arguments passed to <a class="reference internal" href="yasa.plot_hypnogram.html#yasa.plot_hypnogram" title="yasa.plot_hypnogram"><code class="xref py py-func docutils literal notranslate"><span class="pre">yasa.plot_hypnogram()</span></code></a> when plotting the observed
+hypnogram.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>ax</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="(in Matplotlib v3.9.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a></span></dt><dd><p>Matplotlib Axes</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">yasa</span> <span class="kn">import</span> <span class="n">simulate_hypnogram</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hyp</span> <span class="o">=</span> <span class="n">simulate_hypnogram</span><span class="p">(</span><span class="n">scorer</span><span class="o">=</span><span class="s2">&quot;Anthony&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">19</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ax</span> <span class="o">=</span> <span class="n">hyp</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">hyp</span><span class="o">.</span><span class="n">simulate_similar</span><span class="p">(</span><span class="n">scorer</span><span class="o">=</span><span class="s2">&quot;Alan&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">68</span><span class="p">))</span><span class="o">.</span><span class="n">plot_hypnograms</span><span class="p">()</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<img alt="../_images/yasa-EpochByEpochAgreement-4.png" class="plot-directive" src="../_images/yasa-EpochByEpochAgreement-4.png" />
+</figure>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="yasa.EpochByEpochAgreement.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">by_stage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/evaluation.html#EpochByEpochAgreement.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.EpochByEpochAgreement.summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return group-level agreement scores.</p>
+<p>Default aggregated measures are</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>self</strong><span class="classifier"><a class="reference internal" href="#yasa.EpochByEpochAgreement" title="yasa.evaluation.EpochByEpochAgreement"><code class="xref py py-class docutils literal notranslate"><span class="pre">EpochByEpochAgreement</span></code></a></span></dt><dd><p>A <a class="reference internal" href="#yasa.EpochByEpochAgreement" title="yasa.evaluation.EpochByEpochAgreement"><code class="xref py py-class docutils literal notranslate"><span class="pre">EpochByEpochAgreement</span></code></a> instance.</p>
+</dd>
+<dt><strong>by_stage</strong><span class="classifier">bool</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), <code class="docutils literal notranslate"><span class="pre">summary</span></code> will include agreement scores derived from
+average-based metrics. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, returned <code class="docutils literal notranslate"><span class="pre">summary</span></code> <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a>
+will include agreement scores for each sleep stage, derived from one-vs-rest metrics.</p>
+</dd>
+<dt><strong>**kwargs</strong><span class="classifier">key, value pairs</span></dt><dd><p>Additional keyword arguments are passed to <code class="xref py py-meth docutils literal notranslate"><span class="pre">pandas.DataFrame.groupby.agg()</span></code>.
+This can be used to customize the descriptive statistics returned.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>summary</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>A <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> summarizing agreement scores across the entire dataset
+with descriptive statistics.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span> <span class="o">=</span> <span class="n">yasa</span><span class="o">.</span><span class="n">EpochByEpochAgreement</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">agreement</span> <span class="o">=</span> <span class="n">ebe</span><span class="o">.</span><span class="n">get_agreement</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This will give a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a> where each row is an agreement metric and
+each column is a descriptive statistic (e.g., mean, standard deviation).
+To control the descriptive statistics included as columns:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ebe</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;count&quot;</span><span class="p">,</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="s2">&quot;sem&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="yasa.EpochByEpochAgreement.data">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#yasa.EpochByEpochAgreement.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> including all hypnograms.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="yasa.EpochByEpochAgreement.n_sleeps">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_sleeps</span></span><a class="headerlink" href="#yasa.EpochByEpochAgreement.n_sleeps" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of unique sleep sessions.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="yasa.EpochByEpochAgreement.obs_scorer">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">obs_scorer</span></span><a class="headerlink" href="#yasa.EpochByEpochAgreement.obs_scorer" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the observed scorer.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="yasa.EpochByEpochAgreement.ref_scorer">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ref_scorer</span></span><a class="headerlink" href="#yasa.EpochByEpochAgreement.ref_scorer" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the reference scorer.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+        <br/>
+        
+      
+    </p>
+    <p>
+        &copy; Copyright 2018-2024, Dr. Raphael Vallat, Center for Human Sleep Science, UC Berkeley.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>
