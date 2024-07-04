@@ -76,6 +76,10 @@ class Hypnogram:
     scorer : str
         An optional string indicating the scorer name. If specified, this will be set as the name
         of the :py:class:`pandas.Series`, otherwise the name will be set to "Stage".
+    proba : :py:class:`pandas.DataFrame`
+        An optional dataframe with the probability of each sleep stage for each epoch in hypnogram.
+        Each row must sum to 1. This is automatically included if the hypnogram is created with
+        :py:class:`yasa.SleepStaging`.
 
     Examples
     --------
@@ -217,7 +221,7 @@ class Hypnogram:
      '%REM': 8.9713}
     """
 
-    def __init__(self, values, n_stages=5, *, freq="30s", start=None, scorer=None):
+    def __init__(self, values, n_stages=5, *, freq="30s", start=None, scorer=None, proba=None):
         assert isinstance(
             values, (list, np.ndarray, pd.Series)
         ), "`values` must be a list, numpy.array or pandas.Series"
@@ -230,6 +234,9 @@ class Hypnogram:
         assert isinstance(
             scorer, (type(None), str, int)
         ), "`scorer` must be either None, or a string or an integer."
+        assert isinstance(
+            proba, (pd.DataFrame, type(None))
+        ), "`proba` must be either None or a pandas.DataFrame"
         if n_stages == 2:
             accepted = ["W", "WAKE", "S", "SLEEP", "ART", "UNS"]
             mapping = {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
@@ -270,6 +277,19 @@ class Hypnogram:
             fake_dt = pd.date_range(start="2022-12-03 00:00:00", freq=freq, periods=hypno.shape[0])
             hypno.index.name = "Epoch"
             timedelta = fake_dt - fake_dt[0]
+        # Validate proba
+        if proba is not None:
+            assert proba.shape[1] > 0, "`proba` must have at least one column."
+            assert proba.shape[0] == hypno.shape[0], "`proba` must have the same length as `values`"
+            assert np.allclose(proba.sum(1), 1), "Each row of `proba` must sum to 1."
+            in_proba_but_not_labels = np.setdiff1d(proba.columns, labels)
+            # in_labels_but_not_proba = np.setdiff1d(labels, proba.columns)
+            assert not len(in_proba_but_not_labels), (
+                f"Invalid stages in `proba`: {in_proba_but_not_labels}. The accepted stages are: "
+                f"{labels}."
+            )
+            # Ensure same order as `labels`
+            proba = proba.reindex(columns=labels).dropna(how="all", axis=1)
         # Set attributes
         self._hypno = hypno
         self._n_epochs = hypno.shape[0]
@@ -282,6 +302,7 @@ class Hypnogram:
         self._labels = labels
         self._mapping = mapping
         self._scorer = scorer
+        self._proba = proba
 
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
@@ -296,15 +317,7 @@ class Hypnogram:
         )
 
     def __str__(self):
-        text_scorer = f", scored by {self.scorer}" if self.scorer is not None else ""
-        return (
-            f"<Hypnogram | {self.n_epochs} epochs x {self.freq} ({self.duration:.2f} minutes), "
-            f"{self.n_stages} stages{text_scorer}>\n"
-            " - Use `.hypno` to get the string values as a pandas.Series\n"
-            " - Use `.as_int()` to get the integer values as a pandas.Series\n"
-            " - Use `.plot_hypnogram()` to plot the hypnogram\n"
-            "See the online documentation for more details."
-        )
+        return self.__repr__()
 
     @property
     def hypno(self):
@@ -392,6 +405,14 @@ class Hypnogram:
     def scorer(self):
         """The scorer name."""
         return self._scorer
+
+    @property
+    def proba(self):
+        """
+        If specified, a :py:class:`pandas.DataFrame` with the probability of each sleep stage
+        for each epoch in hypnogram.
+        """
+        return self._proba
 
     # CLASS METHODS BELOW
 
@@ -560,6 +581,7 @@ class Hypnogram:
             freq=self.freq,
             start=self.start,
             scorer=self.scorer,
+            proba=None,  # TODO: Combine stages probability?
         )
 
     def copy(self):
@@ -570,6 +592,7 @@ class Hypnogram:
             freq=self.freq,
             start=self.start,
             scorer=self.scorer,
+            proba=self.proba,
         )
 
     def evaluate(self, obs_hyp):
@@ -1094,6 +1117,7 @@ class Hypnogram:
             freq=new_freq,
             start=self.start,
             scorer=self.scorer,
+            proba=None,  # NOTE: Do not upsample probability
         )
 
     def upsample_to_data(self, data, sf=None, verbose=True):
