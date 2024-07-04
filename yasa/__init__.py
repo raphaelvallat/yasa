@@ -15,4 +15,4 @@ from .staging import *
 logging.basicConfig(format="%(asctime)s | %(levelname)s | %(message)s", datefmt="%d-%b-%y %H:%M:%S")
 
 __author__ = "Raphael Vallat <raphaelvallat9@gmail.com>"
-__version__ = "0.6.4"
+__version__ = "0.6.5"
