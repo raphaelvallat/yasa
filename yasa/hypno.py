@@ -817,7 +817,7 @@ class Hypnogram:
             The definition of REM latency in the AASM scoring manual differs from the REM latency
             reported here. The former uses the time from first epoch of sleep, while YASA uses the
             time from the beginning of the recording. The AASM definition of the REM latency can be
-            found with `SOL - Lat_REM`.
+            found with `Lat_REM - SOL`.
 
         References
         ----------
