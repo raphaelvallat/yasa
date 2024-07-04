@@ -606,10 +606,6 @@ class Hypnogram:
         recall          0.550
         fbeta           0.524
         Name: agreement, dtype: float64
-
-        .. plot::
-
-            >>> ebe.plot_hypnograms()
         """
         return EpochByEpochAgreement([self], [obs_hyp])
 

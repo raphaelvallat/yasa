@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>yasa.hrv_stage &#8212; yasa 0.6.4 documentation</title>
+    <title>yasa.hrv_stage &#8212; yasa 0.6.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.5</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -107,7 +107,7 @@ are longer than 2 minutes.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>data</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.26)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Single-channel ECG data. Must be a 1D NumPy array.</p>
+<dt><strong>data</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Single-channel ECG data. Must be a 1D NumPy array.</p>
 </dd>
 <dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency of the data.</p>
 </dd>
@@ -157,7 +157,7 @@ invalid results and want to better understand what is happening.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>epochs</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output dataframe with values (= the sleep stages defined in <code class="docutils literal notranslate"><span class="pre">include</span></code>) and
+<dt><strong>epochs</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output dataframe with values (= the sleep stages defined in <code class="docutils literal notranslate"><span class="pre">include</span></code>) and
 epoch number as index. The columns are</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">start</span></code> : The start of the epoch, in seconds from the beginning of the recording.</p></li>

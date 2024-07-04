@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>yasa.stft_power &#8212; yasa 0.6.4 documentation</title>
+    <title>yasa.stft_power &#8212; yasa 0.6.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.5</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -129,18 +129,18 @@ in all the frequency bins equals 1.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>f</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.26)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Frequency vector</p>
+<dt><strong>f</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Frequency vector</p>
 </dd>
-<dt><strong>t</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.26)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Time vector</p>
+<dt><strong>t</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Time vector</p>
 </dd>
-<dt><strong>Sxx</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.26)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Power in the specified frequency bins of shape (f, t)</p>
+<dt><strong>Sxx</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></span></dt><dd><p>Power in the specified frequency bins of shape (f, t)</p>
 </dd>
 </dl>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>2D Interpolation is done using <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RectBivariateSpline.html#scipy.interpolate.RectBivariateSpline" title="(in SciPy v1.11.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">scipy.interpolate.RectBivariateSpline</span></code></a>
-which is much faster than <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp2d.html#scipy.interpolate.interp2d" title="(in SciPy v1.11.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">scipy.interpolate.interp2d</span></code></a> for a rectangular grid.
+<p>2D Interpolation is done using <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.RectBivariateSpline.html#scipy.interpolate.RectBivariateSpline" title="(in SciPy v1.14.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">scipy.interpolate.RectBivariateSpline</span></code></a>
+which is much faster than <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp2d.html#scipy.interpolate.interp2d" title="(in SciPy v1.14.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">scipy.interpolate.interp2d</span></code></a> for a rectangular grid.
 The default is to use a bivariate spline with 3 degrees.</p>
 </dd></dl>
 

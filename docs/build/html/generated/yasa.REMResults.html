@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>yasa.REMResults &#8212; yasa 0.6.4 documentation</title>
+    <title>yasa.REMResults &#8212; yasa 0.6.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.5</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -102,7 +102,7 @@
 <dl class="field-list">
 <dt class="field-odd">Attributes</dt>
 <dd class="field-odd"><dl>
-<dt><strong>_events</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output detection dataframe</p>
+<dt><strong>_events</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Output detection dataframe</p>
 </dd>
 <dt><strong>_data</strong><span class="classifier">array_like</span></dt><dd><p>EOG data of shape <em>(n_chan, n_samples)</em>, where the two channels are
 LOC and ROC.</p>
@@ -185,7 +185,7 @@ Default is to use the peak of the REM.</p>
 <dt><strong>filt</strong><span class="classifier">tuple</span></dt><dd><p>Optional filtering to apply to data. For instance, <code class="docutils literal notranslate"><span class="pre">filt=(1,</span> <span class="pre">30)</span></code>
 will apply a 1 to 30 Hz bandpass filter, and <code class="docutils literal notranslate"><span class="pre">filt=(None,</span> <span class="pre">40)</span></code>
 will apply a 40 Hz lowpass filter. Filtering is done using default
-parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
+parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
 </dd>
 <dt><strong>mask</strong><span class="classifier">array_like or None</span></dt><dd><p>Custom boolean mask. Only the detected events for which mask is True will be
 included. Default is None, i.e. no masking (all events are included).</p>
@@ -194,7 +194,7 @@ included. Default is None, i.e. no masking (all events are included).</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>df_sync</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput long-format dataframe:</p>
+<dt><strong>df_sync</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Ouput long-format dataframe:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Event&#39;</span> <span class="p">:</span> <span class="n">Event</span> <span class="n">number</span>
 <span class="s1">&#39;Time&#39;</span> <span class="p">:</span> <span class="n">Timing</span> <span class="n">of</span> <span class="n">the</span> <span class="n">events</span> <span class="p">(</span><span class="ow">in</span> <span class="n">seconds</span><span class="p">)</span>
 <span class="s1">&#39;Amplitude&#39;</span> <span class="p">:</span> <span class="n">Raw</span> <span class="ow">or</span> <span class="n">filtered</span> <span class="n">data</span> <span class="k">for</span> <span class="n">event</span>
@@ -225,14 +225,14 @@ Default is to use the peak of the REM.</p>
 <dt><strong>filt</strong><span class="classifier">tuple</span></dt><dd><p>Optional filtering to apply to data. For instance, <code class="docutils literal notranslate"><span class="pre">filt=(1,</span> <span class="pre">30)</span></code>
 will apply a 1 to 30 Hz bandpass filter, and <code class="docutils literal notranslate"><span class="pre">filt=(None,</span> <span class="pre">40)</span></code>
 will apply a 40 Hz lowpass filter. Filtering is done using default
-parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
+parameters in the <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a> function.</p>
 </dd>
 <dt><strong>mask</strong><span class="classifier">array_like or None</span></dt><dd><p>Custom boolean mask. Only the detected events for which mask is True will be
 included. Default is None, i.e. no masking (all events are included).</p>
 </dd>
 <dt><strong>figsize</strong><span class="classifier">tuple</span></dt><dd><p>Figure size in inches.</p>
 </dd>
-<dt><strong>**kwargs</strong><span class="classifier">dict</span></dt><dd><p>Optional argument that are passed to <a class="reference external" href="https://seaborn.pydata.org/generated/seaborn.lineplot.html#seaborn.lineplot" title="(in seaborn v0.13.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">seaborn.lineplot()</span></code></a>.</p>
+<dt><strong>**kwargs</strong><span class="classifier">dict</span></dt><dd><p>Optional argument that are passed to <a class="reference external" href="https://seaborn.pydata.org/generated/seaborn.lineplot.html#seaborn.lineplot" title="(in seaborn v0.13.2)"><code class="xref py py-func docutils literal notranslate"><span class="pre">seaborn.lineplot()</span></code></a>.</p>
 </dd>
 </dl>
 </dd>

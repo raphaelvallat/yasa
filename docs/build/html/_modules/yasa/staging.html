@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>yasa.staging &#8212; yasa 0.6.4 documentation</title>
+    <title>yasa.staging &#8212; yasa 0.6.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
@@ -43,7 +43,7 @@
         </button>
         <a class="navbar-brand" href="../../index.html"><span><img src="../../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.5</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -94,6 +94,7 @@
       
   <h1>Source code for yasa.staging</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Automatic sleep staging of polysomnography data.&quot;&quot;&quot;</span>
+
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">mne</span>
 <span class="kn">import</span> <span class="nn">glob</span>
@@ -283,7 +284,7 @@
         <span class="n">ch_names</span> <span class="o">=</span> <span class="n">ch_names</span><span class="p">[</span><span class="n">keep_chan</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="n">ch_types</span> <span class="o">=</span> <span class="n">ch_types</span><span class="p">[</span><span class="n">keep_chan</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="c1"># Keep only selected channels (creating a copy of Raw)</span>
-        <span class="n">raw_pick</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">pick_channels</span><span class="p">(</span><span class="n">ch_names</span><span class="p">,</span> <span class="n">ordered</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">raw_pick</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">pick</span><span class="p">(</span><span class="n">ch_names</span><span class="p">)</span>
 
         <span class="c1"># Downsample if sf != 100</span>
         <span class="k">assert</span> <span class="n">sf</span> <span class="o">&gt;</span> <span class="mi">80</span><span class="p">,</span> <span class="s2">&quot;Sampling frequency must be at least 80 Hz.&quot;</span>
@@ -296,7 +297,12 @@
 
         <span class="c1"># Extract duration of recording in minutes</span>
         <span class="n">duration_minutes</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">sf</span> <span class="o">/</span> <span class="mi">60</span>
-        <span class="k">assert</span> <span class="n">duration_minutes</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">&quot;At least 5 minutes of data is required.&quot;</span>
+        <span class="k">if</span> <span class="n">duration_minutes</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;Insufficient data. A minimum of 5 minutes of data is recommended &quot;</span>
+                <span class="s2">&quot;otherwise results may be unreliable.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
         <span class="c1"># Add to self</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sf</span> <span class="o">=</span> <span class="n">sf</span>

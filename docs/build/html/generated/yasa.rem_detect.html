@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>yasa.rem_detect &#8212; yasa 0.6.4 documentation</title>
+    <title>yasa.rem_detect &#8212; yasa 0.6.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.5</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -113,8 +113,8 @@ filtered signal.</p>
 Unit must be uV.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The default unit of <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> is Volts.
-Therefore, if passing data from a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
+<p>The default unit of <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> is Volts.
+Therefore, if passing data from a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
 make sure to use units=”uV” to get the data in micro-Volts, e.g.:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="s2">&quot;uV&quot;</span><span class="p">)</span>  <span class="c1"># Make sure that data is in uV</span>
 </pre></div>
@@ -160,7 +160,7 @@ by multiplying relative prominence by the minimal amplitude. Default is 0.8.</p>
 <dt><strong>freq_rem</strong><span class="classifier">tuple or list</span></dt><dd><p>Frequency range of REMs. Default is 0.5 to 5 Hz.</p>
 </dd>
 <dt><strong>remove_outliers</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will automatically detect and remove outliers REMs
-using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v1.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
+using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v1.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
 YASA uses a random seed (42) to ensure reproducible results.
 Note that this step will only be applied if there are more than
 50 detected REMs in the first place. Default to False.</p>
@@ -182,7 +182,7 @@ and ‘critical’. For most users the choice is between ‘info’
 <span class="gp">&gt;&gt;&gt; </span><span class="n">rem</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>This will give a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> where each row is a
+<p>This will give a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> where each row is a
 detected REM and each column is a parameter (= property).
 To get the average parameters sleep stage:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rem</span><span class="o">.</span><span class="n">summary</span><span class="p">(</span><span class="n">grp_stage</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
