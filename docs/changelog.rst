@@ -44,6 +44,16 @@ Please see the documentation of :py:class:`yasa.Hypnogram` for more details.
 
 ----------------------------------------------------------------------------------------
 
+v0.6.5 (July 2024)
+---------------------
+
+Minor release with a brand new Evaluation module and several minor bugfixes
+
+- `PR 130 <https://github.com/raphaelvallat/yasa/pull/130>`_: Add new :py:class:`yasa.EpochByEpochAgreement` and :py:class:`yasa.SleepStatsAgreement` modules for evaluating the agreement between two scorers (e.g. human vs YASA), either at the epoch-by-epoch level or at the level of summary sleep statistics. This is an experimental feature. Remaining tasks to complete the Evaluation pipeline are described in: https://github.com/raphaelvallat/yasa/issues/166
+- `PR 171 <https://github.com/raphaelvallat/yasa/pull/171>`_: Fix deprecated `scipy.integrate.simps``.
+
+----------------------------------------------------------------------------------------
+
 v0.6.4 (January 2024)
 ---------------------
 

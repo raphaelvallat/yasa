@@ -43,6 +43,8 @@ Hypnogram & sleep statistics
     sleep_statistics
     Hypnogram
     simulate_hypnogram
+    EpochByEpochAgreement
+    SleepStatsAgreement
 
 Spectral analyses
 -----------------

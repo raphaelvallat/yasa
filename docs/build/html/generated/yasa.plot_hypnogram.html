@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>yasa.plot_hypnogram &#8212; yasa 0.6.4 documentation</title>
+    <title>yasa.plot_hypnogram &#8212; yasa 0.6.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.5</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -97,7 +97,7 @@
 <h1>yasa.plot_hypnogram<a class="headerlink" href="#yasa-plot-hypnogram" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="yasa.plot_hypnogram">
-<span class="sig-prename descclassname"><span class="pre">yasa.</span></span><span class="sig-name descname"><span class="pre">plot_hypnogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hyp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highlight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REM'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/plotting.html#plot_hypnogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.plot_hypnogram" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">yasa.</span></span><span class="sig-name descname"><span class="pre">plot_hypnogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hyp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sf_hypno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.03333333333333333</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highlight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REM'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yasa/plotting.html#plot_hypnogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#yasa.plot_hypnogram" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot a hypnogram.</p>
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 0.6.0.</span></p>
@@ -105,21 +105,40 @@
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>hyp</strong><span class="classifier"><a class="reference internal" href="yasa.Hypnogram.html#yasa.Hypnogram" title="yasa.Hypnogram"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.Hypnogram</span></code></a></span></dt><dd><p>A YASA hypnogram instance.</p>
+<dt><strong>hyp</strong><span class="classifier"><a class="reference internal" href="yasa.Hypnogram.html#yasa.Hypnogram" title="yasa.Hypnogram"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.Hypnogram</span></code></a> or array_like</span></dt><dd><p>A YASA hypnogram instance, or a 1D integer array where:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>-2 = Unscored</p></li>
+<li><p>-1 = Artefact / Movement</p></li>
+<li><p>0 = Wake</p></li>
+<li><p>1 = N1 sleep</p></li>
+<li><p>2 = N2 sleep</p></li>
+<li><p>3 = N3 sleep</p></li>
+<li><p>4 = REM sleep</p></li>
+</ul>
+</div></blockquote>
 </dd>
-<dt><strong>lw</strong><span class="classifier">float</span></dt><dd><p>Linewidth.</p>
+<dt><strong>sf_hypno</strong><span class="classifier">float</span></dt><dd><p>The current sampling frequency of the hypnogram, in Hz, e.g.</p>
+<ul class="simple">
+<li><p>1/30 = 1 value per each 30 seconds of EEG data,</p></li>
+<li><p>1 = 1 value per second of EEG data</p></li>
+</ul>
+<p>This has no impact if <cite>hyp</cite> is a <a class="reference internal" href="yasa.Hypnogram.html#yasa.Hypnogram" title="yasa.Hypnogram"><code class="xref py py-class docutils literal notranslate"><span class="pre">yasa.Hypnogram</span></code></a>.</p>
 </dd>
 <dt><strong>highlight</strong><span class="classifier">str or None</span></dt><dd><p>Optional stage to highlight with alternate color.</p>
 </dd>
 <dt><strong>fill_color</strong><span class="classifier">str or None</span></dt><dd><p>Optional color to fill space above hypnogram line.</p>
 </dd>
-<dt><strong>ax</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="(in Matplotlib v3.8.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a></span></dt><dd><p>Axis on which to draw the plot, optional.</p>
+<dt><strong>ax</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="(in Matplotlib v3.9.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a></span></dt><dd><p>Axis on which to draw the plot, optional.</p>
+</dd>
+<dt><strong>**kwargs</strong><span class="classifier">dict</span></dt><dd><p>Keyword arguments controlling hypnogram line display (e.g., <code class="docutils literal notranslate"><span class="pre">lw</span></code>, <code class="docutils literal notranslate"><span class="pre">linestyle</span></code>).
+Passed to <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.stairs.html#matplotlib.pyplot.stairs" title="(in Matplotlib v3.9.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.pyplot.stairs()</span></code></a> and py:func:<cite>matplotlib.pyplot.hlines</cite>.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>ax</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="(in Matplotlib v3.8.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a></span></dt><dd><p>Matplotlib Axes</p>
+<dt><strong>ax</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="(in Matplotlib v3.9.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code></a></span></dt><dd><p>Matplotlib Axes</p>
 </dd>
 </dl>
 </dd>

@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>yasa.bandpower &#8212; yasa 0.6.4 documentation</title>
+    <title>yasa.bandpower &#8212; yasa 0.6.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.5</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -105,15 +105,15 @@
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>data</strong><span class="classifier">np.array_like or <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>1D or 2D EEG data. Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>,
+<dt><strong>data</strong><span class="classifier">np.array_like or <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>1D or 2D EEG data. Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>, in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>,
 <code class="docutils literal notranslate"><span class="pre">sf</span></code>, and <code class="docutils literal notranslate"><span class="pre">ch_names</span></code> will be automatically extracted, and <code class="docutils literal notranslate"><span class="pre">data</span></code> will also be
 converted from Volts (MNE default) to micro-Volts (YASA).</p>
 </dd>
 <dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency of data AND the hypnogram. Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a
-<a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+<a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
 <dt><strong>ch_names</strong><span class="classifier">list</span></dt><dd><p>List of channel names, e.g. [‘Cz’, ‘F3’, ‘F4’, …]. If None, channels will be labelled
-[‘CHAN000’, ‘CHAN001’, …]. Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+[‘CHAN000’, ‘CHAN001’, …]. Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
 <dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Sleep stage (hypnogram). If the hypnogram is loaded, the bandpower will be extracted for
 each sleep stage defined in <code class="docutils literal notranslate"><span class="pre">include</span></code>.</p>
@@ -146,18 +146,18 @@ be at least 2 * 1 / 0.5 = 4 seconds).</p>
 defined in <code class="docutils literal notranslate"><span class="pre">band</span></code>.</p>
 </dd>
 <dt><strong>bandpass</strong><span class="classifier">boolean</span></dt><dd><p>If True, apply a standard FIR bandpass filter using the minimum and maximum frequencies
-in <code class="docutils literal notranslate"><span class="pre">bands</span></code>. Fore more details, refer to <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a>.</p>
+in <code class="docutils literal notranslate"><span class="pre">bands</span></code>. Fore more details, refer to <a class="reference external" href="https://mne.tools/stable/generated/mne.filter.filter_data.html#mne.filter.filter_data" title="(in MNE v1.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.filter_data()</span></code></a>.</p>
 </dd>
 <dt><strong>bands</strong><span class="classifier">list of tuples</span></dt><dd><p>List of frequency bands of interests. Each tuple must contain the lower and upper
 frequencies, as well as the band name (e.g. (0.5, 4, ‘Delta’)).</p>
 </dd>
-<dt><strong>kwargs_welch</strong><span class="classifier">dict</span></dt><dd><p>Optional keywords arguments that are passed to the <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.welch.html#scipy.signal.welch" title="(in SciPy v1.11.4)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.signal.welch()</span></code></a> function.</p>
+<dt><strong>kwargs_welch</strong><span class="classifier">dict</span></dt><dd><p>Optional keywords arguments that are passed to the <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.welch.html#scipy.signal.welch" title="(in SciPy v1.14.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.signal.welch()</span></code></a> function.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Bandpower dataframe, in which each row is a channel and each column a spectral band.</p>
+<dt><strong>bandpowers</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Bandpower dataframe, in which each row is a channel and each column a spectral band.</p>
 </dd>
 </dl>
 </dd>

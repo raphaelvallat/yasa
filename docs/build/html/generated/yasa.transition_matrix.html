@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>yasa.transition_matrix &#8212; yasa 0.6.4 documentation</title>
+    <title>yasa.transition_matrix &#8212; yasa 0.6.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.5</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -118,11 +118,11 @@ any artefact / unscored epochs.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>counts</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Counts transition matrix (number of transitions from stage A to
+<dt><strong>counts</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Counts transition matrix (number of transitions from stage A to
 stage B). The pre-transition states are the rows and the
 post-transition states are the columns.</p>
 </dd>
-<dt><strong>probs</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Conditional probability transition matrix, i.e.
+<dt><strong>probs</strong><span class="classifier"><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a></span></dt><dd><p>Conditional probability transition matrix, i.e.
 given that current state is A, what is the probability that
 the next state is B.
 <code class="docutils literal notranslate"><span class="pre">probs</span></code> is a <a class="reference external" href="https://en.wikipedia.org/wiki/Stochastic_matrix">right stochastic matrix</a>,
@@ -162,7 +162,7 @@ and N1 sleep):</p>
 <span class="go">0.514</span>
 </pre></div>
 </div>
-<p>Finally, we can plot the transition matrix using <a class="reference external" href="https://seaborn.pydata.org/generated/seaborn.heatmap.html#seaborn.heatmap" title="(in seaborn v0.13.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">seaborn.heatmap()</span></code></a></p>
+<p>Finally, we can plot the transition matrix using <a class="reference external" href="https://seaborn.pydata.org/generated/seaborn.heatmap.html#seaborn.heatmap" title="(in seaborn v0.13.2)"><code class="xref py py-func docutils literal notranslate"><span class="pre">seaborn.heatmap()</span></code></a></p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>

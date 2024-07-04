@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>yasa.spindles_detect &#8212; yasa 0.6.4 documentation</title>
+    <title>yasa.spindles_detect &#8212; yasa 0.6.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
@@ -44,7 +44,7 @@
         </button>
         <a class="navbar-brand" href="../index.html"><span><img src="../_static/yasa_128x128.png"></span>
           yasa</a>
-        <span class="navbar-text navbar-version pull-left"><b>0.6.4</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>0.6.5</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -103,22 +103,22 @@
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
 <dt><strong>data</strong><span class="classifier">array_like</span></dt><dd><p>Single or multi-channel data. Unit must be uV and shape (n_samples) or
-(n_chan, n_samples). Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
+(n_chan, n_samples). Can also be a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>,
 in which case <code class="docutils literal notranslate"><span class="pre">data</span></code>, <code class="docutils literal notranslate"><span class="pre">sf</span></code>, and <code class="docutils literal notranslate"><span class="pre">ch_names</span></code> will be automatically
 extracted, and <code class="docutils literal notranslate"><span class="pre">data</span></code> will also be automatically converted from
 Volts (MNE) to micro-Volts (YASA).</p>
 </dd>
 <dt><strong>sf</strong><span class="classifier">float</span></dt><dd><p>Sampling frequency of the data in Hz.
-Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a <a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>If the detection is taking too long, make sure to downsample
 your data to 100 Hz (or 128 Hz). For more details, please refer to
-<a class="reference external" href="https://mne.tools/stable/generated/mne.filter.resample.html#mne.filter.resample" title="(in MNE v1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.resample()</span></code></a>.</p>
+<a class="reference external" href="https://mne.tools/stable/generated/mne.filter.resample.html#mne.filter.resample" title="(in MNE v1.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">mne.filter.resample()</span></code></a>.</p>
 </div>
 </dd>
 <dt><strong>ch_names</strong><span class="classifier">list of str</span></dt><dd><p>Channel names. Can be omitted if <code class="docutils literal notranslate"><span class="pre">data</span></code> is a
-<a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
+<a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a>.</p>
 </dd>
 <dt><strong>hypno</strong><span class="classifier">array_like</span></dt><dd><p>Sleep stage (hypnogram). If the hypnogram is loaded, the
 detection will only be applied to the value defined in
@@ -178,7 +178,7 @@ no selection is applied and the output is just a concatenation of the
 single-channel detection dataframe. Default is False.</p>
 </dd>
 <dt><strong>remove_outliers</strong><span class="classifier">boolean</span></dt><dd><p>If True, YASA will automatically detect and remove outliers spindles
-using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v1.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
+using <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest" title="(in scikit-learn v1.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble.IsolationForest</span></code></a>.
 The outliers detection is performed on all the spindles
 parameters with the exception of the <code class="docutils literal notranslate"><span class="pre">Start</span></code>, <code class="docutils literal notranslate"><span class="pre">Peak</span></code>, <code class="docutils literal notranslate"><span class="pre">End</span></code>,
 <code class="docutils literal notranslate"><span class="pre">Stage</span></code>, and <code class="docutils literal notranslate"><span class="pre">SOPhase</span></code> columns.
@@ -203,7 +203,7 @@ and ‘critical’. For most users the choice is between ‘info’
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sp</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>This will give a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.1.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> where each row is a
+<p>This will give a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v2.2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></a> where each row is a
 detected spindle and each column is a parameter (= feature or property)
 of this spindle. To get the average spindles parameters per channel and
 sleep stage:</p>
