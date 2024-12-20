@@ -56,8 +56,8 @@ To build and install from source, clone this repository or download the source a
 
 .. code-block:: shell
   cd yasa
-  pip install ."[test]"      # install the package
-  pip install -e ."[test]"   # or editable install
+  pip install ".[test]"      # install the package
+  pip install -e ".[test]"   # or editable install
   pytest                     # test the package
 
 **What are the prerequisites for using YASA?**
