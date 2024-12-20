@@ -2,17 +2,19 @@
 Hypnogram-related functions and class.
 """
 
-import mne
 import logging
+
+import mne
 
 # import warnings
 import numpy as np
 import pandas as pd
+from pandas.api.types import CategoricalDtype
+
+from yasa.evaluation import EpochByEpochAgreement
 from yasa.io import set_log_level
 from yasa.plotting import plot_hypnogram
 from yasa.sleepstats import transition_matrix
-from yasa.evaluation import EpochByEpochAgreement
-from pandas.api.types import CategoricalDtype
 
 __all__ = [
     "Hypnogram",
@@ -81,9 +83,27 @@ class Hypnogram:
     --------
     Create a 2-stages hypnogram
 
-    >>> from yasa import Hypnogram
-    >>> values = ["W", "W", "W", "S", "S", "S", "S", "S", "W", "S", "S", "S"]
-    >>> hyp = Hypnogram(values, n_stages=2)
+    >>> from yasa import (
+    ...     Hypnogram,
+    ... )
+    >>> values = [
+    ...     "W",
+    ...     "W",
+    ...     "W",
+    ...     "S",
+    ...     "S",
+    ...     "S",
+    ...     "S",
+    ...     "S",
+    ...     "W",
+    ...     "S",
+    ...     "S",
+    ...     "S",
+    ... ]
+    >>> hyp = Hypnogram(
+    ...     values,
+    ...     n_stages=2,
+    ... )
     >>> hyp
     <Hypnogram | 12 epochs x 30s (6.00 minutes), 2 stages>
      - Use `.hypno` to get the string values as a pandas.Series
@@ -153,7 +173,9 @@ class Hypnogram:
      'WAKE': 2.0}
 
     >>> # Get the state-transition matrix
-    >>> counts, probs = hyp.transition_matrix()
+    >>> counts, probs = (
+    ...     hyp.transition_matrix()
+    ... )
     >>> counts
     To Stage    WAKE  SLEEP
     From Stage
@@ -166,9 +188,16 @@ class Hypnogram:
     Lastly, we set an actual start time to the hypnogram. As a result, the index of the resulting
     hypnogram is a :py:class:`pandas.DatetimeIndex`.
 
-    >>> from yasa import simulate_hypnogram
+    >>> from yasa import (
+    ...     simulate_hypnogram,
+    ... )
     >>> hyp = simulate_hypnogram(
-    ...     tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42)
+    ...     tib=500,
+    ...     n_stages=5,
+    ...     start="2022-12-15 22:30:00",
+    ...     scorer="S1",
+    ...     seed=42,
+    ... )
     >>> hyp
     <Hypnogram | 1000 epochs x 30s (500.00 minutes), 5 stages, scored by S1>
      - Use `.hypno` to get the string values as a pandas.Series
@@ -412,8 +441,21 @@ class Hypnogram:
 
         Examples
         --------
-        >>> from yasa import Hypnogram
-        >>> hyp = Hypnogram(["W", "W", "LIGHT", "LIGHT", "DEEP", "REM", "WAKE"], n_stages=4)
+        >>> from yasa import (
+        ...     Hypnogram,
+        ... )
+        >>> hyp = Hypnogram(
+        ...     [
+        ...         "W",
+        ...         "W",
+        ...         "LIGHT",
+        ...         "LIGHT",
+        ...         "DEEP",
+        ...         "REM",
+        ...         "WAKE",
+        ...     ],
+        ...     n_stages=4,
+        ... )
         >>> hyp.as_annotations()
                onset  duration  value description
         epoch
@@ -448,14 +490,30 @@ class Hypnogram:
 
         Users can define a custom mapping:
 
-        >>> hyp.mapping = {"WAKE": 0, "NREM": 1, "REM": 2}
+        >>> hyp.mapping = {
+        ...     "WAKE": 0,
+        ...     "NREM": 1,
+        ...     "REM": 2,
+        ... }
 
         Examples
         --------
         Convert a 2-stages hypnogram to a pandas.Series of integers
 
-        >>> from yasa import Hypnogram
-        >>> hyp = Hypnogram(["W", "W", "S", "S", "W", "S"], n_stages=2)
+        >>> from yasa import (
+        ...     Hypnogram,
+        ... )
+        >>> hyp = Hypnogram(
+        ...     [
+        ...         "W",
+        ...         "W",
+        ...         "S",
+        ...         "S",
+        ...         "W",
+        ...         "S",
+        ...     ],
+        ...     n_stages=2,
+        ... )
         >>> hyp.as_int()
         Epoch
         0    0
@@ -468,8 +526,21 @@ class Hypnogram:
 
         Same with a 4-stages hypnogram
 
-        >>> from yasa import Hypnogram
-        >>> hyp = Hypnogram(["W", "W", "LIGHT", "LIGHT", "DEEP", "REM", "WAKE"], n_stages=4)
+        >>> from yasa import (
+        ...     Hypnogram,
+        ... )
+        >>> hyp = Hypnogram(
+        ...     [
+        ...         "W",
+        ...         "W",
+        ...         "LIGHT",
+        ...         "LIGHT",
+        ...         "DEEP",
+        ...         "REM",
+        ...         "WAKE",
+        ...     ],
+        ...     n_stages=4,
+        ... )
         >>> hyp.as_int()
         Epoch
         0    0
@@ -514,9 +585,25 @@ class Hypnogram:
 
         Examples
         --------
-        >>> from yasa import Hypnogram
-        >>> hyp = Hypnogram(["W", "W", "N1", "N2", "N2", "N2", "N2", "W"], n_stages=5)
-        >>> hyp_2s = hyp.consolidate_stages(2)
+        >>> from yasa import (
+        ...     Hypnogram,
+        ... )
+        >>> hyp = Hypnogram(
+        ...     [
+        ...         "W",
+        ...         "W",
+        ...         "N1",
+        ...         "N2",
+        ...         "N2",
+        ...         "N2",
+        ...         "N2",
+        ...         "W",
+        ...     ],
+        ...     n_stages=5,
+        ... )
+        >>> hyp_2s = hyp.consolidate_stages(
+        ...     2
+        ... )
         >>> print(hyp_2s)
         Epoch
         0     WAKE
@@ -593,11 +680,26 @@ class Hypnogram:
 
         Examples
         --------
-        >>> from yasa import simulate_hypnogram
-        >>> hyp_a = simulate_hypnogram(tib=90, scorer="AASM", seed=8)
-        >>> hyp_b = hyp_a.simulate_similar(scorer="YASA", seed=9)
-        >>> ebe = hyp_a.evaluate(hyp_b)
-        >>> ebe.get_agreement().round(3)
+        >>> from yasa import (
+        ...     simulate_hypnogram,
+        ... )
+        >>> hyp_a = simulate_hypnogram(
+        ...     tib=90,
+        ...     scorer="AASM",
+        ...     seed=8,
+        ... )
+        >>> hyp_b = hyp_a.simulate_similar(
+        ...     scorer="YASA",
+        ...     seed=9,
+        ... )
+        >>> ebe = (
+        ...     hyp_a.evaluate(
+        ...         hyp_b
+        ...     )
+        ... )
+        >>> ebe.get_agreement().round(
+        ...     3
+        ... )
         accuracy        0.550
         balanced_acc    0.355
         kappa           0.227
@@ -639,10 +741,24 @@ class Hypnogram:
         Let's assume that we have an hypnogram where sleep = 1 and wake = 0, with one value
         per minute.
 
-        >>> from yasa import Hypnogram
-        >>> val = 11 * ["W"] + 3 * ["S"] + 2 * ["W"] + 9 * ["S"] + ["W", "W"]
-        >>> hyp = Hypnogram(val, n_stages=2, freq="1min")
-        >>> hyp.find_periods(threshold="0min")
+        >>> from yasa import (
+        ...     Hypnogram,
+        ... )
+        >>> val = (
+        ...     11 * ["W"]
+        ...     + 3 * ["S"]
+        ...     + 2 * ["W"]
+        ...     + 9 * ["S"]
+        ...     + ["W", "W"]
+        ... )
+        >>> hyp = Hypnogram(
+        ...     val,
+        ...     n_stages=2,
+        ...     freq="1min",
+        ... )
+        >>> hyp.find_periods(
+        ...     threshold="0min"
+        ... )
           values  start  length
         0   WAKE      0      11
         1  SLEEP     11       3
@@ -657,7 +773,9 @@ class Hypnogram:
         Now, we may want to keep only periods that are longer than a specific threshold,
         for example 5 minutes:
 
-        >>> hyp.find_periods(threshold="5min")
+        >>> hyp.find_periods(
+        ...     threshold="5min"
+        ... )
           values  start  length
         0   WAKE      0      11
         1  SLEEP     16       9
@@ -668,9 +786,15 @@ class Hypnogram:
         This function is not limited to binary arrays, e.g. a 5-stages hypnogram at 30-sec
         resolution:
 
-        >>> from yasa import simulate_hypnogram
-        >>> hyp = simulate_hypnogram(tib=30, seed=42)
-        >>> hyp.find_periods(threshold="2min")
+        >>> from yasa import (
+        ...     simulate_hypnogram,
+        ... )
+        >>> hyp = simulate_hypnogram(
+        ...     tib=30, seed=42
+        ... )
+        >>> hyp.find_periods(
+        ...     threshold="2min"
+        ... )
           values  start  length
         0   WAKE      0       5
         1     N1      5       6
@@ -679,7 +803,10 @@ class Hypnogram:
         Lastly, using ``equal_length=True`` will further divide the periods into segments of the
         same duration, i.e. the duration defined in ``threshold``:
 
-        >>> hyp.find_periods(threshold="5min", equal_length=True)
+        >>> hyp.find_periods(
+        ...     threshold="5min",
+        ...     equal_length=True,
+        ... )
           values  start  length
         0     N2     11      10
         1     N2     21      10
@@ -714,8 +841,14 @@ class Hypnogram:
         --------
         .. plot::
 
-            >>> from yasa import simulate_hypnogram
-            >>> ax = simulate_hypnogram(tib=480, seed=88).plot_hypnogram(highlight="REM")
+            >>> from yasa import (
+            ...     simulate_hypnogram,
+            ... )
+            >>> ax = simulate_hypnogram(
+            ...     tib=480, seed=88
+            ... ).plot_hypnogram(
+            ...     highlight="REM"
+            ... )
         """
         return plot_hypnogram(self, **kwargs)
 
@@ -739,11 +872,26 @@ class Hypnogram:
         Examples
         --------
         >>> import pandas as pd
-        >>> from yasa import Hypnogram
+        >>> from yasa import (
+        ...     Hypnogram,
+        ... )
         >>> hyp = Hypnogram(
-        ...     ["W", "S", "W"], n_stages=2, freq="2min", scorer="Human").upsample("30s")
-        >>> shyp = hyp.simulate_similar(scorer="Simulated", seed=6)
-        >>> df = pd.concat([hyp.hypno, shyp.hypno], axis=1)
+        ...     ["W", "S", "W"],
+        ...     n_stages=2,
+        ...     freq="2min",
+        ...     scorer="Human",
+        ... ).upsample("30s")
+        >>> shyp = hyp.simulate_similar(
+        ...     scorer="Simulated",
+        ...     seed=6,
+        ... )
+        >>> df = pd.concat(
+        ...     [
+        ...         hyp.hypno,
+        ...         shyp.hypno,
+        ...     ],
+        ...     axis=1,
+        ... )
         >>> print(df)
                Human Simulated
         Epoch
@@ -832,10 +980,22 @@ class Hypnogram:
         --------
         Sleep statistics for a 2-stage hypnogram with a resolution of 15-seconds
 
-        >>> from yasa import Hypnogram
+        >>> from yasa import (
+        ...     Hypnogram,
+        ... )
         >>> # Generate a fake hypnogram, where "S" = Sleep, "W" = Wake
-        >>> values = 10 * ["W"] + 40 * ["S"] + 5 * ["W"] + 40 * ["S"] + 9 * ["W"]
-        >>> hyp = Hypnogram(values, freq="15s", n_stages=2)
+        >>> values = (
+        ...     10 * ["W"]
+        ...     + 40 * ["S"]
+        ...     + 5 * ["W"]
+        ...     + 40 * ["S"]
+        ...     + 9 * ["W"]
+        ... )
+        >>> hyp = Hypnogram(
+        ...     values,
+        ...     freq="15s",
+        ...     n_stages=2,
+        ... )
         >>> hyp.sleep_statistics()
         {'TIB': 26.0,
         'SPT': 21.25,
@@ -850,9 +1010,13 @@ class Hypnogram:
 
         Sleep statistics for a 5-stages hypnogram
 
-        >>> from yasa import simulate_hypnogram
+        >>> from yasa import (
+        ...     simulate_hypnogram,
+        ... )
         >>> # Generate a 8 hr (= 480 minutes) 5-stages hypnogram with a 30-seconds resolution
-        >>> hyp = simulate_hypnogram(tib=480, seed=42)
+        >>> hyp = simulate_hypnogram(
+        ...     tib=480, seed=42
+        ... )
         >>> hyp.sleep_statistics()
         {'TIB': 480.0,
         'SPT': 477.5,
@@ -981,10 +1145,17 @@ class Hypnogram:
 
         Examples
         --------
-        >>> from yasa import Hypnogram, simulate_hypnogram
+        >>> from yasa import (
+        ...     Hypnogram,
+        ...     simulate_hypnogram,
+        ... )
         >>> # Generate a 8 hr (= 480 minutes) 5-stages hypnogram with a 30-seconds resolution
-        >>> hyp = simulate_hypnogram(tib=480, seed=42)
-        >>> counts, probs = hyp.transition_matrix()
+        >>> hyp = simulate_hypnogram(
+        ...     tib=480, seed=42
+        ... )
+        >>> counts, probs = (
+        ...     hyp.transition_matrix()
+        ... )
         >>> counts
         To Stage    WAKE  N1   N2  N3  REM
         From Stage
@@ -1032,8 +1203,20 @@ class Hypnogram:
         --------
         Create a 30-sec hypnogram
 
-        >>> from yasa import Hypnogram
-        >>> hyp = Hypnogram(["W", "W", "S", "S", "W"], n_stages=2, start="2022-12-23 23:00")
+        >>> from yasa import (
+        ...     Hypnogram,
+        ... )
+        >>> hyp = Hypnogram(
+        ...     [
+        ...         "W",
+        ...         "W",
+        ...         "S",
+        ...         "S",
+        ...         "W",
+        ...     ],
+        ...     n_stages=2,
+        ...     start="2022-12-23 23:00",
+        ... )
         >>> hyp.hypno
         Time
         2022-12-23 23:00:00     WAKE
@@ -1046,7 +1229,11 @@ class Hypnogram:
 
         Upsample to a 15-seconds resolution
 
-        >>> hyp_up = hyp.upsample("15s")
+        >>> hyp_up = (
+        ...     hyp.upsample(
+        ...         "15s"
+        ...     )
+        ... )
         >>> hyp_up.hypno
         Time
         2022-12-23 23:00:00     WAKE
@@ -1479,8 +1666,40 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     minute, and therefore the sampling frequency of the hypnogram is 1 / 60 sec (~0.016 Hz).
 
     >>> import yasa
-    >>> hypno = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0]
-    >>> yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold="0min")
+    >>> hypno = [
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     1,
+    ...     1,
+    ...     1,
+    ...     0,
+    ...     0,
+    ...     1,
+    ...     1,
+    ...     1,
+    ...     1,
+    ...     1,
+    ...     1,
+    ...     1,
+    ...     1,
+    ...     1,
+    ...     0,
+    ...     0,
+    ... ]
+    >>> yasa.hypno_find_periods(
+    ...     hypno,
+    ...     sf_hypno=1 / 60,
+    ...     threshold="0min",
+    ... )
        values  start  length
     0       0      0      11
     1       1     11       3
@@ -1495,7 +1714,11 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     Now, we may want to keep only periods that are longer than a specific threshold,
     for example 5 minutes:
 
-    >>> yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold="5min")
+    >>> yasa.hypno_find_periods(
+    ...     hypno,
+    ...     sf_hypno=1 / 60,
+    ...     threshold="5min",
+    ... )
        values  start  length
     0       0      0      11
     1       1     16       9
@@ -1505,8 +1728,30 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
 
     This function is not limited to binary arrays, e.g.
 
-    >>> hypno = [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 0, 1]
-    >>> yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold="2min")
+    >>> hypno = [
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     1,
+    ...     2,
+    ...     2,
+    ...     2,
+    ...     2,
+    ...     2,
+    ...     2,
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     1,
+    ...     0,
+    ...     1,
+    ... ]
+    >>> yasa.hypno_find_periods(
+    ...     hypno,
+    ...     sf_hypno=1 / 60,
+    ...     threshold="2min",
+    ... )
        values  start  length
     0       0      0       4
     1       2      5       6
@@ -1515,8 +1760,31 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     Lastly, using ``equal_length=True`` will further divide the periods into segments of the
     same duration, i.e. the duration defined in ``threshold``:
 
-    >>> hypno = [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 0, 1]
-    >>> yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold="2min", equal_length=True)
+    >>> hypno = [
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     1,
+    ...     2,
+    ...     2,
+    ...     2,
+    ...     2,
+    ...     2,
+    ...     2,
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     1,
+    ...     0,
+    ...     1,
+    ... ]
+    >>> yasa.hypno_find_periods(
+    ...     hypno,
+    ...     sf_hypno=1 / 60,
+    ...     threshold="2min",
+    ...     equal_length=True,
+    ... )
        values  start  length
     0       0      0       2
     1       0      2       2
@@ -1674,8 +1942,12 @@ def simulate_hypnogram(
 
     Examples
     --------
-    >>> from yasa import simulate_hypnogram
-    >>> hyp = simulate_hypnogram(tib=5, seed=1)
+    >>> from yasa import (
+    ...     simulate_hypnogram,
+    ... )
+    >>> hyp = simulate_hypnogram(
+    ...     tib=5, seed=1
+    ... )
     >>> hyp
     <Hypnogram | 10 epochs x 30s (5.00 minutes), 5 stages>
      - Use `.hypno` to get the string values as a pandas.Series
@@ -1697,7 +1969,11 @@ def simulate_hypnogram(
     9      N2
     Name: Stage, dtype: object
 
-    >>> hyp = simulate_hypnogram(tib=5, n_stages=2, seed=1)
+    >>> hyp = simulate_hypnogram(
+    ...     tib=5,
+    ...     n_stages=2,
+    ...     seed=1,
+    ... )
     >>> hyp.hypno
     Epoch
     0     WAKE
@@ -1714,8 +1990,14 @@ def simulate_hypnogram(
 
     Add some Unscored epochs.
 
-    >>> hyp = simulate_hypnogram(tib=5, n_stages=2, seed=1)
-    >>> hyp.hypno.iloc[-2:] = "UNS"
+    >>> hyp = simulate_hypnogram(
+    ...     tib=5,
+    ...     n_stages=2,
+    ...     seed=1,
+    ... )
+    >>> hyp.hypno.iloc[
+    ...     -2:
+    ... ] = "UNS"
     >>> hyp.hypno
     Epoch
     0     WAKE
@@ -1736,17 +2018,44 @@ def simulate_hypnogram(
 
         >>> import numpy as np
         >>> import matplotlib.pyplot as plt
-        >>> from yasa import Hypnogram, hypno_int_to_str
+        >>> from yasa import (
+        ...     Hypnogram,
+        ...     hypno_int_to_str,
+        ... )
         >>> url = (
         >>>     "https://github.com/raphaelvallat/yasa/raw/master/"
         >>>     "notebooks/data_full_6hrs_100Hz_hypno_30s.txt"
         >>> )
-        >>> values_str = hypno_int_to_str(np.loadtxt(url))
-        >>> real_hyp = Hypnogram(values_str)
-        >>> fake_hyp = real_hyp.simulate_similar(seed=2)
-        >>> fig, (ax1, ax2) = plt.subplots(nrows=2, figsize=(7, 5))
-        >>> real_hyp.plot_hypnogram(ax=ax1).set_title("Real hypnogram")
-        >>> fake_hyp.plot_hypnogram(ax=ax2).set_title("Fake hypnogram")
+        >>> values_str = hypno_int_to_str(
+        ...     np.loadtxt(url)
+        ... )
+        >>> real_hyp = (
+        ...     Hypnogram(
+        ...         values_str
+        ...     )
+        ... )
+        >>> fake_hyp = real_hyp.simulate_similar(
+        ...     seed=2
+        ... )
+        >>> fig, (ax1, ax2) = (
+        ...     plt.subplots(
+        ...         nrows=2,
+        ...         figsize=(
+        ...             7,
+        ...             5,
+        ...         ),
+        ...     )
+        ... )
+        >>> real_hyp.plot_hypnogram(
+        ...     ax=ax1
+        ... ).set_title(
+        ...     "Real hypnogram"
+        ... )
+        >>> fake_hyp.plot_hypnogram(
+        ...     ax=ax2
+        ... ).set_title(
+        ...     "Fake hypnogram"
+        ... )
         >>> plt.tight_layout()
     """
     # Extract yasa.Hypnogram defaults, which will be assumed later but need throughout

@@ -1,15 +1,17 @@
 """Test the functions in yasa/spectral.py."""
 
-import mne
-import pytest
 import unittest
+from itertools import product
+
+import matplotlib.pyplot as plt
+import mne
 import numpy as np
 import pandas as pd
-from itertools import product
-import matplotlib.pyplot as plt
+import pytest
 from mne.filter import filter_data
+
+from yasa.detection import art_detect, compare_detection, rem_detect, spindles_detect, sw_detect
 from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
-from yasa.detection import spindles_detect, sw_detect, rem_detect, art_detect, compare_detection
 
 ##############################################################################
 # DATA LOADING

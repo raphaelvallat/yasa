@@ -3,13 +3,15 @@ This file contains several helper functions to calculate spectral power from
 1D and 2D EEG data.
 """
 
-import mne
 import logging
+
+import mne
 import numpy as np
 import pandas as pd
 from scipy import signal
 from scipy.integrate import simpson
 from scipy.interpolate import RectBivariateSpline
+
 from .io import set_log_level
 
 logger = logging.getLogger("yasa")

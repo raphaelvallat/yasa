@@ -1,8 +1,6 @@
-"""Helper functions for YASA (e.g. logger)
-"""
+"""Helper functions for YASA (e.g. logger)"""
 
 import logging
-
 
 LOGGING_TYPES = dict(
     DEBUG=logging.DEBUG,

@@ -49,9 +49,38 @@ def transition_matrix(hypno):
     Examples
     --------
     >>> import numpy as np
-    >>> from yasa import transition_matrix
-    >>> a = [0, 0, 0, 1, 1, 0, 1, 2, 2, 3, 3, 2, 3, 3, 0, 2, 2, 1, 2, 2, 3, 3]
-    >>> counts, probs = transition_matrix(a)
+    >>> from yasa import (
+    ...     transition_matrix,
+    ... )
+    >>> a = [
+    ...     0,
+    ...     0,
+    ...     0,
+    ...     1,
+    ...     1,
+    ...     0,
+    ...     1,
+    ...     2,
+    ...     2,
+    ...     3,
+    ...     3,
+    ...     2,
+    ...     3,
+    ...     3,
+    ...     0,
+    ...     2,
+    ...     2,
+    ...     1,
+    ...     2,
+    ...     2,
+    ...     3,
+    ...     3,
+    ... ]
+    >>> counts, probs = (
+    ...     transition_matrix(
+    ...         a
+    ...     )
+    ... )
     >>> counts
            0  1  2  3
     Stage
@@ -73,7 +102,11 @@ def transition_matrix(hypno):
     calculated by taking the average of the diagonal values (excluding Wake
     and N1 sleep):
 
-    >>> np.diag(probs.loc[2:, 2:]).mean().round(3)
+    >>> np.diag(
+    ...     probs.loc[
+    ...         2:, 2:
+    ...     ]
+    ... ).mean().round(3)
     0.514
 
     Finally, we can plot the transition matrix using :py:func:`seaborn.heatmap`
@@ -83,22 +116,76 @@ def transition_matrix(hypno):
         >>> import numpy as np
         >>> import seaborn as sns
         >>> import matplotlib.pyplot as plt
-        >>> from yasa import transition_matrix
+        >>> from yasa import (
+        ...     transition_matrix,
+        ... )
         >>> # Calculate probability matrix
-        >>> a = [1, 1, 1, 0, 0, 2, 2, 0, 2, 0, 1, 1, 0, 0]
-        >>> _, probs = transition_matrix(a)
+        >>> a = [
+        ...     1,
+        ...     1,
+        ...     1,
+        ...     0,
+        ...     0,
+        ...     2,
+        ...     2,
+        ...     0,
+        ...     2,
+        ...     0,
+        ...     1,
+        ...     1,
+        ...     0,
+        ...     0,
+        ... ]
+        >>> _, probs = (
+        ...     transition_matrix(
+        ...         a
+        ...     )
+        ... )
         >>> # Start the plot
-        >>> grid_kws = {"height_ratios": (.9, .05), "hspace": .1}
-        >>> f, (ax, cbar_ax) = plt.subplots(2, gridspec_kw=grid_kws,
-        ...                                 figsize=(5, 5))
-        >>> sns.heatmap(probs, ax=ax, square=False, vmin=0, vmax=1, cbar=True,
-        ...             cbar_ax=cbar_ax, cmap='YlOrRd', annot=True, fmt='.2f',
-        ...             cbar_kws={"orientation": "horizontal", "fraction": 0.1,
-        ...                       "label": "Transition probability"})
-        >>> ax.set_xlabel("To sleep stage")
+        >>> grid_kws = {
+        ...     "height_ratios": (
+        ...         0.9,
+        ...         0.05,
+        ...     ),
+        ...     "hspace": 0.1,
+        ... }
+        >>> f, (ax, cbar_ax) = (
+        ...     plt.subplots(
+        ...         2,
+        ...         gridspec_kw=grid_kws,
+        ...         figsize=(
+        ...             5,
+        ...             5,
+        ...         ),
+        ...     )
+        ... )
+        >>> sns.heatmap(
+        ...     probs,
+        ...     ax=ax,
+        ...     square=False,
+        ...     vmin=0,
+        ...     vmax=1,
+        ...     cbar=True,
+        ...     cbar_ax=cbar_ax,
+        ...     cmap="YlOrRd",
+        ...     annot=True,
+        ...     fmt=".2f",
+        ...     cbar_kws={
+        ...         "orientation": "horizontal",
+        ...         "fraction": 0.1,
+        ...         "label": "Transition probability",
+        ...     },
+        ... )
+        >>> ax.set_xlabel(
+        ...     "To sleep stage"
+        ... )
         >>> ax.xaxis.tick_top()
-        >>> ax.set_ylabel("From sleep stage")
-        >>> ax.xaxis.set_label_position('top')
+        >>> ax.set_ylabel(
+        ...     "From sleep stage"
+        ... )
+        >>> ax.xaxis.set_label_position(
+        ...     "top"
+        ... )
     """
     # NOTE: FutureWarning not added here otherwise it would also be shown when calling
     # yasa.Hypnogram.transition_matrix
@@ -201,10 +288,36 @@ def sleep_statistics(hypno, sf_hyp):
 
     Examples
     --------
-    >>> from yasa import sleep_statistics
-    >>> hypno = [0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 2, 3, 3, 4, 4, 4, 4, 0, 0]
+    >>> from yasa import (
+    ...     sleep_statistics,
+    ... )
+    >>> hypno = [
+    ...     0,
+    ...     0,
+    ...     1,
+    ...     1,
+    ...     1,
+    ...     2,
+    ...     2,
+    ...     2,
+    ...     3,
+    ...     3,
+    ...     3,
+    ...     2,
+    ...     3,
+    ...     3,
+    ...     4,
+    ...     4,
+    ...     4,
+    ...     4,
+    ...     0,
+    ...     0,
+    ... ]
     >>> # Assuming that we have one-value per 30-second.
-    >>> sleep_statistics(hypno, sf_hyp=1/30)
+    >>> sleep_statistics(
+    ...     hypno,
+    ...     sf_hyp=1 / 30,
+    ... )
     {'TIB': 10.0,
      'SPT': 8.0,
      'WASO': 0.0,

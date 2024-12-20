@@ -1,18 +1,19 @@
 """Automatic sleep staging of polysomnography data."""
 
-import os
-import mne
 import glob
-import joblib
 import logging
+import os
+
+import antropy as ant
+import joblib
+import matplotlib.pyplot as plt
+import mne
 import numpy as np
 import pandas as pd
-import antropy as ant
-from scipy.integrate import trapezoid
 import scipy.signal as sp_sig
 import scipy.stats as sp_stats
-import matplotlib.pyplot as plt
 from mne.filter import filter_data
+from scipy.integrate import trapezoid
 from sklearn.preprocessing import robust_scale
 
 from .others import sliding_window
@@ -140,17 +141,33 @@ class SleepStaging:
     >>> import mne
     >>> import yasa
     >>> # Load an EDF file using MNE
-    >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
+    >>> raw = mne.io.read_raw_edf(
+    ...     "myfile.edf",
+    ...     preload=True,
+    ... )
     >>> # Initialize the sleep staging instance
-    >>> sls = yasa.SleepStaging(raw, eeg_name="C4-M1", eog_name="LOC-M2",
-    ...                         emg_name="EMG1-EMG2",
-    ...                         metadata=dict(age=29, male=True))
+    >>> sls = yasa.SleepStaging(
+    ...     raw,
+    ...     eeg_name="C4-M1",
+    ...     eog_name="LOC-M2",
+    ...     emg_name="EMG1-EMG2",
+    ...     metadata=dict(
+    ...         age=29,
+    ...         male=True,
+    ...     ),
+    ... )
     >>> # Get the predicted sleep stages
-    >>> hypno = sls.predict()
+    >>> hypno = (
+    ...     sls.predict()
+    ... )
     >>> # Get the predicted probabilities
     >>> proba = sls.predict_proba()
     >>> # Get the confidence
-    >>> confidence = proba.max(axis=1)
+    >>> confidence = (
+    ...     proba.max(
+    ...         axis=1
+    ...     )
+    ... )
     >>> # Plot the predicted probabilities
     >>> sls.plot_predict_proba()
 
