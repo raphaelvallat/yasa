@@ -26,7 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dynamic = ["version"]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "numpy>=1.18.1",
     "scipy",
@@ -78,7 +78,7 @@ yasa = [
 
 [tool.setuptools.packages.find]
 namespaces = false
-where = ["yasa"]
+where = ["src"]
 
 [tool.setuptools.dynamic]
 version = {attr = "yasa.__version__"}
@@ -102,7 +102,7 @@ omit = [
 source_pkgs = ["yasa"]
 
 [tool.coverage.paths]
-source = ["yasa"]
+source = ["src"]
 
 [tool.coverage.report]
 show_missing = true
@@ -111,16 +111,20 @@ show_missing = true
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+lint.select = ["E4", "E7", "E9", "F", "I", "NPY201"]
 exclude = [
-    "__init__.py",  # Skip init files bc they use star imports (breaking rules F403, F405)
     "notebooks",  # Skip jupyter notebook examples
 ]
 
-[tool.ruff.lint]
-select = [
-    "E4",  # Subset of pycodestyle rules
-    "E7",  # Subset of pycodestyle rules
-    "E9",  # Subset of pycodestyle rules
-    "F",  # All Pyflakes rules
-    "NPY201",
-]
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]  # Ignore star and unused import violations for __init__.py files
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 20

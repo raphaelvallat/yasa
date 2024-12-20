@@ -14,6 +14,10 @@
 .. image:: https://pepy.tech/badge/yasa
     :target: https://pepy.tech/badge/yasa
 
+.. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
+  :target: https://github.com/astral-sh/ruff
+  :alt: Ruff
+
 ----------------
 
 .. figure::  /docs/pictures/yasa_logo.png
@@ -52,9 +56,9 @@ To build and install from source, clone this repository or download the source a
 
 .. code-block:: shell
   cd yasa
-  pip install .[test]              # install the package
-  pip install --editable .[test]   # or editable install
-  pytest                           # test the package
+  pip install ."[test]"              # install the package
+  pip install --editable ."[test]"   # or editable install
+  pytest                             # test the package
 
 **What are the prerequisites for using YASA?**
 
