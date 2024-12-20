@@ -86,18 +86,14 @@ class EpochByEpochAgreement:
     ...         scorer="Human",
     ...         seed=i,
     ...     )
-    ...     for i in range(
-    ...         10
-    ...     )
+    ...     for i in range(10)
     ... ]
     >>> obs_hyps = [
     ...     h.simulate_similar(
     ...         scorer="YASA",
     ...         seed=i,
     ...     )
-    ...     for i, h in enumerate(
-    ...         ref_hyps
-    ...     )
+    ...     for i, h in enumerate(ref_hyps)
     ... ]
     >>> ebe = yasa.EpochByEpochAgreement(
     ...     ref_hyps,
@@ -113,9 +109,7 @@ class EpochByEpochAgreement:
     4             0.22          0.21   0.01  0.01       0.21    0.22   0.21
     5             0.21          0.17  -0.06 -0.06       0.20    0.21   0.21
 
-    >>> ebe.get_agreement_bystage().head(
-    ...     12
-    ... ).round(3)
+    >>> ebe.get_agreement_bystage().head(12).round(3)
                     fbeta  precision  recall  support
     stage sleep_id
     WAKE  1         0.391      0.371   0.413    189.0
@@ -131,9 +125,7 @@ class EpochByEpochAgreement:
     N1    1         0.185      0.185   0.185    124.0
           2         0.121      0.131   0.112    160.0
 
-    >>> ebe.get_confusion_matrix(
-    ...     sleep_id=1
-    ... )
+    >>> ebe.get_confusion_matrix(sleep_id=1)
     YASA   WAKE  N1   N2  N3  REM
     Human
     WAKE     78  24   50   3   34
@@ -145,27 +137,21 @@ class EpochByEpochAgreement:
     .. plot::
 
         >>> import matplotlib.pyplot as plt
-        >>> fig, ax = (
-        ...     plt.subplots(
-        ...         figsize=(
-        ...             6,
-        ...             3,
-        ...         ),
-        ...         constrained_layout=True,
-        ...     )
+        >>> fig, ax = plt.subplots(
+        ...     figsize=(
+        ...         6,
+        ...         3,
+        ...     ),
+        ...     constrained_layout=True,
         ... )
-        >>> ebe.plot_hypnograms(
-        ...     sleep_id=10
-        ... )
+        >>> ebe.plot_hypnograms(sleep_id=10)
 
     .. plot::
 
-        >>> fig, ax = (
-        ...     plt.subplots(
-        ...         figsize=(
-        ...             6,
-        ...             3,
-        ...         )
+        >>> fig, ax = plt.subplots(
+        ...     figsize=(
+        ...         6,
+        ...         3,
         ...     )
         ... )
         >>> ebe.plot_hypnograms(
@@ -176,14 +162,12 @@ class EpochByEpochAgreement:
     .. plot::
 
         >>> session = 8
-        >>> fig, ax = (
-        ...     plt.subplots(
-        ...         figsize=(
-        ...             6.5,
-        ...             2.5,
-        ...         ),
-        ...         constrained_layout=True,
-        ...     )
+        >>> fig, ax = plt.subplots(
+        ...     figsize=(
+        ...         6.5,
+        ...         2.5,
+        ...     ),
+        ...     constrained_layout=True,
         ... )
         >>> style_a = dict(
         ...     alpha=1,
@@ -228,9 +212,7 @@ class EpochByEpochAgreement:
     ...     scorer="RaterB",
     ...     seed=9,
     ... )
-    >>> ebe = hypno_a.evaluate(
-    ...     hypno_b
-    ... )
+    >>> ebe = hypno_a.evaluate(hypno_b)
     >>> ebe.get_confusion_matrix()
     RaterB  WAKE  N1  N2  N3
     RaterA
@@ -558,26 +540,20 @@ class EpochByEpochAgreement:
         ...         scorer="Rater1",
         ...         seed=i,
         ...     )
-        ...     for i in range(
-        ...         3
-        ...     )
+        ...     for i in range(3)
         ... ]
         >>> obs_hyps = [
         ...     h.simulate_similar(
         ...         scorer="Rater2",
         ...         seed=i,
         ...     )
-        ...     for i, h in enumerate(
-        ...         ref_hyps
-        ...     )
+        ...     for i, h in enumerate(ref_hyps)
         ... ]
         >>> ebe = yasa.EpochByEpochAgreement(
         ...     ref_hyps,
         ...     obs_hyps,
         ... )
-        >>> ebe.get_confusion_matrix(
-        ...     sleep_id=2
-        ... )
+        >>> ebe.get_confusion_matrix(sleep_id=2)
         Rater2  WAKE  N1  N2  N3  REM
         Rater1
         WAKE       1   2  23   0    0
@@ -605,9 +581,7 @@ class EpochByEpochAgreement:
                  N3         0   0  16  11    0
                  REM        0  15  11  18    0
 
-        >>> ebe.get_confusion_matrix(
-        ...     agg_func="sum"
-        ... )
+        >>> ebe.get_confusion_matrix(agg_func="sum")
         Rater2  WAKE  N1  N2  N3  REM
         Rater1
         WAKE      47   2  33  19   54
@@ -812,9 +786,7 @@ class EpochByEpochAgreement:
             A :py:class:`pandas.DataFrame` summarizing agreement scores across the entire dataset
             with descriptive statistics.
 
-            >>> ebe = yasa.EpochByEpochAgreement(
-            ...     ...
-            ... )
+            >>> ebe = yasa.EpochByEpochAgreement(...)
             >>> agreement = ebe.get_agreement()
             >>> ebe.summary()
 
@@ -935,27 +907,21 @@ class SleepStatsAgreement:
     >>>
     >>> # Generate fake reference and observed datasets with similar sleep statistics
     >>> ref_scorer = "Henri"
-    >>> obs_scorer = (
-    ...     "Piéron"
-    ... )
+    >>> obs_scorer = "Piéron"
     >>> ref_hyps = [
     ...     yasa.simulate_hypnogram(
     ...         tib=600,
     ...         scorer=ref_scorer,
     ...         seed=i,
     ...     )
-    ...     for i in range(
-    ...         20
-    ...     )
+    ...     for i in range(20)
     ... ]
     >>> obs_hyps = [
     ...     h.simulate_similar(
     ...         scorer=obs_scorer,
     ...         seed=i,
     ...     )
-    ...     for i, h in enumerate(
-    ...         ref_hyps
-    ...     )
+    ...     for i, h in enumerate(ref_hyps)
     ... ]
     >>> # Generate sleep statistics from hypnograms using EpochByEpochAgreement
     >>> eea = yasa.EpochByEpochAgreement(
@@ -963,24 +929,14 @@ class SleepStatsAgreement:
     ...     obs_hyps,
     ... )
     >>> sstats = eea.get_sleep_stats()
-    >>> ref_sstats = (
-    ...     sstats.loc[
-    ...         ref_scorer
-    ...     ]
-    ... )
-    >>> obs_sstats = (
-    ...     sstats.loc[
-    ...         obs_scorer
-    ...     ]
-    ... )
+    >>> ref_sstats = sstats.loc[ref_scorer]
+    >>> obs_sstats = sstats.loc[obs_scorer]
     >>> # Create SleepStatsAgreement instance
     >>> ssa = yasa.SleepStatsAgreement(
     ...     ref_sstats,
     ...     obs_sstats,
     ... )
-    >>> ssa.summary().round(
-    ...     1
-    ... ).head(3)
+    >>> ssa.summary().round(1).head(3)
     variable   bias_intercept             ...   uloa_parm
     interval           center lower upper ...      center lower upper
     sleep_stat                            ...
@@ -988,27 +944,21 @@ class SleepStatsAgreement:
     %N2                 -27.3 -49.1  -5.6 ...        12.4   7.2  17.6
     %N3                  -9.1 -23.8   5.5 ...        20.4  12.6  28.3
 
-    >>> ssa.get_table().head(
-    ...     3
-    ... )[["bias", "loa"]]
+    >>> ssa.get_table().head(3)[["bias", "loa"]]
                           bias                            loa
     sleep_stat
     %N1                   0.25  Bias ± 2.46 * (-0.00 + 1.00x)
     %N2         -27.34 + 0.55x   Bias ± 2.46 * (0.00 + 1.00x)
     %N3                   1.38   Bias ± 2.46 * (0.00 + 1.00x)
 
-    >>> ssa.assumptions.head(
-    ...     3
-    ... )
+    >>> ssa.assumptions.head(3)
                 unbiased  normal  constant_bias  homoscedastic
     sleep_stat
     %N1             True    True           True          False
     %N2             True    True          False          False
     %N3             True    True           True          False
 
-    >>> ssa.auto_methods.head(
-    ...     3
-    ... )
+    >>> ssa.auto_methods.head(3)
                 bias   loa    ci
     sleep_stat
     %N1         parm  regr  parm
@@ -1018,9 +968,7 @@ class SleepStatsAgreement:
     >>> ssa.get_table(
     ...     bias_method="parm",
     ...     loa_method="parm",
-    ... ).head(3)[
-    ...     ["bias", "loa"]
-    ... ]
+    ... ).head(3)[["bias", "loa"]]
                  bias            loa
     sleep_stat
     %N1          0.25    -5.55, 6.06
@@ -1032,33 +980,17 @@ class SleepStatsAgreement:
     ...         scorer="Kelly",
     ...         seed=i,
     ...     )
-    ...     for i, h in enumerate(
-    ...         obs_hyps
-    ...     )
+    ...     for i, h in enumerate(obs_hyps)
     ... ]
-    >>> new_sstats = (
-    ...     pd.Series(
-    ...         new_hyps
-    ...     )
-    ...     .map(
-    ...         lambda h: h.sleep_statistics()
-    ...     )
-    ...     .apply(
-    ...         pd.Series
-    ...     )
-    ... )
-    >>> new_sstats = (
-    ...     new_sstats[
-    ...         [
-    ...             "N1",
-    ...             "TST",
-    ...             "WASO",
-    ...         ]
+    >>> new_sstats = pd.Series(new_hyps).map(lambda h: h.sleep_statistics()).apply(pd.Series)
+    >>> new_sstats = new_sstats[
+    ...     [
+    ...         "N1",
+    ...         "TST",
+    ...         "WASO",
     ...     ]
-    ... )
-    >>> new_sstats.round(
-    ...     1
-    ... ).head(5)
+    ... ]
+    >>> new_sstats.round(1).head(5)
          N1    TST   WASO
     0  42.5  439.5  147.5
     1  84.0  550.0   38.5
@@ -1070,9 +1002,7 @@ class SleepStatsAgreement:
     ...     new_sstats,
     ...     bias_method="auto",
     ... )
-    >>> new_stats_calibrated.round(
-    ...     1
-    ... ).head(5)
+    >>> new_stats_calibrated.round(1).head(5)
          N1    TST   WASO
     0  42.9  433.8  150.0
     1  84.4  544.2   41.0
@@ -1084,9 +1014,7 @@ class SleepStatsAgreement:
 
         >>> import matplotlib.pyplot as plt
         >>> ax = ssa.plot_discrepancies_heatmap()
-        >>> ax.set_title(
-        ...     "Sleep statistic discrepancies"
-        ... )
+        >>> ax.set_title("Sleep statistic discrepancies")
         >>> plt.tight_layout()
 
     .. plot::
@@ -1659,28 +1587,18 @@ class SleepStatsAgreement:
 
         Examples
         --------
-        >>> ssa = yasa.SleepStatsAgreement(
-        ...     ...
+        >>> ssa = yasa.SleepStatsAgreement(...)
+        >>> calibrate_rem = ssa.get_calibration_func("REM")
+        >>> new_obs_rem_vals = np.array(
+        ...     [
+        ...         50,
+        ...         40,
+        ...         30,
+        ...         20,
+        ...     ]
         ... )
-        >>> calibrate_rem = ssa.get_calibration_func(
-        ...     "REM"
-        ... )
-        >>> new_obs_rem_vals = (
-        ...     np.array(
-        ...         [
-        ...             50,
-        ...             40,
-        ...             30,
-        ...             20,
-        ...         ]
-        ...     )
-        ... )
-        >>> calibrate_rem(
-        ...     new_obs_rem_vals
-        ... )
-        >>> calibrate_rem(
-        ...     new_obs_rem_vals
-        ... )
+        >>> calibrate_rem(new_obs_rem_vals)
+        >>> calibrate_rem(new_obs_rem_vals)
         array([50, 40, 30, 20])
         >>> calibrate_rem(
         ...     new_obs_rem_vals,

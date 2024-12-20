@@ -691,11 +691,7 @@ def spindles_detect(
     sp : :py:class:`yasa.SpindlesResults`
         To get the full detection dataframe, use:
 
-        >>> sp = (
-        ...     spindles_detect(
-        ...         ...
-        ...     )
-        ... )
+        >>> sp = spindles_detect(...)
         >>> sp.summary()
 
         This will give a :py:class:`pandas.DataFrame` where each row is a
@@ -1188,15 +1184,10 @@ class SpindlesResults(_DetectionResults):
         >>> x * y
         array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])
 
-        >>> (
-        ...     x * y
-        ... ).sum()  # Unscaled coincidence
+        >>> (x * y).sum()  # Unscaled coincidence
         3
 
-        >>> (x * y).sum() / (
-        ...     x.sum()
-        ...     * y.sum()
-        ... )  # Scaled coincidence
+        >>> (x * y).sum() / (x.sum() * y.sum())  # Scaled coincidence
         0.12
 
         References
@@ -1543,16 +1534,8 @@ def sw_detect(
 
                import pingouin as pg
 
-               mean_direction = pg.circ_mean(
-                   sw[
-                       "PhaseAtSigmaPeak"
-                   ]
-               )
-               vector_length = pg.circ_r(
-                   sw[
-                       "PhaseAtSigmaPeak"
-                   ]
-               )
+               mean_direction = pg.circ_mean(sw["PhaseAtSigmaPeak"])
+               vector_length = pg.circ_r(sw["PhaseAtSigmaPeak"])
 
         3. ``ndPAC``: the normalized Mean Vector Length (also called the normalized direct PAC,
            or ndPAC) within a 2-sec epoch centered around the negative peak of the slow-wave.
@@ -2256,15 +2239,10 @@ class SWResults(_DetectionResults):
         >>> x * y
         array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])
 
-        >>> (
-        ...     x * y
-        ... ).sum()  # Coincidence
+        >>> (x * y).sum()  # Coincidence
         3
 
-        >>> (x * y).sum() / (
-        ...     x.sum()
-        ...     * y.sum()
-        ... )  # Scaled coincidence
+        >>> (x * y).sum() / (x.sum() * y.sum())  # Scaled coincidence
         0.12
 
         References
@@ -2438,9 +2416,7 @@ def rem_detect(
             Therefore, if passing data from a :py:class:`mne.io.BaseRaw`,
             make sure to use units="uV" to get the data in micro-Volts, e.g.:
 
-            >>> data = raw.get_data(
-            ...     units="uV"
-            ... )  # Make sure that data is in uV
+            >>> data = raw.get_data(units="uV")  # Make sure that data is in uV
     sf : float
         Sampling frequency of the data, in Hz.
     hypno : array_like
@@ -2497,18 +2473,14 @@ def rem_detect(
     rem : :py:class:`yasa.REMResults`
         To get the full detection dataframe, use:
 
-        >>> rem = rem_detect(
-        ...     ...
-        ... )
+        >>> rem = rem_detect(...)
         >>> rem.summary()
 
         This will give a :py:class:`pandas.DataFrame` where each row is a
         detected REM and each column is a parameter (= property).
         To get the average parameters sleep stage:
 
-        >>> rem.summary(
-        ...     grp_stage=True
-        ... )
+        >>> rem.summary(grp_stage=True)
 
     Notes
     -----
@@ -3400,9 +3372,7 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
     Finally, if detected is empty, all performance metrics will be set to zero, and a copy of
     the groundtruth array will be returned as false negatives.
 
-    >>> compare_detection(
-    ...     [], grndtrth
-    ... )
+    >>> compare_detection([], grndtrth)
     {'tp': array([], dtype=int64),
      'fp': array([], dtype=int64),
      'fn': array([ 5, 12, 18, 26, 34, 41, 55, 63, 68]),

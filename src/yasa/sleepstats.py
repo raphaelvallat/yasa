@@ -76,11 +76,7 @@ def transition_matrix(hypno):
     ...     3,
     ...     3,
     ... ]
-    >>> counts, probs = (
-    ...     transition_matrix(
-    ...         a
-    ...     )
-    ... )
+    >>> counts, probs = transition_matrix(a)
     >>> counts
            0  1  2  3
     Stage
@@ -102,11 +98,7 @@ def transition_matrix(hypno):
     calculated by taking the average of the diagonal values (excluding Wake
     and N1 sleep):
 
-    >>> np.diag(
-    ...     probs.loc[
-    ...         2:, 2:
-    ...     ]
-    ... ).mean().round(3)
+    >>> np.diag(probs.loc[2:, 2:]).mean().round(3)
     0.514
 
     Finally, we can plot the transition matrix using :py:func:`seaborn.heatmap`
@@ -136,11 +128,7 @@ def transition_matrix(hypno):
         ...     0,
         ...     0,
         ... ]
-        >>> _, probs = (
-        ...     transition_matrix(
-        ...         a
-        ...     )
-        ... )
+        >>> _, probs = transition_matrix(a)
         >>> # Start the plot
         >>> grid_kws = {
         ...     "height_ratios": (
@@ -149,15 +137,13 @@ def transition_matrix(hypno):
         ...     ),
         ...     "hspace": 0.1,
         ... }
-        >>> f, (ax, cbar_ax) = (
-        ...     plt.subplots(
-        ...         2,
-        ...         gridspec_kw=grid_kws,
-        ...         figsize=(
-        ...             5,
-        ...             5,
-        ...         ),
-        ...     )
+        >>> f, (ax, cbar_ax) = plt.subplots(
+        ...     2,
+        ...     gridspec_kw=grid_kws,
+        ...     figsize=(
+        ...         5,
+        ...         5,
+        ...     ),
         ... )
         >>> sns.heatmap(
         ...     probs,
@@ -176,16 +162,10 @@ def transition_matrix(hypno):
         ...         "label": "Transition probability",
         ...     },
         ... )
-        >>> ax.set_xlabel(
-        ...     "To sleep stage"
-        ... )
+        >>> ax.set_xlabel("To sleep stage")
         >>> ax.xaxis.tick_top()
-        >>> ax.set_ylabel(
-        ...     "From sleep stage"
-        ... )
-        >>> ax.xaxis.set_label_position(
-        ...     "top"
-        ... )
+        >>> ax.set_ylabel("From sleep stage")
+        >>> ax.xaxis.set_label_position("top")
     """
     # NOTE: FutureWarning not added here otherwise it would also be shown when calling
     # yasa.Hypnogram.transition_matrix

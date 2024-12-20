@@ -62,9 +62,7 @@ def plot_hypnogram(hyp, sf_hypno=1 / 30, highlight="REM", fill_color=None, ax=No
         ...     simulate_hypnogram,
         ... )
         >>> import matplotlib.pyplot as plt
-        >>> hyp = simulate_hypnogram(
-        ...     tib=300, seed=11
-        ... )
+        >>> hyp = simulate_hypnogram(tib=300, seed=11)
         >>> ax = hyp.plot_hypnogram()
         >>> plt.tight_layout()
 
@@ -102,15 +100,13 @@ def plot_hypnogram(hyp, sf_hypno=1 / 30, highlight="REM", fill_color=None, ax=No
         ...     simulate_hypnogram,
         ... )
         >>> import matplotlib.pyplot as plt
-        >>> fig, axes = (
-        ...     plt.subplots(
-        ...         nrows=2,
-        ...         figsize=(
-        ...             6,
-        ...             4,
-        ...         ),
-        ...         constrained_layout=True,
-        ...     )
+        >>> fig, axes = plt.subplots(
+        ...     nrows=2,
+        ...     figsize=(
+        ...         6,
+        ...         4,
+        ...     ),
+        ...     constrained_layout=True,
         ... )
         >>> hyp_a = simulate_hypnogram(
         ...     n_stages=3,
@@ -306,18 +302,10 @@ def plot_spectrogram(
         ...     "https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_Cz%2BFz%2BPz.npz",
         ...     stream=True,
         ... )
-        >>> npz = np.load(
-        ...     BytesIO(
-        ...         r.raw.read()
-        ...     )
-        ... )
-        >>> data = npz.get(
-        ...     "data"
-        ... )[0, :]
+        >>> npz = np.load(BytesIO(r.raw.read()))
+        >>> data = npz.get("data")[0, :]
         >>> sf = 100
-        >>> fig = yasa.plot_spectrogram(
-        ...     data, sf
-        ... )
+        >>> fig = yasa.plot_spectrogram(data, sf)
 
     2. Full-night multitaper spectrogram on Cz with the hypnogram on top
 
@@ -334,14 +322,8 @@ def plot_spectrogram(
         ...     "https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_Cz%2BFz%2BPz.npz",
         ...     stream=True,
         ... )
-        >>> npz = np.load(
-        ...     BytesIO(
-        ...         r.raw.read()
-        ...     )
-        ... )
-        >>> data = npz.get(
-        ...     "data"
-        ... )[0, :]
+        >>> npz = np.load(BytesIO(r.raw.read()))
+        >>> data = npz.get("data")[0, :]
         >>> sf = 100
         >>> # Load the 30-sec hypnogram and upsample to data
         >>> hypno = np.loadtxt(

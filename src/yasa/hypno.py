@@ -173,9 +173,7 @@ class Hypnogram:
      'WAKE': 2.0}
 
     >>> # Get the state-transition matrix
-    >>> counts, probs = (
-    ...     hyp.transition_matrix()
-    ... )
+    >>> counts, probs = hyp.transition_matrix()
     >>> counts
     To Stage    WAKE  SLEEP
     From Stage
@@ -601,9 +599,7 @@ class Hypnogram:
         ...     ],
         ...     n_stages=5,
         ... )
-        >>> hyp_2s = hyp.consolidate_stages(
-        ...     2
-        ... )
+        >>> hyp_2s = hyp.consolidate_stages(2)
         >>> print(hyp_2s)
         Epoch
         0     WAKE
@@ -692,14 +688,8 @@ class Hypnogram:
         ...     scorer="YASA",
         ...     seed=9,
         ... )
-        >>> ebe = (
-        ...     hyp_a.evaluate(
-        ...         hyp_b
-        ...     )
-        ... )
-        >>> ebe.get_agreement().round(
-        ...     3
-        ... )
+        >>> ebe = hyp_a.evaluate(hyp_b)
+        >>> ebe.get_agreement().round(3)
         accuracy        0.550
         balanced_acc    0.355
         kappa           0.227
@@ -744,21 +734,13 @@ class Hypnogram:
         >>> from yasa import (
         ...     Hypnogram,
         ... )
-        >>> val = (
-        ...     11 * ["W"]
-        ...     + 3 * ["S"]
-        ...     + 2 * ["W"]
-        ...     + 9 * ["S"]
-        ...     + ["W", "W"]
-        ... )
+        >>> val = 11 * ["W"] + 3 * ["S"] + 2 * ["W"] + 9 * ["S"] + ["W", "W"]
         >>> hyp = Hypnogram(
         ...     val,
         ...     n_stages=2,
         ...     freq="1min",
         ... )
-        >>> hyp.find_periods(
-        ...     threshold="0min"
-        ... )
+        >>> hyp.find_periods(threshold="0min")
           values  start  length
         0   WAKE      0      11
         1  SLEEP     11       3
@@ -773,9 +755,7 @@ class Hypnogram:
         Now, we may want to keep only periods that are longer than a specific threshold,
         for example 5 minutes:
 
-        >>> hyp.find_periods(
-        ...     threshold="5min"
-        ... )
+        >>> hyp.find_periods(threshold="5min")
           values  start  length
         0   WAKE      0      11
         1  SLEEP     16       9
@@ -789,12 +769,8 @@ class Hypnogram:
         >>> from yasa import (
         ...     simulate_hypnogram,
         ... )
-        >>> hyp = simulate_hypnogram(
-        ...     tib=30, seed=42
-        ... )
-        >>> hyp.find_periods(
-        ...     threshold="2min"
-        ... )
+        >>> hyp = simulate_hypnogram(tib=30, seed=42)
+        >>> hyp.find_periods(threshold="2min")
           values  start  length
         0   WAKE      0       5
         1     N1      5       6
@@ -844,11 +820,7 @@ class Hypnogram:
             >>> from yasa import (
             ...     simulate_hypnogram,
             ... )
-            >>> ax = simulate_hypnogram(
-            ...     tib=480, seed=88
-            ... ).plot_hypnogram(
-            ...     highlight="REM"
-            ... )
+            >>> ax = simulate_hypnogram(tib=480, seed=88).plot_hypnogram(highlight="REM")
         """
         return plot_hypnogram(self, **kwargs)
 
@@ -984,13 +956,7 @@ class Hypnogram:
         ...     Hypnogram,
         ... )
         >>> # Generate a fake hypnogram, where "S" = Sleep, "W" = Wake
-        >>> values = (
-        ...     10 * ["W"]
-        ...     + 40 * ["S"]
-        ...     + 5 * ["W"]
-        ...     + 40 * ["S"]
-        ...     + 9 * ["W"]
-        ... )
+        >>> values = 10 * ["W"] + 40 * ["S"] + 5 * ["W"] + 40 * ["S"] + 9 * ["W"]
         >>> hyp = Hypnogram(
         ...     values,
         ...     freq="15s",
@@ -1014,9 +980,7 @@ class Hypnogram:
         ...     simulate_hypnogram,
         ... )
         >>> # Generate a 8 hr (= 480 minutes) 5-stages hypnogram with a 30-seconds resolution
-        >>> hyp = simulate_hypnogram(
-        ...     tib=480, seed=42
-        ... )
+        >>> hyp = simulate_hypnogram(tib=480, seed=42)
         >>> hyp.sleep_statistics()
         {'TIB': 480.0,
         'SPT': 477.5,
@@ -1150,12 +1114,8 @@ class Hypnogram:
         ...     simulate_hypnogram,
         ... )
         >>> # Generate a 8 hr (= 480 minutes) 5-stages hypnogram with a 30-seconds resolution
-        >>> hyp = simulate_hypnogram(
-        ...     tib=480, seed=42
-        ... )
-        >>> counts, probs = (
-        ...     hyp.transition_matrix()
-        ... )
+        >>> hyp = simulate_hypnogram(tib=480, seed=42)
+        >>> counts, probs = hyp.transition_matrix()
         >>> counts
         To Stage    WAKE  N1   N2  N3  REM
         From Stage
@@ -1229,11 +1189,7 @@ class Hypnogram:
 
         Upsample to a 15-seconds resolution
 
-        >>> hyp_up = (
-        ...     hyp.upsample(
-        ...         "15s"
-        ...     )
-        ... )
+        >>> hyp_up = hyp.upsample("15s")
         >>> hyp_up.hypno
         Time
         2022-12-23 23:00:00     WAKE
@@ -1945,9 +1901,7 @@ def simulate_hypnogram(
     >>> from yasa import (
     ...     simulate_hypnogram,
     ... )
-    >>> hyp = simulate_hypnogram(
-    ...     tib=5, seed=1
-    ... )
+    >>> hyp = simulate_hypnogram(tib=5, seed=1)
     >>> hyp
     <Hypnogram | 10 epochs x 30s (5.00 minutes), 5 stages>
      - Use `.hypno` to get the string values as a pandas.Series
@@ -1995,9 +1949,7 @@ def simulate_hypnogram(
     ...     n_stages=2,
     ...     seed=1,
     ... )
-    >>> hyp.hypno.iloc[
-    ...     -2:
-    ... ] = "UNS"
+    >>> hyp.hypno.iloc[-2:] = "UNS"
     >>> hyp.hypno
     Epoch
     0     WAKE
@@ -2026,36 +1978,18 @@ def simulate_hypnogram(
         >>>     "https://github.com/raphaelvallat/yasa/raw/master/"
         >>>     "notebooks/data_full_6hrs_100Hz_hypno_30s.txt"
         >>> )
-        >>> values_str = hypno_int_to_str(
-        ...     np.loadtxt(url)
+        >>> values_str = hypno_int_to_str(np.loadtxt(url))
+        >>> real_hyp = Hypnogram(values_str)
+        >>> fake_hyp = real_hyp.simulate_similar(seed=2)
+        >>> fig, (ax1, ax2) = plt.subplots(
+        ...     nrows=2,
+        ...     figsize=(
+        ...         7,
+        ...         5,
+        ...     ),
         ... )
-        >>> real_hyp = (
-        ...     Hypnogram(
-        ...         values_str
-        ...     )
-        ... )
-        >>> fake_hyp = real_hyp.simulate_similar(
-        ...     seed=2
-        ... )
-        >>> fig, (ax1, ax2) = (
-        ...     plt.subplots(
-        ...         nrows=2,
-        ...         figsize=(
-        ...             7,
-        ...             5,
-        ...         ),
-        ...     )
-        ... )
-        >>> real_hyp.plot_hypnogram(
-        ...     ax=ax1
-        ... ).set_title(
-        ...     "Real hypnogram"
-        ... )
-        >>> fake_hyp.plot_hypnogram(
-        ...     ax=ax2
-        ... ).set_title(
-        ...     "Fake hypnogram"
-        ... )
+        >>> real_hyp.plot_hypnogram(ax=ax1).set_title("Real hypnogram")
+        >>> fake_hyp.plot_hypnogram(ax=ax2).set_title("Fake hypnogram")
         >>> plt.tight_layout()
     """
     # Extract yasa.Hypnogram defaults, which will be assumed later but need throughout

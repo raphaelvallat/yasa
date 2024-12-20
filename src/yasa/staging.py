@@ -157,17 +157,11 @@ class SleepStaging:
     ...     ),
     ... )
     >>> # Get the predicted sleep stages
-    >>> hypno = (
-    ...     sls.predict()
-    ... )
+    >>> hypno = sls.predict()
     >>> # Get the predicted probabilities
     >>> proba = sls.predict_proba()
     >>> # Get the confidence
-    >>> confidence = (
-    ...     proba.max(
-    ...         axis=1
-    ...     )
-    ... )
+    >>> confidence = proba.max(axis=1)
     >>> # Plot the predicted probabilities
     >>> sls.plot_predict_proba()
 

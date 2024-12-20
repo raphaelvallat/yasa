@@ -343,12 +343,10 @@ def sliding_window(data, sf, window, step=None, axis=-1):
     ...     sliding_window,
     ... )
     >>> data = np.arange(20)
-    >>> times, epochs = (
-    ...     sliding_window(
-    ...         data,
-    ...         sf=1,
-    ...         window=5,
-    ...     )
+    >>> times, epochs = sliding_window(
+    ...     data,
+    ...     sf=1,
+    ...     window=5,
     ... )
     >>> times
     array([ 0.,  5., 10., 15.])
@@ -390,13 +388,11 @@ def sliding_window(data, sf, window, step=None, axis=-1):
     ...     100,
     ...     size=(4, 20),
     ... )
-    >>> epochs = (
-    ...     sliding_window(
-    ...         data,
-    ...         sf=1,
-    ...         window=10,
-    ...     )[1]
-    ... )
+    >>> epochs = sliding_window(
+    ...     data,
+    ...     sf=1,
+    ...     window=10,
+    ... )[1]
     >>> epochs.shape  # shape (n_epochs, n_channels, n_samples)
     (2, 4, 10)
 
@@ -484,9 +480,7 @@ def get_centered_indices(data, idx, npts_before, npts_after):
     ...     get_centered_indices,
     ... )
     >>> np.random.seed(123)
-    >>> data = np.random.normal(
-    ...     size=100
-    ... ).round(2)
+    >>> data = np.random.normal(size=100).round(2)
     >>> idx = [
     ...     1.0,
     ...     10.0,
