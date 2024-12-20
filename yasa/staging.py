@@ -8,6 +8,7 @@ import logging
 import numpy as np
 import pandas as pd
 import antropy as ant
+from scipy.integrate import trapezoid
 import scipy.signal as sp_sig
 import scipy.stats as sp_stats
 import matplotlib.pyplot as plt
@@ -289,7 +290,7 @@ class SleepStaging:
             # Add total power
             idx_broad = np.logical_and(freqs >= freq_broad[0], freqs <= freq_broad[1])
             dx = freqs[1] - freqs[0]
-            feat["abspow"] = np.trapz(psd[:, idx_broad], dx=dx)
+            feat["abspow"] = trapezoid(psd[:, idx_broad], dx=dx)
 
             # Calculate entropy and fractal dimension features
             feat["perm"] = np.apply_along_axis(ant.perm_entropy, axis=1, arr=epochs, normalize=True)

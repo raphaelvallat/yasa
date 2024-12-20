@@ -86,7 +86,7 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
         include = np.atleast_1d(np.asarray(include))
         assert include.size >= 1, "`include` must have at least one element."
         assert hypno.dtype.kind == include.dtype.kind, "hypno and include must have same dtype"
-        assert np.in1d(hypno, include).any(), (
+        assert np.isin(hypno, include).any(), (
             "None of the stages specified " "in `include` are present in " "hypno."
         )
 
@@ -110,7 +110,7 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
 
     # 5) Create sleep stage vector mask
     if hypno is not None:
-        mask = np.in1d(hypno, include)
+        mask = np.isin(hypno, include)
     else:
         mask = np.ones(n_samples, dtype=bool)
 

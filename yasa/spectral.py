@@ -151,7 +151,7 @@ def bandpower(
         assert hypno.size == npts, "Hypno must have same size as data.shape[1]"
         assert include.size >= 1, "`include` must have at least one element."
         assert hypno.dtype.kind == include.dtype.kind, "hypno and include must have same dtype"
-        assert np.in1d(
+        assert np.isin(
             hypno, include
         ).any(), "None of the stages specified in `include` are present in hypno."
         # Initialize empty dataframe and loop over stages

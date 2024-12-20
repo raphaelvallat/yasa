@@ -1,21 +1,6 @@
-# Add README, LICENSE and requirements :
+# Add README and LICENSE :
 include README.rst
 include LICENSE
-include requirements.txt
 
 # Add trained classifiers
-# v0.4.0
-include yasa/classifiers/clf_eeg_lgb_0.4.0.joblib
-include yasa/classifiers/clf_eeg+eog_lgb_0.4.0.joblib
-include yasa/classifiers/clf_eeg+eog+emg_lgb_0.4.0.joblib
-include yasa/classifiers/clf_eeg+eog+emg+demo_lgb_0.4.0.joblib
-
-# v0.5.0
-include yasa/classifiers/clf_eeg_lgb_0.5.0.joblib
-include yasa/classifiers/clf_eeg+demo_lgb_0.5.0.joblib
-include yasa/classifiers/clf_eeg+eog_lgb_0.5.0.joblib
-include yasa/classifiers/clf_eeg+eog+demo_lgb_0.5.0.joblib
-include yasa/classifiers/clf_eeg+emg_lgb_0.5.0.joblib
-include yasa/classifiers/clf_eeg+emg+demo_lgb_0.5.0.joblib
-include yasa/classifiers/clf_eeg+eog+emg_lgb_0.5.0.joblib
-include yasa/classifiers/clf_eeg+eog+emg+demo_lgb_0.5.0.joblib
+recursive-include yasa/classifiers/ *.joblib

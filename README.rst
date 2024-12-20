@@ -48,6 +48,14 @@ Alternatively, YASA can be installed with conda:
   conda config --set channel_priority strict
   conda install yasa
 
+To build and install from source, clone this repository or download the source archive and decompress the files
+
+.. code-block:: shell
+  cd yasa
+  pip install .[test]              # install the package
+  pip install --editable .[test]   # or editable install
+  pytest                           # test the package
+
 **What are the prerequisites for using YASA?**
 
 To use YASA, all you need is:
