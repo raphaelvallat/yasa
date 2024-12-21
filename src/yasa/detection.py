@@ -7,29 +7,29 @@ slow-waves, and rapid eye movements from sleep EEG recordings.
 - License: BSD 3-Clause License
 """
 
-import mne
 import logging
+from collections import OrderedDict
+
+import mne
 import numpy as np
 import pandas as pd
-from scipy import signal
 from mne.filter import filter_data
-from collections import OrderedDict
-from scipy.interpolate import interp1d
+from scipy import signal
 from scipy.fftpack import next_fast_len
+from scipy.interpolate import interp1d
 from sklearn.ensemble import IsolationForest
 
-from .spectral import stft_power
+from .io import is_pyriemann_installed, is_tensorpac_installed, set_log_level
 from .numba import _detrend, _rms
-from .io import set_log_level, is_tensorpac_installed, is_pyriemann_installed
 from .others import (
-    moving_transform,
-    trimbothstd,
-    get_centered_indices,
-    sliding_window,
     _merge_close,
     _zerocrossings,
+    get_centered_indices,
+    moving_transform,
+    sliding_window,
+    trimbothstd,
 )
-
+from .spectral import stft_power
 
 logger = logging.getLogger("yasa")
 
@@ -86,7 +86,7 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
         include = np.atleast_1d(np.asarray(include))
         assert include.size >= 1, "`include` must have at least one element."
         assert hypno.dtype.kind == include.dtype.kind, "hypno and include must have same dtype"
-        assert np.in1d(hypno, include).any(), (
+        assert np.isin(hypno, include).any(), (
             "None of the stages specified " "in `include` are present in " "hypno."
         )
 
@@ -110,7 +110,7 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
 
     # 5) Create sleep stage vector mask
     if hypno is not None:
-        mask = np.in1d(hypno, include)
+        mask = np.isin(hypno, include)
     else:
         mask = np.ones(n_samples, dtype=bool)
 
@@ -458,8 +458,8 @@ class _DetectionResults(object):
         **kwargs,
     ):
         """Plot the average event (not for REM, spindles & SW only)"""
-        import seaborn as sns
         import matplotlib.pyplot as plt
+        import seaborn as sns
 
         df_sync = self.get_sync_events(
             center=center, time_before=time_before, time_after=time_after, filt=filt, mask=mask
@@ -485,8 +485,8 @@ class _DetectionResults(object):
 
     def plot_detection(self):
         """Plot an overlay of the detected events on the signal."""
-        import matplotlib.pyplot as plt
         import ipywidgets as ipy
+        import matplotlib.pyplot as plt
 
         # Define mask
         sf = self._sf
@@ -2780,8 +2780,8 @@ class REMResults(_DetectionResults):
         **kwargs : dict
             Optional argument that are passed to :py:func:`seaborn.lineplot`.
         """
-        import seaborn as sns
         import matplotlib.pyplot as plt
+        import seaborn as sns
 
         df_sync = self.get_sync_events(
             center=center, time_before=time_before, time_after=time_after, filt=filt, mask=mask
@@ -3024,8 +3024,8 @@ def art_detect(
     if method in ["cov", "covar", "covariance", "riemann", "potato"]:
         method = "covar"
         is_pyriemann_installed()
-        from pyriemann.estimation import Covariances, Shrinkage
         from pyriemann.clustering import Potato
+        from pyriemann.estimation import Covariances, Shrinkage
 
         # Must have at least 4 channels to use method='covar'
         if n_chan <= 4:

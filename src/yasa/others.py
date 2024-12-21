@@ -3,9 +3,11 @@ This file contains several helper functions to manipulate 1D and 2D EEG data.
 """
 
 import logging
+
 import numpy as np
 from scipy.interpolate import interp1d
-from .numba import _slope_lstsq, _covar, _corr, _rms
+
+from .numba import _corr, _covar, _rms, _slope_lstsq
 
 logger = logging.getLogger("yasa")
 

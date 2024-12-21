@@ -2,7 +2,6 @@
 
 import logging
 
-
 LOGGING_TYPES = dict(
     DEBUG=logging.DEBUG,
     INFO=logging.INFO,

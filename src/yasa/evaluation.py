@@ -16,7 +16,6 @@ import pandas as pd
 import scipy.stats as sps
 import sklearn.metrics as skm
 
-
 logger = logging.getLogger("yasa")
 
 __all__ = [
@@ -219,7 +218,7 @@ class EpochByEpochAgreement:
 
         # Generate some mapping dictionaries to be used later in class methods
         skm_labels = np.unique(data).tolist()  # all unique YASA integer codes in this hypno
-        skm2yasa_map = {i: l for i, l in enumerate(skm_labels)}  # skm order to YASA integers
+        skm2yasa_map = {i: lab for i, lab in enumerate(skm_labels)}  # skm order to YASA integers
         yasa2yasa_map = ref_hyps[sleep_ids[0]].mapping_int.copy()  # YASA integer to YASA string
 
         # Set attributes
