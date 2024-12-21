@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, windows-latest, macos-latest]
+        platform: [ubuntu-latest, windows-latest]  # macos-latest disabled because of lightgbm fail
         python-version: ["3.9", "3.10", "3.11"]  # lspopt failure on "3.12", see PR187
 
     runs-on: ${{ matrix.platform }}
