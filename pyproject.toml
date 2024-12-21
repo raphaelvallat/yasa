@@ -102,7 +102,7 @@ omit = [
 source_pkgs = ["yasa"]
 
 [tool.coverage.paths]
-source = ["src", "tests"]
+source = ["src"]
 
 [tool.coverage.report]
 show_missing = true
