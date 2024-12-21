@@ -55,6 +55,7 @@ Alternatively, YASA can be installed with conda:
 To build and install from source, clone this repository or download the source archive and decompress the files
 
 .. code-block:: shell
+
   cd yasa
   pip install ".[test]"              # install the package
   pip install --editable ".[test]"   # or editable install
