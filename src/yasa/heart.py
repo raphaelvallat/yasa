@@ -6,13 +6,12 @@ Date: May 2022
 """
 
 import logging
-
 import numpy as np
 import pandas as pd
 
-from .detection import _check_data_hypno
 from .hypno import hypno_find_periods
-from .io import is_sleepecg_installed, set_log_level
+from .detection import _check_data_hypno
+from .io import set_log_level, is_sleepecg_installed
 
 logger = logging.getLogger("yasa")
 

@@ -3,15 +3,13 @@ This file contains several helper functions to calculate spectral power from
 1D and 2D EEG data.
 """
 
-import logging
-
 import mne
+import logging
 import numpy as np
 import pandas as pd
 from scipy import signal
 from scipy.integrate import simpson
 from scipy.interpolate import RectBivariateSpline
-
 from .io import set_log_level
 
 logger = logging.getLogger("yasa")
@@ -153,7 +151,7 @@ def bandpower(
         assert hypno.size == npts, "Hypno must have same size as data.shape[1]"
         assert include.size >= 1, "`include` must have at least one element."
         assert hypno.dtype.kind == include.dtype.kind, "hypno and include must have same dtype"
-        assert np.isin(
+        assert np.in1d(
             hypno, include
         ).any(), "None of the stages specified in `include` are present in hypno."
         # Initialize empty dataframe and loop over stages

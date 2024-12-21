@@ -7,29 +7,29 @@ slow-waves, and rapid eye movements from sleep EEG recordings.
 - License: BSD 3-Clause License
 """
 
-import logging
-from collections import OrderedDict
-
 import mne
+import logging
 import numpy as np
 import pandas as pd
-from mne.filter import filter_data
 from scipy import signal
-from scipy.fftpack import next_fast_len
+from mne.filter import filter_data
+from collections import OrderedDict
 from scipy.interpolate import interp1d
+from scipy.fftpack import next_fast_len
 from sklearn.ensemble import IsolationForest
 
-from .io import is_pyriemann_installed, is_tensorpac_installed, set_log_level
+from .spectral import stft_power
 from .numba import _detrend, _rms
+from .io import set_log_level, is_tensorpac_installed, is_pyriemann_installed
 from .others import (
+    moving_transform,
+    trimbothstd,
+    get_centered_indices,
+    sliding_window,
     _merge_close,
     _zerocrossings,
-    get_centered_indices,
-    moving_transform,
-    sliding_window,
-    trimbothstd,
 )
-from .spectral import stft_power
+
 
 logger = logging.getLogger("yasa")
 
@@ -86,7 +86,7 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
         include = np.atleast_1d(np.asarray(include))
         assert include.size >= 1, "`include` must have at least one element."
         assert hypno.dtype.kind == include.dtype.kind, "hypno and include must have same dtype"
-        assert np.isin(hypno, include).any(), (
+        assert np.in1d(hypno, include).any(), (
             "None of the stages specified " "in `include` are present in " "hypno."
         )
 
@@ -110,7 +110,7 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
 
     # 5) Create sleep stage vector mask
     if hypno is not None:
-        mask = np.isin(hypno, include)
+        mask = np.in1d(hypno, include)
     else:
         mask = np.ones(n_samples, dtype=bool)
 
@@ -458,8 +458,8 @@ class _DetectionResults(object):
         **kwargs,
     ):
         """Plot the average event (not for REM, spindles & SW only)"""
-        import matplotlib.pyplot as plt
         import seaborn as sns
+        import matplotlib.pyplot as plt
 
         df_sync = self.get_sync_events(
             center=center, time_before=time_before, time_after=time_after, filt=filt, mask=mask
@@ -485,8 +485,8 @@ class _DetectionResults(object):
 
     def plot_detection(self):
         """Plot an overlay of the detected events on the signal."""
-        import ipywidgets as ipy
         import matplotlib.pyplot as plt
+        import ipywidgets as ipy
 
         # Define mask
         sf = self._sf
@@ -699,10 +699,7 @@ def spindles_detect(
         of this spindle. To get the average spindles parameters per channel and
         sleep stage:
 
-        >>> sp.summary(
-        ...     grp_chan=True,
-        ...     grp_stage=True,
-        ... )
+        >>> sp.summary(grp_chan=True, grp_stage=True)
 
     Notes
     -----
@@ -1151,36 +1148,8 @@ class SpindlesResults(_DetectionResults):
         Calculate the coincidence of two binary mask:
 
         >>> import numpy as np
-        >>> x = np.array(
-        ...     [
-        ...         0,
-        ...         0,
-        ...         0,
-        ...         1,
-        ...         1,
-        ...         1,
-        ...         1,
-        ...         0,
-        ...         0,
-        ...         0,
-        ...         1,
-        ...     ]
-        ... )
-        >>> y = np.array(
-        ...     [
-        ...         0,
-        ...         0,
-        ...         1,
-        ...         1,
-        ...         1,
-        ...         0,
-        ...         0,
-        ...         0,
-        ...         0,
-        ...         1,
-        ...         1,
-        ...     ]
-        ... )
+        >>> x = np.array([0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1])
+        >>> y = np.array([0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1])
         >>> x * y
         array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])
 
@@ -1533,9 +1502,8 @@ def sw_detect(
            .. code-block:: python
 
                import pingouin as pg
-
-               mean_direction = pg.circ_mean(sw["PhaseAtSigmaPeak"])
-               vector_length = pg.circ_r(sw["PhaseAtSigmaPeak"])
+               mean_direction = pg.circ_mean(sw['PhaseAtSigmaPeak'])
+               vector_length = pg.circ_r(sw['PhaseAtSigmaPeak'])
 
         3. ``ndPAC``: the normalized Mean Vector Length (also called the normalized direct PAC,
            or ndPAC) within a 2-sec epoch centered around the negative peak of the slow-wave.
@@ -1595,10 +1563,7 @@ def sw_detect(
         detected slow-wave and each column is a parameter (= property).
         To get the average SW parameters per channel and sleep stage:
 
-        >>> sw.summary(
-        ...     grp_chan=True,
-        ...     grp_stage=True,
-        ... )
+        >>> sw.summary(grp_chan=True, grp_stage=True)
 
     Notes
     -----
@@ -1627,7 +1592,7 @@ def sw_detect(
       of the slow-wave. This is only calculated when ``coupling=True``
     * ``'Stage'``: Sleep stage (only if hypno was provided)
 
-    .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/master/docs/pictures/slow_waves.png
+    .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/master/docs/pictures/slow_waves.png  # noqa
       :width: 500px
       :align: center
       :alt: slow-wave
@@ -1651,7 +1616,7 @@ def sw_detect(
     --------
     For an example of how to run the detection, please refer to the tutorial:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb
-    """  # noqa: E501
+    """
     set_log_level(verbose)
 
     (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan) = _check_data_hypno(
@@ -2206,36 +2171,8 @@ class SWResults(_DetectionResults):
         Calculate the coincidence of two binary mask:
 
         >>> import numpy as np
-        >>> x = np.array(
-        ...     [
-        ...         0,
-        ...         0,
-        ...         0,
-        ...         1,
-        ...         1,
-        ...         1,
-        ...         1,
-        ...         0,
-        ...         0,
-        ...         0,
-        ...         1,
-        ...     ]
-        ... )
-        >>> y = np.array(
-        ...     [
-        ...         0,
-        ...         0,
-        ...         1,
-        ...         1,
-        ...         1,
-        ...         0,
-        ...         0,
-        ...         0,
-        ...         0,
-        ...         1,
-        ...         1,
-        ...     ]
-        ... )
+        >>> x = np.array([0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1])
+        >>> y = np.array([0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1])
         >>> x * y
         array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])
 
@@ -2843,8 +2780,8 @@ class REMResults(_DetectionResults):
         **kwargs : dict
             Optional argument that are passed to :py:func:`seaborn.lineplot`.
         """
-        import matplotlib.pyplot as plt
         import seaborn as sns
+        import matplotlib.pyplot as plt
 
         df_sync = self.get_sync_events(
             center=center, time_before=time_before, time_after=time_after, filt=filt, mask=mask
@@ -3087,8 +3024,8 @@ def art_detect(
     if method in ["cov", "covar", "covariance", "riemann", "potato"]:
         method = "covar"
         is_pyriemann_installed()
-        from pyriemann.clustering import Potato
         from pyriemann.estimation import Covariances, Shrinkage
+        from pyriemann.clustering import Potato
 
         # Must have at least 4 channels to use method='covar'
         if n_chan <= 4:
@@ -3297,33 +3234,10 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
     These could be for example the index of the onset of each detected spindle. `grndtrth` refers
     to the ground-truth (e.g. human-annotated) events.
 
-    >>> from yasa import (
-    ...     compare_detection,
-    ... )
-    >>> detected = [
-    ...     5,
-    ...     12,
-    ...     20,
-    ...     34,
-    ...     41,
-    ...     57,
-    ...     63,
-    ... ]
-    >>> grndtrth = [
-    ...     5,
-    ...     12,
-    ...     18,
-    ...     26,
-    ...     34,
-    ...     41,
-    ...     55,
-    ...     63,
-    ...     68,
-    ... ]
-    >>> compare_detection(
-    ...     detected,
-    ...     grndtrth,
-    ... )
+    >>> from yasa import compare_detection
+    >>> detected = [5, 12, 20, 34, 41, 57, 63]
+    >>> grndtrth = [5, 12, 18, 26, 34, 41, 55, 63, 68]
+    >>> compare_detection(detected, grndtrth)
     {'tp': array([ 5, 12, 34, 41, 63]),
      'fp': array([20, 57]),
      'fn': array([18, 26, 55, 68]),
@@ -3341,10 +3255,7 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
     detections (and not a detection against a ground-truth), the F1-score is the preferred metric
     because it is independent of the order.
 
-    >>> compare_detection(
-    ...     grndtrth,
-    ...     detected,
-    ... )
+    >>> compare_detection(grndtrth, detected)
     {'tp': array([ 5, 12, 34, 41, 63]),
      'fp': array([18, 26, 55, 68]),
      'fn': array([20, 57]),
@@ -3357,11 +3268,7 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
     with the `max_distance` argument, which defines the lookaround window (in samples) for
     each event.
 
-    >>> compare_detection(
-    ...     detected,
-    ...     grndtrth,
-    ...     max_distance=2,
-    ... )
+    >>> compare_detection(detected, grndtrth, max_distance=2)
     {'tp': array([ 5, 12, 20, 34, 41, 57, 63]),
      'fp': array([], dtype=int64),
      'fn': array([26, 68]),

@@ -1,5 +1,4 @@
 import logging
-
 from .detection import *
 from .evaluation import *
 from .features import *

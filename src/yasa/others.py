@@ -3,11 +3,9 @@ This file contains several helper functions to manipulate 1D and 2D EEG data.
 """
 
 import logging
-
 import numpy as np
 from scipy.interpolate import interp1d
-
-from .numba import _corr, _covar, _rms, _slope_lstsq
+from .numba import _slope_lstsq, _covar, _corr, _rms
 
 logger = logging.getLogger("yasa")
 
@@ -242,22 +240,8 @@ def _zerocrossings(x):
     Examples
     --------
     >>> import numpy as np
-    >>> from yasa.main import (
-    ...     _zerocrossings,
-    ... )
-    >>> a = np.array(
-    ...     [
-    ...         4,
-    ...         2,
-    ...         -1,
-    ...         -3,
-    ...         1,
-    ...         2,
-    ...         3,
-    ...         -2,
-    ...         -5,
-    ...     ]
-    ... )
+    >>> from yasa.main import _zerocrossings
+    >>> a = np.array([4, 2, -1, -3, 1, 2, 3, -2, -5])
     >>> _zerocrossings(a)
         array([1, 3, 6], dtype=int64)
     """
@@ -339,15 +323,9 @@ def sliding_window(data, sf, window, step=None, axis=-1):
     With a 1-D array
 
     >>> import numpy as np
-    >>> from yasa import (
-    ...     sliding_window,
-    ... )
+    >>> from yasa import sliding_window
     >>> data = np.arange(20)
-    >>> times, epochs = sliding_window(
-    ...     data,
-    ...     sf=1,
-    ...     window=5,
-    ... )
+    >>> times, epochs = sliding_window(data, sf=1, window=5)
     >>> times
     array([ 0.,  5., 10., 15.])
 
@@ -357,12 +335,7 @@ def sliding_window(data, sf, window, step=None, axis=-1):
            [10, 11, 12, 13, 14],
            [15, 16, 17, 18, 19]])
 
-    >>> sliding_window(
-    ...     data,
-    ...     sf=1,
-    ...     window=5,
-    ...     step=1,
-    ... )[1]
+    >>> sliding_window(data, sf=1, window=5, step=1)[1]
     array([[ 0,  1,  2,  3,  4],
            [ 2,  3,  4,  5,  6],
            [ 4,  5,  6,  7,  8],
@@ -372,27 +345,15 @@ def sliding_window(data, sf, window, step=None, axis=-1):
            [12, 13, 14, 15, 16],
            [14, 15, 16, 17, 18]])
 
-    >>> sliding_window(
-    ...     data,
-    ...     sf=1,
-    ...     window=11,
-    ... )[1]
+    >>> sliding_window(data, sf=1, window=11)[1]
     array([[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10]])
 
     With a N-D array
 
     >>> np.random.seed(42)
     >>> # 4 channels x 20 samples
-    >>> data = np.random.randint(
-    ...     -100,
-    ...     100,
-    ...     size=(4, 20),
-    ... )
-    >>> epochs = sliding_window(
-    ...     data,
-    ...     sf=1,
-    ...     window=10,
-    ... )[1]
+    >>> data = np.random.randint(-100, 100, size=(4, 20))
+    >>> epochs = sliding_window(data, sf=1, window=10)[1]
     >>> epochs.shape  # shape (n_epochs, n_channels, n_samples)
     (2, 4, 10)
 
@@ -476,29 +437,12 @@ def get_centered_indices(data, idx, npts_before, npts_after):
     Examples
     --------
     >>> import numpy as np
-    >>> from yasa import (
-    ...     get_centered_indices,
-    ... )
+    >>> from yasa import get_centered_indices
     >>> np.random.seed(123)
     >>> data = np.random.normal(size=100).round(2)
-    >>> idx = [
-    ...     1.0,
-    ...     10.0,
-    ...     20.0,
-    ...     30.0,
-    ...     50.0,
-    ...     102,
-    ... ]
+    >>> idx = [1., 10., 20., 30., 50., 102]
     >>> before, after = 3, 2
-    >>> (
-    ...     idx_ep,
-    ...     idx_nomask,
-    ... ) = get_centered_indices(
-    ...     data,
-    ...     idx,
-    ...     before,
-    ...     after,
-    ... )
+    >>> idx_ep, idx_nomask = get_centered_indices(data, idx, before, after)
     >>> idx_ep
     array([[ 7,  8,  9, 10, 11, 12],
            [17, 18, 19, 20, 21, 22],

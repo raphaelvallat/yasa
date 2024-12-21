@@ -1,19 +1,17 @@
 """Automatic sleep staging of polysomnography data."""
 
-import glob
-import logging
 import os
-
-import antropy as ant
-import joblib
-import matplotlib.pyplot as plt
 import mne
+import glob
+import joblib
+import logging
 import numpy as np
 import pandas as pd
+import antropy as ant
 import scipy.signal as sp_sig
 import scipy.stats as sp_stats
+import matplotlib.pyplot as plt
 from mne.filter import filter_data
-from scipy.integrate import trapezoid
 from sklearn.preprocessing import robust_scale
 
 from .others import sliding_window
@@ -141,21 +139,11 @@ class SleepStaging:
     >>> import mne
     >>> import yasa
     >>> # Load an EDF file using MNE
-    >>> raw = mne.io.read_raw_edf(
-    ...     "myfile.edf",
-    ...     preload=True,
-    ... )
+    >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
     >>> # Initialize the sleep staging instance
-    >>> sls = yasa.SleepStaging(
-    ...     raw,
-    ...     eeg_name="C4-M1",
-    ...     eog_name="LOC-M2",
-    ...     emg_name="EMG1-EMG2",
-    ...     metadata=dict(
-    ...         age=29,
-    ...         male=True,
-    ...     ),
-    ... )
+    >>> sls = yasa.SleepStaging(raw, eeg_name="C4-M1", eog_name="LOC-M2",
+    ...                         emg_name="EMG1-EMG2",
+    ...                         metadata=dict(age=29, male=True))
     >>> # Get the predicted sleep stages
     >>> hypno = sls.predict()
     >>> # Get the predicted probabilities
@@ -301,7 +289,7 @@ class SleepStaging:
             # Add total power
             idx_broad = np.logical_and(freqs >= freq_broad[0], freqs <= freq_broad[1])
             dx = freqs[1] - freqs[0]
-            feat["abspow"] = trapezoid(psd[:, idx_broad], dx=dx)
+            feat["abspow"] = np.trapz(psd[:, idx_broad], dx=dx)
 
             # Calculate entropy and fractal dimension features
             feat["perm"] = np.apply_along_axis(ant.perm_entropy, axis=1, arr=epochs, normalize=True)
