@@ -235,7 +235,7 @@ class Hypnogram:
         ), "`start` must be either None, a string or a pandas.Timestamp."
         assert isinstance(
             scorer, (type(None), str, int)
-        ), "`scorer` must be either None, or a string or an integer."
+        ), "`scorer` must be either None, a string or an integer."
         assert isinstance(
             proba, (pd.DataFrame, type(None))
         ), "`proba` must be either None or a pandas.DataFrame"
@@ -311,7 +311,7 @@ class Hypnogram:
         text_scorer = f", scored by {self.scorer}" if self.scorer is not None else ""
         return (
             f"<Hypnogram | {self.n_epochs} epochs x {self.freq} ({self.duration:.2f} minutes), "
-            f"{self.n_stages} stages{text_scorer}>\n"
+            f"{self.n_stages} unique stages{text_scorer}>\n"
             " - Use `.hypno` to get the string values as a pandas.Series\n"
             " - Use `.as_int()` to get the integer values as a pandas.Series\n"
             " - Use `.plot_hypnogram()` to plot the hypnogram\n"
@@ -418,7 +418,7 @@ class Hypnogram:
 
     # CLASS METHODS BELOW
 
-    def as_annotations(self):
+    def as_events(self):
         """
         Return a pandas DataFrame summarizing epoch-level information.
 
@@ -430,14 +430,14 @@ class Hypnogram:
 
         Returns
         -------
-        annotations : :py:class:`pandas.DataFrame`
+        events : :py:class:`pandas.DataFrame`
             A dataframe containing epoch onset, duration, stage, etc.
 
         Examples
         --------
         >>> from yasa import Hypnogram
         >>> hyp = Hypnogram(["W", "W", "LIGHT", "LIGHT", "DEEP", "REM", "WAKE"], n_stages=4)
-        >>> hyp.as_annotations()
+        >>> hyp.as_events()
                onset  duration  value description
         epoch
         0        0.0      30.0      0        WAKE
