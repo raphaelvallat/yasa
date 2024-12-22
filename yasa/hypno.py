@@ -223,6 +223,10 @@ class Hypnogram:
         assert isinstance(
             values, (list, np.ndarray, pd.Series)
         ), "`values` must be a list, numpy.array or pandas.Series"
+        assert all(isinstance(val, str) for val in values), (
+            "Since v0.7, YASA expects strings to represent sleep stages, e.g. ['WAKE', 'N1', ...]. "
+            "Please refer to the documentation for more details."
+        )
         assert isinstance(n_stages, int), "`n_stages` must be an integer between 2 and 5."
         assert n_stages in [2, 3, 4, 5], "`n_stages` must be an integer between 2 and 5."
         assert isinstance(freq, str), "`freq` must be a pandas frequency string."
