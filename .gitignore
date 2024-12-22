@@ -142,5 +142,6 @@ notebooks/20_catch_errors.ipynb
 *.pptx
 
 # Custom
+*/.virtual_documents/
 notebooks/debug*
 notebooks/my_hypno.csv
