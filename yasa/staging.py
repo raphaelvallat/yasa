@@ -5,6 +5,7 @@ import mne
 import glob
 import joblib
 import logging
+import warnings
 import numpy as np
 import pandas as pd
 import antropy as ant
@@ -105,9 +106,9 @@ class SleepStaging:
     In addition with the predicted sleep stages, YASA can also return the predicted probabilities
     of each sleep stage at each epoch. This can be used to derive a confidence score at each epoch.
 
-    .. important:: The predictions should ALWAYS be double-check by a trained
-        visual scorer, especially for epochs with low confidence. A full
-        inspection should be performed in the following cases:
+    .. important:: The predictions should ALWAYS be double-check by a trained visual scorer,
+        especially for epochs with low confidence. A full inspection should be performed in the
+        following cases:
 
         * Nap data, because the classifiers were exclusively trained on full-night recordings.
         * Participants with sleep disorders.
@@ -123,13 +124,11 @@ class SleepStaging:
     If you use YASA's default classifiers, these are the main references for
     the `National Sleep Research Resource <https://sleepdata.org/>`_:
 
-    * Dean, Dennis A., et al. "Scaling up scientific discovery in sleep
-      medicine: the National Sleep Research Resource." Sleep 39.5 (2016):
-      1151-1164.
+    * Dean, Dennis A., et al. "Scaling up scientific discovery in sleep medicine: the National
+      Sleep Research Resource." Sleep 39.5 (2016): 1151-1164.
 
-    * Zhang, Guo-Qiang, et al. "The National Sleep Research Resource: towards
-      a sleep data commons." Journal of the American Medical Informatics
-      Association 25.10 (2018): 1351-1358.
+    * Zhang, Guo-Qiang, et al. "The National Sleep Research Resource: towards a sleep data
+      commons." Journal of the American Medical Informatics Association 25.10 (2018): 1351-1358.
 
     Examples
     --------
@@ -144,12 +143,15 @@ class SleepStaging:
     >>> sls = yasa.SleepStaging(raw, eeg_name="C4-M1", eog_name="LOC-M2",
     ...                         emg_name="EMG1-EMG2",
     ...                         metadata=dict(age=29, male=True))
+    >>> # Print some basic info
+    >>> sls
     >>> # Get the predicted sleep stages
-    >>> hypno = sls.predict()
+    >>> hyp = sls.predict()
+    >>> hyp.hypno
     >>> # Get the predicted probabilities
-    >>> proba = sls.predict_proba()
+    >>> hyp.proba
     >>> # Get the confidence
-    >>> confidence = proba.max(axis=1)
+    >>> confidence = hyp.proba.max(axis=1)
     >>> # Plot the predicted probabilities
     >>> sls.plot_predict_proba()
 
@@ -160,10 +162,10 @@ class SleepStaging:
 
     def __init__(self, raw, eeg_name, *, eog_name=None, emg_name=None, metadata=None):
         # Type check
-        assert isinstance(eeg_name, str)
-        assert isinstance(eog_name, (str, type(None)))
-        assert isinstance(emg_name, (str, type(None)))
-        assert isinstance(metadata, (dict, type(None)))
+        assert isinstance(eeg_name, str), "`eeg_name` must be a string."
+        assert isinstance(eog_name, (str, type(None))), "`eog_name` must be a string or None."
+        assert isinstance(emg_name, (str, type(None))), "`emg_name` must be a string or None."
+        assert isinstance(metadata, (dict, type(None))), "`metadata` must be a string or None."
 
         # Validate metadata
         if isinstance(metadata, dict):
@@ -174,7 +176,7 @@ class SleepStaging:
                 assert metadata["male"] in [0, 1], "male must be 0 or 1."
 
         # Validate Raw instance and load data
-        assert isinstance(raw, mne.io.BaseRaw), "raw must be a MNE Raw object."
+        assert isinstance(raw, mne.io.BaseRaw), "`raw` must be a MNE Raw object."
         sf = raw.info["sfreq"]
         ch_names = np.array([eeg_name, eog_name, emg_name])
         ch_types = np.array(["eeg", "eog", "emg"])
@@ -215,6 +217,22 @@ class SleepStaging:
         self.ch_types = ch_types
         self.data = data
         self.metadata = metadata
+
+    def __repr__(self):
+        n_samples = self.data.shape[-1]
+        duration = (n_samples / self.sf) / 60
+        return (
+            f"<SleepStaging | {len(self.ch_names)} x {n_samples} samples ({duration:.1f} minutes), "
+            f"{self.sf} Hz>"
+        )
+
+    def __str__(self):
+        n_samples = self.data.shape[-1]
+        duration = n_samples / self.sf
+        return (
+            f"<SleepStaging | {len(self.ch_names)} x {n_samples} samples ({duration:.1f} minutes), "
+            f"{self.sf} Hz>"
+        )
 
     def fit(self):
         """Extract features from data.
@@ -425,9 +443,13 @@ class SleepStaging:
 
         Returns
         -------
-        pred : :py:class:`numpy.ndarray`
-            The predicted sleep stages.
+        pred : :py:class:`yasa.Hypnogram`
+            The predicted sleep stages. Since YASA v0.7, the predicted sleep stages are now
+            returned as a :py:class:`yasa.Hypnogram` instance, which also includes the
+            probability of each sleep stage for each epoch.
         """
+        from yasa.hypno import Hypnogram
+
         if not hasattr(self, "_features"):
             self.fit()
         # Load and validate pre-trained classifier
@@ -436,10 +458,15 @@ class SleepStaging:
         X = self._features.copy()[clf.feature_name_]
         # Predict the sleep stages and probabilities
         self._predicted = clf.predict(X)
-        proba = pd.DataFrame(clf.predict_proba(X), columns=clf.classes_)
-        proba.index.name = "epoch"
+        # Predict the probabilities
+        classes = clf.classes_.copy()
+        classes[classes == "W"] = "WAKE"  # Compat for yasa.Hypnogram
+        classes[classes == "R"] = "REM"
+        proba = pd.DataFrame(clf.predict_proba(X), columns=classes)
+        proba.index.name = "Epoch"
         self._proba = proba
-        return self._predicted.copy()
+        # Convert to a `yasa.Hypnogram` instance (including `proba`)
+        return Hypnogram(values=self._predicted.copy(), freq="30s", n_stages=5, proba=proba.copy())
 
     def predict_proba(self, path_to_model="auto"):
         """
@@ -460,6 +487,12 @@ class SleepStaging:
         proba : :py:class:`pandas.DataFrame`
             The predicted probability for each sleep stage for each 30-sec epoch of data.
         """
+        warnings.warn(
+            "The `predict_proba` function is deprecated and will be removed in v0.8. "
+            "The predicted probabilities can now be accessed with `yasa.Hypnogram.proba` instead, "
+            "e.g `SleepStaging.predict().proba`",
+            FutureWarning,
+        )
         if not hasattr(self, "_proba"):
             self.predict(path_to_model)
         return self._proba.copy()
@@ -481,19 +514,18 @@ class SleepStaging:
             If True, probabilities of the non-majority classes will be set to 0.
         """
         if proba is None and not hasattr(self, "_features"):
-            raise ValueError("Must call .predict_proba before this function")
+            raise ValueError("Must call `.predict` before this function")
         if proba is None:
             proba = self._proba.copy()
         else:
-            assert isinstance(proba, pd.DataFrame), "proba must be a dataframe"
+            assert isinstance(proba, pd.DataFrame), "`proba` must be a pandas.DataFrame"
         if majority_only:
             cond = proba.apply(lambda x: x == x.max(), axis=1)
             proba = proba.where(cond, other=0)
         ax = proba.plot(kind="area", color=palette, figsize=(10, 5), alpha=0.8, stacked=True, lw=0)
         # Add confidence
         # confidence = proba.max(1)
-        # ax.plot(confidence, lw=1, color='k', ls='-', alpha=0.5,
-        #         label='Confidence')
+        # ax.plot(confidence, lw=1, color='k', ls='-', alpha=0.5, label='Confidence')
         ax.set_xlim(0, proba.shape[0])
         ax.set_ylim(0, 1)
         ax.set_ylabel("Probability")

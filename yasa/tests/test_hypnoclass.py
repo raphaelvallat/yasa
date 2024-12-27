@@ -67,7 +67,7 @@ class TestHypnoClass(unittest.TestCase):
         np.testing.assert_array_equal(hyp.as_int(), values_int)
         hyp.transition_matrix()
         hyp.find_periods()
-        hyp.as_annotations()
+        hyp.as_events()
         sstats = hyp.sleep_statistics()
         truth = {
             "TIB": 60.0,
@@ -162,7 +162,7 @@ class TestHypnoClass(unittest.TestCase):
         assert sstats["TIB"] == 400
         assert "%DEEP" in sstats.keys()
         assert "Lat_REM" in sstats.keys()
-        assert isinstance(hyp.as_annotations(), pd.DataFrame)
+        assert isinstance(hyp.as_events(), pd.DataFrame)
 
     def test_5stages_hypno(self):
         """Test 5-stages Hypnogram class"""
