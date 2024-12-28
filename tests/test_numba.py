@@ -1,9 +1,11 @@
 """Test the functions in the yasa/numba.py file."""
 
 import unittest
+
 import numpy as np
 from scipy.signal import detrend
-from yasa.numba import _corr, _covar, _rms, _slope_lstsq, _detrend
+
+from yasa.numba import _corr, _covar, _detrend, _rms, _slope_lstsq
 
 
 class TestNumba(unittest.TestCase):

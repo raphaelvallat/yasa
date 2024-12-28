@@ -1,18 +1,20 @@
 """Automatic sleep staging of polysomnography data."""
 
-import os
-import mne
 import glob
-import joblib
 import logging
+import os
 import warnings
+
+import antropy as ant
+import joblib
+import matplotlib.pyplot as plt
+import mne
 import numpy as np
 import pandas as pd
-import antropy as ant
 import scipy.signal as sp_sig
 import scipy.stats as sp_stats
-import matplotlib.pyplot as plt
 from mne.filter import filter_data
+from scipy.integrate import trapezoid
 from sklearn.preprocessing import robust_scale
 
 from .others import sliding_window
@@ -307,7 +309,7 @@ class SleepStaging:
             # Add total power
             idx_broad = np.logical_and(freqs >= freq_broad[0], freqs <= freq_broad[1])
             dx = freqs[1] - freqs[0]
-            feat["abspow"] = np.trapz(psd[:, idx_broad], dx=dx)
+            feat["abspow"] = trapezoid(psd[:, idx_broad], dx=dx)
 
             # Calculate entropy and fractal dimension features
             feat["perm"] = np.apply_along_axis(ant.perm_entropy, axis=1, arr=epochs, normalize=True)

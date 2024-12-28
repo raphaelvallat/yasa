@@ -2,14 +2,14 @@
 Plotting functions of YASA.
 """
 
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
 import mne
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 from lspopt import spectrogram_lspopt
-from matplotlib.colors import Normalize, ListedColormap
+from matplotlib.colors import ListedColormap, Normalize
 
 __all__ = ["plot_hypnogram", "plot_spectrogram", "topoplot"]
 

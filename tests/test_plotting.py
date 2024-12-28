@@ -1,12 +1,13 @@
 """Test the functions in the yasa/plotting.py file."""
 
-import pytest
 import unittest
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 from yasa.hypno import simulate_hypnogram
-from yasa.plotting import topoplot, plot_hypnogram
+from yasa.plotting import plot_hypnogram, topoplot
 
 
 class TestPlotting(unittest.TestCase):

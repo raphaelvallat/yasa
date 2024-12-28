@@ -2,17 +2,19 @@
 Hypnogram-related functions and class.
 """
 
-import mne
 import logging
+
+import mne
 
 # import warnings
 import numpy as np
 import pandas as pd
+from pandas.api.types import CategoricalDtype
+
+from yasa.evaluation import EpochByEpochAgreement
 from yasa.io import set_log_level
 from yasa.plotting import plot_hypnogram
 from yasa.sleepstats import transition_matrix
-from yasa.evaluation import EpochByEpochAgreement
-from pandas.api.types import CategoricalDtype
 
 __all__ = [
     "Hypnogram",

@@ -1,9 +1,11 @@
 """Test the functions in yasa/staging.py."""
 
-import mne
 import unittest
-import numpy as np
+
 import matplotlib.pyplot as plt
+import mne
+import numpy as np
+
 from yasa.hypno import Hypnogram
 from yasa.staging import SleepStaging
 

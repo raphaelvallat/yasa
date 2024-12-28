@@ -3,9 +3,11 @@ This file contains several helper functions to manipulate 1D and 2D EEG data.
 """
 
 import logging
+
 import numpy as np
 from scipy.interpolate import interp1d
-from .numba import _slope_lstsq, _covar, _corr, _rms
+
+from .numba import _corr, _covar, _rms, _slope_lstsq
 
 logger = logging.getLogger("yasa")
 
@@ -472,7 +474,7 @@ def get_centered_indices(data, idx, npts_before, npts_after):
 
     def rng(x):
         """Create a range before and after a given value."""
-        return np.arange(x - npts_before, x + npts_after + 1, dtype="int")
+        return np.arange(x[0] - npts_before, x[0] + npts_after + 1, dtype="int")
 
     idx_ep = np.apply_along_axis(rng, 1, idx[..., np.newaxis])
     # We drop the events for which the indices exceed data

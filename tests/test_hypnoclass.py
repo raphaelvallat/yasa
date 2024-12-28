@@ -1,12 +1,14 @@
 """Test the class Hypnogram."""
 
-import mne
-import pytest
 import unittest
+
+import matplotlib.pyplot as plt
+import mne
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from yasa.hypno import simulate_hypnogram, Hypnogram, hypno_str_to_int
+import pytest
+
+from yasa.hypno import Hypnogram, hypno_str_to_int, simulate_hypnogram
 
 
 def create_raw(npts, ch_names=["F4-M1", "F3-M2"], sf=100):

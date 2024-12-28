@@ -17,15 +17,16 @@ DANGER: This function has not been extensively debugged and validated.
 Use at your own risk.
 """
 
-import mne
-import yasa
 import logging
+
+import antropy as ant
+import mne
 import numpy as np
 import pandas as pd
-import antropy as ant
 import scipy.signal as sp_sig
 import scipy.stats as sp_stats
 
+import yasa
 
 logger = logging.getLogger("yasa")
 

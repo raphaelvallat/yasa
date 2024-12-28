@@ -1,15 +1,16 @@
 """Test the functions in the yasa/spectral.py file."""
 
-import mne
-import pytest
 import unittest
-import numpy as np
 from itertools import product
-from scipy.signal import welch
-import matplotlib.pyplot as plt
 
-from yasa.plotting import plot_spectrogram
+import matplotlib.pyplot as plt
+import mne
+import numpy as np
+import pytest
+from scipy.signal import welch
+
 from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
+from yasa.plotting import plot_spectrogram
 from yasa.spectral import (
     bandpower,
     bandpower_from_psd,

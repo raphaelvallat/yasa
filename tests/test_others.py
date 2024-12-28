@@ -1,20 +1,21 @@
 """Test the functions in the yasa/others.py file."""
 
-import mne
 import unittest
-import numpy as np
 from itertools import product
+
+import mne
+import numpy as np
 from mne.filter import filter_data
 
 from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
 from yasa.others import (
-    moving_transform,
-    trimbothstd,
-    get_centered_indices,
-    sliding_window,
+    _index_to_events,
     _merge_close,
     _zerocrossings,
-    _index_to_events,
+    get_centered_indices,
+    moving_transform,
+    sliding_window,
+    trimbothstd,
 )
 
 # Load data

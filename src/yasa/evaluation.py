@@ -16,7 +16,6 @@ import pandas as pd
 import scipy.stats as sps
 import sklearn.metrics as skm
 
-
 logger = logging.getLogger("yasa")
 
 __all__ = [
@@ -219,7 +218,7 @@ class EpochByEpochAgreement:
 
         # Generate some mapping dictionaries to be used later in class methods
         skm_labels = np.unique(data).tolist()  # all unique YASA integer codes in this hypno
-        skm2yasa_map = {i: l for i, l in enumerate(skm_labels)}  # skm order to YASA integers
+        skm2yasa_map = {i: lab for i, lab in enumerate(skm_labels)}  # skm order to YASA integers
         yasa2yasa_map = ref_hyps[sleep_ids[0]].mapping_int.copy()  # YASA integer to YASA string
 
         # Set attributes
@@ -908,7 +907,6 @@ class SleepStatsAgreement:
         verbose=True,
         bootstrap_kwargs={},
     ):
-
         restricted_bootstrap_kwargs = ["confidence_level", "vectorized", "paired"]
 
         assert isinstance(ref_data, pd.DataFrame), "`ref_data` must be a pandas DataFrame"
@@ -1293,7 +1291,7 @@ class SleepStatsAgreement:
                 "bias_regr": "{bias_intercept_center:.2f} + {bias_slope_center:.2f}x",
                 "loa_parm": "{lloa_parm_center:.2f}, {uloa_parm_center:.2f}",
                 "loa_regr": (
-                    "Bias \u00B1 {loa_regr_agreement:.2f} "
+                    "Bias \u00b1 {loa_regr_agreement:.2f} "
                     "* ({loa_intercept_center:.2f} + {loa_slope_center:.2f}x)"
                 ),
                 "bias_parm_ci": ("[{bias_parm_lower:.2f}, {bias_parm_upper:.2f}]"),

@@ -1,21 +1,22 @@
 """Test the functions in the yasa/hypno.py file."""
 
-import mne
-import pytest
 import unittest
+
+import mne
 import numpy as np
 import pandas as pd
+import pytest
 from pandas.testing import assert_frame_equal
-from yasa.hypno import (
-    hypno_str_to_int,
-    hypno_int_to_str,
-    hypno_upsample_to_sf,
-    hypno_fit_to_data,
-    hypno_upsample_to_data,
-    simulate_hypnogram,
-)
 
 from yasa.hypno import hypno_find_periods as hfp
+from yasa.hypno import (
+    hypno_fit_to_data,
+    hypno_int_to_str,
+    hypno_str_to_int,
+    hypno_upsample_to_data,
+    hypno_upsample_to_sf,
+    simulate_hypnogram,
+)
 
 hypno = np.array([0, 0, 0, 1, 2, 2, 3, 3, 4])
 hypno_txt = np.array(["W", "W", "W", "N1", "N2", "N2", "N3", "N3", "R"])

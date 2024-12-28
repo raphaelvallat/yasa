@@ -3,8 +3,10 @@
 import os
 import sys
 import time
-import yasa
+
 import sphinx_bootstrap_theme
+
+import yasa
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
