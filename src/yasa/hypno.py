@@ -48,10 +48,10 @@ class Hypnogram:
     values : array_like
         A vector of stage values, represented as strings. See some examples below:
 
-        * 2-stages hypnogram (Wake/Sleep): ``["W", "S", "S", "W", "S"]``
-        * 3-stages (Wake/NREM/REM): ``pd.Series(["WAKE", "NREM", "NREM", "REM", "REM"])``
-        * 4-stages (Wake/Light/Deep/REM): ``np.array(["Wake", "Light", "Deep", "Deep"])``
-        * 5-stages (default): ``["N1", "N1", "N2", "N3", "N2", "REM", "W"]``
+        * 2-stage hypnogram (Wake/Sleep): ``["W", "S", "S", "W", "S"]``
+        * 3-stage (Wake/NREM/REM): ``pd.Series(["WAKE", "NREM", "NREM", "REM", "REM"])``
+        * 4-stage (Wake/Light/Deep/REM): ``np.array(["Wake", "Light", "Deep", "Deep"])``
+        * 5-stage (default): ``["N1", "N1", "N2", "N3", "N2", "REM", "W"]``
 
         Artefacts ("Art") and unscored ("Uns") epochs are always allowed regardless of the
         number of stages in the hypnogram.
@@ -60,7 +60,7 @@ class Hypnogram:
             lower/upper/mixed case. Internally, YASA will convert the stages to to full spelling
             and uppercase (e.g. "w" -> "WAKE").
     n_stages : int
-        Whether ``values`` comes from a 2, 3, 4 or 5-stages hypnogram. Default is 5 stages, meaning
+        Whether ``values`` comes from a 2, 3, 4 or 5-stage hypnogram. Default is 5-stage, meaning
         that the following sleep stages are allowed: N1, N2, N3, REM, WAKE.
     freq : str
         A pandas frequency string indicating the frequency resolution of the hypnogram. Default is
@@ -78,16 +78,20 @@ class Hypnogram:
     scorer : str
         An optional string indicating the scorer name. If specified, this will be set as the name
         of the :py:class:`pandas.Series`, otherwise the name will be set to "Stage".
+    proba : :py:class:`pandas.DataFrame`
+        An optional dataframe with the probability of each sleep stage for each epoch in hypnogram.
+        Each row must sum to 1. This is automatically included if the hypnogram is created with
+        :py:class:`yasa.SleepStaging`.
 
     Examples
     --------
-    Create a 2-stages hypnogram
+    Create a 2-stage hypnogram
 
     >>> from yasa import Hypnogram
     >>> values = ["W", "W", "W", "S", "S", "S", "S", "S", "W", "S", "S", "S"]
     >>> hyp = Hypnogram(values, n_stages=2)
     >>> hyp
-    <Hypnogram | 12 epochs x 30s (6.00 minutes), 2 stages>
+    <Hypnogram | 12 epochs x 30s (6.00 minutes), 2 unique stages>
      - Use `.hypno` to get the string values as a pandas.Series
      - Use `.as_int()` to get the integer values as a pandas.Series
      - Use `.plot_hypnogram()` to plot the hypnogram
@@ -162,8 +166,8 @@ class Hypnogram:
     WAKE           2      2
     SLEEP          1      6
 
-    All these methods and properties are also valid with a 5-stages hypnogram. In the example below,
-    we use the :py:func:`yasa.simulate_hypnogram` to generate a plausible 5-stages hypnogram with a
+    All these methods and properties are also valid with a 5-stage hypnogram. In the example below,
+    we use the :py:func:`yasa.simulate_hypnogram` to generate a plausible 5-stage hypnogram with a
     30-seconds resolution. A random seed is specified to ensure that we get reproducible results.
     Lastly, we set an actual start time to the hypnogram. As a result, the index of the resulting
     hypnogram is a :py:class:`pandas.DatetimeIndex`.
@@ -172,7 +176,7 @@ class Hypnogram:
     >>> hyp = simulate_hypnogram(
     ...     tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42)
     >>> hyp
-    <Hypnogram | 1000 epochs x 30s (500.00 minutes), 5 stages, scored by S1>
+    <Hypnogram | 1000 epochs x 30s (500.00 minutes), 5 unique stages, scored by S1>
      - Use `.hypno` to get the string values as a pandas.Series
      - Use `.as_int()` to get the integer values as a pandas.Series
      - Use `.plot_hypnogram()` to plot the hypnogram
@@ -194,7 +198,7 @@ class Hypnogram:
     Freq: 30S, Name: S1, Length: 1000, dtype: category
     Categories (7, object): ['WAKE', 'N1', 'N2', 'N3', 'REM', 'ART', 'UNS']
 
-    The summary sleep statistics will include more items with a 5-stages hypnogram than a 2-stages
+    The summary sleep statistics will include more items with a 5-stage hypnogram than a 2-stage
     hypnogram, i.e. the amount and percentage of each sleep stage, the REM latency, etc.
 
     >>> hyp.sleep_statistics()
@@ -219,10 +223,14 @@ class Hypnogram:
      '%REM': 8.9713}
     """
 
-    def __init__(self, values, n_stages=5, *, freq="30s", start=None, scorer=None):
+    def __init__(self, values, n_stages=5, *, freq="30s", start=None, scorer=None, proba=None):
         assert isinstance(
             values, (list, np.ndarray, pd.Series)
         ), "`values` must be a list, numpy.array or pandas.Series"
+        assert all(isinstance(val, str) for val in values), (
+            "Since v0.7, YASA expects strings to represent sleep stages, e.g. ['WAKE', 'N1', ...]. "
+            "Please refer to the documentation for more details."
+        )
         assert isinstance(n_stages, int), "`n_stages` must be an integer between 2 and 5."
         assert n_stages in [2, 3, 4, 5], "`n_stages` must be an integer between 2 and 5."
         assert isinstance(freq, str), "`freq` must be a pandas frequency string."
@@ -231,7 +239,10 @@ class Hypnogram:
         ), "`start` must be either None, a string or a pandas.Timestamp."
         assert isinstance(
             scorer, (type(None), str, int)
-        ), "`scorer` must be either None, or a string or an integer."
+        ), "`scorer` must be either None, a string or an integer."
+        assert isinstance(
+            proba, (pd.DataFrame, type(None))
+        ), "`proba` must be either None or a pandas.DataFrame"
         if n_stages == 2:
             accepted = ["W", "WAKE", "S", "SLEEP", "ART", "UNS"]
             mapping = {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
@@ -244,10 +255,19 @@ class Hypnogram:
         else:
             accepted = ["WAKE", "W", "N1", "N2", "N3", "REM", "R", "ART", "UNS"]
             mapping = {"WAKE": 0, "N1": 1, "N2": 2, "N3": 3, "REM": 4, "ART": -1, "UNS": -2}
-        assert all([val.upper() in accepted for val in values]), (
-            f"{np.unique(values)} do not match the accepted values for a {n_stages} stages "
-            f"hypnogram: {accepted}"
-        )
+        n_unique_values = len(np.unique(values))
+        if not all([val.upper() in accepted for val in values]):
+            msg = (
+                f"{np.unique(values)} do not match the accepted values for a {n_stages}-stage "
+                f"hypnogram: {accepted}."
+            )
+            if n_unique_values < n_stages:
+                msg += (
+                    f"\nIf your hypnogram only has {n_unique_values} possible stages, make sure to "
+                    f"specify `Hypnogram(values, n_stages={n_unique_values})`."
+                )
+            raise ValueError(msg)
+
         if isinstance(values, pd.Series):
             # Make sure to remove index if the input is a pandas.Series
             values = values.to_numpy(copy=True)
@@ -272,6 +292,19 @@ class Hypnogram:
             fake_dt = pd.date_range(start="2022-12-03 00:00:00", freq=freq, periods=hypno.shape[0])
             hypno.index.name = "Epoch"
             timedelta = fake_dt - fake_dt[0]
+        # Validate proba
+        if proba is not None:
+            assert proba.shape[1] > 0, "`proba` must have at least one column."
+            assert proba.shape[0] == hypno.shape[0], "`proba` must have the same length as `values`"
+            assert np.allclose(proba.sum(1), 1), "Each row of `proba` must sum to 1."
+            in_proba_but_not_labels = np.setdiff1d(proba.columns, labels)
+            # in_labels_but_not_proba = np.setdiff1d(labels, proba.columns)
+            assert not len(in_proba_but_not_labels), (
+                f"Invalid stages in `proba`: {in_proba_but_not_labels}. The accepted stages are: "
+                f"{labels}."
+            )
+            # Ensure same order as `labels`
+            proba = proba.reindex(columns=labels).dropna(how="all", axis=1)
         # Set attributes
         self._hypno = hypno
         self._n_epochs = hypno.shape[0]
@@ -284,13 +317,14 @@ class Hypnogram:
         self._labels = labels
         self._mapping = mapping
         self._scorer = scorer
+        self._proba = proba
 
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
         text_scorer = f", scored by {self.scorer}" if self.scorer is not None else ""
         return (
             f"<Hypnogram | {self.n_epochs} epochs x {self.freq} ({self.duration:.2f} minutes), "
-            f"{self.n_stages} stages{text_scorer}>\n"
+            f"{self.n_stages} unique stages{text_scorer}>\n"
             " - Use `.hypno` to get the string values as a pandas.Series\n"
             " - Use `.as_int()` to get the integer values as a pandas.Series\n"
             " - Use `.plot_hypnogram()` to plot the hypnogram\n"
@@ -298,15 +332,7 @@ class Hypnogram:
         )
 
     def __str__(self):
-        text_scorer = f", scored by {self.scorer}" if self.scorer is not None else ""
-        return (
-            f"<Hypnogram | {self.n_epochs} epochs x {self.freq} ({self.duration:.2f} minutes), "
-            f"{self.n_stages} stages{text_scorer}>\n"
-            " - Use `.hypno` to get the string values as a pandas.Series\n"
-            " - Use `.as_int()` to get the integer values as a pandas.Series\n"
-            " - Use `.plot_hypnogram()` to plot the hypnogram\n"
-            "See the online documentation for more details."
-        )
+        return self.__repr__()
 
     @property
     def hypno(self):
@@ -395,9 +421,17 @@ class Hypnogram:
         """The scorer name."""
         return self._scorer
 
+    @property
+    def proba(self):
+        """
+        If specified, a :py:class:`pandas.DataFrame` with the probability of each sleep stage
+        for each epoch in hypnogram.
+        """
+        return self._proba
+
     # CLASS METHODS BELOW
 
-    def as_annotations(self):
+    def as_events(self):
         """
         Return a pandas DataFrame summarizing epoch-level information.
 
@@ -409,14 +443,14 @@ class Hypnogram:
 
         Returns
         -------
-        annotations : :py:class:`pandas.DataFrame`
+        events : :py:class:`pandas.DataFrame`
             A dataframe containing epoch onset, duration, stage, etc.
 
         Examples
         --------
         >>> from yasa import Hypnogram
         >>> hyp = Hypnogram(["W", "W", "LIGHT", "LIGHT", "DEEP", "REM", "WAKE"], n_stages=4)
-        >>> hyp.as_annotations()
+        >>> hyp.as_events()
                onset  duration  value description
         epoch
         0        0.0      30.0      0        WAKE
@@ -443,10 +477,10 @@ class Hypnogram:
 
         The default mapping from string to integer is:
 
-        * 2 stages: {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
-        * 3 stages: {"WAKE": 0, "NREM": 2, "REM": 4, "ART": -1, "UNS": -2}
-        * 4 stages: {"WAKE": 0, "LIGHT": 2, "DEEP": 3, "REM": 4, "ART": -1, "UNS": -2}
-        * 5 stages: {"WAKE": 0, "N1": 1, "N2": 2, "N3": 3, "REM": 4, "ART": -1, "UNS": -2}
+        * 2-stage: {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
+        * 3-stage: {"WAKE": 0, "NREM": 2, "REM": 4, "ART": -1, "UNS": -2}
+        * 4-stage: {"WAKE": 0, "LIGHT": 2, "DEEP": 3, "REM": 4, "ART": -1, "UNS": -2}
+        * 5-stage: {"WAKE": 0, "N1": 1, "N2": 2, "N3": 3, "REM": 4, "ART": -1, "UNS": -2}
 
         Users can define a custom mapping:
 
@@ -454,7 +488,7 @@ class Hypnogram:
 
         Examples
         --------
-        Convert a 2-stages hypnogram to a pandas.Series of integers
+        Convert a 2-stage hypnogram to a pandas.Series of integers
 
         >>> from yasa import Hypnogram
         >>> hyp = Hypnogram(["W", "W", "S", "S", "W", "S"], n_stages=2)
@@ -468,7 +502,7 @@ class Hypnogram:
         5    1
         Name: Stage, dtype: int16
 
-        Same with a 4-stages hypnogram
+        Same with a 4-stage hypnogram
 
         >>> from yasa import Hypnogram
         >>> hyp = Hypnogram(["W", "W", "LIGHT", "LIGHT", "DEEP", "REM", "WAKE"], n_stages=4)
@@ -490,8 +524,8 @@ class Hypnogram:
         """Reduce the number of stages in a hypnogram to match actigraphy or wearables.
 
         For example, a standard 5-stage hypnogram (W, N1, N2, N3, REM) could be consolidated
-        to a hypnogram more common with actigraphy (e.g. 2-stages: [Wake, Sleep] or
-        4-stages: [W, Light, Deep, REM]).
+        to a hypnogram more common with actigraphy (e.g. 2-stage: [Wake, Sleep] or
+        4-stage: [W, Light, Deep, REM]).
 
         Parameters
         ----------
@@ -501,10 +535,10 @@ class Hypnogram:
         new_n_stages : int
             Desired number of sleep stages. Must be lower than the current number of stages.
 
-            - 5 stages - Wake, N1, N2, N3, REM
-            - 4 stages - Wake, Light, Deep, REM
-            - 3 stages - Wake, NREM, REM
-            - 2 stages - Wake, Sleep
+            - 5-stage (Wake, N1, N2, N3, REM)
+            - 4-stage (Wake, Light, Deep, REM)
+            - 3-stage (Wake, NREM, REM)
+            - 2-stage (Wake, Sleep)
 
             .. note:: Unscored and Artefact are always allowed.
 
@@ -562,6 +596,7 @@ class Hypnogram:
             freq=self.freq,
             start=self.start,
             scorer=self.scorer,
+            proba=None,  # TODO: Combine stages probability?
         )
 
     def copy(self):
@@ -572,6 +607,7 @@ class Hypnogram:
             freq=self.freq,
             start=self.start,
             scorer=self.scorer,
+            proba=self.proba,
         )
 
     def evaluate(self, obs_hyp):
@@ -667,7 +703,7 @@ class Hypnogram:
         Only the two sequences that are longer than 5 minutes (11 minutes and 9 minutes
         respectively) are kept. Feel free to play around with different values of threshold!
 
-        This function is not limited to binary arrays, e.g. a 5-stages hypnogram at 30-sec
+        This function is not limited to binary arrays, e.g. a 5-stage hypnogram at 30-sec
         resolution:
 
         >>> from yasa import simulate_hypnogram
@@ -781,7 +817,7 @@ class Hypnogram:
         """
         Compute standard sleep statistics from an hypnogram.
 
-        This function supports a 2, 3, 4 or 5-stages hypnogram.
+        This function supports a 2, 3, 4 or 5-stage hypnogram.
 
         Parameters
         ----------
@@ -850,10 +886,10 @@ class Hypnogram:
         'SOL_5min': 2.5,
         'WAKE': 6.0}
 
-        Sleep statistics for a 5-stages hypnogram
+        Sleep statistics for a 5-stage hypnogram
 
         >>> from yasa import simulate_hypnogram
-        >>> # Generate a 8 hr (= 480 minutes) 5-stages hypnogram with a 30-seconds resolution
+        >>> # Generate a 8 hr (= 480 minutes) 5-stage hypnogram with a 30-seconds resolution
         >>> hyp = simulate_hypnogram(tib=480, seed=42)
         >>> hyp.sleep_statistics()
         {'TIB': 480.0,
@@ -984,7 +1020,7 @@ class Hypnogram:
         Examples
         --------
         >>> from yasa import Hypnogram, simulate_hypnogram
-        >>> # Generate a 8 hr (= 480 minutes) 5-stages hypnogram with a 30-seconds resolution
+        >>> # Generate a 8 hr (= 480 minutes) 5-stage hypnogram with a 30-seconds resolution
         >>> hyp = simulate_hypnogram(tib=480, seed=42)
         >>> counts, probs = hyp.transition_matrix()
         >>> counts
@@ -1012,7 +1048,7 @@ class Hypnogram:
         probs.columns = probs.columns.map(self.mapping_int)
         return counts, probs
 
-    def upsample(self, new_freq, **kwargs):
+    def upsample(self, new_freq):
         """Upsample hypnogram to a higher frequency.
 
         Parameters
@@ -1096,6 +1132,7 @@ class Hypnogram:
             freq=new_freq,
             start=self.start,
             scorer=self.scorer,
+            proba=None,  # NOTE: Do not upsample probability
         )
 
     def upsample_to_data(self, data, sf=None, verbose=True):
@@ -1679,7 +1716,7 @@ def simulate_hypnogram(
     >>> from yasa import simulate_hypnogram
     >>> hyp = simulate_hypnogram(tib=5, seed=1)
     >>> hyp
-    <Hypnogram | 10 epochs x 30s (5.00 minutes), 5 stages>
+    <Hypnogram | 10 epochs x 30s (5.00 minutes), 5 unique stages>
      - Use `.hypno` to get the string values as a pandas.Series
      - Use `.as_int()` to get the integer values as a pandas.Series
      - Use `.plot_hypnogram()` to plot the hypnogram
