@@ -116,6 +116,7 @@ ENV/
 env.bak/
 venv.bak/
 .DS_Store
+.conda/
 
 # Spyder project settings
 .spyderproject
