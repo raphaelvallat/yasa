@@ -11,6 +11,7 @@ import pytest
 from mne.filter import filter_data
 
 from yasa.detection import art_detect, compare_detection, rem_detect, spindles_detect, sw_detect
+from yasa.fetchers import fetch_example
 from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
 
 ##############################################################################
@@ -21,17 +22,21 @@ from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
 sf = 100
 
 # 1) Single channel, we take one every other point to keep a sf of 100 Hz
-data = np.loadtxt("notebooks/data_N2_spindles_15sec_200Hz.txt")[::2]
+data_fp = fetch_example("N2_spindles_15sec_200Hz.txt")
+data = np.loadtxt(data_fp)[::2]
 data_sigma = filter_data(data, sf, 12, 15, method="fir", verbose=0)
 
 # Load an extract of N3 sleep without any spindle
-data_n3 = np.loadtxt("notebooks/data_N3_no-spindles_30sec_100Hz.txt")
+data_n3_fp = fetch_example("N3_no-spindles_30sec_100Hz.txt")
+data_n3 = np.loadtxt(data_n3_fp)
 
 # 2) Multi-channel
 # Load a full recording and its hypnogram
-data_full = np.load("notebooks/data_full_6hrs_100Hz_Cz+Fz+Pz.npz").get("data")
-chan_full = np.load("notebooks/data_full_6hrs_100Hz_Cz+Fz+Pz.npz").get("chan")
-hypno_full = np.load("notebooks/data_full_6hrs_100Hz_hypno.npz").get("hypno")
+data_full_fp = fetch_example("full_6hrs_100Hz_Cz+Fz+Pz.npz")
+hypno_full_fp = fetch_example("full_6hrs_100Hz_hypno.npz")
+data_full = np.load(data_full_fp).get("data")
+chan_full = np.load(data_full_fp).get("chan")
+hypno_full = np.load(hypno_full_fp).get("hypno")
 
 # Let's add a channel with bad data amplitude
 chan_full = np.append(chan_full, "Bad")  # ['Cz', 'Fz', 'Pz', 'Bad']
@@ -42,10 +47,12 @@ data_sw = data_full[1, 666000:672000].astype(np.float64)
 hypno_sw = hypno_full[666000:672000]
 
 # MNE Raw
-data_mne = mne.io.read_raw_fif("notebooks/sub-02_mne_raw.fif", preload=True, verbose=0)
+data_mne_fp = fetch_example("sub-02_mne_raw.fif")
+data_mne = mne.io.read_raw_fif(data_mne_fp, preload=True, verbose=0)
 data_mne.pick_types(eeg=True)
 data_mne_single = data_mne.copy().pick(["F3"])
-hypno_mne = np.loadtxt("notebooks/sub-02_hypno_30s.txt", dtype=str)
+hypno_mne_fp = fetch_example("sub-02_hypno_30s.txt")
+hypno_mne = np.loadtxt(hypno_mne_fp, dtype=str)
 hypno_mne = hypno_str_to_int(hypno_mne)
 hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30), data=data_mne)
 
@@ -314,7 +321,8 @@ class TestDetection(unittest.TestCase):
 
     def test_rem_detect(self):
         """Test function REM detect"""
-        file_rem = np.load("notebooks/data_EOGs_REM_256Hz.npz")
+        file_rem_fp = fetch_example("EOGs_REM_256Hz.npz")
+        file_rem = np.load(file_rem_fp)
         data_rem = file_rem["data"]
         loc, roc = data_rem[0, :], data_rem[1, :]
         sf_rem = file_rem["sf"]
@@ -364,9 +372,11 @@ class TestDetection(unittest.TestCase):
 
     def test_art_detect(self):
         """Test function art_detect"""
-        file_9 = np.load("notebooks/data_full_6hrs_100Hz_9channels.npz")
+        file_9_fp = fetch_example("full_6hrs_100Hz_9channels.npz")
+        file_9 = np.load(file_9_fp)
         data_9 = file_9.get("data")
-        hypno_9 = np.load("notebooks/data_full_6hrs_100Hz_hypno.npz").get("hypno")  # noqa
+        hypno_9_fp = fetch_example("full_6hrs_100Hz_hypno.npz")
+        hypno_9 = np.load(hypno_9_fp).get("hypno")  # noqa
         # For the sake of the example, let's add some flat data at the end
         data_9 = np.concatenate((data_9, np.zeros((data_9.shape[0], 20000))), axis=1)
         hypno_9 = np.concatenate((hypno_9, np.zeros(20000)))
