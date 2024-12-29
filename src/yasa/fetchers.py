@@ -10,7 +10,7 @@ from pathlib import Path
 import pooch
 
 __all__ = [
-    "fetch_example",
+    "fetch_sample",
 ]
 
 
@@ -59,10 +59,10 @@ def _init_doi_repository(doi, populate_registry=True):
     return repo
 
 
-def fetch_example(fname, version="latest", **kwargs):
+def fetch_sample(fname, version="latest", **kwargs):
     """
     Download (i.e., :py:meth:`~pooch.Pooch.fetch`) a single file -- _if not already downloaded_ --
-    from the YASA examples dataset on `Zenodo <https://doi.org/10.5281/zenodo.14564284>`_.
+    from the YASA samples dataset on `Zenodo <https://doi.org/10.5281/zenodo.14564284>`_.
 
     This function always returns a filename as a :py:class:`~pathlib.Path` to the local file.
     It will first check for a local copy of the file and download it if not found.
@@ -76,13 +76,13 @@ def fetch_example(fname, version="latest", **kwargs):
     ----------
     fname : str
         The name of the file to :py:meth:`~pooch.Pooch.fetch`.
-        Must be one of the filenames available in the YASA examples dataset.
+        Must be one of the filenames available in the YASA samples dataset.
         See the `Zenodo repo <https://doi.org/10.5281/zenodo.14564284>`_ for available filenames.
 
     version : str, optional
         The version string of the dataset to :py:meth:`~pooch.Pooch.fetch`.
         Setting this to ``latest`` (default) is equivalent to setting to the latest version string.
-        Must be one of the versions available for the YASA examples dataset.
+        Must be one of the versions available for the YASA samples dataset.
         See the `Zenodo repo <https://doi.org/10.5281/zenodo.14564284>`_ for available versions.
 
     **kwargs : dict
@@ -99,7 +99,7 @@ def fetch_example(fname, version="latest", **kwargs):
     >>> import numpy as np
     >>> import yasa
     >>> # Get path to local hypnogram file (will download if not already present)
-    >>> fpath = yasa.fetch_example("night_young_hypno.csv")
+    >>> fpath = yasa.fetch_sample("night_young_hypno.csv")
     >>> print(fpath.exists())
     True
     >>> # Load the hypnogram
@@ -118,7 +118,7 @@ def fetch_example(fname, version="latest", **kwargs):
 
     >>> import os
     >>> os.environ["YASA_DATA_DIR"] = "~/Desktop/my_yasa_data"
-    >>> fpath = yasa.fetch_example("night_young_hypno.csv")
+    >>> fpath = yasa.fetch_sample("night_young_hypno.csv")
     """
     repository_dois = {
         "latest": "10.5281/zenodo.14564284",

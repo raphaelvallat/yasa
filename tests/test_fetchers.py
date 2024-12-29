@@ -44,6 +44,6 @@ class TestFetchers(unittest.TestCase):
         """Test the download of a single arbitrary file from the examples repo"""
         with TemporaryDirectory() as tempdir:
             os.environ["YASA_DATA_DIR"] = tempdir
-            fp = fetchers.fetch_example(SMALL_SAMPLE_FILE)
+            fp = fetchers.fetch_sample(SMALL_SAMPLE_FILE)
             assert fp.exists()
             assert fp.is_file()

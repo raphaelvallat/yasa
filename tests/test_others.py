@@ -7,7 +7,7 @@ import mne
 import numpy as np
 from mne.filter import filter_data
 
-from yasa.fetchers import fetch_example
+from yasa.fetchers import fetch_sample
 from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
 from yasa.others import (
     _index_to_events,
@@ -20,26 +20,26 @@ from yasa.others import (
 )
 
 # Load data
-data_fp = fetch_example("N2_spindles_15sec_200Hz.txt")
+data_fp = fetch_sample("N2_spindles_15sec_200Hz.txt")
 data = np.loadtxt(data_fp)
 sf = 200
 data_sigma = filter_data(data, sf, 12, 15, method="fir", verbose=0)
 
 # Load a full recording and its hypnogram
-data_full_fp = fetch_example("full_6hrs_100Hz_Cz+Fz+Pz.npz")
+data_full_fp = fetch_sample("full_6hrs_100Hz_Cz+Fz+Pz.npz")
 file_full = np.load(data_full_fp)
 data_full = file_full.get("data")
 chan_full = file_full.get("chan")
 sf_full = 100
-hypno_full_fp = fetch_example("full_6hrs_100Hz_hypno.npz")
+hypno_full_fp = fetch_sample("full_6hrs_100Hz_hypno.npz")
 hypno_full = np.load(hypno_full_fp).get("hypno")
 
 # Using MNE
-data_mne_fp = fetch_example("sub-02_mne_raw.fif")
+data_mne_fp = fetch_sample("sub-02_mne_raw.fif")
 data_mne = mne.io.read_raw_fif(data_mne_fp, preload=True, verbose=0)
 data_mne.pick("eeg")
 data_mne_single = data_mne.copy().pick(["F3"])
-hypno_mne_fp = fetch_example("sub-02_hypno_30s.txt")
+hypno_mne_fp = fetch_sample("sub-02_hypno_30s.txt")
 hypno_mne = np.loadtxt(hypno_mne_fp, dtype=str)
 hypno_mne = hypno_str_to_int(hypno_mne)
 hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30), data=data_mne)

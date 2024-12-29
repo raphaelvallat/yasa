@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import mne
 import numpy as np
 
-from yasa.fetchers import fetch_example
+from yasa.fetchers import fetch_sample
 from yasa.hypno import Hypnogram
 from yasa.staging import SleepStaging
 
@@ -15,8 +15,8 @@ from yasa.staging import SleepStaging
 ##############################################################################
 
 # MNE Raw
-raw_fp = fetch_example("sub-02_mne_raw.fif")
-y_true_fp = fetch_example("sub-02_hypno_30s.txt")
+raw_fp = fetch_sample("sub-02_mne_raw.fif")
+y_true_fp = fetch_sample("sub-02_hypno_30s.txt")
 raw = mne.io.read_raw_fif(raw_fp, preload=True, verbose=0)
 y_true = Hypnogram(np.loadtxt(y_true_fp, dtype=str))
 
