@@ -45,6 +45,7 @@ dependencies = [
     "ipywidgets",
     "joblib",
     "lightgbm",
+    "pooch>=1.8",
 ]
 
 [project.optional-dependencies]

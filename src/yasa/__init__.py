@@ -3,6 +3,7 @@ import logging
 from .detection import *
 from .evaluation import *
 from .features import *
+from .fetchers import *
 from .heart import *
 from .hypno import *
 from .numba import *
