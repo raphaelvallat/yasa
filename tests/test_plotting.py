@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from yasa.fetchers import fetch_example
+from yasa.fetchers import fetch_sample
 from yasa.hypno import simulate_hypnogram
 from yasa.plotting import plot_hypnogram, topoplot
 
@@ -41,7 +41,7 @@ class TestPlotting(unittest.TestCase):
     def test_plot_hypnogram(self):
         """Test plot_hypnogram function."""
         # Old format: array of integer
-        hypno_fp = fetch_example("full_6hrs_100Hz_hypno_30s.txt")
+        hypno_fp = fetch_sample("full_6hrs_100Hz_hypno_30s.txt")
         hypno = np.loadtxt(hypno_fp)
         _ = plot_hypnogram(hypno)
         # Error because of input is not a yasa.Hypnogram
