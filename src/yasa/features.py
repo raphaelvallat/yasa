@@ -144,7 +144,7 @@ def compute_features_stage(
     # minutes_of_WN = (hypno_WN == 7).sum() / (60 * raw.info['sfreq'])
 
     # Keep only EEG channels and copy to avoid in-place modification
-    raw_eeg = raw.copy().pick_types(eeg=True)
+    raw_eeg = raw.copy().pick("eeg")
 
     # Remove flat channels
     bool_flat = raw_eeg.get_data().std(axis=1) == 0

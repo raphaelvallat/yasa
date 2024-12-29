@@ -37,7 +37,7 @@ hypno_full = np.load(hypno_full_fp).get("hypno")
 # Using MNE
 data_mne_fp = fetch_example("sub-02_mne_raw.fif")
 data_mne = mne.io.read_raw_fif(data_mne_fp, preload=True, verbose=0)
-data_mne.pick_types(eeg=True)
+data_mne.pick("eeg")
 hypno_mne_fp = fetch_example("sub-02_hypno_30s.txt")
 hypno_mne = np.loadtxt(hypno_mne_fp, dtype=str)
 hypno_mne = hypno_str_to_int(hypno_mne)
