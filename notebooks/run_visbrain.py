@@ -2,7 +2,7 @@
 """
 
 import numpy as np
-from visbrain.gui import Sleep
+from visbrain.gui import Sleep  # type: ignore reportMissingImports
 from yasa import spindles_detect, sw_detect
 
 # Load the data and hypnogram
