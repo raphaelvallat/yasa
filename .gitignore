@@ -138,6 +138,9 @@ dmypy.json
 *.ini
 notebooks/20_catch_errors.ipynb
 
+# Ruff
+.ruff_cache/
+
 # Illustrator
 *.ai
 *.pptx
