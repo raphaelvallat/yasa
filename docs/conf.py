@@ -4,8 +4,6 @@ import os
 import sys
 import time
 
-import sphinx_bootstrap_theme
-
 import yasa
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -96,26 +94,8 @@ todo_include_todos = False
 
 # -- Options for HTML output ----------------------------------------------
 
-# Bootstrap theme
-html_theme = "bootstrap"
-html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+html_theme = "pydata_sphinx_theme"
 html_theme_options = {
-    "source_link_position": "footer",
-    # 'navbar_title': ' ',  # we replace this with an image
-    "bootswatch_theme": "flatly",
-    "navbar_sidebarrel": False,
-    # 'nosidebar': True,
-    # 'navbar_site_name': "",
-    "navbar_pagenav": False,
-    "bootstrap_version": "3",
-    "navbar_class": "navbar",
-    "navbar_links": [
-        ("API", "api"),
-        ("Quickstart", "quickstart"),
-        ("FAQ", "faq"),
-        ("What's new", "changelog"),
-        ("Contribute", "contributing"),
-    ],
 }
 
 html_logo = "pictures/yasa_128x128.png"
