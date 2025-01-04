@@ -98,8 +98,8 @@ html_theme = "pydata_sphinx_theme"
 html_theme_options = {
 }
 
-html_logo = "pictures/yasa_128x128.png"
-html_favicon = "pictures/favicon.ico"
+html_logo = "https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/yasa_128x128.png"
+html_favicon = "https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/favicon.ico"
 
 # -- Options for HTML output ------------------------------------------
 

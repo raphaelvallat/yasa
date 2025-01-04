@@ -51,8 +51,8 @@ If you have polysomnography data in European Data Format (.edf), you can use the
 
 YASA is a command-line software and does not support data visualization. To scroll through your data, we recommend the free software EDFBrowser (https://www.teuniz.net/edfbrowser/):
 
-.. figure::  /pictures/edfbrowser_with_hypnogram.png
-  :align:   center
+.. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/edfbrowser_with_hypnogram.png
+  :align: center
 
 .. .. ----------------------------- HYPNOGRAM -----------------------------
 .. .. raw:: html
@@ -181,8 +181,8 @@ YASA was trained and evaluated on a large and heterogeneous database of thousand
 However, our recommendation is that **YASA should not replace human scoring, but rather serve as a starting point to speed up sleep staging**. If possible, you should always have a trained sleep scorer visually check the predictions of YASA, with a particular emphasis on low-confidence epochs and/or N1 sleep epochs, as these are the epochs most often misclassified by the algorithm.
 Finally, users can also leverage the :py:func:`yasa.plot_spectrogram` function to plot the predicted hypnogram on top of the full-night spectrogram. Such plots are very useful to quickly identify blatant errors in the hypnogram.
 
-.. figure::  /pictures/spectrogram.png
-  :align:   center
+.. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/spectrogram.png
+  :align: center
 
 .. raw:: html
 
@@ -225,14 +225,14 @@ The code below show hows to export the hypnogram in an EDFBrowser-compatible for
 
 You can then import the hypnogram in EDFBrowser by clicking on the "Import annotations/events" in the "Tools" menu. Then, select the "ASCII/CSV" tab and change the parameters as follow:
 
-.. figure::  /pictures/edfbrowser_import_annotations.png
-  :align:   center
+.. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/edfbrowser_import_annotations.png
+  :align: center
 
 Click "Import". Once it's done, the hypnogram can be enabled via the "Window" menu. A dialog will appear where you can setup the labels for the different sleep stages and the mapping to the annotations in the file. The default parameters should work.
 When using the Annotation editor, the hypnogram will be updated realtime when adding, moving or deleting annotations. Once you're done editing, you can export the edited hypnogram with "Export anotations/events" in the "Tools" menu.
 
-.. figure::  /pictures/edfbrowser_with_hypnogram.png
-  :align:   center
+.. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/edfbrowser_with_hypnogram.png
+  :align: center
 
 ----------
 
@@ -253,8 +253,8 @@ As explained in `the documentation <https://www.spisop.org/faq/#What_is_needed_t
 
 `Visbrain <https://visbrain.org/sleep.html>`_ is an open-source Python toolbox that includes a module for visualizing polysomnography sleep data and scoring sleep (see screenshot below).
 
-.. figure::  /pictures/visbrain.PNG
-  :align:   center
+.. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/visbrain.PNG
+  :align: center
 
 Visbrain accepts several `formats for the hypnogram <https://visbrain.org/sleep.html#hypnogram>`_. The code below show how to export the hypnogram in the `Elan software format <https://pubmed.ncbi.nlm.nih.gov/21687568/>`_ (i.e. a text file with the *.hyp* extension):
 

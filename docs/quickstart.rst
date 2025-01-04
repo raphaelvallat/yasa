@@ -134,7 +134,7 @@ Using the :py:func:`yasa.plot_hypnogram` function, we can plot the hypnogram:
   >>> import yasa
   >>> yasa.plot_hypnogram(hypno);
 
-.. figure::  /pictures/quickstart/hypnogram.png
+.. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/hypnogram.png
   :align: center
 
 ****************
@@ -177,9 +177,8 @@ Furthermore, we can also calculate the sleep stages transition matrix using the 
   >>> counts, probs = yasa.transition_matrix(hypno)
   >>> probs.round(3)
 
-.. image::  /pictures/quickstart/transition_matrix.png
+.. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/transition_matrix.png
   :align: center
-  :scale: 75%
 
 ``probs`` is the probability transition matrix, i.e. given that the current sleep stage is A, what is the probability that the next sleep stage is B.
 
@@ -214,7 +213,7 @@ Warmer colors indicate higher spectral power in this specific frequency band at 
   # We select only the C4-A1 EEG channel.
   >>> yasa.plot_spectrogram(data[chan.index("C4-A1")], sf, hypno_up);
 
-.. image::  /pictures/quickstart/spectrogram.png
+.. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/spectrogram.png
   :align: center
 
 .. note::
@@ -233,14 +232,14 @@ Calculating the average spectral power in different frequency bands is straightf
 
 >>> yasa.bandpower(raw)
 
-.. image::  /pictures/quickstart/bandpower.png
+.. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/bandpower.png
   :align: center
 
 This calculates, for each channel separately, the average power in the main frequency bands across the entire recording. Importantly, the values are **relative** power, i.e. they are expressed as a proportion of the total power between the lowest frequency (default 0.5 Hz) and the highest frequency (default 40 Hz). We can disable this behavior and get the **absolute** spectral power values in :math:`μV^2 / Hz` by using the ``relative=False`` argument. Similarly, we can define custom frequency bands with the ``bands`` parameter. In the example below, we calculate the absolute power in the 1-9 Hz frequency range (named "Slow") and the 9-30 Hz range (named "Fast"):
 
 >>> yasa.bandpower(raw, relative=False, bands=[(1, 9, "Slow"), (9, 30, "Fast")])
 
-.. image::  /pictures/quickstart/bandpower2.png
+.. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/bandpower2.png
   :align: center
 
 We can also pass an hypnogram to calculate the spectral powers separately for each sleep stage. In the example below, we use the upsampled hypnogram to calculate the spectral power separately for N2, N3 and REM. We save the results in a new variable named ``bandpower``.
@@ -255,9 +254,8 @@ Finally, we can use the :py:func:`yasa.topoplot` function to visualize the spect
 
 >>> fig = yasa.topoplot(bandpower.xs(3)['Delta'])
 
-.. image::  /pictures/quickstart/topoplot.png
+.. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/topoplot.png
   :align: center
-  :scale: 60%
 
 ********
 
@@ -275,10 +273,10 @@ Here, the ``sp`` variable is a `class <https://raphaelvallat.com/yasa/build/html
 
 >>> sp.summary()
 
-.. image::  /pictures/quickstart/spindles_summary.png
+.. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/spindles_summary.png
   :align: center
 
-The `documentation of the function <https://raphaelvallat.com/yasa/build/html/generated/yasa.spindles_detect.html>`_ explains what each of these columns represent and how they're calculated. Furthermore, by specifying the ``grp_chan`` and ``grp_stage`` parameters, we tell YASA to first average across channels and slep stages, respectively:
+The `documentation of the function <https://raphaelvallat.com/yasa/build/html/generated/yasa.spindles_detect.html>`_ explains what each of these columns represent and how they're calculated. Furthermore, by specifying the ``grp_chan`` and ``grp_stage`` parameters, we tell YASA to first average across channels and sleep stages, respectively:
 
 >>> sp.summary(grp_chan=True, grp_stage=True)
 
@@ -289,9 +287,8 @@ Finally, we can plot the average spindle, calculated for each channel separately
   >>> # Because of the large number of channels, we disable the 95%CI and legend
   >>> sp.plot_average(ci=None, legend=False, palette="Blues");
 
-.. image::  /pictures/quickstart/avg_spindles.png
+.. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/avg_spindles.png
   :align: center
-  :scale: 50%
 
 Slow-waves
 ~~~~~~~~~~
@@ -303,14 +300,13 @@ The exact same steps can be applied with the :py:func:`yasa.sw_detect` function 
   >>> sw = yasa.sw_detect(raw, hypno=hypno_up, include=(2, 3))
   >>> sw.summary()
 
-.. image::  /pictures/quickstart/sw_summary.png
+.. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/sw_summary.png
   :align: center
 
 >>> sw.plot_average(ci=None, legend=False, palette="Blues");
 
-.. image::  /pictures/quickstart/avg_sw.png
+.. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/avg_sw.png
   :align: center
-  :scale: 50%
 
 For more details on the output of the slow-waves detection, be sure to read the `documentation <https://raphaelvallat.com/yasa/build/html/generated/yasa.sw_detect.html>`_ and try the `Jupyter notebooks <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_.
 
@@ -328,7 +324,7 @@ In this final section, we'll see how to perform automatic sleep staging in YASA.
   >>> hypno_pred = yasa.hypno_str_to_int(hypno_pred)  # Convert "W" to 0, "N1" to 1, etc
   >>> yasa.plot_hypnogram(hypno_pred);  # Plot
 
-.. figure::  /pictures/quickstart/hypno_pred.png
+.. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/hypno_pred.png
   :align: center
 
 Let's calculate the agreement against the ground-truth expert scoring:
