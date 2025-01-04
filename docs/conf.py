@@ -110,13 +110,14 @@ html_show_sourcelink = False
 # -- Intersphinx ------------------------------------------------
 
 intersphinx_mapping = {
-    "numpy": ("http://docs.scipy.org/doc/numpy/", None),
-    "scipy": ("http://docs.scipy.org/doc/scipy/reference/", None),
-    "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
-    "sklearn": ("https://scikit-learn.org/stable/", None),
-    "matplotlib": ("https://matplotlib.org/", None),
-    "mne": ("https://martinos.org/mne/stable/", None),
-    "seaborn": ("https://seaborn.pydata.org/", None),
-    "pyriemann": ("https://pyriemann.readthedocs.io/en/latest/", None),
-    "tensorpac": ("https://etiennecmb.github.io/tensorpac/", None),
+    "matplotlib": ("https://matplotlib.org/stable", None),
+    "mne": ("https://mne.tools/stable", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
+    "pyriemann": ("https://pyriemann.readthedocs.io/en/latest", None),
+    "python": ("https://docs.python.org/3", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy", None),
+    "seaborn": ("https://seaborn.pydata.org", None),
+    "sklearn": ("https://scikit-learn.org/stable", None),
+    "tensorpac": ("https://etiennecmb.github.io/tensorpac", None),
 }
