@@ -56,7 +56,7 @@ test = [
     "ruff"
 ]
 docs = [
-    "sphinx>=8",
+    "sphinx>=8.1",
     "sphinx-design>=0.6",
     "sphinx-copybutton>=0.5",
     "pydata-sphinx-theme>0.16",
