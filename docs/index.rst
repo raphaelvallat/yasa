@@ -1,6 +1,3 @@
-.. -*- mode: rst -*-
-
-|
 
 .. image:: https://badge.fury.io/py/yasa.svg
     :target: https://badge.fury.io/py/yasa
@@ -153,4 +150,14 @@ To cite YASA, please use the `eLife publication <https://elifesciences.org/artic
 
 * Vallat, Raphael, and Matthew P. Walker. "An open-source, high-performance tool for automated sleep staging." Elife 10 (2021). doi: https://doi.org/10.7554/eLife.70092
 
-|
+
+.. Add a hidden ToC including any page that should show up in the navigation bar
+.. toctree::
+  :hidden:
+
+  API <api>
+  Quickstart <quickstart>
+  FAQ <faq>
+  What's new <changelog>
+  Contribute <contributing>
+  Tutorials <tutorials>
