@@ -59,6 +59,7 @@ docs = [
     "sphinx>=8.1",
     "sphinx-design>=0.6",
     "sphinx-copybutton>=0.5",
+    "sphinx-notfound-page>=1",
     "pydata-sphinx-theme>0.16",
     "numpydoc>=1.8",
 ]
