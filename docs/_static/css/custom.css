@@ -1,0 +1,15 @@
+/* -------------------- THEME OVERRIDES -------------------- */
+
+
+/* -------------------- NAV BAR-------------------- */
+
+/* navbar logo needs to be shrunk a bit */
+html .navbar-brand img {
+  height: calc(var(--pst-header-height) / 3);
+  width: auto;
+}
+
+/* navbar logo needs to be inverted for visibility in light theme */
+html[data-theme="light"] .navbar-brand img {
+  filter: invert(1);
+}

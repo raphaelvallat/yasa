@@ -153,7 +153,7 @@ html_theme_options = {
     "navbar_end": ["theme-switcher", "navbar-icon-links"],  # defaults to ['theme-switcher', 'navbar-icon-links']
     "navbar_persistent": ["search-button"],  # defaults to ['search-button-field']
     # Article/content
-    "article_header_start": ["breadcrumbs"],  # defaults to ['breadcrumbs']
+    "article_header_start": [],  # defaults to ['breadcrumbs']
     "article_header_end": [],  # defaults to []
     "article_footer_items": [],  # defaults to []
     "content_footer_items": [],  # defaults to []
@@ -167,12 +167,7 @@ html_theme_options = {
     "secondary_sidebar_items": ["page-toc", "edit-this-page"],  # defaults to ['page-toc', 'edit-this-page', 'sourcelink']
     # Announcement banner
     "show_version_warning_banner": True,  # True | False (default)
-    "announcement": (
-        "<a href='https://raphaelvallat.com/yasa/build/html/changelog.html#v0-7'>v0.7 released!</a>"
-        + "<br>"
-        + "<span style='font-family: Consolas, monospace;'>pip install yasa --upgrade</span>"
-        + " &#127881;"
-    )  # defaults to '', can be string or URL with the string
+    "announcement": "<span style='font-family: Consolas, monospace;'>pip install yasa --upgrade</span> &#127881;"
 }
 
 
