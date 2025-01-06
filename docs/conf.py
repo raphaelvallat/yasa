@@ -97,9 +97,6 @@ html_context = {
 # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/layout.html#references
 
 html_theme_options = {
-    # This overwrites the `pygments_style` set in prior sphinx configuration.
-    # This is overwritten if specified below for light and dark modes separately.
-    "pygments_style": "tango",  # 'tango' (default) | other pygments style
 
     # General configuration
 
@@ -206,6 +203,7 @@ html_theme_options = {
 
 # -- Options for sphinx.ext.intersphinx --------------------------------------
 
+# intersphinx_disabled_reftypes = []  # defaults to ["std:doc"]
 intersphinx_mapping = {
     "antropy": ("https://raphaelvallat.com/antropy/build/html", None),
     "lightgbm": ("https://lightgbm.readthedocs.io/en/latest", None),

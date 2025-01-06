@@ -14,9 +14,9 @@ Before starting new code, we highly recommend opening an issue on `GitHub <https
 
 * Please use standard `pep8 <https://pypi.python.org/pypi/pep8>`_ and `flake8 <http://flake8.pycqa.org/>`_ Python style guidelines. YASA uses `ruff <https://github.com/astral-sh/ruff>`_ for code formatting. Before submitting a PR, please make sure to run the following command in the root folder of YASA:
 
-  .. code-block:: bash
+    .. code-block:: bash
 
-     $ ruff format --line-length=100
+        $ ruff format --line-length=100
 
 * Use `NumPy style <https://numpydoc.readthedocs.io/en/latest/format.html>`_ for docstrings. Follow existing examples for simplest guidance.
 
@@ -26,9 +26,9 @@ Before starting new code, we highly recommend opening an issue on `GitHub <https
 
 * After making changes, **ensure all tests pass**. This can be done by running:
 
-  .. code-block:: bash
+    .. code-block:: bash
 
-     $ pytest
+        $ pytest
 
 Checking and building documentation
 -----------------------------------
@@ -41,10 +41,10 @@ All changes to the codebase must be properly documented. To ensure that document
 
 .. code-block:: bash
 
-  $ pip install --upgrade sphinx sphinx_bootstrap_theme numpydoc
+    $ pip install --upgrade sphinx sphinx_bootstrap_theme numpydoc
 
 and then within the ``yasa/docs`` directory do:
 
 .. code-block:: bash
 
-  $ make html
+    $ make html

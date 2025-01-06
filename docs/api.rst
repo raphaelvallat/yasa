@@ -11,8 +11,8 @@ Automatic sleep staging & events detection
 .. _staging:
 
 .. autosummary::
-   :toctree: generated/
-   :nosignatures:
+    :toctree: generated/
+    :nosignatures:
 
     SleepStaging
     art_detect
@@ -30,8 +30,8 @@ Hypnogram & sleep statistics
 .. _hgram:
 
 .. autosummary::
-   :toctree: generated/
-   :nosignatures:
+    :toctree: generated/
+    :nosignatures:
 
     hypno_upsample_to_data
     hypno_upsample_to_sf
@@ -54,8 +54,8 @@ Spectral analyses
 .. _spectral:
 
 .. autosummary::
-   :toctree: generated/
-   :nosignatures:
+    :toctree: generated/
+    :nosignatures:
 
     bandpower
     bandpower_from_psd
@@ -73,7 +73,7 @@ Heart rate analysis
 .. _others:
 
 .. autosummary::
-   :toctree: generated/
-   :nosignatures:
+    :toctree: generated/
+    :nosignatures:
 
     hrv_stage
