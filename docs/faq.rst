@@ -12,7 +12,7 @@ Loading and visualizing polysomnography data
     :icon: question
     :name: load_edf
   
-  If you have polysomnography data in European Data Format (.edf), you can use the `MNE package <https://mne.tools/stable/index.html>`_ to load and preprocess your data in Python. MNE also supports several other standard formats (e.g. BrainVision, BDF, EEGLab). A simple preprocessing pipeline using MNE is shown below.
+    If you have polysomnography data in European Data Format (.edf), you can use the `MNE package <https://mne.tools/stable/index.html>`_ to load and preprocess your data in Python. MNE also supports several other standard formats (e.g. BrainVision, BDF, EEGLab). A simple preprocessing pipeline using MNE is shown below.
 
     .. code-block:: python
 

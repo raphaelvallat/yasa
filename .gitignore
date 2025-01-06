@@ -69,9 +69,6 @@ instance/
 docs/generated/
 docs/build/
 
-# doc/ is a TEMPORARY ignore during development
-doc/
-
 # PyBuilder
 target/
 
