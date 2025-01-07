@@ -41,7 +41,7 @@ dependencies = [
     "pyriemann>=0.2.7",
     "sleepecg>=0.5.0",
     "setuptools>=70",
-    "lspopt",
+    "lspopt>=1.4",
     "ipywidgets",
     "joblib",
     "lightgbm",
