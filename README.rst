@@ -144,3 +144,12 @@ Citation
 To cite YASA, please use the `eLife publication <https://elifesciences.org/articles/70092>`_:
 
 * Vallat, Raphael, and Matthew P. Walker. "An open-source, high-performance tool for automated sleep staging." Elife 10 (2021). doi: https://doi.org/10.7554/eLife.70092
+
+Related Projects
+~~~~~~~~~~~~~~~~~
+
+Looking for a web-based solution to utilize YASA? Check out **YASA Flaskified**: a Flask-based application designed to process and analyze EEG data via an intuitive web interface. 
+
+**YASA Flaskified** also supports straightforward deployment on your own physical or virtual server using a preconfigured deployment script. 
+
+Repository: `YASA Flaskified <https://github.com/bartromb/YASAFlaskified>`_
