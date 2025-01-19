@@ -100,7 +100,7 @@ maximum_signature_line_length = None
 # When backslash stripping is enabled then every occurrence of \\ in a domain directive
 # will be changed to \, even within string literals.
 # Options: True | False (default)
-strip_signature_backslash = False  
+strip_signature_backslash = False
 
 # Create table of contents entries for domain objects (e.g. functions, classes, attributes, etc.).
 # Options: True (default) | False
@@ -269,7 +269,7 @@ html_theme_options = {
     "navbar_center": ["navbar-nav"],
 
     # Defaults to ['theme-switcher', 'navbar-icon-links']
-    "navbar_end": ["theme-switcher", "navbar-icon-links"], 
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
 
     # Defaults to ['search-button-field']
     "navbar_persistent": ["search-button"],
@@ -315,7 +315,7 @@ html_theme_options = {
     "show_version_warning_banner": True,
 
     # Defaults to ""
-    "announcement": "&#128680; This is documentation for the <b>unstable development version</b> of YASA. <a href='https://raphaelvallat.com/yasa'>Switch to stable version</a> &#128680;",
+    # "announcement": "&#128680; This is documentation for the <b>unstable development version</b> of YASA. <a href='https://raphaelvallat.com/yasa'>Switch to stable version</a> &#128680;",
     # "announcement": "<span style='font-family: Consolas, monospace;'>pip install yasa --upgrade</span> &#127881;",
 }
 
@@ -369,7 +369,7 @@ html_permalinks_icon = "#"
 
 # A dictionary defining custom sidebar templates, mapping document names to template names.
 # The keys can contain glob-style patterns,
-# in which case all matching documents will get the specified sidebars. 
+# in which case all matching documents will get the specified sidebars.
 # The bundled first-party sidebar templates that can be rendered are:
 #   * localtoc.html – a fine-grained table of contents of the current document
 #   * globaltoc.html – a coarse-grained table of contents for the whole documentation set, collapsed

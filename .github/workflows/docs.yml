@@ -9,11 +9,10 @@ name: Build and Deploy Sphinx Docs to GitHub Pages
 on:
   push:
     branches:
-      - pydata-theme
+      - master
   release:
     types:
       - published
-  pull_request:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:

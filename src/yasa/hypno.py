@@ -224,9 +224,9 @@ class Hypnogram:
     """
 
     def __init__(self, values, n_stages=5, *, freq="30s", start=None, scorer=None, proba=None):
-        assert isinstance(
-            values, (list, np.ndarray, pd.Series)
-        ), "`values` must be a list, numpy.array or pandas.Series"
+        assert isinstance(values, (list, np.ndarray, pd.Series)), (
+            "`values` must be a list, numpy.array or pandas.Series"
+        )
         assert all(isinstance(val, str) for val in values), (
             "Since v0.7, YASA expects strings to represent sleep stages, e.g. ['WAKE', 'N1', ...]. "
             "Please refer to the documentation for more details."
@@ -234,15 +234,15 @@ class Hypnogram:
         assert isinstance(n_stages, int), "`n_stages` must be an integer between 2 and 5."
         assert n_stages in [2, 3, 4, 5], "`n_stages` must be an integer between 2 and 5."
         assert isinstance(freq, str), "`freq` must be a pandas frequency string."
-        assert isinstance(
-            start, (type(None), str, pd.Timestamp)
-        ), "`start` must be either None, a string or a pandas.Timestamp."
-        assert isinstance(
-            scorer, (type(None), str, int)
-        ), "`scorer` must be either None, a string or an integer."
-        assert isinstance(
-            proba, (pd.DataFrame, type(None))
-        ), "`proba` must be either None or a pandas.DataFrame"
+        assert isinstance(start, (type(None), str, pd.Timestamp)), (
+            "`start` must be either None, a string or a pandas.Timestamp."
+        )
+        assert isinstance(scorer, (type(None), str, int)), (
+            "`scorer` must be either None, a string or an integer."
+        )
+        assert isinstance(proba, (pd.DataFrame, type(None))), (
+            "`proba` must be either None or a pandas.DataFrame"
+        )
         if n_stages == 2:
             accepted = ["W", "WAKE", "S", "SLEEP", "ART", "UNS"]
             mapping = {"WAKE": 0, "SLEEP": 1, "ART": -1, "UNS": -2}
@@ -1797,18 +1797,18 @@ def simulate_hypnogram(
     assert isinstance(tib, (int, float)) and tib > 0, "`tib` must be a number > 0"
     if trans_probas is not None:
         assert isinstance(trans_probas, pd.DataFrame), "`trans_probas` must be a pandas DataFrame"
-        assert np.all(
-            np.less_equal(trans_probas.shape, kwargs["n_stages"])
-        ), "user-specified `trans_probas` must not include more stages than `n_stages`"
+        assert np.all(np.less_equal(trans_probas.shape, kwargs["n_stages"])), (
+            "user-specified `trans_probas` must not include more stages than `n_stages`"
+        )
     if init_probas is not None:
         assert isinstance(init_probas, pd.Series), "`init_probas` must be a pandas Series"
     if seed is not None:
         assert isinstance(seed, int) and seed >= 0, "`seed` must be an integer >= 0"
     if trans_probas is None:
         # Check this here, rather than letting hyp.upsample catch it, to be clear about reason
-        assert pd.Timedelta(kwargs["freq"]) <= pd.Timedelta(
-            "30s"
-        ), "`freq` must be <= 30s when using default `trans_probas`"
+        assert pd.Timedelta(kwargs["freq"]) <= pd.Timedelta("30s"), (
+            "`freq` must be <= 30s when using default `trans_probas`"
+        )
 
     # Initialize random number generator
     rng = np.random.default_rng(seed)
@@ -1854,9 +1854,9 @@ def simulate_hypnogram(
         assert init_probas is not None, "`trans_probas` must include 'WAKE' in the index"
 
     stage_order = init_probas.index.tolist()
-    assert (
-        stage_order == trans_probas.index.tolist() == trans_probas.columns.tolist()
-    ), "`init_probas` and `trans_probas` must have all matching indices"
+    assert stage_order == trans_probas.index.tolist() == trans_probas.columns.tolist(), (
+        "`init_probas` and `trans_probas` must have all matching indices"
+    )
 
     # Extract probabilities as arrays
     trans_arr = trans_probas.to_numpy()
