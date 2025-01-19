@@ -87,7 +87,7 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
         assert include.size >= 1, "`include` must have at least one element."
         assert hypno.dtype.kind == include.dtype.kind, "hypno and include must have same dtype"
         assert np.isin(hypno, include).any(), (
-            "None of the stages specified " "in `include` are present in " "hypno."
+            "None of the stages specified in `include` are present in hypno."
         )
 
     # 4) Check data amplitude
@@ -1828,9 +1828,9 @@ def sw_detect(
         if coupling:
             # Get phase and amplitude for each centered epoch
             time_before = time_after = coupling_params["time"]
-            assert (
-                float(sf * time_before).is_integer()
-            ), "Invalid time parameter for coupling. Must be a whole number of samples."
+            assert float(sf * time_before).is_integer(), (
+                "Invalid time parameter for coupling. Must be a whole number of samples."
+            )
             bef = int(sf * time_before)
             aft = int(sf * time_after)
             # Center of each epoch is defined as the negative peak of the SW
@@ -2476,7 +2476,7 @@ def rem_detect(
 
     # If all channels are bad
     if any(bad_chan):
-        logger.warning("At least one channel has bad amplitude. " "Returning None.")
+        logger.warning("At least one channel has bad amplitude. Returning None.")
         return None
 
     # Bandpass filter
@@ -3119,8 +3119,7 @@ def art_detect(
                 # Only shows if user actually pass an hypnogram
                 perc_reject = 100 * (art.sum() / art.size)
                 text = (
-                    f"Stage {stage}: {art.sum()} / {art.size} "
-                    f"epochs rejected ({perc_reject:.2f}%)"
+                    f"Stage {stage}: {art.sum()} / {art.size} epochs rejected ({perc_reject:.2f}%)"
                 )
                 logger.info(text)
             # Append to global vector
@@ -3158,8 +3157,7 @@ def art_detect(
                 # Only shows if user actually pass an hypnogram
                 perc_reject = 100 * (art.sum() / art.size)
                 text = (
-                    f"Stage {stage}: {art.sum()} / {art.size} "
-                    f"epochs rejected ({perc_reject:.2f}%)"
+                    f"Stage {stage}: {art.sum()} / {art.size} epochs rejected ({perc_reject:.2f}%)"
                 )
                 logger.info(text)
             # Append to global vector

@@ -374,7 +374,7 @@ def sliding_window(data, sf, window, step=None, axis=-1):
     assert axis <= data.ndim, "Axis value out of range."
     assert isinstance(sf, (int, float)), "sf must be int or float"
     assert isinstance(window, (int, float)), "window must be int or float"
-    assert isinstance(step, (int, float, type(None))), "step must be int, " "float or None."
+    assert isinstance(step, (int, float, type(None))), "step must be int, float or None."
     if isinstance(sf, float):
         assert sf.is_integer(), "sf must be a whole number."
         sf = int(sf)
@@ -393,7 +393,7 @@ def sliding_window(data, sf, window, step=None, axis=-1):
         step = int(step)
 
     assert step >= 1, "Stepsize may not be zero or negative."
-    assert window < data.shape[axis], "Sliding window size may not exceed " "size of selected axis"
+    assert window < data.shape[axis], "Sliding window size may not exceed size of selected axis"
 
     # Define output shape
     shape = list(data.shape)

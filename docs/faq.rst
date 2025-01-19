@@ -11,7 +11,7 @@ Loading and visualizing polysomnography data
     :animate: fade-in-slide-down
     :icon: question
     :name: load_edf
-  
+
     If you have polysomnography data in European Data Format (.edf), you can use the `MNE package <https://mne.tools/stable/index.html>`_ to load and preprocess your data in Python. MNE also supports several other standard formats (e.g. BrainVision, BDF, EEGLab). A simple preprocessing pipeline using MNE is shown below.
 
     .. code-block:: python
@@ -122,8 +122,6 @@ Sleep staging
 
     YASA does not come with a graphical user interface (GUI) and therefore editing the predicted hypnogram is not currently possible. The simplest way is therefore to export the hypnogram in CSV format and then open the file — together with the corresponding polysomnography data — in an external GUI, as shown below.
 
-    ----------
-
     **EDFBrowser**
 
     `EDFBrowser <https://www.teuniz.net/edfbrowser/>`_ is a free software for visualizing polysomnography data in European Data Format (.edf), which also provides a module for visualizing and editing hypnograms.
@@ -152,8 +150,6 @@ Sleep staging
     .. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/edfbrowser_with_hypnogram.png
         :align: center
 
-    ----------
-
     **SpiSOP**
 
     `SpiSOP <https://www.spisop.org/>`_ is an open-source Matlab toolbox for the analysis and visualization of polysomnography sleep data. It comes with a sleep scoring GUI.
@@ -164,8 +160,6 @@ Sleep staging
         hypno_int = pd.Series(hypno).map({"W": 0, "N1": 1, "N2": 2, "N3": 3, "R": 5}).to_numpy()
         hypno_export = pd.DataFrame({"label": hypno_int, "artefact": 0})
         hypno_export.to_csv("my_hypno_SpiSOP.txt", sep="\t", header=False, index=False)
-
-    ----------
 
     **Visbrain**
 
