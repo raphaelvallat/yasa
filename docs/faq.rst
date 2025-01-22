@@ -326,32 +326,21 @@ Whenever a new release is out there, you can upgrade your version by typing the 
     pip install --upgrade yasa
     
 
-.. ----------------------------- RELATED PROJECTS -----------------------------
+.. ----------------------------- DEVELOPMENT -----------------------------
 .. raw:: html
 
     <div class="panel panel-default">
       <div class="panel-heading">
         <h5 class="panel-title">
-          <a data-toggle="collapse" href="#related_projects">Are there any related projects?</a>
+          <a data-toggle="collapse" href="#development">Development</a>
         </h5>
       </div>
-      <div id="related_projects" class="panel-collapse collapse">
+      <div id="development" class="panel-collapse collapse">
         <div class="panel-body">
 
 **YASA Flaskified**
 
-YASA Flaskified is a Flask-based web application that provides an intuitive interface for analyzing EEG data using the YASA library. It allows users to perform sleep analysis directly from their browser, simplifying workflows for those unfamiliar with Python or command-line tools.
-
-**Features of YASA Flaskified:**
-
-- **Web-based Interface:** YASA Flaskified transforms YASA's functionality into an accessible web application, enabling sleep analysis without direct Python programming.
-- **Deployment Options:** Users can deploy YASA Flaskified on their own physical or virtual server using a preconfigured deployment script. This allows for private, secure, and scalable use of the application.
-- **Integration with YASA:** The application is built around the YASA library, ensuring full compatibility and access to its core features, including sleep staging, event detection, and more.
-
-**Where to find it?**
-
-YASA Flaskified is available on GitHub: 
-`YASA Flaskified <https://github.com/bartromb/YASAFlaskified>`_
+YASA Flaskified is a web-based application for analyzing EEG data using YASA. It requires deployment on a physical or virtual server, which can be done using the scripts provided in its repository. For more details, visit the **[YASA Flaskified GitHub repository](https://github.com/bartromb/YASAFlaskified)**.
 
         </div>
       </div>

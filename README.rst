@@ -132,11 +132,14 @@ Below some plots demonstrating the functionalities of YASA. To reproduce these, 
 Development
 ~~~~~~~~~~~
 
-YASA was created and is maintained by `Raphael Vallat <https://raphaelvallat.com>`_, a former postdoctoral researcher in `Matthew Walker's lab <https://www.humansleepscience.com/>`_ at UC Berkeley. Contributions are more than welcome so feel free to contact me, open an issue or submit a pull request!
+* YASA was created and is maintained by `Raphael Vallat <https://raphaelvallat.com>`_, a former postdoctoral researcher in `Matthew Walker's lab <https://www.humansleepscience.com/>`_ at UC Berkeley. Contributions are more than welcome so feel free to contact me, open an issue or submit a pull request!
 
-To see the code or report a bug, please visit the `GitHub repository <https://github.com/raphaelvallat/yasa>`_.
+  To see the code or report a bug, please visit the `GitHub repository <https://github.com/raphaelvallat/yasa>`_.
 
-Note that this program is provided with NO WARRANTY OF ANY KIND.
+  Note that this program is provided with NO WARRANTY OF ANY KIND.
+
+* YASA Flaskified is a web-based tool built on YASA that allows EEG analysis through a browser interface. It requires deployment on a server, which can be done using the preconfigured scripts available in the repository. For more details, visit the **[YASA Flaskified GitHub repository](https://github.com/bartromb/YASAFlaskified)**.
+
 
 Citation
 ~~~~~~~~
@@ -145,11 +148,4 @@ To cite YASA, please use the `eLife publication <https://elifesciences.org/artic
 
 * Vallat, Raphael, and Matthew P. Walker. "An open-source, high-performance tool for automated sleep staging." Elife 10 (2021). doi: https://doi.org/10.7554/eLife.70092
 
-Related Projects
-~~~~~~~~~~~~~~~~~
 
-Looking for a web-based solution to utilize YASA? Check out **YASA Flaskified**: a Flask-based application designed to process and analyze EEG data via an intuitive web interface. 
-
-**YASA Flaskified** also supports straightforward deployment on your own physical or virtual server using a preconfigured deployment script. 
-
-Repository: `YASA Flaskified <https://github.com/bartromb/YASAFlaskified>`_
