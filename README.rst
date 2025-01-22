@@ -138,7 +138,7 @@ Development
 
   Note that this program is provided with NO WARRANTY OF ANY KIND.
 
-* YASA Flaskified is a web-based tool built on YASA that allows EEG analysis through a browser interface. It requires deployment on a server, which can be done using the preconfigured scripts available in the repository. For more details, visit the **[YASA Flaskified GitHub repository](https://github.com/bartromb/YASAFlaskified)**.
+* YASA Flaskified is a web-based tool built on YASA that allows EEG analysis through a browser interface. It requires deployment on a server, which can be done using the preconfigured scripts available in the repository. For more details, visit the `YASA Flaskified GitHub repository <https://github.com/bartromb/YASAFlaskified>`_.
 
 
 Citation
