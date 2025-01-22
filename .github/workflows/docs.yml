@@ -1,0 +1,38 @@
+# Workflow for building sphinx documentation remotely
+# and deploying the static HTML to a GitHub Pages site.
+# Note this approach does not require the static HTML
+# files to be stored/pushed/committed to an alternate
+# pages branch or anything like that. It uses GitHub Action artifacts.
+# https://github.com/sphinx-notes/pages
+name: Build and Deploy Sphinx Docs to GitHub Pages
+
+on:
+  push:
+    branches:
+      - pydata-theme
+  release:
+    types:
+      - published
+  pull_request:
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: sphinx-notes/pages@v3

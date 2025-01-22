@@ -1,27 +1,39 @@
-.. -*- mode: rst -*-
-
-|
 
 .. image:: https://badge.fury.io/py/yasa.svg
     :target: https://badge.fury.io/py/yasa
+    :alt: PyPI - Version
 
 .. image:: https://img.shields.io/github/license/raphaelvallat/yasa.svg
     :target: https://github.com/raphaelvallat/yasa/blob/master/LICENSE
+    :alt: License
 
 .. image:: https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/raphaelvallat/yasa
+    :alt: Codecov
 
 .. image:: https://pepy.tech/badge/yasa
     :target: https://pepy.tech/badge/yasa
+    :alt: PyPI - Downloads
 
 .. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
-  :target: https://github.com/astral-sh/ruff
-  :alt: Ruff
+    :target: https://github.com/astral-sh/ruff
+    :alt: Ruff
 
 ----------------
 
-.. figure::  /pictures/yasa_logo.png
-  :align:   center
+.. Add a hidden ToC including any page that should show up in the navigation bar
+.. toctree::
+    :hidden:
+
+    API <api>
+    Quickstart <quickstart>
+    FAQ <faq>
+    What's new <changelog>
+    Contribute <contributing>
+
+
+.. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/yasa_logo.png
+    :align: center
 
 **YASA** (*Yet Another Spindle Algorithm*) is a command-line sleep analysis toolbox in Python. The main functions of YASA are:
 
@@ -31,7 +43,7 @@
 * Spectral analyses: bandpower, phase-amplitude coupling, 1/f slope, and more!
 * Hypnogram analysis: sleep statistics and stage transitions.
 
-For more details, try the `quickstart <https://raphaelvallat.com/yasa/build/html/quickstart.html>`_ or read the `FAQ <https://raphaelvallat.com/yasa/build/html/faq.html>`_.
+For more details, try the :ref:`quickstart` or read the :ref:`faq`.
 
 **********
 
@@ -42,24 +54,22 @@ To install YASA, simply open a terminal or Anaconda command prompt and enter:
 
 .. code-block:: shell
 
-  pip install --upgrade yasa
+    pip install --upgrade yasa
 
 Alternatively, YASA can be installed with conda:
 
 .. code-block:: shell
 
-  conda config --add channels conda-forge
-  conda config --set channel_priority strict
-  conda install yasa
+    conda install conda-forge::yasa
 
 To build and install from source, clone this repository or download the source archive and decompress the files
 
 .. code-block:: shell
 
-  cd yasa
-  pip install ".[test]"      # install the package
-  pip install -e ".[test]"   # or editable install
-  pytest                     # test the package
+    cd yasa
+    pip install .[test]     # install the package
+    pip install -e .[test]  # or editable install
+    pytest                  # test the package
 
 **What are the prerequisites for using YASA?**
 
@@ -75,22 +85,22 @@ If you have sleep EEG data in standard formats (e.g. EDF or BrainVision), you ca
 
 .. code-block:: python
 
-  import mne
-  # Load the EDF file
-  raw = mne.io.read_raw_edf('MYEDFFILE.edf', preload=True)
-  # Downsample the data to 100 Hz
-  raw.resample(100)
-  # Apply a bandpass filter from 0.1 to 40 Hz
-  raw.filter(0.1, 40)
-  # Select a subset of EEG channels
-  raw.pick(['C4-A1', 'C3-A2'])
+    import mne
+    # Load the EDF file
+    raw = mne.io.read_raw_edf("MYEDFFILE.edf", preload=True)
+    # Downsample the data to 100 Hz
+    raw.resample(100)
+    # Apply a bandpass filter from 0.1 to 40 Hz
+    raw.filter(0.1, 40)
+    # Select a subset of EEG channels
+    raw.pick(["C4-A1", "C3-A2"])
 
 **********
 
 How do I get started with YASA?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you want to dive right in, you can simply go to the main documentation (:ref:`api_ref`) and try to apply YASA's functions on your own EEG data.
+If you want to dive right in, you can simply go to the main documentation (:ref:`api_reference`) and try to apply YASA's functions on your own EEG data.
 However, for most users, we strongly recommend that you first try running the examples Jupyter notebooks to get a sense of how YASA works and what it can do!
 The notebooks also come with example datasets so they should work right out of the box as long as you've installed YASA first.
 The notebooks and datasets can be found on `GitHub <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_ (make sure that you download the whole *notebooks/* folder). A short description of all notebooks is provided below:
@@ -128,10 +138,10 @@ Gallery
 
 Below some plots demonstrating the functionalities of YASA. To reproduce these, check out the `tutorial (Jupyter notebooks) <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_.
 
-.. figure::  /pictures/gallery.png
-  :align:   center
+.. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/gallery.png
+    :align: center
 
-  *The top plot show an overlay of the detected spindles on real EEG data. The middle left panel shows a time-frequency representation of the whole-night recording (spectrogram), plotted with the hypnogram (sleep stages) on top. The middle right panel shows the sleep stage probability transition matrix, calculated across the entire night. The bottom row shows, from left to right: a topographic plot, the average template of all detected slow-waves across the entire night stratified by channels, and a phase-amplitude coupling comodulogram.*
+    *The top plot show an overlay of the detected spindles on real EEG data. The middle left panel shows a time-frequency representation of the whole-night recording (spectrogram), plotted with the hypnogram (sleep stages) on top. The middle right panel shows the sleep stage probability transition matrix, calculated across the entire night. The bottom row shows, from left to right: a topographic plot, the average template of all detected slow-waves across the entire night stratified by channels, and a phase-amplitude coupling comodulogram.*
 
 **********
 
@@ -152,5 +162,3 @@ Citation
 To cite YASA, please use the `eLife publication <https://elifesciences.org/articles/70092>`_:
 
 * Vallat, Raphael, and Matthew P. Walker. "An open-source, high-performance tool for automated sleep staging." Elife 10 (2021). doi: https://doi.org/10.7554/eLife.70092
-
-|
