@@ -31,7 +31,7 @@
 * Spectral analyses: bandpower, phase-amplitude coupling, 1/f slope, and more!
 * Hypnogram analysis: sleep statistics and stage transitions.
 
-For more details, try the `quickstart <https://raphaelvallat.com/yasa/build/html/quickstart.html>`_ or read the `FAQ <https://raphaelvallat.com/yasa/build/html/faq.html>`_.
+For more details, try the `quickstart <https://raphaelvallat.com/yasa/quickstart.html>`_ or read the `FAQ <https://raphaelvallat.com/yasa/faq.html>`_.
 
 ----------------
 
@@ -88,7 +88,7 @@ If you have sleep EEG data in standard formats (e.g. EDF or BrainVision), you ca
 How do I get started with YASA?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you want to dive right in, you can simply go to the main `documentation <https://raphaelvallat.com/yasa/build/html/quickstart.html>`_ and try to apply YASA's functions on your own EEG data.
+If you want to dive right in, you can simply go to the main `documentation <https://raphaelvallat.com/yasa/quickstart.html>`_ and try to apply YASA's functions on your own EEG data.
 However, for most users, we strongly recommend that you first try running the examples Jupyter notebooks to get a sense of how YASA works and what it can do!
 The notebooks also come with example datasets so they should work right out of the box as long as you've installed YASA first.
 The notebooks and datasets can be found on `GitHub <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_ (make sure that you download the whole *notebooks/* folder). A short description of all notebooks is provided below:

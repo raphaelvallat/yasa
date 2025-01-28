@@ -246,7 +246,7 @@ def compute_features_stage(
 
     # Detect spindles in N2 and N3
     # Thresholds have to be tuned with visual scoring of a subset of data
-    # https://raphaelvallat.com/yasa/build/html/generated/yasa.spindles_detect.html
+    # https://raphaelvallat.com/yasa/generated/yasa.spindles_detect.html
     sp = yasa.spindles_detect(raw_eeg, hypno=hypno, **spindles_params)
 
     df_sp = sp.summary(grp_chan=True, grp_stage=True).reset_index()
