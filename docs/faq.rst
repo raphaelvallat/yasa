@@ -86,7 +86,7 @@ Event detection
     :icon: question
     :name: edit_detection
 
-    YASA does not currently support visual editing of the detected events. However, you can import the events as annotations in `EDFBrowser <https://www.teuniz.net/edfbrowser/>`_ and edit the events from there. If you simply want to visualize the detected events (no editing), you can also use the `plot_detection <https://raphaelvallat.com/yasa/generated/yasa.SpindlesResults.html#yasa.SpindlesResults.plot_detection>`_ method.
+    YASA does not currently support visual editing of the detected events. However, you can import the events as annotations in `EDFBrowser <https://www.teuniz.net/edfbrowser/>`_ and edit the events from there. If you simply want to visualize the detected events (no editing), you can also use the `plot_detection <https://raphaelvallat.github.io/yasa/generated/yasa.SpindlesResults.html#yasa.SpindlesResults.plot_detection>`_ method.
 
 
 .. ############################################################################
