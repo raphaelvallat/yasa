@@ -669,3 +669,33 @@ numpydoc_class_members_toctree = True
 # If it’s False, the Attributes section will be formatted as the Methods section using an autosummary table.
 # Options: True (default) | False
 numpydoc_attributes_as_param_list = True
+
+# -- External extensions -----------------------------------------------------
+# -- -> Options for notfound.extension -------------------------------------------------
+# https://sphinx-notfound-page.readthedocs.io/en/latest/configuration.html
+
+# Context passed to the template defined by `notfound_template` or auto-generated.
+notfound_context = {
+    "title": "Page not found",
+    "body": """
+        <h1>This page may have moved.</h1>
+        <p>
+            The YASA documentation site has recently been upgraded!
+            Some URLs have changed.
+        </p>
+        <p>
+            Browse the <bold>Navigation menu</bold> or use the
+            <bold>Search button</bold> to find the page you were looking for.
+        </p>
+        <p>
+            Please update the URLs of any bookmarks or autofills in your
+            browser that point to the YASA documentation site.
+        </p>
+    """,
+}
+
+# Prefix added to all the URLs generated in the 404 page.
+# Defaults to READTHEDOCS env variable, typically "/en/latest/"
+# Note special case when using default GitHub pages URL: "/<repo>/"
+# https://sphinx-notfound-page.readthedocs.io/en/latest/faq.html#does-this-extension-work-with-github-pages
+notfound_urls_prefix = "/yasa/"
