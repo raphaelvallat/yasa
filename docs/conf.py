@@ -322,6 +322,11 @@ html_theme_options = {
 # html_title = f"{project} v{version}"  # defaults to "<project> v<revision> documentation"
 # html_short_title = f"{project} v{release}"  # used in the navbar if not using pydata logo
 
+# The base URL which points to the root of the HTML documentation.
+# It is used to indicate the location of document using the Canonical Link Relation.
+# Defaults to ""
+html_baseurl = "https://raphaelvallat.com/yasa"
+
 # A dictionary of values to pass into the template engine's context for all pages.
 # Defaults to {}
 html_context = {
