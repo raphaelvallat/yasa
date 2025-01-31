@@ -71,6 +71,7 @@ extensions = [
     "numpydoc",                 # Generates numPy style docstrings (Needs to be loaded *after* autodoc)
     "sphinx_copybutton",        # Adds copy-to-clipboard button in code blocks
     "sphinx_design",            # Adds directives for badges, dropdowns, tabs, etc
+    "sphinx_reredirects",       # Generates redirects for moved pages
 
 ]
 
@@ -321,6 +322,11 @@ html_theme_options = {
 
 # html_title = f"{project} v{version}"  # defaults to "<project> v<revision> documentation"
 # html_short_title = f"{project} v{release}"  # used in the navbar if not using pydata logo
+
+# The base URL which points to the root of the HTML documentation.
+# It is used to indicate the location of document using the Canonical Link Relation.
+# Defaults to ""
+html_baseurl = "https://raphaelvallat.com/yasa"
 
 # A dictionary of values to pass into the template engine's context for all pages.
 # Defaults to {}
@@ -669,3 +675,46 @@ numpydoc_class_members_toctree = True
 # If it’s False, the Attributes section will be formatted as the Methods section using an autosummary table.
 # Options: True (default) | False
 numpydoc_attributes_as_param_list = True
+
+# -- External extensions -----------------------------------------------------
+# -- -> Options for notfound.extension -------------------------------------------------
+# https://sphinx-notfound-page.readthedocs.io/en/latest/configuration.html
+
+# Context passed to the template defined by `notfound_template` or auto-generated.
+notfound_context = {
+    "title": "Page not found",
+    "body": """
+        <h1>This page may have moved.</h1>
+        <p>The YASA documentation site has recently been upgraded! Some URLs have changed.</p>
+        <p>Navigate the menu or search to find the page you were looking for.</p>
+        <p>Please update any bookmarks or autofills that point to the YASA documentation site.</p>
+    """,
+}
+
+# Prefix added to all the URLs generated in the 404 page.
+# Defaults to READTHEDOCS env variable, typically "/en/latest/"
+# Note special case when using default GitHub pages URL: "/<repo>/"
+# https://sphinx-notfound-page.readthedocs.io/en/latest/faq.html#does-this-extension-work-with-github-pages
+notfound_urls_prefix = "/yasa/"
+
+# -- External extensions -----------------------------------------------------
+# -- -> Options for sphinx_reredirects -------------------------------------------------
+# https://documatt.com/sphinx-reredirects/usage.html
+# Defaults to {}
+redirects = {}
+
+# TEMPORARY: This can be removed after people stop using old links.
+# We need to generate a list of redirects for the old documentation
+# that was hosted under relative paths behind buid/html.
+# Create a sphinx extension that will find all docs and generate a
+# redirects dictionary that maps build/html/docpath to just docpath.
+def setup(app):
+    app.connect("env-updated", generate_redirects)
+
+def generate_redirects(app, env):
+    redirects = app.config.redirects or {}
+    for docpath in env.found_docs:
+        old_path = f"build/html/{docpath}"
+        new_path = "../" * old_path.count("/") + f"{docpath}.html"
+        redirects[old_path] = new_path
+    app.config.redirects = redirects

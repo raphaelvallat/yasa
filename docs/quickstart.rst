@@ -307,14 +307,14 @@ The exact same steps can be applied with the :py:func:`~yasa.sw_detect` function
 .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/avg_sw.png
   :align: center
 
-For more details on the output of the slow-waves detection, be sure to read the `documentation <https://raphaelvallat.com/yasa/build/html/generated/yasa.sw_detect.html>`_ and try the `Jupyter notebooks <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_.
+For more details on the output of the slow-waves detection, be sure to read the `documentation <https://raphaelvallat.github.io/yasa/generated/yasa.sw_detect.html>`_ and try the `Jupyter notebooks <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_.
 
 ********
 
 Automatic sleep staging
 -----------------------
 
-In this final section, we'll see how to perform automatic sleep staging in YASA. As shown below, this takes no more than a few lines of code! Here, we'll use a single EEG channel to predict a full-night hypnogram. For more details on the algorithm, check out the `eLife publication <https://elifesciences.org/articles/70092>`_ or the `documentation <https://raphaelvallat.com/yasa/build/html/generated/yasa.SleepStaging.html#yasa.SleepStaging>`_ of the function.
+In this final section, we'll see how to perform automatic sleep staging in YASA. As shown below, this takes no more than a few lines of code! Here, we'll use a single EEG channel to predict a full-night hypnogram. For more details on the algorithm, check out the `eLife publication <https://elifesciences.org/articles/70092>`_ or the `documentation <https://raphaelvallat.github.io/yasa/generated/yasa.SleepStaging.html#yasa.SleepStaging>`_ of the function.
 
 .. code-block:: python
 
