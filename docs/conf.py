@@ -71,6 +71,7 @@ extensions = [
     "numpydoc",                 # Generates numPy style docstrings (Needs to be loaded *after* autodoc)
     "sphinx_copybutton",        # Adds copy-to-clipboard button in code blocks
     "sphinx_design",            # Adds directives for badges, dropdowns, tabs, etc
+    "sphinx_reredirects",       # Generates redirects for moved pages
 
 ]
 
@@ -684,18 +685,9 @@ notfound_context = {
     "title": "Page not found",
     "body": """
         <h1>This page may have moved.</h1>
-        <p>
-            The YASA documentation site has recently been upgraded!
-            Some URLs have changed.
-        </p>
-        <p>
-            Browse the <bold>Navigation menu</bold> or use the
-            <bold>Search button</bold> to find the page you were looking for.
-        </p>
-        <p>
-            Please update the URLs of any bookmarks or autofills in your
-            browser that point to the YASA documentation site.
-        </p>
+        <p>The YASA documentation site has recently been upgraded! Some URLs have changed.</p>
+        <p>Navigate the menu or search to find the page you were looking for.</p>
+        <p>Please update any bookmarks or autofills that point to the YASA documentation site.</p>
     """,
 }
 
@@ -704,3 +696,25 @@ notfound_context = {
 # Note special case when using default GitHub pages URL: "/<repo>/"
 # https://sphinx-notfound-page.readthedocs.io/en/latest/faq.html#does-this-extension-work-with-github-pages
 notfound_urls_prefix = "/yasa/"
+
+# -- External extensions -----------------------------------------------------
+# -- -> Options for sphinx_reredirects -------------------------------------------------
+# https://documatt.com/sphinx-reredirects/usage.html
+# Defaults to {}
+redirects = {}
+
+# TEMPORARY: This can be removed after people stop using old links.
+# We need to generate a list of redirects for the old documentation
+# that was hosted under relative paths behind buid/html.
+# Create a sphinx extension that will find all docs and generate a
+# redirects dictionary that maps build/html/docpath to just docpath.
+def setup(app):
+    app.connect("env-updated", generate_redirects)
+
+def generate_redirects(app, env):
+    redirects = app.config.redirects or {}
+    for docpath in env.found_docs:
+        old_path = f"build/html/{docpath}"
+        new_path = "../" * old_path.count("/") + f"{docpath}.html"
+        redirects[old_path] = new_path
+    app.config.redirects = redirects
