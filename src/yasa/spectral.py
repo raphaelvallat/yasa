@@ -46,9 +46,10 @@ def bandpower(
     Parameters
     ----------
     data : np.array_like or :py:class:`mne.io.BaseRaw`
-        1D or 2D EEG data. Can also be a :py:class:`mne.io.BaseRaw`, in which case ``data``,
-        ``sf``, and ``ch_names`` will be automatically extracted, and ``data`` will also be
-        converted from Volts (MNE default) to micro-Volts (YASA).
+        1D or 2D EEG data. If ``data`` is array_like, unit must be uV.
+        If ``data`` is a :py:class:`~mne.io.BaseRaw` instance, ``data``, ``sf``, and
+        ``ch_names`` will be automatically extracted, and ``data`` will be automatically
+        converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
         The sampling frequency of data AND the hypnogram. Can be omitted if ``data`` is a
         :py:class:`mne.io.BaseRaw`.
@@ -399,10 +400,10 @@ def irasa(
     Parameters
     ----------
     data : :py:class:`numpy.ndarray` or :py:class:`mne.io.BaseRaw`
-        1D or 2D EEG data. Can also be a :py:class:`mne.io.BaseRaw`, in which
-        case ``data``, ``sf``, and ``ch_names`` will be automatically
-        extracted, and ``data`` will also be converted from Volts (MNE default)
-        to micro-Volts (YASA).
+        1D or 2D EEG data. If ``data`` is array_like, unit must be uV.
+        If ``data`` is a :py:class:`~mne.io.BaseRaw` instance, ``data``, ``sf``, and
+        ``ch_names`` will be automatically extracted, and ``data`` will be automatically
+        converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
         The sampling frequency of data AND the hypnogram.
         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.

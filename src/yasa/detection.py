@@ -596,22 +596,20 @@ def spindles_detect(
 
     Parameters
     ----------
-    data : array_like
-        Single or multi-channel data. Unit must be uV and shape (n_samples) or
-        (n_chan, n_samples). Can also be a :py:class:`mne.io.BaseRaw`,
-        in which case ``data``, ``sf``, and ``ch_names`` will be automatically
-        extracted, and ``data`` will also be automatically converted from
-        Volts (MNE) to micro-Volts (YASA).
+    data : array_like or :py:class:`mne.io.BaseRaw`
+        Single or multi-channel data. If ``data`` is array_like, unit must be uV and of
+        shape (n_samples) or (n_chan, n_samples). If ``data`` is a :py:class:`~mne.io.BaseRaw`
+        instance, ``data``, ``sf``, and ``ch_names`` will be automatically extracted, and
+        ``data`` will be automatically converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
         Sampling frequency of the data in Hz.
-        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+        Can be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
 
         .. tip:: If the detection is taking too long, make sure to downsample
             your data to 100 Hz (or 128 Hz). For more details, please refer to
             :py:func:`mne.filter.resample`.
     ch_names : list of str
-        Channel names. Can be omitted if ``data`` is a
-        :py:class:`mne.io.BaseRaw`.
+        Channel names. Can be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
     hypno : array_like
         Sleep stage (hypnogram). If the hypnogram is loaded, the
         detection will only be applied to the value defined in
@@ -1416,22 +1414,20 @@ def sw_detect(
 
     Parameters
     ----------
-    data : array_like
-        Single or multi-channel data. Unit must be uV and shape (n_samples) or
-        (n_chan, n_samples). Can also be a :py:class:`mne.io.BaseRaw`,
-        in which case ``data``, ``sf``, and ``ch_names`` will be automatically
-        extracted, and ``data`` will also be automatically converted from
-        Volts (MNE) to micro-Volts (YASA).
+    data : array_like or :py:class:`mne.io.BaseRaw`
+        Single or multi-channel data. If ``data`` is array_like, unit must be uV and of
+        shape (n_samples) or (n_chan, n_samples). If ``data`` is a :py:class:`~mne.io.BaseRaw`
+        instance, ``data``, ``sf``, and ``ch_names`` will be automatically extracted, and
+        ``data`` will be automatically converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
         Sampling frequency of the data in Hz.
-        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+        Can be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
 
         .. tip:: If the detection is taking too long, make sure to downsample
             your data to 100 Hz (or 128 Hz). For more details, please refer to
             :py:func:`mne.filter.resample`.
     ch_names : list of str
-        Channel names. Can be omitted if ``data`` is a
-        :py:class:`mne.io.BaseRaw`.
+        Channel names. Can be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
     hypno : array_like
         Sleep stage (hypnogram). If the hypnogram is loaded, the
         detection will only be applied to the value defined in
@@ -2821,20 +2817,18 @@ def art_detect(
 
     Parameters
     ----------
-    data : array_like
-        Single or multi-channel EEG data.
-        Unit must be uV and shape *(n_chan, n_samples)*.
-        Can also be a :py:class:`mne.io.BaseRaw`, in which case ``data``
-        and ``sf`` will be automatically extracted,
-        and ``data`` will also be automatically converted from Volts (MNE)
-        to micro-Volts (YASA).
+    data : array_like or :py:class:`mne.io.BaseRaw`
+        Single or multi-channel EEG data. If ``data`` is array_like, unit must be uV and of
+        shape *(n_chan, n_samples)*. If ``data`` is a :py:class:`~mne.io.BaseRaw`
+        instance, ``data`` and ``sf`` will be automatically extracted, and
+        ``data`` will be automatically converted from Volts (MNE) to micro-Volts (YASA).
 
         .. warning::
             ``data`` must only contains EEG channels. Please make sure to
             exclude any EOG, EKG or EMG channels.
     sf : float
         Sampling frequency of the data in Hz.
-        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw` object.
+        Can be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
     window : float
         The window length (= resolution) for artifact rejection, in seconds.
         Default to 5 seconds. Shorter windows (e.g. 1 or 2-seconds) will
