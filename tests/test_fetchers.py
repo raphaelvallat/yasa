@@ -6,12 +6,11 @@ from tempfile import TemporaryDirectory
 
 from yasa import fetchers
 
-EXAMPLES_REPOSITORY_DOIS = {
-    "latest": "10.5281/zenodo.14564284",
-    "v1": "10.5281/zenodo.14564285",
-}
+SAMPLES_V1_REPOSITORY_DOI = "10.5281/zenodo.14564285"
 
-REQUIRED_SAMPLE_FILES = [
+SMALL_SAMPLE_FILE = "sub-02_hypno_30s.txt"
+
+ALL_SAMPLE_V1_FILES = [
     "ECG_8hrs_200Hz.npz",
     "EOGs_REM_256Hz.npz",
     "N2_spindles_15sec_200Hz.txt",
@@ -27,23 +26,37 @@ REQUIRED_SAMPLE_FILES = [
     "sub-02_mne_raw.fif",
 ]
 
-SMALL_SAMPLE_FILE = "sub-02_hypno_30s.txt"
-
 
 class TestFetchers(unittest.TestCase):
     """Test fetchers functions"""
 
-    def test_examples_repo(self):
-        """Test that the examples repo has all necessary files"""
-        doi = EXAMPLES_REPOSITORY_DOIS["v1"]
+    def test_repository_initialization(self):
+        """Test that the DOI repo initializer works"""
+        doi = SAMPLES_V1_REPOSITORY_DOI
+        pup = fetchers._init_doi_repository(doi, populate_registry=False)
+        assert len(pup.registry) == 0
         pup = fetchers._init_doi_repository(doi, populate_registry=True)
         repository_files = sorted(pup.registry_files)
-        assert repository_files == sorted(REQUIRED_SAMPLE_FILES)
+        assert repository_files == sorted(ALL_SAMPLE_V1_FILES)
 
-    def test_examples_download(self):
-        """Test the download of a single arbitrary file from the examples repo"""
+    def test_file_download(self):
+        """Test the download of a single arbitrary file from the samples repo"""
         with TemporaryDirectory() as tempdir:
             os.environ["YASA_DATA_DIR"] = tempdir
             fp = fetchers.fetch_sample(SMALL_SAMPLE_FILE)
             assert fp.exists()
             assert fp.is_file()
+            assert os.path.dirname(fp) == tempdir
+
+    def test_version_picker(self):
+        """Test the version parameter in sample fetcher"""
+        with TemporaryDirectory() as tempdir:
+            os.environ["YASA_DATA_DIR"] = tempdir
+            fp = fetchers.fetch_sample(SMALL_SAMPLE_FILE, version="latest")
+            assert fp.exists() and fp.is_file()
+
+    def test_fetch_kwargs(self):
+        """Test passing of kwargs to Pooch.fetch by printing progress bar"""
+        with TemporaryDirectory() as tempdir:
+            os.environ["YASA_DATA_DIR"] = tempdir
+            fetchers.fetch_sample(SMALL_SAMPLE_FILE, progressbar=True)
