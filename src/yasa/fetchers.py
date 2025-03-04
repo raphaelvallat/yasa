@@ -59,7 +59,7 @@ def _init_doi_repository(doi, populate_registry=True):
     return repo
 
 
-def fetch_sample(fname, version="latest", **kwargs):
+def fetch_sample(fname, version="v1", **kwargs):
     """
     Download (i.e., :py:meth:`~pooch.Pooch.fetch`) a single file -- _if not already downloaded_ --
     from the YASA samples dataset on `Zenodo <https://doi.org/10.5281/zenodo.14564284>`_.
