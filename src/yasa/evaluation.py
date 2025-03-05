@@ -36,19 +36,17 @@ class EpochByEpochAgreement:
     summarized across all sleep and summarized by sleep stage, and various plotting options to
     visualize the two hypnograms simultaneously. See examples for more detail.
 
+    .. seealso:: For comparing just two hypnograms, use :py:meth:`yasa.Hynogram.evaluate`.
+
     .. versionadded:: 0.7.0
 
     Parameters
     ----------
     ref_hyps : iterable of :py:class:`yasa.Hypnogram`
-        A collection of reference hypnograms (i.e., those considered ground-truth).
-
-        Each :py:class:`yasa.Hypnogram` in ``ref_hyps`` must have the same
-        :py:attr:`~yasa.Hypnogram.scorer`.
-
-        If a ``dict``, key values are use to generate unique sleep session IDs. If any other
-        iterable (e.g., ``list`` or ``tuple``), then unique sleep session IDs are automatically
-        generated.
+        A collection of reference hypnograms (i.e., those considered ground-truth) with
+        the same :py:attr:`~yasa.Hypnogram.scorer`. If a ``dict``, key values are use to
+        generate unique sleep session IDs. If any other iterable (e.g., ``list`` or
+        ``tuple``), then unique sleep session IDs are generated.
     obs_hyps : iterable of :py:class:`yasa.Hypnogram`
         A collection of observed hypnograms (i.e., those to be evaluated).
 
@@ -71,6 +69,11 @@ class EpochByEpochAgreement:
     Many steps here are influenced by guidelines proposed in Menghini et al., 2021 [Menghini2021]_.
     See https://sri-human-sleep.github.io/sleep-trackers-performance/AnalyticalPipeline_v1.0.0.html
 
+    .. important:: It is assumed that the order of hypnograms are the same in
+        ``ref_hyps`` and ``obs_hyps``. For example, the third hypnogram in ``ref_hyps``
+        and ``obs_hyps`` must come from the same sleep session, and they must only
+        differ in that they have different scorers.
+
     References
     ----------
     .. [Menghini2021] Menghini, L., Cellini, N., Goldstone, A., Baker, F. C., & de Zambotti, M.
@@ -80,10 +83,17 @@ class EpochByEpochAgreement:
 
     Examples
     --------
+
     >>> import yasa
+    >>> # Generate simulated data from two scorers
     >>> ref_hyps = [yasa.simulate_hypnogram(tib=600, scorer="Human", seed=i) for i in range(10)]
     >>> obs_hyps = [h.simulate_similar(scorer="YASA", seed=i) for i, h in enumerate(ref_hyps)]
+    >>> # Create a specific EpochByEpochAgreement instance
     >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
+    >>> ebe
+
+    Use it to retrieve common metrics that summarize agreement between scorers for each session:
+
     >>> agr = ebe.get_agreement()
     >>> agr.head(5).round(2)
               accuracy  balanced_acc  kappa   mcc  precision  recall     f1
@@ -93,6 +103,8 @@ class EpochByEpochAgreement:
     3             0.35          0.24   0.06  0.06       0.35    0.35   0.35
     4             0.22          0.21   0.01  0.01       0.21    0.22   0.21
     5             0.21          0.17  -0.06 -0.06       0.20    0.21   0.21
+
+    Get the same metrics broken down by individual sleep stages:
 
     >>> ebe.get_agreement_bystage().head(12).round(3)
                     fbeta  precision  recall  support
@@ -110,6 +122,8 @@ class EpochByEpochAgreement:
     N1    1         0.185      0.185   0.185    124.0
           2         0.121      0.131   0.112    160.0
 
+    View a confusion matrix of agreement between scorers, either for one session or across all.
+
     >>> ebe.get_confusion_matrix(sleep_id=1)
     YASA   WAKE  N1   N2  N3  REM
     Human
@@ -118,6 +132,8 @@ class EpochByEpochAgreement:
     N2       60  58  183  43  139
     N3       30  10   50   5   32
     REM      19   9  121  50   78
+
+    Plot overlapping hypnograms of the two scorers for an individual session.
 
     .. plot::
 
@@ -128,6 +144,8 @@ class EpochByEpochAgreement:
         >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
         >>> fig, ax = plt.subplots(figsize=(6, 3), constrained_layout=True)
         >>> _ = ebe.plot_hypnograms(sleep_id=10)
+
+    There are many ways to customize the plot using standard :py:mod:`matplotlib.pyplot` arguments:
 
     .. plot::
 
@@ -142,6 +160,8 @@ class EpochByEpochAgreement:
         ... )
         >>> plt.tight_layout()
 
+    Another example with more detailed customizations:
+
     .. plot::
 
         >>> import yasa
@@ -150,7 +170,9 @@ class EpochByEpochAgreement:
         >>> obs_hyps = [h.simulate_similar(scorer="YASA", seed=i) for i, h in enumerate(ref_hyps)]
         >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
         >>> session = 8
-        >>> fig, ax = plt.subplots(figsize=(6.5, 2.5), constrained_layout=True)
+        >>> # Extract accuracy between scorers for that session
+        >>> acc = agr.multiply(100).at[session, "accuracy"]
+        >>> # Pick some plotting parameters
         >>> style_a = dict(alpha=1, lw=2.5, ls="solid", color="gainsboro", label="Michel")
         >>> style_b = dict(alpha=1, lw=2.5, ls="solid", color="cornflowerblue", label="Jouvet")
         >>> legend_style = dict(
@@ -331,7 +353,7 @@ class EpochByEpochAgreement:
         ----------
         sample_weight : None or :py:class:`pandas.Series`
             Sample weights passed to underlying :py:mod:`sklearn.metrics` functions where possible.
-            If a :py:class:`pandas.Series`, the index must match exactly that of
+            If a :py:class:`~pandas.Series`, the index must match exactly that of
             :py:attr:`~yasa.Hypnogram.data`.
         scorers : None, list, or dictionary
             The scorers to be used for evaluating agreement. If None (default), default scorers are
@@ -615,10 +637,10 @@ class EpochByEpochAgreement:
         ax : :py:class:`matplotlib.axes.Axes` or None
             Axis on which to draw the plot, optional.
         ref_kwargs : dict
-            Keyword arguments passed to :py:func:`yasa.plot_hypnogram` when plotting the reference
+            Keyword arguments passed to :py:func:`~yasa.plot_hypnogram` when plotting the reference
             hypnogram.
         obs_kwargs : dict
-            Keyword arguments passed to :py:func:`yasa.plot_hypnogram` when plotting the observed
+            Keyword arguments passed to :py:func:`~yasa.plot_hypnogram` when plotting the observed
             hypnogram.
 
         Returns
@@ -772,6 +794,7 @@ class EpochByEpochAgreement:
 class SleepStatsAgreement:
     """
     Evaluate agreement between sleep statistics reported by two different scorers.
+
     Evaluation includes bias and limits of agreement (as well as both their confidence intervals),
     various plotting options, and calibration functions for correcting biased values from the
     observed scorer.
@@ -783,8 +806,6 @@ class SleepStatsAgreement:
     * Get bias and limits of agreement in a string-formatted table.
     * Calibrate new data to correct for biases in observed data.
     * Return individual calibration functions.
-    * Visualize discrepancies for outlier inspection.
-    * Visualize Bland-Altman plots.
 
     .. seealso:: :py:meth:`yasa.Hypnogram.sleep_statistics`
 
@@ -793,10 +814,10 @@ class SleepStatsAgreement:
     Parameters
     ----------
     ref_data : :py:class:`pandas.DataFrame`
-        A :py:class:`pandas.DataFrame` with sleep statistics from the reference scorer.
+        A :py:class:`~pandas.DataFrame` with sleep statistics from the reference scorer.
         Rows are unique observations and columns are unique sleep statistics.
     obs_data : :py:class:`pandas.DataFrame`
-        A :py:class:`pandas.DataFrame` with sleep statistics from the observed scorer.
+        A :py:class:`~pandas.DataFrame` with sleep statistics from the observed scorer.
         Rows are unique observations and columns are unique sleep statistics.
         Shape, index, and columns must be identical to ``ref_data``.
     ref_scorer : str
@@ -816,8 +837,9 @@ class SleepStatsAgreement:
         Alpha cutoff used for all assumption tests.
     verbose : bool or str
         Verbose level. Default (False) will only print warning and error messages. The logging
-        levels are 'debug', 'info', 'warning', 'error', and 'critical'. For most users the choice is
-        between 'info' (or ``verbose=True``) and warning (``verbose=False``).
+        levels are ``'debug'``, ``'info'``, ``'warning'``, ``'error'``, and ``'critical'``.
+        For most users the choice is between ``'info'`` (or ``verbose=True``) and ``'warning'``
+        (``verbose=False``).
     bootstrap_kwargs : dict
         Optional keyword arguments passed to :py:func:`scipy.stats.bootstrap`. Defaults use
         ``n_resamples=1000`` and ``method='BCa'``. The keys ``'confidence_level'``,
@@ -825,10 +847,11 @@ class SleepStatsAgreement:
 
     Notes
     -----
-    Sleep statistics that are identical between scorers are removed from analysis.
-
     Many steps here are influenced by guidelines proposed in Menghini et al., 2021 [Menghini2021]_.
     See https://sri-human-sleep.github.io/sleep-trackers-performance/AnalyticalPipeline_v1.0.0.html
+
+    .. important:: The current implementation removes any sleep statistics that are identical
+        between scorers.
 
     References
     ----------
@@ -841,15 +864,14 @@ class SleepStatsAgreement:
     --------
     >>> import pandas as pd
     >>> import yasa
-    >>>
     >>> # Generate fake reference and observed datasets with similar sleep statistics
     >>> ref_scorer = "Henri"
     >>> obs_scorer = "Piéron"
     >>> ref_hyps = [yasa.simulate_hypnogram(tib=600, scorer=ref_scorer, seed=i) for i in range(20)]
     >>> obs_hyps = [h.simulate_similar(scorer=obs_scorer, seed=i) for i, h in enumerate(ref_hyps)]
     >>> # Generate sleep statistics from hypnograms using EpochByEpochAgreement
-    >>> eea = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
-    >>> sstats = eea.get_sleep_stats()
+    >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
+    >>> sstats = ebe.get_sleep_stats()
     >>> ref_sstats = sstats.loc[ref_scorer]
     >>> obs_sstats = sstats.loc[obs_scorer]
     >>> # Create SleepStatsAgreement instance
@@ -1433,7 +1455,7 @@ class SleepStatsAgreement:
     def calibrate(self, data, bias_method="auto", adjust_all=False):
         """
         Calibrate a :py:class:`~pandas.DataFrame` of sleep statistics from a new scorer based on
-        observed biases in ``obs_data``/``obs_scorer``.
+        observed biases in ``obs_data`` / ``obs_scorer``.
 
         Parameters
         ----------
