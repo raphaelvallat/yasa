@@ -6,8 +6,6 @@ from tempfile import TemporaryDirectory
 
 from yasa import fetchers
 
-SAMPLES_V1_REPOSITORY_DOI = "10.5281/zenodo.14564285"
-
 SMALL_SAMPLE_FILE = "sub-02_hypno_30s.txt"
 
 ALL_SAMPLE_V1_FILES = [
@@ -32,12 +30,8 @@ class TestFetchers(unittest.TestCase):
 
     def test_repository_initialization(self):
         """Test that the DOI repo initializer works"""
-        doi = SAMPLES_V1_REPOSITORY_DOI
-        pup = fetchers._init_doi_repository(doi, populate_registry=False)
-        assert len(pup.registry) == 0
-        pup = fetchers._init_doi_repository(doi, populate_registry=True)
-        repository_files = sorted(pup.registry_files)
-        assert repository_files == sorted(ALL_SAMPLE_V1_FILES)
+        pup = fetchers._init_repository("sample", version="v1")
+        assert sorted(pup.registry_files) == sorted(ALL_SAMPLE_V1_FILES)
 
     def test_file_download(self):
         """Test the download of a single arbitrary file from the samples repo"""
@@ -50,10 +44,8 @@ class TestFetchers(unittest.TestCase):
 
     def test_version_picker(self):
         """Test the version parameter in sample fetcher"""
-        with TemporaryDirectory() as tempdir:
-            os.environ["YASA_DATA_DIR"] = tempdir
-            fp = fetchers.fetch_sample(SMALL_SAMPLE_FILE, version="latest")
-            assert fp.exists() and fp.is_file()
+        with self.assertRaisesRegex(AssertionError, "`version` must be one of"):
+            fetchers.fetch_sample(SMALL_SAMPLE_FILE, version="999")
 
     def test_fetch_kwargs(self):
         """Test passing of kwargs to Pooch.fetch by printing progress bar"""
