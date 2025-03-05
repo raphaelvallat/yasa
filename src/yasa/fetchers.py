@@ -14,32 +14,56 @@ __all__ = [
 ]
 
 
-def _init_doi_repository(doi, populate_registry=True):
+REGISTRY = {
+    "sample": {
+        "v1": {
+            "base_url": "https://zenodo.org/records/14564285/files",
+            "registry": {
+                "ECG_8hrs_200Hz.npz": "md5:3a05f39925a009e04f0c0c88da4f429e",
+                "EOGs_REM_256Hz.npz": "md5:ef86dbef2d6ad99d54aad275175de8e1",
+                "N2_spindles_15sec_200Hz.txt": "md5:6601dad681120d3a9ff8ce4f9a9042a0",
+                "N3_no-spindles_30sec_100Hz.txt": "md5:9d2ac76f8b2a886da95ffd6a94458861",
+                "full_6hrs_100Hz_9channels.npz": "md5:b5faf1b8e1664f4a6f87f12b1144eb7a",
+                "full_6hrs_100Hz_Cz+Fz+Pz.npz": "md5:9e12ab265dbc4498989bef0d6acd3e72",
+                "full_6hrs_100Hz_hypno.npz": "md5:300c2341bf7625404906d7dda8764add",
+                "full_6hrs_100Hz_hypno_30s.txt": "md5:a711266690a7177443b2e724d5d1a495",
+                "night_young.edf": "md5:cf48577a86c5af27407b1e366f341d8e",
+                "night_young_hypno.csv": "md5:0e6de9291533623f5345ddcf4cce6183",
+                "resting_EO_200Hz_raw.fif": "md5:fac1a071930b10ffef4b197880b39dfb",
+                "sub-02_hypno_30s.txt": "md5:bcf75ac8180cdc68c5a6d20f921d1473",
+                "sub-02_mne_raw.fif": "md5:eb9360c29f21092834bfd67079b3c57e",
+            },
+        },
+    },
+}
+
+
+def _init_repository(name, version):
     """
-    Create a :py:class:`~pooch.Pooch` instance from a repository DOI
-    and automatically populate the registry with available filenames and checksums.
+    Create a :py:class:`~pooch.Pooch` instance for a given dataset.
+    Populates with available filenames and checksums.
 
     Cache location defaults to ``pooch.os_cache("yasa")`` and can be
     overwritten with the ``YASA_DATA_DIR`` environment variable.
 
     Parameters
     ----------
-    doi : str
-        DOI of the repository.
-    populate_registry : bool, optional
-        If ``True`` (default), the registry will be automatically populated with available
-        filenames and checksums.
+    name : str
+        The name of the dataset.
+    version : str
+        The version string of the dataset.
 
     Returns
     -------
     repo : :py:class:`pooch.Pooch`
-        The :py:class:`~pooch.Pooch` instance that can :py:meth:`~pooch.Pooch.fetch` the dataset.
+        The :py:class:`~pooch.Pooch` instance that can :py:meth:`~pooch.Pooch.fetch`
+        from the dataset.
 
     Examples
     --------
     >>> from pprint import pprint
     >>> import yasa
-    >>> repo = yasa.fetchers._init_doi_repository("10.5281/zenodo.14564284")
+    >>> repo = yasa.fetchers._init_repository("sample", version="v1")
     >>> # Print the number of available files
     >>> print(len(repo.registry))
     13
@@ -50,12 +74,14 @@ def _init_doi_repository(doi, populate_registry=True):
     'EOGs_REM_256Hz.npz': 'md5:ef86dbef2d6ad99d54aad275175de8e1',
     'N2_spindles_15sec_200Hz.txt': 'md5:6601dad681120d3a9ff8ce4f9a9042a0'}
     """
-    doi_url = f"doi:{doi}"
     default_cache_dir = pooch.os_cache(__package__)  # ~/local/caches/yasa
     cache_dir_env_var = f"{__package__}_DATA_DIR".upper()  # YASA_DATA_DIR
-    repo = pooch.create(path=default_cache_dir, base_url=doi_url, env=cache_dir_env_var)
-    if populate_registry:
-        repo.load_registry_from_doi()
+    repo = pooch.create(
+        path=default_cache_dir,
+        base_url=REGISTRY[name][version]["base_url"],
+        registry=REGISTRY[name][version]["registry"],
+        env=cache_dir_env_var,
+    )
     return repo
 
 
@@ -68,7 +94,7 @@ def fetch_sample(fname, version="v1", **kwargs):
     It will first check for a local copy of the file and download it if not found.
 
     The default location to store the file is in a ``yasa/`` folder
-    in the user's system-dependent cache directory.
+    in the user's system-dependent cache directory. (``pooch.os_cache("yasa")``)
     If you want to download the file to a different location,
     you can set the ``YASA_DATA_DIR`` environment variable to the desired path.
 
@@ -120,15 +146,11 @@ def fetch_sample(fname, version="v1", **kwargs):
     >>> os.environ["YASA_DATA_DIR"] = "~/Desktop/my_yasa_data"
     >>> fpath = yasa.fetch_sample("night_young_hypno.csv")
     """
-    repository_dois = {
-        "latest": "10.5281/zenodo.14564284",
-        "v1": "10.5281/zenodo.14564285",
-    }
+    allowed_versions = set(REGISTRY["sample"].keys())
     assert isinstance(fname, str), "`fname` must be a string"
     assert isinstance(version, str), "`version` must be a string"
-    assert version in repository_dois, f"`version` must be one of {list(repository_dois)}."
-    doi = repository_dois[version]
-    pup = _init_doi_repository(doi, populate_registry=True)
+    assert version in allowed_versions, f"`version` must be one of {allowed_versions}."
+    pup = _init_repository("sample", version=version)
     fname = pup.fetch(fname, **kwargs)
     fpath = Path(fname)
     return fpath
