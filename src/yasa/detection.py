@@ -2413,11 +2413,15 @@ def rem_detect(
         >>> rem = rem_detect(...)
         >>> rem.summary()
 
-        This will give a :py:class:`pandas.DataFrame` where each row is a
+        This will give a :py:class:`~pandas.DataFrame` where each row is a
         detected REM and each column is a parameter (= property).
-        To get the average parameters sleep stage:
+        To get the average parameters for each sleep stage:
 
         >>> rem.summary(grp_stage=True)
+
+        This will give a :py:class:`~pandas.DataFrame` where each row corresponds with a
+        sleep stage where >0 REMs were detected. Additional columns ``Count`` (number
+        of REMs detected) and ``Density`` (number of REMs detected per minute) will be included.
 
     Notes
     -----
