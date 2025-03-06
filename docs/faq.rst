@@ -26,6 +26,18 @@ Loading and visualizing polysomnography data
         # Select a subset of EEG channels
         raw.pick(["C4-A1", "C3-A2"])
 
+.. ----------------------------- LOAD EDF -----------------------------
+.. dropdown:: Should my data be in Volts or micro-Volts?
+    :animate: fade-in-slide-down
+    :icon: question
+    :name: what_voltage
+
+    Where EEG data is concerned, YASA's algorithms are designed to work with data in units of micro-Volts.
+    When ``data`` is passed to a YASA function as a :py:class:`~numpy.ndarray`, the unit must be micro-Volts (uV).
+    For most functions, YASA allows the ``data`` parameter to be either a :py:class:`numpy.ndarray` or a :py:class:`mne.io.BaseRaw`.
+    Instances of :py:class:`~mne.io.BaseRaw` have unit information included in them, so in these cases, YASA will handle any
+    necessary conversions by extracting the data internally in the required units (using :py:meth:`~mne.io.BaseRaw.get_data`).
+
 .. ----------------------------- VISUALIZE -----------------------------
 .. dropdown:: Can I visualize my polysomnography data in YASA?
     :animate: fade-in-slide-down

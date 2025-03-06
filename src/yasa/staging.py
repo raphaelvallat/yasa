@@ -40,8 +40,7 @@ class SleepStaging:
     eeg_name : str
         The name of the EEG channel in ``raw``. Preferentially a central
         electrode referenced either to the mastoids (C4-M1, C3-M2) or to the
-        Fpz electrode (C4-Fpz). Data are assumed to be in Volts (MNE default)
-        and will be converted to uV.
+        Fpz electrode (C4-Fpz).
     eog_name : str or None
         The name of the EOG channel in ``raw``. Preferentially,
         the left LOC channel referenced either to the mastoid (e.g. E1-M2)
@@ -88,12 +87,14 @@ class SleepStaging:
     In addition, the algorithm also calculates a smoothed and normalized version of these features.
     Specifically, a 7.5 min centered triangular-weighted rolling average and a 2 min past rolling
     average are applied. The resulting smoothed features are then normalized using a robust
-    z-score.
+    z-score. The algorithm assumes data are in micro-Volts.
 
-    .. important:: The PSG data should be in micro-Volts. Do NOT transform (e.g. z-score) or filter
-        the signal before running the sleep staging algorithm.
+    .. important:: Do NOT transform (e.g. z-score) or filter the signal before running
+        the sleep staging algorithm.
 
     The data are automatically downsampled to 100 Hz for faster computation.
+
+    The data are automatically converted to micro-Volts if necessary.
 
     **2. Sleep stages prediction**
 
