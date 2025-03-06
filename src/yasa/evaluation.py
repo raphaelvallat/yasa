@@ -204,8 +204,8 @@ class EpochByEpochAgreement:
     def __init__(self, ref_hyps, obs_hyps):
         from yasa.hypno import Hypnogram  # Avoiding circular import, bc hypno imports this class
 
-        assert hasattr(ref_hyps, "__iter__"), "`ref_hyps` must be a an iterable"
-        assert hasattr(obs_hyps, "__iter__"), "`obs_hyps` must be a an iterable"
+        assert hasattr(ref_hyps, "__iter__"), "`ref_hyps` must be an iterable"
+        assert hasattr(obs_hyps, "__iter__"), "`obs_hyps` must be an iterable"
         assert type(ref_hyps) is type(obs_hyps), "`ref_hyps` and `obs_hyps` must be the same type"
         assert len(ref_hyps) == len(obs_hyps), (
             "`ref_hyps` and `obs_hyps` must have the same number of hypnograms"
@@ -306,14 +306,14 @@ class EpochByEpochAgreement:
         return self._obs_scorer
 
     @staticmethod
-    def multi_scorer(df, scorers):
+    def multi_scorer(df, metrics):
         """
         Compute multiple agreement scores from a 2-column dataframe (an optional 3rd column may
         contain sample weights).
 
-        This function offers convenience when calculating multiple agreement scores using
+        This function offers convenience when calculating multiple agreement metrics using
         :py:meth:`pandas.DataFrame.groupby.apply`. Scikit-learn doesn't include a function that
-        returns multiple scores, and the GroupBy implementation of ``apply`` in pandas does not
+        returns multiple metrics, and the GroupBy implementation of ``apply`` in pandas does not
         accept multiple functions.
 
         Parameters
@@ -323,30 +323,30 @@ class EpochByEpochAgreement:
             The first column contains reference values and second column contains observed values.
             If a third column, it must contain sample weights to be passed to underlying
             :py:mod:`sklearn.metrics` functions as ``sample_weight`` where applicable.
-        scorers : dictionary
-            The scorers to be used for evaluating agreement. A dictionary with scorer names (str) as
+        metrics : dictionary
+            The metrics to be used for evaluating agreement. A dictionary with metric names (str) as
             keys and functions as values.
 
         Returns
         -------
         scores : dict
-            A dictionary with scorer names (``str``) as keys and scores (``float``) as values.
+            A dictionary with metric names (``str``) as keys and scores (``float``) as values.
         """
         assert isinstance(df, pd.DataFrame), "`df` must be a pandas DataFrame"
         assert df.shape[1] in [2, 3], "`df` must have either 2 or 3 columns"
-        assert isinstance(scorers, dict), "`scorers` must be a dictionary"
-        assert all(isinstance(k, str) and callable(v) for k, v in scorers.items()), (
-            "Each key of `scorers` must be a string, and each value must be a callable function"
+        assert isinstance(metrics, dict), "`metrics` must be a dictionary"
+        assert all(isinstance(k, str) and callable(v) for k, v in metrics.items()), (
+            "Each key of `metrics` must be a string, and each value must be a callable function"
         )
         if df.shape[1] == 3:
             true, pred, weights = zip(*df.values)
         elif df.shape[1] == 2:
             true, pred = zip(*df.values)  # Same as (df["col1"], df["col2"]) but teensy bit faster
             weights = None
-        scores = {s: f(true, pred, weights) for s, f in scorers.items()}
+        scores = {s: f(true, pred, weights) for s, f in metrics.items()}
         return scores
 
-    def get_agreement(self, sample_weight=None, scorers=None):
+    def get_agreement(self, sample_weight=None, metrics=None):
         """
         Return a :py:class:`pandas.DataFrame` of weighted (i.e., averaged) agreement scores.
 
@@ -357,14 +357,12 @@ class EpochByEpochAgreement:
         sample_weight : None or :py:class:`pandas.Series`
             Sample weights passed to underlying :py:mod:`sklearn.metrics` functions where possible.
             If a :py:class:`~pandas.Series`, the index must match exactly that of
-            :py:attr:`~yasa.Hypnogram.data`.
-        scorers : None, list, or dictionary
-            The scorers to be used for evaluating agreement. If None (default), default scorers are
-            used. If a list, the list must contain strings that represent metrics from the sklearn
-            metrics module (e.g., ``accuracy``, ``precision``). If more customization is desired, a
-            dictionary can be passed with scorer names (str) as keys and custom functions as values.
-            The custom functions should take 3 positional arguments (true values, predicted values,
-            and sample weights).
+            :py:attr:`~yasa.EpochByEpochAgreement.data`.
+        metrics : None or dict
+            The metrics to be used for evaluating agreement. If None (default), default metrics are
+            used. For customization, a dictionary can be passed with metric names as keys
+            and functions as values. The custom functions must take 3 positional arguments
+            (true values, predicted values, and sample weights).
 
         Returns
         -------
@@ -374,14 +372,17 @@ class EpochByEpochAgreement:
         assert isinstance(sample_weight, (type(None), pd.Series)), (
             "`sample_weight` must be None or pandas Series"
         )
-        assert isinstance(scorers, (type(None), list, dict))
-        if isinstance(scorers, list):
-            assert all(isinstance(x, str) for x in scorers)
-        elif isinstance(scorers, dict):
-            assert all(isinstance(k, str) and callable(v) for k, v in scorers.items())
-        if scorers is None:
+        if sample_weight is not None:
+            assert sample_weight.index.equals(self.data.index), (
+                "If not `None`, `sample_weight` Series must be a pandas Series with the same index "
+                "as `self.data`"
+            )
+        assert isinstance(metrics, (type(None), dict)), "`metrics` must be None or dict"
+        if isinstance(metrics, dict):
+            assert all(isinstance(k, str) and callable(v) for k, v in metrics.items())
+        if metrics is None:
             # Create dictionary of default scorer functions
-            scorers = {
+            metrics = {
                 "accuracy": lambda t, p, w: skm.accuracy_score(
                     t, p, normalize=True, sample_weight=w
                 ),
@@ -402,25 +403,18 @@ class EpochByEpochAgreement:
                     t, p, average="weighted", sample_weight=w, zero_division=0
                 ),
             }
-        elif isinstance(scorers, list):
-            # Convert the list to a dictionary of sklearn scorers
-            scorers = {s: skm.__getattribute__(f"{s}_scorer") for s in scorers}
         # Make a copy of data since weights series might be added to it
         df = self.data.copy()
         if sample_weight is not None:
-            assert sample_weight.index == self.data.index, (
-                "If not `None`, `sample_weight` Series must be a pandas Series with the same index "
-                "as `self.data`"
-            )
             # Add weights as a third column for multi_scorer to use
             df["weights"] = sample_weight
         # Get individual-level averaged/weighted agreement scores
-        agreement = df.groupby(level=0).apply(self.multi_scorer, scorers=scorers).apply(pd.Series)
+        agreement = df.groupby(level=0).apply(self.multi_scorer, metrics=metrics).apply(pd.Series)
         # Set attribute for later access
         self._agreement = agreement
         # Convert to Series if just one session being evaluated
         if self.n_sleeps == 1:
-            agreement = agreement.squeeze().rename("agreement")
+            agreement = agreement.squeeze(axis=0).rename("agreement")
         return agreement
 
     def get_agreement_bystage(self, beta=1.0):
