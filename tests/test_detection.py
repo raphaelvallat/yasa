@@ -10,7 +10,14 @@ import pandas as pd
 import pytest
 from mne.filter import filter_data
 
-from yasa.detection import art_detect, compare_detection, rem_detect, spindles_detect, sw_detect
+from yasa.detection import (
+    _check_data_hypno,
+    art_detect,
+    compare_detection,
+    rem_detect,
+    spindles_detect,
+    sw_detect,
+)
 from yasa.fetchers import fetch_sample
 from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
 
@@ -62,7 +69,10 @@ class TestDetection(unittest.TestCase):
 
     def test_check_data_hypno(self):
         """Test preprocessing of data and hypno."""
-        pass
+        with self.assertLogs("yasa", level="WARNING"):
+            _check_data_hypno(data_mne, sf=999)  # sf is ignored
+        with self.assertLogs("yasa", level="WARNING"):
+            _check_data_hypno(data_mne, ch_names=["CH999"])  # ch_names is ignored
 
     def test_spindles_detect(self):
         """Test spindles_detect"""
