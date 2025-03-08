@@ -2,13 +2,12 @@
 
 import unittest
 
+from matplotlib.pyplot import Axes
 from pandas import Series
 from pandas.testing import assert_frame_equal, assert_series_equal
 from sklearn.metrics import accuracy_score
-from matplotlib.pyplot import Axes
 
-from yasa import Hypnogram, EpochByEpochAgreement, SleepStatsAgreement
-
+from yasa import EpochByEpochAgreement, Hypnogram
 
 hyp1 = Hypnogram(["W", "W", "N1", "N1", "N2"], scorer="Scorer1")
 hyp2 = Hypnogram(["W", "W", "N1", "N1", "N1"], scorer="Scorer2")

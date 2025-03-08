@@ -794,6 +794,10 @@ class SleepStatsAgreement:
     * Calibrate new data to correct for biases in observed data.
     * Return individual calibration functions.
 
+    .. warning:: Comparing summary sleep statistics between scorers in this way typically
+        requires a reasonable sample size. A few of the statistical approaches (e.g.,
+        linear regression, Shapiro-Wilk) will not function properly on small samples.
+
     .. seealso:: :py:meth:`yasa.Hypnogram.sleep_statistics`
 
     .. versionadded:: 0.7.0
@@ -959,6 +963,8 @@ class SleepStatsAgreement:
             f"None of {restricted_bootstrap_kwargs} can be set by the user"
         )
 
+        ref_data, obs_data = self._sanitize_data_input(ref_data, obs_data)
+
         # If `ref_data` and `obs_data` indices are unnamed, name them
         session_key = "session_id" if ref_data.index.name is None else ref_data.index.name
         ref_data.index.name = obs_data.index.name = session_key
@@ -975,11 +981,11 @@ class SleepStatsAgreement:
         # Get scorer differences (i.e., observed minus reference)
         data["difference"] = data[obs_scorer] - data[ref_scorer]
 
-        # Remove sleep statistics that have no differences between scorers
-        stats_rm = data.groupby("sleep_stat")["difference"].any().loc[lambda x: ~x].index.tolist()
-        data = data.drop(labels=stats_rm)
-        for s in stats_rm:
-            logger.warning(f"Removed {s} from evaluation because all scorings were identical.")
+        # # Remove sleep statistics that have no differences between scorers
+        # stats_rm = data.groupby("sleep_stat")["difference"].any().loc[lambda x: ~x].index.tolist()
+        # data = data.drop(labels=stats_rm)
+        # for s in stats_rm:
+        #     logger.warning(f"Removed {s} from evaluation because all scorings were identical.")
 
         # Create grouper and n_sessions variables for convenience
         grouper = data.groupby("sleep_stat")
@@ -1017,7 +1023,9 @@ class SleepStatsAgreement:
         # Generate regression/modeled (slope and intercept) Bias and LoA for all sleep stats
         ########################################################################
         # Run regression used to (a) model bias and (b) test for proportional/constant bias
-        bias_regr = grouper[[ref_scorer, "difference"]].apply(self._linregr_dict).apply(pd.Series)
+        bias_regr = (
+            grouper[[ref_scorer, "difference"]].apply(self._dict_linregress).apply(pd.Series)
+        )
         # Get absolute residuals from this regression bc they are used in the next regression
         idx = data.index.get_level_values("sleep_stat")
         slopes = bias_regr.loc[idx, "slope"].to_numpy()
@@ -1026,7 +1034,9 @@ class SleepStatsAgreement:
         data["residuals"] = data[obs_scorer].to_numpy() - predicted_values
         data["residuals_abs"] = data["residuals"].abs()
         # Run regression used to (a) model LoA and (b) test for heteroscedasticity/homoscedasticity
-        loa_regr = grouper[[ref_scorer, "residuals_abs"]].apply(self._linregr_dict).apply(pd.Series)
+        loa_regr = (
+            grouper[[ref_scorer, "residuals_abs"]].apply(self._dict_linregress).apply(pd.Series)
+        )
         # Stack the two regression dataframes together
         regr = pd.concat({"bias": bias_regr, "loa": loa_regr}, axis=0)
 
@@ -1163,6 +1173,101 @@ class SleepStatsAgreement:
     ############################################################################
 
     @staticmethod
+    def _sanitize_data_input(ref_data, obs_data):
+        """
+        Ensure that the input ``ref_data`` and ``obs_data`` DataFrames contain values
+        follow necessary and sufficient structure to pass required statistical tests
+        involved in the discrepancy analysis pipeline.
+
+        DataFrames are "sanitized" by removing sleep statistics where violations occur.
+
+        Violations still might occur in bootstrap procedures when generating confidence
+        intervals. For example, this function checks for constant reference scores in
+        data input to prevent linear regression failures, but it is possible that
+        resampling during bootstrapping generates constant values. This is more likely
+        with low sample sizes and samples with little variation in scores.
+
+        Parameters
+        ----------
+        ref_data : :py:class:`pandas.DataFrame`
+            See :py:class:`yasa.evaluation.SleepStatsAgreement`
+        obs_data : :py:class:`pandas.DataFrame`
+            See :py:class:`yasa.evaluation.SleepStatsAgreement`
+
+        Returns
+        -------
+        ref_data_sanitized : :py:class:`pandas.DataFrame`
+            A sanitized copy of ``ref_data``, with violating sleep statistics removed.
+        obs_data : :py:class:`pandas.DataFrame`
+            A sanitized copy of ``obs_data``, with violating sleep statistics removed.
+
+        Notes
+        -----
+        Data checks or requirements:
+
+        1. Sample size must be > 2.
+        2. Observed minus Reference stat differences must have >1 nonzero value.
+        3. Observed minus Reference stat differences must have >1 unique values.
+        4. Reference stats must have >1 unique values.
+
+        1-3 are critical to ensure reliable tests of systematic bias (T-test) and normality
+        (Shapiro-Wilk test).
+
+        .. note:: Req. 1 is critical to ensure reliable tests of systematic bias and
+            normality. It is a relatively relaxed cutoff, because sample size should be
+            higher for all of the statistical tests involved in this analysis, but the
+            hard cutoff is 2 because it will break the Shapiro-Wilk test for normality.
+            With less than 3 samples, :py:func:`scipy.stats.shapiro` will raise a
+            ``SmallSampleWarning`` and return ``ShapiroResult(statistic=nan, pvalue=nan)``.
+            If the sample is smaller, at 1, then :py:func:`scipy.stats.ttest_1samp` will
+            raise ``RunTimeWarning`` twice and also return ``nan`` values.
+
+        .. note:: Req. 2 is critical to ensure reliable tests of systematic bias. For
+            any metric, if all the observed-reference scores are zero (i.e., summary
+            stats are identical)), then :py:func:`scipy.stats.ttest_1samp` will return
+            ``nan`` values for ``statistic`` and ``pvalue`` without Warning.
+
+        .. note:: Req. 3 is critical to ensure reliable tests of systematic bias and
+            normality. For any metric, if all the observed-reference scores are zero
+            (i.e., summary stats are identical), then :py:func:`scipy.stats.ttest_1samp`
+            will raise a ``RunTimeWarning`` about unreliability of results and return
+            ``statistic=inf`` and ``pvalue=0.0``, and  will not raise any issues but will return
+            ``nan`` values for the ``statistic`` and ``pvalue``, and :py:func:`scipy.stats.shapiro`
+            will raise a ``UserWarning`` about unreliability of results and return
+            ``ShapiroResult(statistic=1.0, pvalue=1.0)``.
+
+        .. note:: Req. 4 is critical to ensure reliable tests of constant bias and
+            homoscedasticity. Both involve linear regressions with Reference stats as
+            the predictor. Without any variability in the predictor, the linear regression
+            will fail. :py:func:`scipy.stats.linregress` will raise a ``ValueError``.
+        """
+        diffs = obs_data.sub(ref_data)
+        assert len(ref_data) > 2, "Number of sessions must be > 2"
+        exclusion_criteria = pd.DataFrame(
+            {
+                "Missing value(s)": diffs.isna().any(),
+                "No scorer discrepancies": diffs.eq(0).all(),
+                "Constant scorer discrepancies": diffs.nunique().eq(1),
+                "Constant reference values": ref_data.nunique().eq(1),
+            }
+        )
+        drop_columns = exclusion_criteria.any(axis=1).loc[lambda x: x].index
+        ref_data_sanitized = ref_data.drop(columns=drop_columns)
+        obs_data_sanitized = obs_data.drop(columns=drop_columns)
+
+        def _log_warning(row):
+            stat = row.name
+            violations = row.loc[lambda x: x].index.tolist()
+            if violations:
+                logger.warning(
+                    f"Stat {stat} was removed for the following violation(s): {', '.join(violations)}"
+                )
+
+        _ = exclusion_criteria.apply(_log_warning, axis=1)
+        assert not ref_data_sanitized.empty, "All sleep statistics were removed, see log for detail"
+        return ref_data_sanitized, obs_data_sanitized
+
+    @staticmethod
     def _arr_to_loa(x, agreement):
         """Return a tuple with lower and upper limits of agreement."""
         mean = np.mean(x)
@@ -1170,14 +1275,41 @@ class SleepStatsAgreement:
         return mean - bound, mean + bound
 
     @staticmethod
-    def _linregr_dict(*args, **kwargs):
+    def _nan_linregress(*args, **kwargs):
+        """
+        Wrapper around :py:func:`scipy.stats.linregress` to return a failed
+        :py:class:`~scipy.stats._stats_py.LinregressResult with NaNs.
+
+        The issue is that :py:func:`~scipy.stats.linregress` fails with a ValueError
+        when all `x` values are identical.
+        """
+        try:
+            regr = sps.linregress(*args, **kwargs)
+        except ValueError as e:
+            if str(e) == "Cannot calculate a linear regression if all x values are identical":
+                logger.error(str(e))
+                regr = sps._stats_py.LinregressResult(
+                    slope=np.nan,
+                    intercept=np.nan,
+                    rvalue=np.nan,
+                    pvalue=np.nan,
+                    stderr=np.nan,
+                    intercept_stderr=np.nan,
+                )
+            else:
+                raise
+        return regr
+
+    def _dict_linregress(self, df, **kwargs):
         """
         A wrapper around :py:func:`scipy.stats.linregress` that returns a dictionary instead of a
         named tuple. In the normally returned object, ``intercept_stderr`` is an extra field that is
         not included when converting the named tuple, so this allows it to be included when using
         something like groupby.
         """
-        regr = sps.linregress(*args, **kwargs)
+        assert isinstance(df, pd.DataFrame)
+        assert df.shape[1] == 2
+        regr = self._nan_linregress(*df.T.to_numpy(), **kwargs)
         return {
             "slope": regr.slope,
             "intercept": regr.intercept,
@@ -1219,9 +1351,9 @@ class SleepStatsAgreement:
             """A function to get all variables at once and avoid redundant stats.bootstrap calls."""
             bias_parm = np.mean(diff_arr)
             lloa_parm, uloa_parm = self._arr_to_loa(diff_arr, self._agreement)
-            bias_slope, bias_inter = sps.linregress(ref_arr, diff_arr)[:2]
+            bias_slope, bias_inter = self._nan_linregress(ref_arr, diff_arr)[:2]
             # Note this is NOT recalculating residuals each time for the next regression
-            loa_slope, loa_inter = sps.linregress(ref_arr, rabs_arr)[:2]
+            loa_slope, loa_inter = self._nan_linregress(ref_arr, rabs_arr)[:2]
             return bias_parm, lloa_parm, uloa_parm, bias_inter, bias_slope, loa_inter, loa_slope
 
         # !! Column order MUST match the order of arrays boot_stats expects as INPUT
@@ -1369,6 +1501,7 @@ class SleepStatsAgreement:
     def summary(self, ci_method="auto"):
         """
         Return a :py:class:`~pandas.DataFrame` that includes all calculated metrics:
+
         * Parametric bias
         * Parametric lower and upper limits of agreement
         * Regression intercept and slope for modeled bias
