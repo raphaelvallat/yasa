@@ -225,6 +225,28 @@ Others
     .. code-block:: shell
 
         pip install --upgrade yasa
+        pip install --upgrade yasa
+    
+
+.. ----------------------------- DEVELOPMENT -----------------------------
+.. raw:: html
+
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h5 class="panel-title">
+          <a data-toggle="collapse" href="#development">Development</a>
+        </h5>
+      </div>
+      <div id="development" class="panel-collapse collapse">
+        <div class="panel-body">
+
+**YASA Flaskified**
+
+YASA Flaskified is a web-based application for analyzing EEG data using YASA. It requires deployment on a physical or virtual server, which can be done using the scripts provided in its repository. For more details, visit the **[YASA Flaskified GitHub repository](https://github.com/bartromb/YASAFlaskified)**.
+
+        </div>
+      </div>
+    </div>
 
 .. ----------------------------- DONATION -----------------------------
 .. dropdown:: I am not a programmer, how can I contribute to YASA?
