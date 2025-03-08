@@ -45,6 +45,7 @@ dependencies = [
     "ipywidgets",
     "joblib",
     "lightgbm",
+    "pooch>=1.8",
 ]
 
 [project.optional-dependencies]
@@ -53,7 +54,7 @@ test = [
     "pytest-cov",
     # Ensure coverage is new enough for `source_pkgs`.
     "coverage[toml]>=5.3",
-    "ruff"
+    "ruff>=0.9",
 ]
 docs = [
     "sphinx>=8.1",

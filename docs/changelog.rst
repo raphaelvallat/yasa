@@ -42,6 +42,7 @@ This brings along critical changes to several YASA function, for example:
 * Added helpful string representation (__repr__) to :py:class:`yasa.SleepStaging`.
 * :py:func:`yasa.simulate_hypnogram` now returns a :py:class:`yasa.Hypnogram` instead of a :py:class:`numpy.ndarray`.
 * The suggested approach to plotting hypnograms is through the :py:meth:`yasa.Hypnogram.plot_hypnogram` method. The old function :py:func:`yasa.plot_hypnogram` still exists, but now *requires* a :py:class:`yasa.Hypnogram` instance as input.
+* New :py:func:`yasa.fetch_sample` function to download and cache sample YASA data files. (`PR 192 <https://github.com/raphaelvallat/yasa/pull/192>`_)
 
 ----------------------------------------------------------------------------------------
 

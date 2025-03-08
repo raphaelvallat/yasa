@@ -4,10 +4,12 @@ import unittest
 
 import numpy as np
 
+from yasa.fetchers import fetch_sample
 from yasa.heart import hrv_stage
 
 # Load data
-ecg_file = np.load("notebooks/data_ECG_8hrs_200Hz.npz")
+ecg_filepath = fetch_sample("ECG_8hrs_200Hz.npz")
+ecg_file = np.load(ecg_filepath)
 data = ecg_file["data"]
 sf = int(ecg_file["sf"])
 hypno = ecg_file["hypno"]
