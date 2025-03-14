@@ -45,17 +45,18 @@ def bandpower(
 
     Parameters
     ----------
-    data : np.array_like or :py:class:`mne.io.BaseRaw`
-        1D or 2D EEG data. If ``data`` is array_like, unit must be uV.
+    data : array_like or :py:class:`mne.io.BaseRaw`
+        1D or 2D EEG data. If ``data`` is *array_like*, unit must be uV.
         If ``data`` is a :py:class:`~mne.io.BaseRaw` instance, ``data``, ``sf``, and
         ``ch_names`` will be automatically extracted, and ``data`` will be automatically
         converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
-        The sampling frequency of data AND the hypnogram. Can be omitted if ``data`` is a
-        :py:class:`mne.io.BaseRaw`.
+        The sampling frequency of data AND the hypnogram if ``data`` is *array_like*.
+        Should be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw`.
     ch_names : list
-        List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None, channels will be labelled
-        ['CHAN000', 'CHAN001', ...]. Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+        List of channel names, e.g. ['Cz', 'F3', 'F4', ...], if ``data`` is *array_like*.
+        If None, channels will be labelled ['CHAN000', 'CHAN001', ...].
+        Should be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw`.
     hypno : array_like
         Sleep stage (hypnogram). If the hypnogram is loaded, the bandpower will be extracted for
         each sleep stage defined in ``include``.
@@ -400,17 +401,17 @@ def irasa(
     Parameters
     ----------
     data : :py:class:`numpy.ndarray` or :py:class:`mne.io.BaseRaw`
-        1D or 2D EEG data. If ``data`` is array_like, unit must be uV.
+        1D or 2D EEG data. If ``data`` is *array_like*, unit must be uV.
         If ``data`` is a :py:class:`~mne.io.BaseRaw` instance, ``data``, ``sf``, and
         ``ch_names`` will be automatically extracted, and ``data`` will be automatically
         converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
-        The sampling frequency of data AND the hypnogram.
-        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+        The sampling frequency of data AND the hypnogram if ``data`` is *array_like*.
+        Should be omitted if ``data`` is a :py:class:~`mne.io.BaseRaw`.
     ch_names : list
-        List of channel names, e.g. ['Cz', 'F3', 'F4', ...]. If None,
-        channels will be labelled ['CHAN000', 'CHAN001', ...].
-        Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+        List of channel names, e.g. ['Cz', 'F3', 'F4', ...], if ``data`` is *array_like*.
+        If None, channels will be labelled ['CHAN000', 'CHAN001', ...].
+        Should be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw`.
     band : tuple or None
         Broad band frequency range.
         Default is 1 to 30 Hz.

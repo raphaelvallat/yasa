@@ -54,6 +54,10 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
     """Helper functions for preprocessing of data and hypnogram."""
     # 1) Extract data as a 2D NumPy array
     if isinstance(data, mne.io.BaseRaw):
+        if sf is not None:
+            logger.warning("sf parameter will be ignored, sf from MNE Raw will be used")
+        if ch_names is not None:
+            logger.warning("ch_names parameter will be ignored, ch_names from MNE Raw will be used")
         sf = data.info["sfreq"]  # Extract sampling frequency
         ch_names = data.ch_names  # Extract channel names
         data = data.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
@@ -597,19 +601,20 @@ def spindles_detect(
     Parameters
     ----------
     data : array_like or :py:class:`mne.io.BaseRaw`
-        Single or multi-channel data. If ``data`` is array_like, unit must be uV and of
+        Single or multi-channel data. If ``data`` is *array_like*, unit must be uV and of
         shape (n_samples) or (n_chan, n_samples). If ``data`` is a :py:class:`~mne.io.BaseRaw`
         instance, ``data``, ``sf``, and ``ch_names`` will be automatically extracted, and
         ``data`` will be automatically converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
-        Sampling frequency of the data in Hz.
-        Can be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
+        Sampling frequency of the data in Hz when ``data`` is *array_like*.
+        Should be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
 
         .. tip:: If the detection is taking too long, make sure to downsample
             your data to 100 Hz (or 128 Hz). For more details, please refer to
             :py:func:`mne.filter.resample`.
     ch_names : list of str
-        Channel names. Can be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
+        Channel names if ``data`` is *array_like*.
+        Should be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
     hypno : array_like
         Sleep stage (hypnogram). If the hypnogram is loaded, the
         detection will only be applied to the value defined in
@@ -1415,19 +1420,20 @@ def sw_detect(
     Parameters
     ----------
     data : array_like or :py:class:`mne.io.BaseRaw`
-        Single or multi-channel data. If ``data`` is array_like, unit must be uV and of
+        Single or multi-channel data. If ``data`` is *array_like*, unit must be uV and of
         shape (n_samples) or (n_chan, n_samples). If ``data`` is a :py:class:`~mne.io.BaseRaw`
         instance, ``data``, ``sf``, and ``ch_names`` will be automatically extracted, and
         ``data`` will be automatically converted from Volts (MNE) to micro-Volts (YASA).
     sf : float
-        Sampling frequency of the data in Hz.
-        Can be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
+        Sampling frequency of the data in Hz if ``data`` is *array_like*.
+        Should be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
 
         .. tip:: If the detection is taking too long, make sure to downsample
             your data to 100 Hz (or 128 Hz). For more details, please refer to
             :py:func:`mne.filter.resample`.
     ch_names : list of str
-        Channel names. Can be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
+        Channel names if ``data`` is *array_like*.
+        Should be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
     hypno : array_like
         Sleep stage (hypnogram). If the hypnogram is loaded, the
         detection will only be applied to the value defined in
