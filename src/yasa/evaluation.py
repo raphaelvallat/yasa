@@ -16,6 +16,8 @@ import pandas as pd
 import scipy.stats as sps
 import sklearn.metrics as skm
 
+from .io import set_log_level
+
 logger = logging.getLogger("yasa")
 
 __all__ = [
@@ -933,6 +935,8 @@ class SleepStatsAgreement:
         verbose=True,
         bootstrap_kwargs={},
     ):
+        set_log_level(verbose)
+
         restricted_bootstrap_kwargs = ["confidence_level", "vectorized", "paired"]
 
         assert isinstance(ref_data, pd.DataFrame), "`ref_data` must be a pandas DataFrame"
@@ -1024,7 +1028,10 @@ class SleepStatsAgreement:
         ########################################################################
         # Run regression used to (a) model bias and (b) test for proportional/constant bias
         bias_regr = (
-            grouper[[ref_scorer, "difference"]].apply(self._dict_linregress).apply(pd.Series)
+            grouper[[ref_scorer, "difference"]]
+            .apply(lambda df: self._xlinregress(*df.to_numpy().T))
+            .map(self._scipy_result_to_dict)
+            .apply(pd.Series)
         )
         # Get absolute residuals from this regression bc they are used in the next regression
         idx = data.index.get_level_values("sleep_stat")
@@ -1035,7 +1042,10 @@ class SleepStatsAgreement:
         data["residuals_abs"] = data["residuals"].abs()
         # Run regression used to (a) model LoA and (b) test for heteroscedasticity/homoscedasticity
         loa_regr = (
-            grouper[[ref_scorer, "residuals_abs"]].apply(self._dict_linregress).apply(pd.Series)
+            grouper[[ref_scorer, "residuals_abs"]]
+            .apply(lambda df: self._xlinregress(*df.to_numpy().T))
+            .map(self._scipy_result_to_dict)
+            .apply(pd.Series)
         )
         # Stack the two regression dataframes together
         regr = pd.concat({"bias": bias_regr, "loa": loa_regr}, axis=0)
@@ -1058,18 +1068,31 @@ class SleepStatsAgreement:
         ########################################################################
         # Test all statistical assumptions
         ########################################################################
-        assumptions = pd.DataFrame(
+        ttest = (
+            grouper["difference"]
+            .apply(sps.ttest_1samp, 0)
+            .map(self._scipy_result_to_dict)
+            .apply(pd.Series)
+        )
+        shapiro = (
+            grouper["difference"]
+            .apply(sps.shapiro)
+            .map(self._scipy_result_to_dict)
+            .apply(pd.Series)
+        )
+        # Determine the test for each goal
+        pvalues = pd.DataFrame(
             {
-                "unbiased": (
-                    grouper["difference"].apply(lambda a: sps.ttest_1samp(a, 0).pvalue).ge(alpha)
-                ),
-                "normal": grouper["difference"].apply(lambda a: sps.shapiro(a).pvalue).ge(alpha),
-                "constant_bias": bias_regr["pvalue"].ge(alpha),
-                "homoscedastic": loa_regr["pvalue"].ge(alpha),
+                "unbiased": ttest["pvalue"],
+                "constant_bias": bias_regr["pvalue"],
+                "homoscedastic": loa_regr["pvalue"],
+                "normal": shapiro["pvalue"],
             }
         )
+        # Apply mask to retain NaNs from failed tests, so they are not interpreted
+        assumptions = pvalues.ge(alpha).mask(pvalues.isna()).astype("boolean")
 
-        ########################################################################
+        ################################################################
         # Setting attributes
         ########################################################################
 
@@ -1099,6 +1122,8 @@ class SleepStatsAgreement:
         self._obs_scorer = obs_scorer
         self._data = data
         self._assumptions = assumptions
+        self._ttest = ttest
+        self._shapiro = shapiro
         self._regr = regr
         self._vals = vals
         self._ci = ci
@@ -1221,6 +1246,9 @@ class SleepStatsAgreement:
             ``SmallSampleWarning`` and return ``ShapiroResult(statistic=nan, pvalue=nan)``.
             If the sample is smaller, at 1, then :py:func:`scipy.stats.ttest_1samp` will
             raise ``RunTimeWarning`` twice and also return ``nan`` values.
+            Sample size of 2 also gives special case linear regression results:
+            https://github.com/scipy/scipy/blob/0f1fd4a7268b813fa2b844ca6038e4dfdf90084a/scipy/stats/_stats_py.py#L10732-L10739
+
 
         .. note:: Req. 2 is critical to ensure reliable tests of systematic bias. For
             any metric, if all the observed-reference scores are zero (i.e., summary
@@ -1251,19 +1279,15 @@ class SleepStatsAgreement:
                 "Constant reference values": ref_data.nunique().eq(1),
             }
         )
-        drop_columns = exclusion_criteria.any(axis=1).loc[lambda x: x].index
-        ref_data_sanitized = ref_data.drop(columns=drop_columns)
-        obs_data_sanitized = obs_data.drop(columns=drop_columns)
-
-        def _log_warning(row):
-            stat = row.name
-            violations = row.loc[lambda x: x].index.tolist()
-            if violations:
+        for stat, row in exclusion_criteria.iterrows():  # slow but clear
+            if row.any():
+                violations = ", ".join(row.loc[lambda x: x].index.tolist())
                 logger.warning(
-                    f"Stat {stat} was removed for the following violation(s): {', '.join(violations)}"
+                    f"Stat {stat} was removed for the following violation(s): {violations}"
                 )
-
-        _ = exclusion_criteria.apply(_log_warning, axis=1)
+        drop_columns = exclusion_criteria.any(axis=1).loc[lambda x: x].index
+        ref_data_sanitized = ref_data.drop(columns=drop_columns).sort_index().sort_index(axis=1)
+        obs_data_sanitized = obs_data.drop(columns=drop_columns).sort_index().sort_index(axis=1)
         assert not ref_data_sanitized.empty, "All sleep statistics were removed, see log for detail"
         return ref_data_sanitized, obs_data_sanitized
 
@@ -1275,13 +1299,11 @@ class SleepStatsAgreement:
         return mean - bound, mean + bound
 
     @staticmethod
-    def _nan_linregress(*args, **kwargs):
+    def _xlinregress(*args, **kwargs):
         """
-        Wrapper around :py:func:`scipy.stats.linregress` to return a failed
-        :py:class:`~scipy.stats._stats_py.LinregressResult with NaNs.
-
-        The issue is that :py:func:`~scipy.stats.linregress` fails with a ValueError
-        when all `x` values are identical.
+        Wrapper around :py:func:`scipy.stats.linregress` to return a
+        :py:class:`~scipy.stats._stats_py.LinregressResult with NaNs in the case that
+        all ``x`` values are identical (typically this raises a ``ValueError``).
         """
         try:
             regr = sps.linregress(*args, **kwargs)
@@ -1300,24 +1322,73 @@ class SleepStatsAgreement:
                 raise
         return regr
 
-    def _dict_linregress(self, df, **kwargs):
+    @staticmethod
+    def _scipy_result_to_dict(result):
         """
-        A wrapper around :py:func:`scipy.stats.linregress` that returns a dictionary instead of a
-        named tuple. In the normally returned object, ``intercept_stderr`` is an extra field that is
-        not included when converting the named tuple, so this allows it to be included when using
-        something like groupby.
+        Convert an aribitrary :py:mod:`scipy.stats` results instance to dictionary.
+        This is for convenience when applying a :py:mod:`~scipy.stats` test with a
+        :py:class:`~pandas.DataFrame` method (e.g., :py:meth:`pandas.DataFrame.agg`).
+
+        Parameters
+        ----------
+        result : a :py:mod:`scipy.stats` result class
+            Any result class returned by a :py:mod:`~scipy.stats` function. For example,
+            :py:class:`scipy.stats._stats_py.TtestResult` returned by
+            :py:func:`scipy.stats.ttest_1samp` or
+            :py:class:`scipy.stats._stats_py.LinregressResult` returned by
+            :py:func:`scipy.stats.linregress`.
+
+        Returns
+        -------
+        dict
+            The same values as Results class but as a dictionary.
+
+        Examples
+        --------
+        >>> from scipy.stats import ttest_1samp
+        >>> ttest = ttest_1samp([1, 2, 3, 4], 0)
+        >>> print(ttest)
+        TtestResult(statistic=3.872983346207417, pvalue=0.030466291662170977, df=3)
+        >>> print(_scipy_result_to_dict(ttest))
+        {'statistic': 3.872983346207417, 'pvalue': 0.030466291662170977, 'df': 3}
         """
-        assert isinstance(df, pd.DataFrame)
-        assert df.shape[1] == 2
-        regr = self._nan_linregress(*df.T.to_numpy(), **kwargs)
-        return {
-            "slope": regr.slope,
-            "intercept": regr.intercept,
-            "rvalue": regr.rvalue,
-            "pvalue": regr.pvalue,
-            "stderr": regr.stderr,
-            "intercept_stderr": regr.intercept_stderr,
-        }
+        result_d = result._asdict()  # results classes are like namedtuples
+        # Remove some junk that comes with some classes, like TtestResult
+        result_d_clean = {k: v for k, v in result_d.items() if not k.startswith("_")}
+        return result_d_clean
+
+    def _get_vars(self, ref_arr, diff_arr, rabs_arr):
+        """
+        A function to get all variables at once and avoid redundant :py:func:`scipy.stats.bootstrap`
+        calls. For each call (or each bootstrap iteration), this will get all the parameters
+        needed for the main analysis here. So you don't have to re-bootstrap for each parameter.
+
+        Parameters
+        ----------
+        ref_arr : array_like
+            Array of reference values
+        diff_arr : array_like
+            Array of difference values
+        rabs_arr : array_like
+            Array of absolute values of residuals from prior regression
+
+        Returns
+        -------
+        tuple
+            A tuple containing all the parameters needed to be bootstrapped.
+        """
+        if len(set(ref_arr)) == 1:
+            logger.error(
+                "Bootstrap sample contains constant reference scores."
+                "Linear regression will not compute."
+                "Ensure all sleep stats have sufficient variability among reference scores."
+            )
+        bias_parm = np.mean(diff_arr)
+        lloa_parm, uloa_parm = self._arr_to_loa(diff_arr, self._agreement)
+        bias_slope, bias_inter = self._xlinregress(ref_arr, diff_arr)[:2]
+        # Note this is NOT recalculating residuals each time for the next regression
+        loa_slope, loa_inter = self._xlinregress(ref_arr, rabs_arr)[:2]
+        return bias_parm, lloa_parm, uloa_parm, bias_inter, bias_slope, loa_inter, loa_slope
 
     def _generate_bootstrap_ci(self, sleep_stats):
         """
@@ -1347,15 +1418,6 @@ class SleepStatsAgreement:
             "paired": True,  # should stay True, especially if method is BCa
         } | self._bootstrap_kwargs
 
-        def get_vars(ref_arr, diff_arr, rabs_arr):
-            """A function to get all variables at once and avoid redundant stats.bootstrap calls."""
-            bias_parm = np.mean(diff_arr)
-            lloa_parm, uloa_parm = self._arr_to_loa(diff_arr, self._agreement)
-            bias_slope, bias_inter = self._nan_linregress(ref_arr, diff_arr)[:2]
-            # Note this is NOT recalculating residuals each time for the next regression
-            loa_slope, loa_inter = self._nan_linregress(ref_arr, rabs_arr)[:2]
-            return bias_parm, lloa_parm, uloa_parm, bias_inter, bias_slope, loa_inter, loa_slope
-
         # !! Column order MUST match the order of arrays boot_stats expects as INPUT
         # !! Variable order MUST match the order of floats boot_stats returns as OUTPUT
         interval_order = ["lower", "upper"]
@@ -1369,6 +1431,9 @@ class SleepStatsAgreement:
             "loa_intercept",
             "loa_slope",
         ]
+        logger.info(
+            f"Bootstrapping Bias and LoA confidence intervals for the following sleep stats: {sleep_stats}"
+        )
         boot_ci = (
             self._data.loc[
                 sleep_stats, column_order
@@ -1376,7 +1441,7 @@ class SleepStatsAgreement:
             .groupby("sleep_stat")  # Group so the bootstrapping is applied once to each sleep stat
             # Apply the bootstrap function, where tuple(df.to_numpy().T) convert the 3 columns
             # of the passed dataframe to a tuple of 3 1D arrays
-            .apply(lambda df: sps.bootstrap(tuple(df.to_numpy().T), get_vars, **bs_kwargs))
+            .apply(lambda df: sps.bootstrap(tuple(df.to_numpy().T), self._get_vars, **bs_kwargs))
             .map(lambda res: res.confidence_interval)  # Pull high/low CIs out of the results object
             .explode()  # Break high and low CIs into separate rows
             .to_frame("value")  # Convert to dataframe and name column
@@ -1388,6 +1453,10 @@ class SleepStatsAgreement:
         )
         # Merge with existing CI dataframe
         self._ci["boot"] = self._ci["boot"].fillna(boot_ci)
+
+    @staticmethod
+    def _format_strs(row, templates):
+        return {var: fstr.format(**row) for var, fstr in templates.items()}
 
     def get_table(self, bias_method="auto", loa_method="auto", ci_method="auto", fstrings={}):
         """
@@ -1466,11 +1535,8 @@ class SleepStatsAgreement:
         values.columns = values.columns.map("_".join)  # Convert MultiIndex columns to Index
         # Add a column of regr agreement so it can be used as variable
         values["loa_regr_agreement"] = loa_regr_agreement
-
-        def format_all_str(row, fstrings_dict):
-            return {var: fstr.format(**row) for var, fstr in fstrings_dict.items()}
-
-        all_strings = values.apply(format_all_str, fstrings_dict=fstrings, axis=1).apply(pd.Series)
+        # Get a series of all strings
+        all_strings = values.apply(self._format_strs, axis=1, templates=fstrings).apply(pd.Series)
         if bias_method == "auto":
             bias_parm_idx = self.auto_methods.query("bias == 'parm'").index.tolist()
         elif bias_method == "parm":
@@ -1608,7 +1674,7 @@ class SleepStatsAgreement:
     def get_calibration_func(self, sleep_stat):
         """
         Return a function for calibrating a specific sleep statistic, based on observed biases in
-        ``obs_data``/``obs_scorer``.
+        ``obs_data`` / ``obs_scorer``.
 
         .. seealso:: :py:meth:`~yasa.SleepStatsAgreement.calibrate`
 
@@ -1641,8 +1707,9 @@ class SleepStatsAgreement:
                 Values to be calibrated
             method: str
                 Method of bias calculation for calibration (``'parm'``, ``'regr'``, or ``'auto'``).
+                Defaults to ``'auto'``.
             adjust_all : bool
-                If False, only adjust sleep stat if observed bias was statistically significant.
+                If False (default), only adjust sleep stat if observed bias was significant.
 
             Returns
             -------
@@ -1651,7 +1718,7 @@ class SleepStatsAgreement:
             """
             x = np.asarray(x)
             method = auto_method if method == "auto" else method
-            if not_biased and not adjust_all:  # Return input if sleep stat is not statstclly biased
+            if not_biased and not adjust_all:  # Return input if sleep stat is unbiased
                 return x
             elif method == "parm":
                 return x + parm
