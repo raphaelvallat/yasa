@@ -208,7 +208,7 @@ Artefact and Unscored epochs are now excluded from the calculation of the total 
 
 **New FAQ**
 
-The online documentation now has a brand new FAQ section! Make sure to check it out at https://raphaelvallat.github.io/yasa/faq.html
+The online documentation now has a brand new FAQ section! Make sure to check it out at https://yasa-sleep.org/faq.html
 
 **New function: coincidence matrix**
 
