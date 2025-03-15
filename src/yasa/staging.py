@@ -66,7 +66,7 @@ class SleepStaging:
     We provide below some key points on the algorithm and its validation. For more details,
     we refer the reader to the peer-reviewed publication. If you have any questions,
     make sure to first check the
-    `FAQ section <https://raphaelvallat.github.io/yasa/faq.html>`_ of the documentation.
+    `FAQ section <https://yasa-sleep.org/faq.html>`_ of the documentation.
     If you did not find the answer to your question, please feel free to open an issue on GitHub.
 
     **1. Features extraction**
@@ -160,7 +160,7 @@ class SleepStaging:
 
     The sleep scores can then be manually edited in an external graphical user interface
     (e.g. EDFBrowser), as described in the
-    `FAQ <https://raphaelvallat.github.io/yasa/faq.html>`_.
+    `FAQ <https://yasa-sleep.org/faq.html>`_.
     """
 
     def __init__(self, raw, eeg_name, *, eog_name=None, emg_name=None, metadata=None):

@@ -316,7 +316,7 @@ html_theme_options = {
     "show_version_warning_banner": True,
 
     # Defaults to ""
-    # "announcement": "&#128680; This is documentation for the <b>unstable development version</b> of YASA. <a href='https://raphaelvallat.com/yasa'>Switch to stable version</a> &#128680;",
+    # "announcement": "&#128680; This is documentation for the <b>unstable development version</b> of YASA. <a href='https://yasa-sleep.org'>Switch to stable version</a> &#128680;",
     # "announcement": "<span style='font-family: Consolas, monospace;'>pip install yasa --upgrade</span> &#127881;",
 }
 
@@ -326,7 +326,7 @@ html_theme_options = {
 # The base URL which points to the root of the HTML documentation.
 # It is used to indicate the location of document using the Canonical Link Relation.
 # Defaults to ""
-html_baseurl = "https://raphaelvallat.com/yasa"
+html_baseurl = "https://yasa-sleep.org"
 
 # A dictionary of values to pass into the template engine's context for all pages.
 # Defaults to {}
@@ -695,7 +695,7 @@ notfound_context = {
 # Defaults to READTHEDOCS env variable, typically "/en/latest/"
 # Note special case when using default GitHub pages URL: "/<repo>/"
 # https://sphinx-notfound-page.readthedocs.io/en/latest/faq.html#does-this-extension-work-with-github-pages
-notfound_urls_prefix = "/yasa/"
+notfound_urls_prefix = None
 
 # -- External extensions -----------------------------------------------------
 # -- -> Options for sphinx_reredirects -------------------------------------------------
