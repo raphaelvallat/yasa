@@ -1759,8 +1759,8 @@ def sw_detect(
         sw_midcrossing = times[idx_neg_peaks + following_neg_zc]
         sw_idx_neg = times[idx_neg_peaks]  # Location of negative peak
         sw_idx_pos = times[idx_pos_peaks]  # Location of positive peak
-        # Slope between peak trough and midcrossing
-        sw_slope = sw_ptp / (sw_midcrossing - sw_idx_neg)
+        # Slope between negative peak (trough) and positive peak.
+        sw_slope = sw_ptp / (sw_idx_pos - sw_idx_neg)
         # Hypnogram
         if hypno is not None:
             sw_sta = hypno[idx_neg_peaks]
