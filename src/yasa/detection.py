@@ -1715,6 +1715,7 @@ def sw_detect(
 
         # Now we compute the PTP amplitude and keep only the good peaks
         sw_ptp = np.abs(data_filt[i, idx_neg_peaks]) + data_filt[i, idx_pos_peaks]
+        sw_pt = np.abs(data_filt[i, idx_neg_peaks])
         good_ptp = np.logical_and(sw_ptp > amp_ptp[0], sw_ptp < amp_ptp[1])
 
         # If good_ptp is all False
@@ -1723,6 +1724,7 @@ def sw_detect(
             continue
 
         sw_ptp = sw_ptp[good_ptp]
+        sw_pt = sw_pt[good_ptp]
         idx_neg_peaks = idx_neg_peaks[good_ptp]
         idx_pos_peaks = idx_pos_peaks[good_ptp]
 
@@ -1759,8 +1761,8 @@ def sw_detect(
         sw_midcrossing = times[idx_neg_peaks + following_neg_zc]
         sw_idx_neg = times[idx_neg_peaks]  # Location of negative peak
         sw_idx_pos = times[idx_pos_peaks]  # Location of positive peak
-        # Slope between peak trough and midcrossing
-        sw_slope = sw_ptp / (sw_midcrossing - sw_idx_neg)
+        # Slope between peak trough and midcrossing.
+        sw_slope = sw_pt / (sw_midcrossing - sw_idx_neg)
         # Hypnogram
         if hypno is not None:
             sw_sta = hypno[idx_neg_peaks]
