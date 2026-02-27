@@ -82,6 +82,10 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
 
+      - name: Install setuptools (required by mne==1.3.0)
+        if: ${{ matrix.deps.label == 'minimum-versions' }}
+        run: uv pip install setuptools
+
       - name: Install numpy (${{ matrix.deps.label }})
         run: uv pip install "${{ matrix.deps.numpy }}"
 

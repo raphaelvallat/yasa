@@ -342,7 +342,9 @@ class _DetectionResults(object):
 
         if not scaled:
             # Otherwise diagonal values are set to 1
-            np.fill_diagonal(coinc_mat.values, mask.sum())
+            # Use np.diag_indices_from to avoid read-only array issue in pandas 3.0
+            idx = np.diag_indices_from(coinc_mat.values)
+            coinc_mat.iloc[idx] = mask.sum().values
             coinc_mat = coinc_mat.astype(int)
 
         return coinc_mat
