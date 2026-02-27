@@ -58,12 +58,13 @@ class EpochByEpochAgreement:
 
         If a ``dict``, key values must match those of ``ref_hyps``.
 
-    .. important::
-        It is assumed that the order of hypnograms are the same in ``ref_hyps`` and ``obs_hyps``.
-        For example, the third hypnogram in ``ref_hyps`` and ``obs_hyps`` must come from the same
-        sleep session, and they must only differ in that they have different scorers.
+        .. important::
+            It is assumed that the order of hypnograms are the same in ``ref_hyps`` and
+            ``obs_hyps``. For example, the third hypnogram in ``ref_hyps`` and ``obs_hyps`` must
+            come from the same sleep session, and they must only differ in that they have different
+            scorers.
 
-    .. seealso:: For comparing just two hypnograms, use :py:meth:`yasa.Hynogram.evaluate`.
+        .. seealso:: For comparing just two hypnograms, use :py:meth:`yasa.Hynogram.evaluate`.
 
     Notes
     -----
@@ -767,9 +768,9 @@ class SleepStatsAgreement:
     observed scorer.
 
     Features include:
+
     * Get summary calculations of bias, limits of agreement, and their confidence intervals.
-    * Test statistical assumptions of bias, limits of agreement, and their confidence intervals,
-    and apply corrective procedures when the assumptions are not met.
+    * Test statistical assumptions of bias, limits of agreement, and their confidence intervals, and apply corrective procedures when the assumptions are not met.
     * Get bias and limits of agreement in a string-formatted table.
     * Calibrate new data to correct for biases in observed data.
     * Return individual calibration functions.
