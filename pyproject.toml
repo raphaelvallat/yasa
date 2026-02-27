@@ -28,9 +28,9 @@ classifiers = [
 dynamic = ["version"]
 requires-python = ">=3.10"
 dependencies = [
-    "numpy>=1.18.1",
-    "scipy",
-    "pandas",
+    "numpy>=1.22.4",
+    "scipy>=1.8.0",
+    "pandas>=2.1.1",
     "matplotlib",
     "seaborn",
     "mne>=1.3",

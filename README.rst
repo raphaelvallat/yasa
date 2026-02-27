@@ -38,6 +38,31 @@ For more details, try the `quickstart <https://yasa-sleep.org/quickstart.html>`_
 Installation
 ~~~~~~~~~~~~
 
+Dependencies
+------------
+
+YASA is a Python 3 package and is currently tested for Python 3.10+.
+
+The main dependencies of YASA are:
+
+* `NumPy <https://numpy.org/>`_ >= 1.22.4
+* `SciPy <https://www.scipy.org/>`_ >= 1.8.0
+* `Pandas <https://pandas.pydata.org/>`_ >= 2.1.1
+* `Matplotlib <https://matplotlib.org/>`_
+* `Seaborn <https://seaborn.pydata.org/>`_
+* `MNE <https://mne.tools/stable/>`_ >= 1.3
+* `Numba <https://numba.readthedocs.io/>`_ >= 0.57.1
+* `Scikit-learn <https://scikit-learn.org/>`_
+* `LightGBM <https://lightgbm.readthedocs.io/>`_
+* `Antropy <https://github.com/raphaelvallat/antropy>`_
+* `TensorPAC <https://etiennecmb.github.io/tensorpac/>`_ >= 0.6.5
+* `PyRiemann <https://pyriemann.readthedocs.io/>`_ >= 0.2.7
+* `SleepECG <https://sleepecg.readthedocs.io/>`_ >= 0.5.0
+* `lspopt <https://github.com/hbldh/lspopt>`_ >= 1.4
+
+User installation
+-----------------
+
 YASA can be installed using `uv <https://docs.astral.sh/uv/>`_
 
 .. code-block:: shell
@@ -80,7 +105,7 @@ To build and install from source, clone this repository and install in editable 
 
 To use YASA, all you need is:
 
-- Some basic knowledge of Python, especially the `NumPy <https://docs.scipy.org/doc/numpy/user/quickstart.html>`_, `Pandas <https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html>`_ and `MNE <https://martinos.org/mne/stable/index.html>`_ packages.
+- Some basic knowledge of Python, especially the `NumPy <https://numpy.org/doc/stable/user/quickstart.html>`_, `Pandas <https://pandas.pydata.org/docs/user_guide/10min.html>`_ and `MNE <https://mne.tools/stable/>`_ packages.
 - A Python editor: YASA works best with `Jupyter Lab <https://jupyterlab.readthedocs.io/en/stable/index.html>`_, a web-based interactive user interface.
 - Some sleep EEG data and optionally a sleep staging file (hypnogram).
 

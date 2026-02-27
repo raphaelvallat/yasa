@@ -50,32 +50,74 @@ For more details, try the :ref:`quickstart` or read the :ref:`faq`.
 Installation
 ~~~~~~~~~~~~
 
-To install YASA, simply open a terminal or Anaconda command prompt and enter:
+YASA is a Python 3 package and is currently tested for Python 3.10+.
+
+Dependencies
+------------
+
+The main dependencies of YASA are:
+
+* `NumPy <https://numpy.org/>`_ >= 1.22.4
+* `SciPy <https://www.scipy.org/>`_ >= 1.8.0
+* `Pandas <https://pandas.pydata.org/>`_ >= 2.1.1
+* `Matplotlib <https://matplotlib.org/>`_
+* `Seaborn <https://seaborn.pydata.org/>`_
+* `MNE <https://mne.tools/stable/>`_ >= 1.3
+* `Numba <https://numba.readthedocs.io/>`_ >= 0.57.1
+* `Scikit-learn <https://scikit-learn.org/>`_
+* `LightGBM <https://lightgbm.readthedocs.io/>`_
+* `Antropy <https://github.com/raphaelvallat/antropy>`_
+* `TensorPAC <https://etiennecmb.github.io/tensorpac/>`_ >= 0.6.5
+* `PyRiemann <https://pyriemann.readthedocs.io/>`_ >= 0.2.7
+* `SleepECG <https://sleepecg.readthedocs.io/>`_ >= 0.5.0
+* `lspopt <https://github.com/hbldh/lspopt>`_ >= 1.4
+
+User installation
+-----------------
+
+YASA can be easily installed using `uv <https://docs.astral.sh/uv/>`_
+
+.. code-block:: shell
+
+    uv pip install yasa
+
+pip
 
 .. code-block:: shell
 
     pip install --upgrade yasa
 
-Alternatively, YASA can be installed with conda:
+or conda
 
 .. code-block:: shell
 
-    conda install conda-forge::yasa
+    conda install -c conda-forge yasa
 
-To build and install from source, clone this repository or download the source archive and decompress the files
+New releases are frequent so always make sure that you have the latest version:
 
 .. code-block:: shell
 
+    uv pip install --upgrade yasa
+
+Development
+-----------
+
+To build and install from source, clone this repository and install in editable mode with `uv <https://docs.astral.sh/uv/>`_
+
+.. code-block:: shell
+
+    git clone https://github.com/raphaelvallat/yasa.git
     cd yasa
-    pip install .[test]     # install the package
-    pip install -e .[test]  # or editable install
-    pytest                  # test the package
+    uv pip install --group=test --editable .
+
+    # test the package
+    pytest --verbose
 
 **What are the prerequisites for using YASA?**
 
 To use YASA, all you need is:
 
-- Some basic knowledge of Python, especially the `NumPy <https://docs.scipy.org/doc/numpy/user/quickstart.html>`_, `Pandas <https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html>`_ and `MNE <https://martinos.org/mne/stable/index.html>`_ packages.
+- Some basic knowledge of Python, especially the `NumPy <https://numpy.org/doc/stable/user/quickstart.html>`_, `Pandas <https://pandas.pydata.org/docs/user_guide/10min.html>`_ and `MNE <https://mne.tools/stable/>`_ packages.
 - A Python editor: YASA works best with `Jupyter Lab <https://jupyterlab.readthedocs.io/en/stable/index.html>`_, a web-based interactive user interface.
 - Some sleep EEG data and optionally a sleep staging file (hypnogram).
 
