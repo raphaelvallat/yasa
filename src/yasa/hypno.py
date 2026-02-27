@@ -588,7 +588,7 @@ class Hypnogram:
         elif new_n_stages == 4:
             # Consolidate N1/N2 into Light
             mapping = {"N1": "LIGHT", "N2": "LIGHT", "N3": "DEEP"}
-        new_hyp = self.hypno.replace(mapping).to_numpy()
+        new_hyp = self.hypno.astype(object).replace(mapping).to_numpy()
 
         return Hypnogram(
             values=new_hyp,
