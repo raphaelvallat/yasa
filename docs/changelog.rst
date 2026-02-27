@@ -7,6 +7,28 @@ What's new
 v0.7.0 (March 2026)
 -------------------
 
+This is the first major release of YASA in two years! It introduces a new object-oriented
+hypnogram API, a new module for inter-scorer agreement, and includes critical bugfixes. This version
+requires Python 3.10+ and is fully compatible with pandas 3.x and numpy 2.x.
+
+.. warning::
+
+   **Breaking changes — action required**
+
+   This release introduces the :py:class:`yasa.Hypnogram` class as the new standard for
+   representing hypnograms throughout YASA. Several functions and classes that previously returned
+   plain :py:class:`numpy.ndarray` objects now return a :py:class:`yasa.Hypnogram` instead,
+   which **will break existing code** that expects an array. Key examples include:
+
+   * :py:class:`yasa.SleepStaging` (automatic sleep staging): ``predict()`` now returns a
+     :py:class:`yasa.Hypnogram` instead of a string array. To recover the underlying array use
+     :py:attr:`~yasa.Hypnogram.hypno` (string labels) or :py:meth:`~yasa.Hypnogram.as_int`
+     (integer-encoded).
+   * :py:func:`yasa.plot_hypnogram` now *requires* a :py:class:`yasa.Hypnogram` as input.
+
+   Please refer to the :py:class:`yasa.Hypnogram` documentation for a full description of the
+   new API and guidance on migrating legacy code.
+
 **New: Object-oriented Hypnogram class**
 
 This version introduces the new :py:class:`yasa.Hypnogram` class, which is now
@@ -34,7 +56,8 @@ an object with several pre-built methods and attributes:
 
 This version also promotes the :py:mod:`yasa.evaluation` module (experimental since v0.6.5) to a
 stable API. It provides two classes to quantify agreement between two scorers (e.g. human vs YASA),
-either epoch-by-epoch or at the level of summary sleep statistics:
+either epoch-by-epoch (:py:class:`yasa.EpochByEpochAgreement`) or at the level of summary sleep
+statistics (:py:class:`yasa.SleepStatsAgreement`):
 
 .. code-block:: python
 
@@ -52,11 +75,11 @@ either epoch-by-epoch or at the level of summary sleep statistics:
     ebe.plot_hypnograms(sleep_id=1)  # Overlay two hypnograms for visual inspection
 
     # Sleep-statistics agreement (Bland–Altman style)
-    sstats = ebe.get_sleep_stats()                   # DataFrame indexed by (scorer, sleep_id)
+    sstats = ebe.get_sleep_stats()  # DataFrame indexed by (scorer, sleep_id)
     ref_stats = sstats.loc["Human"]
     obs_stats = sstats.loc["YASA"]
     ssa = yasa.SleepStatsAgreement(ref_stats, obs_stats, ref_scorer="Human", obs_scorer="YASA")
-    ssa.summary()                # Bias and limits of agreement for each statistic
+    ssa.summary()  # Bias and limits of agreement for each statistic
 
     # For a single-night comparison, use Hypnogram.evaluate():
     ebe = ref_hyps[0].evaluate(obs_hyps[0])
@@ -65,7 +88,7 @@ either epoch-by-epoch or at the level of summary sleep statistics:
 **New functions**
 
 * New :py:func:`yasa.fetch_sample` function to download and cache sample YASA data files. (`PR 192 <https://github.com/raphaelvallat/yasa/pull/192>`_)
-* New :py:meth:`yasa.Hypnogram.from_integers` classmethod to construct a :py:class:`yasa.Hypnogram` directly from a legacy integer-encoded array (e.g. loaded from a plain-text file with :py:func:`numpy.loadtxt`). This replaces the two-step ``hypno_int_to_str`` + ``Hypnogram(...)`` pattern and accepts an optional custom mapping for non-standard integer encodings.
+* New :py:meth:`yasa.Hypnogram.from_integers` classmethod to construct a :py:class:`yasa.Hypnogram` directly from a legacy integer-encoded array (e.g. loaded from a plain-text file with :py:func:`numpy.loadtxt`).
 
 **API changes**
 
@@ -73,41 +96,42 @@ either epoch-by-epoch or at the level of summary sleep statistics:
 * :py:func:`yasa.simulate_hypnogram` now returns a :py:class:`yasa.Hypnogram` instead of a :py:class:`numpy.ndarray`.
 * :py:func:`yasa.plot_hypnogram` now *requires* a :py:class:`yasa.Hypnogram` instance as input (previously accepted a plain array).
 * :py:func:`yasa.transition_matrix` now accepts a :py:class:`yasa.Hypnogram` instance in addition to integer arrays. When a :py:class:`yasa.Hypnogram` is passed, the output DataFrames use string stage labels (e.g. ``"WAKE"``, ``"N1"``) instead of integers. Equivalent to calling :py:meth:`yasa.Hypnogram.transition_matrix` directly.
-* Added helpful string representation (``__repr__``) to :py:class:`yasa.SleepStaging`.
 * Detection functions (:py:func:`yasa.spindles_detect`, :py:func:`yasa.sw_detect`, :py:func:`yasa.rem_detect`) now log an explicit warning when ``sf`` or ``ch_names`` are ignored because an MNE object was passed. (`PR 207 <https://github.com/raphaelvallat/yasa/pull/207>`_)
 
 **Bugfixes**
 
 * Fixed slow-wave slope calculation: the slope numerator was incorrectly using the positive half-wave amplitude instead of the negative half-wave amplitude. (`PR 220 <https://github.com/raphaelvallat/yasa/pull/220>`_)
+* Fixed multiple compatibility issues with pandas 3.x and numpy 2.x in :py:func:`yasa.compare_detection`, :py:class:`yasa.Hypnogram`, and :py:class:`yasa.SleepStaging`.
+* Fixed multiple broken or outdated links in doc and docstrings
 
-**pandas 3.0 / numpy 2 compatibility**
+**Dependencies**
 
-* Fixed ``ValueError: underlying array is read-only`` in the coincidence matrix computation in :py:func:`yasa.compare_detection`.
-* Fixed ``TypeError: Cannot setitem on a Categorical with a new category`` in :py:meth:`yasa.Hypnogram.consolidate_stages`.
-* Fixed ``AssertionError`` in :py:class:`yasa.Hypnogram` when pandas returns an ``ArrowStringArray`` (new default string backend in pandas 3.0).
-* Fixed ``PerformanceWarning: DataFrame is highly fragmented`` in :py:class:`yasa.SleepStaging`.
-* Fixed ``Pandas4Warning`` for ``Series.sum(1)`` → ``Series.sum(axis=1)`` in :py:class:`yasa.Hypnogram` and the test suite.
+* YASA now requires **Python ≥ 3.10** (dropped Python 3.9, which reached end-of-life in October 2025; added Python 3.13).
+* Bumped minimum dependency versions: ``numpy >= 1.22.4``, ``scipy >= 1.8.1``, ``pandas >= 2.1.1``.
+* Bumped minimum ``lspopt`` version. (`PR 195 <https://github.com/raphaelvallat/yasa/pull/195>`_)
 
 **Documentation**
 
 * Overhauled the documentation with the `PyData Sphinx Theme <https://pydata-sphinx-theme.readthedocs.io/>`_. (`PR 194 <https://github.com/raphaelvallat/yasa/pull/194>`_)
-* Updated the Quickstart guide end-to-end to use the new :py:class:`yasa.Hypnogram` API (loading with :py:meth:`~yasa.Hypnogram.from_integers`, :py:meth:`~yasa.Hypnogram.sleep_statistics`, :py:meth:`~yasa.Hypnogram.transition_matrix`, and :py:meth:`~yasa.Hypnogram.upsample_to_data`).
+* Updated the Quickstart guide end-to-end to use the new :py:class:`yasa.Hypnogram` API.
 * Added `YASA Flaskified <https://github.com/bartromb/YASAFlaskified>`_ (a web-based interface built on YASA) to README and FAQ. (`PR 198 <https://github.com/raphaelvallat/yasa/pull/198>`_)
 * FAQ: clarified the difference between Volts and µV in MNE objects. (`PR 204 <https://github.com/raphaelvallat/yasa/pull/204>`_)
 * FAQ: specified REM density units. (`PR 206 <https://github.com/raphaelvallat/yasa/pull/206>`_)
 * Added a Dependencies section with minimum versions to ``README.rst`` and ``docs/index.rst``.
 * Fixed multiple broken or outdated links. (`PR 202 <https://github.com/raphaelvallat/yasa/pull/202>`_, `PR 210 <https://github.com/raphaelvallat/yasa/pull/210>`_)
+* Added helpful string representation (``__repr__``) to :py:class:`yasa.SleepStaging`.
 
-**Maintenance**
+**Packaging & tooling**
 
 * Modern packaging: migrated to ``src/`` layout, ``pyproject.toml``-only configuration, numpy 2 compatibility. (`PR 187 <https://github.com/raphaelvallat/yasa/pull/187>`_)
 * Switched to `uv <https://docs.astral.sh/uv/>`_ as the recommended package manager; development dependencies moved to ``[dependency-groups]`` (PEP 735).
-* Dropped Python 3.9 (reached end-of-life October 2025); added Python 3.13. YASA now requires Python ≥ 3.10.
-* Bumped minimum dependency versions: ``numpy >= 1.22.4``, ``scipy >= 1.8.1``, ``pandas >= 2.1.1``.
-* Bumped minimum ``lspopt`` version. (`PR 195 <https://github.com/raphaelvallat/yasa/pull/195>`_)
-* Added ruff linting and formatting to the CI pipeline; updated all GitHub Actions to latest versions.
+* Added ruff linting and formatting to the CI pipeline.
+
+**CI / GitHub Actions**
+
+* Updated all GitHub Actions to their latest versions.
 * New ``test-dependency-combinations`` CI job: runs the test suite against minimum-supported and latest versions of numpy, scipy, pandas, MNE, and numba.
-* Coverage reporting moved to a dedicated ``coverage.yml`` workflow; replaced hardcoded Codecov token with ``${{ secrets.CODECOV_TOKEN }}``.
+* Coverage reporting moved to a dedicated ``coverage.yml`` workflow
 
 ----------------------------------------------------------------------------------------
 
