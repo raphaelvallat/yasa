@@ -37,7 +37,9 @@ jobs:
         run: uv pip install --group=docs --editable .
 
       - name: Build documentation
-        run: sphinx-build docs docs/build/html
+        run: |
+          make -C docs clean
+          make -C docs html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

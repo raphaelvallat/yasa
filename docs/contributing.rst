@@ -41,10 +41,10 @@ All changes to the codebase must be properly documented. To ensure that document
 
 .. code-block:: bash
 
-    $ pip install yasa[docs]
+    $ uv pip install --group=docs --editable .
 
-and then within the ``yasa/docs`` directory do:
+and then from the root of the repository do:
 
 .. code-block:: bash
 
-    $ sphinx-build -M html . ./build
+    $ make -C docs html
