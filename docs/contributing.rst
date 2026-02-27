@@ -12,7 +12,7 @@ Code guidelines
 
 Before starting new code, we highly recommend opening an issue on `GitHub <https://github.com/raphaelvallat/yasa>`_ to discuss potential changes.
 
-* Please use standard `pep8 <https://pypi.python.org/pypi/pep8>`_ and `flake8 <http://flake8.pycqa.org/>`_ Python style guidelines. YASA uses `ruff <https://github.com/astral-sh/ruff>`_ for code formatting. Before submitting a PR, please make sure to run the following command in the root folder of YASA:
+* Please use standard `pep8 <https://pypi.org/project/pycodestyle/>`_ and `flake8 <https://flake8.pycqa.org/en/latest/>`_ Python style guidelines. YASA uses `ruff <https://github.com/astral-sh/ruff>`_ for code formatting. Before submitting a PR, please make sure to run the following command in the root folder of YASA:
 
     .. code-block:: bash
 
@@ -34,7 +34,7 @@ Checking and building documentation
 -----------------------------------
 
 YASA's documentation (including docstring in code) uses ReStructuredText format,
-see `Sphinx documentation <http://www.sphinx-doc.org/en/master/>`_ to learn more about editing them. The code
+see `Sphinx documentation <https://www.sphinx-doc.org/en/master/>`_ to learn more about editing them. The code
 follows the `NumPy docstring standard <https://numpydoc.readthedocs.io/en/latest/format.html>`_.
 
 All changes to the codebase must be properly documented. To ensure that documentation is rendered correctly, the best bet is to follow the existing examples for function docstrings. If you want to test the documentation locally, you will need to install the required packages:

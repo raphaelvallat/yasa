@@ -70,9 +70,9 @@ Event detection
     :icon: question
     :name: detection_algo
 
-    The **spindles** detection is a custom adaptation of the `Lacourse et al 2018 <https://doi.org/10.1016/j.jneumeth.2018.08.014>`_ method. A step-by-step description of the algorithm can be found in `this notebook <https://github.com/raphaelvallat/yasa/blob/develop/notebooks/01_spindles_detection.ipynb>`_.
+    The **spindles** detection is a custom adaptation of the `Lacourse et al 2018 <https://doi.org/10.1016/j.jneumeth.2018.08.014>`_ method. A step-by-step description of the algorithm can be found in `this notebook <https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb>`_.
 
-    The **slow-waves detection** combines the methods proposed in `Massimini et al 2004 <https://www.jneurosci.org/content/24/31/6862>`_ and `Carrier et al 2011 <https://doi.org/10.1111/j.1460-9568.2010.07543.x>`_. A step-by-step description of the algorithm can be found `here <https://github.com/raphaelvallat/yasa/blob/develop/notebooks/05_sw_detection.ipynb>`_.
+    The **slow-waves detection** combines the methods proposed in `Massimini et al 2004 <https://www.jneurosci.org/content/24/31/6862>`_ and `Carrier et al 2011 <https://doi.org/10.1111/j.1460-9568.2010.07543.x>`_. A step-by-step description of the algorithm can be found `here <https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb>`_.
 
     .. important::
         Both algorithms have parameters that can (and should) be fine-tuned to your data, as explained in the next question.

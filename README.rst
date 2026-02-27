@@ -11,8 +11,8 @@
 .. image:: https://codecov.io/gh/raphaelvallat/yasa/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/raphaelvallat/yasa
 
-.. image:: https://pepy.tech/badge/yasa
-    :target: https://pepy.tech/badge/yasa
+.. image:: https://static.pepy.tech/badge/yasa
+    :target: https://pepy.tech/projects/yasa
 
 .. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
   :target: https://github.com/astral-sh/ruff

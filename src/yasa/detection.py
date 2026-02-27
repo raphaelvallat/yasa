@@ -2909,7 +2909,7 @@ def art_detect(
         This function will only detect major body artefacts present on the EEG
         channel. It will not detect EKG contamination or eye blinks. For more
         artifact rejection tools, please refer to the `MNE Python package
-        <https://mne.tools/stable/auto_tutorials/preprocessing/plot_10_preprocessing_overview.html>`_.
+        <https://mne.tools/stable/auto_tutorials/preprocessing/10_preprocessing_overview.html>`_.
 
     .. tip::
         For best performance, apply this function on pre-staged data and make
@@ -2975,7 +2975,7 @@ def art_detect(
     * Barachant, A., Andreev, A., & Congedo, M. (2013). `The Riemannian
       Potato: an automatic and adaptive artifact detection method for online
       experiments using Riemannian geometry.
-      <https://hal.archives-ouvertes.fr/hal-00781701/>`_ TOBI
+      <https://hal.science/hal-00781701/>`_ TOBI
       Workshop lV, 19–20.
 
     * Barthélemy, Q., Mayaud, L., Ojeda, D., & Congedo, M. (2019).

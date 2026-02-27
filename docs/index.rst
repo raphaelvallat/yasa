@@ -11,8 +11,8 @@
     :target: https://codecov.io/gh/raphaelvallat/yasa
     :alt: Codecov
 
-.. image:: https://pepy.tech/badge/yasa
-    :target: https://pepy.tech/badge/yasa
+.. image:: https://static.pepy.tech/badge/yasa
+    :target: https://pepy.tech/projects/yasa
     :alt: PyPI - Downloads
 
 .. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
