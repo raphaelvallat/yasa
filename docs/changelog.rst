@@ -33,6 +33,7 @@ an object with several pre-built methods and attributes:
 **New functions**
 
 * New :py:func:`yasa.fetch_sample` function to download and cache sample YASA data files. (`PR 192 <https://github.com/raphaelvallat/yasa/pull/192>`_)
+* New :py:meth:`yasa.Hypnogram.from_integers` classmethod to construct a :py:class:`yasa.Hypnogram` directly from a legacy integer-encoded array (e.g. loaded from a plain-text file with :py:func:`numpy.loadtxt`). This replaces the two-step ``hypno_int_to_str`` + ``Hypnogram(...)`` pattern and accepts an optional custom mapping for non-standard integer encodings.
 
 **API changes**
 

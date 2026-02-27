@@ -38,7 +38,9 @@ class Hypnogram:
     hypnograms are now stored as a class (aka object), which comes with its own attributes and
     functions. Furthermore, YASA does not allow integer values to define the stages anymore.
     Instead, users must pass an array of strings with the actual stage names
-    (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]).
+    (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]). If your hypnogram is encoded as integers
+    (e.g. loaded from a text file with :py:func:`numpy.loadtxt`), use
+    :py:meth:`Hypnogram.from_integers` instead.
 
     .. versionadded:: 0.7.0
 
@@ -336,6 +338,101 @@ class Hypnogram:
 
     def __str__(self):
         return self.__repr__()
+
+    @classmethod
+    def from_integers(
+        cls,
+        values,
+        mapping={0: "W", 1: "N1", 2: "N2", 3: "N3", 4: "R", -1: "Art", -2: "Uns"},
+        n_stages=5,
+        *,
+        freq="30s",
+        start=None,
+        scorer=None,
+        proba=None,
+    ):
+        """Create a :py:class:`Hypnogram` from an integer-encoded hypnogram array.
+
+        This is a convenience constructor for users migrating from the legacy integer-based API
+        (e.g. ``[0, 1, 2, 3, 4]`` for Wake, N1, N2, N3, REM). Internally, it calls
+        :py:func:`yasa.hypno_int_to_str` to convert integers to strings before creating the
+        :py:class:`Hypnogram`.
+
+        .. versionadded:: 0.7.0
+
+        Parameters
+        ----------
+        values : array_like
+            A 1D array of integer sleep stage values, e.g. ``np.array([0, 1, 1, 2, 3, 4])``.
+        mapping : dict
+            A dictionary mapping integer values to stage string labels. The default mapping is:
+
+            .. code-block:: python
+
+                {0: "W", 1: "N1", 2: "N2", 3: "N3", 4: "R", -1: "Art", -2: "Uns"}
+
+            Override this to support non-standard integer encodings.
+        n_stages : int
+            Whether ``values`` comes from a 2, 3, 4 or 5-stage hypnogram. Default is 5.
+        freq : str
+            Frequency resolution of the hypnogram. Default is ``"30s"``.
+        start : str or datetime, optional
+            Optional start datetime of the hypnogram (e.g. ``"2022-12-15 22:30:00"``).
+        scorer : str, optional
+            Optional scorer name.
+        proba : :py:class:`pandas.DataFrame`, optional
+            Optional dataframe of per-epoch stage probabilities.
+
+        Returns
+        -------
+        hyp : :py:class:`Hypnogram`
+            A :py:class:`Hypnogram` instance with string-encoded stages.
+
+        Examples
+        --------
+        Convert a legacy integer hypnogram (e.g. loaded from a ``.txt`` file) to a
+        :py:class:`Hypnogram` object:
+
+        >>> import numpy as np
+        >>> from yasa import Hypnogram
+        >>> int_hypno = np.array([0, 0, 1, 2, 3, 2, 4, 4, 0])
+        >>> hyp = Hypnogram.from_integers(int_hypno)
+        >>> hyp
+        <Hypnogram | 9 epochs x 30s (4.50 minutes), 5 unique stages>
+         - Use `.hypno` to get the string values as a pandas.Series
+         - Use `.as_int()` to get the integer values as a pandas.Series
+         - Use `.plot_hypnogram()` to plot the hypnogram
+        See the online documentation for more details.
+
+        >>> hyp.hypno
+        Epoch
+        0    WAKE
+        1    WAKE
+        2      N1
+        3      N2
+        4      N3
+        5      N2
+        6     REM
+        7     REM
+        8    WAKE
+        Name: Stage, dtype: category
+        Categories (7, object): ['WAKE', 'N1', 'N2', 'N3', 'REM', 'ART', 'UNS']
+
+        Typical usage when loading a hypnogram from a plain-text file:
+
+        >>> import numpy as np
+        >>> from yasa import Hypnogram
+        >>> int_hypno = np.loadtxt("path/to/hypnogram.txt").astype(int)
+        >>> hyp = Hypnogram.from_integers(int_hypno, freq="30s", start="2022-12-15 22:30:00")
+
+        Use a custom mapping to handle non-standard integer encodings:
+
+        >>> # Hypnogram encoded as: 1=WAKE, 2=REM, 3=N1, 4=N2, 5=N3
+        >>> custom_mapping = {1: "W", 2: "R", 3: "N1", 4: "N2", 5: "N3"}
+        >>> hyp = Hypnogram.from_integers([1, 3, 4, 5, 2], mapping=custom_mapping)
+        """
+        str_hypno = hypno_int_to_str(values, mapping_dict=mapping)
+        return cls(str_hypno, n_stages=n_stages, freq=freq, start=start, scorer=scorer, proba=proba)
 
     @property
     def hypno(self):
@@ -1249,9 +1346,6 @@ def hypno_int_to_str(
 
     [0, 2, 2, 3, 4] ==> ['W', 'N2', 'N2', 'N3', 'R']
 
-    .. deprecated:: 0.7.0
-        Use :py:class:`yasa.Hypnogram` instead. This function will be removed in v0.8.
-
     .. versionadded:: 0.1.5
 
     Parameters
@@ -1265,14 +1359,13 @@ def hypno_int_to_str(
     Returns
     -------
     hypno : array_like
-        The corresponding integer hypnogram.
+        The corresponding string hypnogram.
+
+    See Also
+    --------
+    :py:meth:`yasa.Hypnogram.from_integers` : Convenience constructor that combines this
+        conversion with :py:class:`yasa.Hypnogram` creation in a single step.
     """
-    warnings.warn(
-        "The `yasa.hypno_int_to_str` function is deprecated and will be removed in v0.8. "
-        "Please use the `yasa.Hypnogram` class instead.",
-        FutureWarning,
-        stacklevel=2,
-    )
     assert isinstance(hypno, (list, np.ndarray, pd.Series)), "Not an array."
     hypno = pd.Series(np.asarray(hypno, dtype=int))
     return hypno.map(mapping_dict).values

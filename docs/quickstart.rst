@@ -102,25 +102,20 @@ Hypnogram
 
 Sleep staging (aka hypnogram) for this example night was performed by a trained technician following the standard rules of the American Academy of Sleep Medicine (AASM).
 The output is saved in a .csv file, where each row represents 30 seconds of data. The stages are mapped to integers such that 0 = Wake, 1 = N1 sleep, 2 = N2 sleep, 3 = N3 sleep and 4 = REM sleep.
-We can load this file using the :py:func:`pandas.read_csv` function:
+We can load this file using :py:func:`pandas.read_csv` and then convert the integer stages to a :py:class:`~yasa.Hypnogram` object using :py:meth:`~yasa.Hypnogram.from_integers`:
 
 .. code-block:: python
 
     >>> import pandas as pd
-    >>> hypno = pd.read_csv("yasa_example_night_young_hypno.csv", squeeze=True)
-    >>> hypno
-    0      0
-    1      0
-    2      0
-    3      0
-    4      0
-            ..
-    959    2
-    960    2
-    961    2
-    962    2
-    963    0
-    Name: Stage, Length: 964, dtype: int64
+    >>> import yasa
+    >>> hypno = pd.read_csv("yasa_example_night_young_hypno.csv").squeeze().to_numpy()
+    >>> hyp = yasa.Hypnogram.from_integers(hypno, freq="30s")
+    >>> hyp
+    <Hypnogram | 964 epochs x 30s (482.00 minutes), 5 unique stages>
+     - Use `.hypno` to get the string values as a pandas.Series
+     - Use `.as_int()` to get the integer values as a pandas.Series
+     - Use `.plot_hypnogram()` to plot the hypnogram
+    See the online documentation for more details.
 
 .. note::
 
@@ -130,8 +125,7 @@ Using the :py:func:`~yasa.plot_hypnogram` function, we can plot the hypnogram:
 
 .. code-block:: python
 
-    >>> import yasa
-    >>> yasa.plot_hypnogram(hypno);
+    >>> yasa.plot_hypnogram(hyp);
 
 .. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/hypnogram.png
     :align: center
@@ -141,12 +135,11 @@ Using the :py:func:`~yasa.plot_hypnogram` function, we can plot the hypnogram:
 Sleep statistics and stage-transition matrix
 --------------------------------------------
 
-Using the hypnogram, we can calculate standard sleep statistics using the :py:func:`~yasa.sleep_statistics` function.
-Importantly, this function has an ``sf_hyp`` argument, which is the sampling frequency of the hypnogram. Since we have one value every 30-seconds, the sampling frequency is 0.3333 Hz, or 1 / 30 Hz.
+Using the hypnogram, we can calculate standard sleep statistics using the :py:meth:`~yasa.Hypnogram.sleep_statistics` method:
 
 .. code-block:: python
 
-    >>> yasa.sleep_statistics(hypno, sf_hyp=1/30)
+    >>> hyp.sleep_statistics()
     {'TIB': 482.0,
     'SPT': 468.5,
     'WASO': 9.0,
@@ -169,11 +162,11 @@ Importantly, this function has an ``sf_hyp`` argument, which is the sampling fre
     'SE': 95.33195020746888,
     'SME': 98.07897545357524}
 
-Furthermore, we can also calculate the sleep stages transition matrix using the :py:func:`~yasa.transition_matrix` function:
+Furthermore, we can also calculate the sleep stages transition matrix using the :py:meth:`~yasa.Hypnogram.transition_matrix` method:
 
 .. code-block:: python
 
-    >>> counts, probs = yasa.transition_matrix(hypno)
+    >>> counts, probs = hyp.transition_matrix()
     >>> probs.round(3)
 
 .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/transition_matrix.png
@@ -196,12 +189,12 @@ Spectral analyses
 Full-night spectrogram plot
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The current sampling frequency of the hypnogram is one value every 30-seconds, i.e. ~0.3333 Hz. However, most YASA functions requires the sampling frequency of the hypnogram to be the same as the sampling frequency of the PSG data. In this example, we therefore need to upsample our hypnogram from 0.333 Hz to 100 Hz.
-This can be done with the :py:func:`~yasa.hypno_upsample_to_data` function:
+The current sampling frequency of the hypnogram is one value every 30-seconds, i.e. ~0.3333 Hz. However, most YASA functions require the hypnogram to be upsampled to match the sampling frequency of the PSG data. In this example, we therefore need to upsample our hypnogram from 0.333 Hz to 100 Hz.
+This can be done with the :py:meth:`~yasa.Hypnogram.upsample_to_data` method:
 
 .. code-block:: python
 
-    >>> hypno_up = yasa.hypno_upsample_to_data(hypno, sf_hypno=1/30, data=raw)
+    >>> hypno_up = hyp.upsample_to_data(data=raw)
     >>> print(len(hypno_up))
 
 Now that the hypnogram and data have the same shape, we can plot our hypnogram on top of a multitaper `spectrogram <https://en.wikipedia.org/wiki/Spectrogram>`_ using the :py:func:`~yasa.plot_spectrogram` function, which shows the time-frequency representation of a single EEG channel across the entire night. The x-axis of the spectrogram is time in hours, and the y-axis is the frequency range (from 0 to 25 Hz).
