@@ -1133,7 +1133,7 @@ class SleepStatsAgreement:
             f"reference scorer ('{self.ref_scorer}'), {self.n_sessions} sleep sessions>\n"
             " - Use `.summary()` to get a dataframe of bias and limits of agreement for each sleep "
             "statistic\n"
-            " - Use `.plot_blandaltman()` to get a Bland-Altman-plot grid for sleep statistics\n"
+            # ()` to get a Bland-Altman-plot grid for sleep statistics\n"
             "See the online documentation for more details."
         )
 
@@ -1210,7 +1210,7 @@ class SleepStatsAgreement:
         # !! Column order MUST match the order of arrays boot_stats expects as INPUT
         # !! Variable order MUST match the order of floats boot_stats returns as OUTPUT
         interval_order = ["lower", "upper"]
-        column_order = ["Reference", "difference", "residuals_abs"]
+        column_order = [self.ref_scorer, "difference", "residuals_abs"]
         variable_order = [
             "bias_parm",
             "lloa_parm",
