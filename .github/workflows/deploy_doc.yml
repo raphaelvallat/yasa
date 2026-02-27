@@ -1,14 +1,24 @@
-name: Build documentation and upload as artifact to GitHub Actions
+name: Deploy Documentation to GitHub Pages
 
 on:
   push:
     branches: [master]
-  pull_request:
-    branches: [master]
+  workflow_dispatch:
+
+# Cancel any in-progress job or run
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
-  docs:
+  deploy-docs:
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     env:
       FORCE_COLOR: true
       UV_SYSTEM_PYTHON: 1
@@ -29,8 +39,11 @@ jobs:
       - name: Build documentation
         run: sphinx-build docs docs/build/html
 
-      - name: Upload documentation artifacts
-        uses: actions/upload-artifact@v6
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: docs-artifact
           path: docs/build/html
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
