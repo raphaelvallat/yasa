@@ -89,7 +89,7 @@ version = {attr = "yasa.__version__"}
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--showlocals --durations=10 --cov"
+addopts = "--showlocals --durations=10"  # --cov
 doctest_optionflags= ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
 filterwarnings = [
     "ignore::UserWarning",
