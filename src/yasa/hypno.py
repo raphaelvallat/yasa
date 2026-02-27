@@ -299,7 +299,7 @@ class Hypnogram:
         if proba is not None:
             assert proba.shape[1] > 0, "`proba` must have at least one column."
             assert proba.shape[0] == hypno.shape[0], "`proba` must have the same length as `values`"
-            assert np.allclose(proba.sum(1), 1), "Each row of `proba` must sum to 1."
+            assert np.allclose(proba.sum(axis=1), 1), "Each row of `proba` must sum to 1."
             in_proba_but_not_labels = np.setdiff1d(proba.columns, labels)
             # in_labels_but_not_proba = np.setdiff1d(labels, proba.columns)
             assert not len(in_proba_but_not_labels), (

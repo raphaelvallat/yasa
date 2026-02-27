@@ -352,14 +352,12 @@ class SleepStaging:
         # TEMPORAL + METADATA FEATURES AND EXPORT
         #######################################################################
 
-        # Add temporal features
-        features["time_hour"] = times / 3600
-        features["time_norm"] = times / times[-1]
-
-        # Add metadata if present
+        # Add temporal features and metadata using concat to avoid fragmentation
+        extra = {"time_hour": times / 3600, "time_norm": times / times[-1]}
         if self.metadata is not None:
             for c in self.metadata.keys():
-                features[c] = self.metadata[c]
+                extra[c] = self.metadata[c]
+        features = pd.concat([features, pd.DataFrame(extra, index=features.index)], axis=1)
 
         # Downcast float64 to float32 (to reduce size of training datasets)
         cols_float = features.select_dtypes(np.float64).columns.tolist()
