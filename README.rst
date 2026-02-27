@@ -38,28 +38,43 @@ For more details, try the `quickstart <https://yasa-sleep.org/quickstart.html>`_
 Installation
 ~~~~~~~~~~~~
 
-To install YASA, simply open a terminal or Anaconda command prompt and enter:
+YASA can be installed using `uv <https://docs.astral.sh/uv/>`_
+
+.. code-block:: shell
+
+  uv pip install yasa
+
+pip
 
 .. code-block:: shell
 
   pip install --upgrade yasa
 
-Alternatively, YASA can be installed with conda:
+or conda
 
 .. code-block:: shell
 
-  conda config --add channels conda-forge
-  conda config --set channel_priority strict
-  conda install yasa
+  conda install -c conda-forge yasa
 
-To build and install from source, clone this repository or download the source archive and decompress the files
+New releases are frequent so always make sure that you have the latest version:
 
 .. code-block:: shell
 
+  uv pip install --upgrade yasa
+
+Development
+-----------
+
+To build and install from source, clone this repository and install in editable mode with `uv <https://docs.astral.sh/uv/>`_
+
+.. code-block:: shell
+
+  git clone https://github.com/raphaelvallat/yasa.git
   cd yasa
-  pip install ".[test]"              # install the package
-  pip install --editable ".[test]"   # or editable install
-  pytest                             # test the package
+  uv pip install --group=test --editable .
+
+  # test the package
+  pytest --verbose
 
 **What are the prerequisites for using YASA?**
 
