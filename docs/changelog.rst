@@ -40,6 +40,7 @@ an object with several pre-built methods and attributes:
 * :py:class:`yasa.SleepStaging` now returns a :py:class:`yasa.Hypnogram` instead of a :py:class:`numpy.ndarray`. The probability of each sleep stage for each epoch can now be accessed with :py:attr:`yasa.Hypnogram.proba`.
 * :py:func:`yasa.simulate_hypnogram` now returns a :py:class:`yasa.Hypnogram` instead of a :py:class:`numpy.ndarray`.
 * :py:func:`yasa.plot_hypnogram` now *requires* a :py:class:`yasa.Hypnogram` instance as input (previously accepted a plain array).
+* :py:func:`yasa.transition_matrix` now accepts a :py:class:`yasa.Hypnogram` instance in addition to integer arrays. When a :py:class:`yasa.Hypnogram` is passed, the output DataFrames use string stage labels (e.g. ``"WAKE"``, ``"N1"``) instead of integers. Equivalent to calling :py:meth:`yasa.Hypnogram.transition_matrix` directly.
 * Added helpful string representation (``__repr__``) to :py:class:`yasa.SleepStaging`.
 * Detection functions (:py:func:`yasa.spindles_detect`, :py:func:`yasa.sw_detect`, :py:func:`yasa.rem_detect`) now log an explicit warning when ``sf`` or ``ch_names`` are ignored because an MNE object was passed. (`PR 207 <https://github.com/raphaelvallat/yasa/pull/207>`_)
 
@@ -47,9 +48,18 @@ an object with several pre-built methods and attributes:
 
 * Fixed slow-wave slope calculation: the slope numerator was incorrectly using the positive half-wave amplitude instead of the negative half-wave amplitude. (`PR 220 <https://github.com/raphaelvallat/yasa/pull/220>`_)
 
+**pandas 3.0 / numpy 2 compatibility**
+
+* Fixed ``ValueError: underlying array is read-only`` in the coincidence matrix computation in :py:func:`yasa.compare_detection`.
+* Fixed ``TypeError: Cannot setitem on a Categorical with a new category`` in :py:meth:`yasa.Hypnogram.consolidate_stages`.
+* Fixed ``AssertionError`` in :py:class:`yasa.Hypnogram` when pandas returns an ``ArrowStringArray`` (new default string backend in pandas 3.0).
+* Fixed ``PerformanceWarning: DataFrame is highly fragmented`` in :py:class:`yasa.SleepStaging`.
+* Fixed ``Pandas4Warning`` for ``Series.sum(1)`` → ``Series.sum(axis=1)`` in :py:class:`yasa.Hypnogram` and the test suite.
+
 **Documentation**
 
 * Overhauled the documentation with the `PyData Sphinx Theme <https://pydata-sphinx-theme.readthedocs.io/>`_. (`PR 194 <https://github.com/raphaelvallat/yasa/pull/194>`_)
+* Updated the Quickstart guide end-to-end to use the new :py:class:`yasa.Hypnogram` API (loading with :py:meth:`~yasa.Hypnogram.from_integers`, :py:meth:`~yasa.Hypnogram.sleep_statistics`, :py:meth:`~yasa.Hypnogram.transition_matrix`, and :py:meth:`~yasa.Hypnogram.upsample_to_data`).
 * Added `YASA Flaskified <https://github.com/bartromb/YASAFlaskified>`_ (a web-based interface built on YASA) to README and FAQ. (`PR 198 <https://github.com/raphaelvallat/yasa/pull/198>`_)
 * FAQ: clarified the difference between Volts and µV in MNE objects. (`PR 204 <https://github.com/raphaelvallat/yasa/pull/204>`_)
 * FAQ: specified REM density units. (`PR 206 <https://github.com/raphaelvallat/yasa/pull/206>`_)
@@ -61,7 +71,7 @@ an object with several pre-built methods and attributes:
 * Modern packaging: migrated to ``src/`` layout, ``pyproject.toml``-only configuration, numpy 2 compatibility. (`PR 187 <https://github.com/raphaelvallat/yasa/pull/187>`_)
 * Switched to `uv <https://docs.astral.sh/uv/>`_ as the recommended package manager; development dependencies moved to ``[dependency-groups]`` (PEP 735).
 * Dropped Python 3.9 (reached end-of-life October 2025); added Python 3.13. YASA now requires Python ≥ 3.10.
-* Bumped minimum dependency versions: ``numpy >= 1.22.4``, ``scipy >= 1.8.0``, ``pandas >= 2.1.1``.
+* Bumped minimum dependency versions: ``numpy >= 1.22.4``, ``scipy >= 1.8.1``, ``pandas >= 2.1.1``.
 * Bumped minimum ``lspopt`` version. (`PR 195 <https://github.com/raphaelvallat/yasa/pull/195>`_)
 * Added ruff linting and formatting to the CI pipeline; updated all GitHub Actions to latest versions.
 * New ``test-dependency-combinations`` CI job: runs the test suite against minimum-supported and latest versions of numpy, scipy, pandas, MNE, and numba.
