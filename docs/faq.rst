@@ -249,14 +249,6 @@ Others
     analyzing EEG data using YASA. It requires deployment on a physical or virtual server, which can
     be done using the scripts provided in its repository.
 
-.. ----------------------------- DONATION -----------------------------
-.. dropdown:: I am not a programmer, how can I contribute to YASA?
-    :animate: fade-in-slide-down
-    :icon: question
-    :name: collapse_donate
-
-    There are many ways to contribute to YASA, even if you are not a programmer, for example, reporting bugs or results that are inconsistent with other softwares, improving the documentation and examples, or, even `buying the developers a coffee <https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=K2FZVJGCKYPAG&currency_code=USD&source=url>`_!
-
 .. ----------------------------- CITING YASA -----------------------------
 .. dropdown:: How can I cite YASA?
     :animate: fade-in-slide-down
