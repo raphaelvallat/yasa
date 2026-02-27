@@ -5,8 +5,6 @@ Contribute to YASA
 
 There are many ways to contribute to YASA: reporting bugs, adding new functions, improving the documentation, etc...
 
-If you like YASA, you can also consider `buying the developers a coffee <https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=K2FZVJGCKYPAG&currency_code=USD&source=url>`_!
-
 Code guidelines
 ---------------
 
