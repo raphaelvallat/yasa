@@ -95,7 +95,6 @@ filterwarnings = [
     "ignore::UserWarning",
     "ignore::RuntimeWarning",
     "ignore::FutureWarning",
-    "ignore::pandas.errors.Pandas4Warning",
 ]
 markers = ["slow"]
 
