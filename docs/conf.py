@@ -131,6 +131,10 @@ toc_object_entries_show_parents = "hide"
 # Defaults to []
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+# A list of paths that contain extra templates, relative to this directory.
+# Defaults to []
+templates_path = ["_templates"]
+
 # A list of glob-style patterns that are used to find source files.
 # ``exclude_patterns`` has priority over ``include_patterns``
 # Defaults to ["**"]
@@ -735,8 +739,15 @@ def linkcode_resolve(domain, info):
             return None
 
     obj = inspect.unwrap(obj)
-    source_file = inspect.getsourcefile(obj) or inspect.getfile(obj)
-    source_lines, start_line = inspect.getsourcelines(obj)
+    if isinstance(obj, property):
+        obj = obj.fget
+    if obj is None:
+        return None
+    try:
+        source_file = inspect.getsourcefile(obj) or inspect.getfile(obj)
+        source_lines, start_line = inspect.getsourcelines(obj)
+    except (TypeError, OSError):
+        return None
     source_path = Path(source_file).resolve()
     relative_path = source_path.relative_to(REPO_ROOT)
 

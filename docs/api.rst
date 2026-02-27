@@ -40,7 +40,6 @@ Hypnogram & sleep statistics
     hypno_find_periods
     load_profusion_hypno
     plot_hypnogram
-    plot_spectrogram
     transition_matrix
     sleep_statistics
     Hypnogram
@@ -77,3 +76,14 @@ Heart rate analysis
     :nosignatures:
 
     hrv_stage
+
+Utilities
+---------
+
+.. _utils:
+
+.. autosummary::
+    :toctree: generated/
+    :nosignatures:
+
+    fetch_sample
