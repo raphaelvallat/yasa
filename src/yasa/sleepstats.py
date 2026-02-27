@@ -138,8 +138,7 @@ def sleep_statistics(hypno, sf_hyp):
         i.e. "lights out" to "lights on").
 
         .. note::
-            The default hypnogram format in YASA is a 1D integer
-            vector where:
+            Hypnogram values are integers with the following mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement

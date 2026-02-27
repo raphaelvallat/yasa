@@ -319,8 +319,7 @@ In this final section, we'll see how to perform automatic sleep staging in YASA.
 .. code-block:: python
 
     >>> sls = yasa.SleepStaging(raw, eeg_name="C3-A2")
-    >>> hypno_pred = sls.predict()  # Predict the sleep stages
-    >>> hypno_pred = yasa.hypno_str_to_int(hypno_pred)  # Convert "W" to 0, "N1" to 1, etc
+    >>> hypno_pred = sls.predict()  # Returns a yasa.Hypnogram
     >>> yasa.plot_hypnogram(hypno_pred);  # Plot
 
 .. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/hypno_pred.png
@@ -331,5 +330,5 @@ Let's calculate the agreement against the ground-truth expert scoring:
 .. code-block:: python
 
     >>> from sklearn.metrics import accuracy_score
-    >>> print(f"The accuracy is {100 * accuracy_score(hypno, hypno_pred):.3f}%")
+    >>> print(f"The accuracy is {100 * accuracy_score(hypno, hypno_pred.as_int()):.3f}%")
     The accuracy is 82.676%

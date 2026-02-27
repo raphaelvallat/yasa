@@ -6,7 +6,7 @@ import logging
 
 import mne
 
-# import warnings
+import warnings
 import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
@@ -1207,6 +1207,10 @@ def hypno_str_to_int(
 
     ['W', 'N2', 'N2', 'N3', 'R'] ==> [0, 2, 2, 3, 4]
 
+    .. deprecated:: 0.7.0
+        Use :py:class:`yasa.Hypnogram` and its :py:meth:`~yasa.Hypnogram.as_int` method instead.
+        This function will be removed in v0.8.
+
     .. versionadded:: 0.1.5
 
     Parameters
@@ -1222,11 +1226,12 @@ def hypno_str_to_int(
     hypno : array_like
         The corresponding integer hypnogram.
     """
-    # warnings.warn(
-    #     "The `yasa.hypno_str_to_int` function is deprecated and will be removed in v0.8. "
-    #     "Please use the `yasa.Hypnogram.as_int` method instead.",
-    #     FutureWarning,
-    # )
+    warnings.warn(
+        "The `yasa.hypno_str_to_int` function is deprecated and will be removed in v0.8. "
+        "Please use the `yasa.Hypnogram` class and its `.as_int()` method instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
     assert isinstance(hypno, (list, np.ndarray, pd.Series)), "Not an array."
     hypno = pd.Series(np.asarray(hypno, dtype=str))
     assert not hypno.str.isnumeric().any(), "Hypno contains numeric values."
@@ -1239,6 +1244,9 @@ def hypno_int_to_str(
     """Convert an integer hypnogram array to a string array.
 
     [0, 2, 2, 3, 4] ==> ['W', 'N2', 'N2', 'N3', 'R']
+
+    .. deprecated:: 0.7.0
+        Use :py:class:`yasa.Hypnogram` instead. This function will be removed in v0.8.
 
     .. versionadded:: 0.1.5
 
@@ -1255,11 +1263,12 @@ def hypno_int_to_str(
     hypno : array_like
         The corresponding integer hypnogram.
     """
-    # warnings.warn(
-    #     "The `yasa.hypno_int_to_str` function is deprecated and will be removed in v0.8. "
-    #     "Please use the `yasa.Hypnogram` class to create an hypnogram instead.",
-    #     FutureWarning,
-    # )
+    warnings.warn(
+        "The `yasa.hypno_int_to_str` function is deprecated and will be removed in v0.8. "
+        "Please use the `yasa.Hypnogram` class instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
     assert isinstance(hypno, (list, np.ndarray, pd.Series)), "Not an array."
     hypno = pd.Series(np.asarray(hypno, dtype=int))
     return hypno.map(mapping_dict).values

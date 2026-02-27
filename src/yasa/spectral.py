@@ -62,10 +62,11 @@ def bandpower(
         each sleep stage defined in ``include``.
 
         The hypnogram must have the exact same number of samples as ``data``. To upsample your
-        hypnogram, please refer to :py:func:`yasa.hypno_upsample_to_data`.
+        hypnogram, use :py:meth:`yasa.Hypnogram.upsample_to_data` or
+        :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
-            The default hypnogram format in YASA is a 1D integer vector where:
+            Hypnogram values are integers with the following mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
