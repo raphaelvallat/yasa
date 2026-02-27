@@ -117,7 +117,7 @@ To build and install from source, clone this repository and install in editable 
 
 To use YASA, all you need is:
 
-- Some basic knowledge of Python, especially the `NumPy <https://numpy.org/doc/stable/user/quickstart.html>`_, `Pandas <https://pandas.pydata.org/docs/user_guide/10min.html>`_ and `MNE <https://mne.tools/stable/>`_ packages.
+- Some basic knowledge of Python, especially the `NumPy <https://numpy.org/doc/stable/user/quickstart.html>`__, `Pandas <https://pandas.pydata.org/docs/user_guide/10min.html>`__ and `MNE <https://mne.tools/stable/>`__ packages.
 - A Python editor: YASA works best with `Jupyter Lab <https://jupyterlab.readthedocs.io/en/stable/index.html>`_, a web-based interactive user interface.
 - Some sleep EEG data and optionally a sleep staging file (hypnogram).
 

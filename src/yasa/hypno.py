@@ -224,9 +224,9 @@ class Hypnogram:
     """
 
     def __init__(self, values, n_stages=5, *, freq="30s", start=None, scorer=None, proba=None):
-        assert isinstance(values, (list, np.ndarray, pd.Series, pd.api.extensions.ExtensionArray)), (
-            "`values` must be a list, numpy.array or pandas.Series"
-        )
+        assert isinstance(
+            values, (list, np.ndarray, pd.Series, pd.api.extensions.ExtensionArray)
+        ), "`values` must be a list, numpy.array or pandas.Series"
         assert all(isinstance(val, str) for val in values), (
             "Since v0.7, YASA expects strings to represent sleep stages, e.g. ['WAKE', 'N1', ...]. "
             "Please refer to the documentation for more details."
@@ -1787,13 +1787,12 @@ def simulate_hypnogram(
     .. plot::
 
         >>> import numpy as np
+        >>> import yasa
         >>> import matplotlib.pyplot as plt
         >>> from yasa import Hypnogram, hypno_int_to_str
-        >>> url = (
-        >>>     "https://github.com/raphaelvallat/yasa/raw/master/"
-        >>>     "notebooks/data_full_6hrs_100Hz_hypno_30s.txt"
-        >>> )
-        >>> values_str = hypno_int_to_str(np.loadtxt(url))
+        >>> values_str = hypno_int_to_str(
+        ...     np.loadtxt(yasa.fetch_sample("full_6hrs_100Hz_hypno_30s.txt"))
+        ... )
         >>> real_hyp = Hypnogram(values_str)
         >>> fake_hyp = real_hyp.simulate_similar(seed=2)
         >>> fig, (ax1, ax2) = plt.subplots(nrows=2, figsize=(7, 5))

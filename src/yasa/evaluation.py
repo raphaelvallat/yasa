@@ -120,12 +120,21 @@ class EpochByEpochAgreement:
 
     .. plot::
 
+        >>> import yasa
         >>> import matplotlib.pyplot as plt
+        >>> ref_hyps = [yasa.simulate_hypnogram(tib=600, scorer="Human", seed=i) for i in range(10)]
+        >>> obs_hyps = [h.simulate_similar(scorer="YASA", seed=i) for i, h in enumerate(ref_hyps)]
+        >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
         >>> fig, ax = plt.subplots(figsize=(6, 3), constrained_layout=True)
         >>> ebe.plot_hypnograms(sleep_id=10)
 
     .. plot::
 
+        >>> import yasa
+        >>> import matplotlib.pyplot as plt
+        >>> ref_hyps = [yasa.simulate_hypnogram(tib=600, scorer="Human", seed=i) for i in range(10)]
+        >>> obs_hyps = [h.simulate_similar(scorer="YASA", seed=i) for i, h in enumerate(ref_hyps)]
+        >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
         >>> fig, ax = plt.subplots(figsize=(6, 3))
         >>> ebe.plot_hypnograms(
         >>>     sleep_id=8, ax=ax, obs_kwargs={"color": "red", "lw": 2, "ls": "dotted"}
@@ -134,6 +143,11 @@ class EpochByEpochAgreement:
 
     .. plot::
 
+        >>> import yasa
+        >>> import matplotlib.pyplot as plt
+        >>> ref_hyps = [yasa.simulate_hypnogram(tib=600, scorer="Human", seed=i) for i in range(10)]
+        >>> obs_hyps = [h.simulate_similar(scorer="YASA", seed=i) for i, h in enumerate(ref_hyps)]
+        >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
         >>> session = 8
         >>> fig, ax = plt.subplots(figsize=(6.5, 2.5), constrained_layout=True)
         >>> style_a = dict(alpha=1, lw=2.5, ls="solid", color="gainsboro", label="Michel")
@@ -445,7 +459,7 @@ class EpochByEpochAgreement:
 
     def get_confusion_matrix(self, sleep_id=None, agg_func=None, **kwargs):
         """
-        Return a ``ref_hyp``/``obs_hyp``confusion matrix from either a single session or all
+        Return a ``ref_hyp`` / ``obs_hyp`` confusion matrix from either a single session or all
         sessions concatenated together.
 
         Parameters
@@ -882,16 +896,6 @@ class SleepStatsAgreement:
     3  57.4  463.8  122.5
     4  71.4  525.2   71.5
 
-    .. plot::
-
-        >>> import matplotlib.pyplot as plt
-        >>> ax = ssa.plot_discrepancies_heatmap()
-        >>> ax.set_title("Sleep statistic discrepancies")
-        >>> plt.tight_layout()
-
-    .. plot::
-
-        >>> ssa.plot_blandaltman()
     """
 
     def __init__(
@@ -1148,14 +1152,15 @@ class SleepStatsAgreement:
         return mean - bound, mean + bound
 
     @staticmethod
-    def _linregr_dict(*args, **kwargs):
+    def _linregr_dict(df):
         """
         A wrapper around :py:func:`scipy.stats.linregress` that returns a dictionary instead of a
         named tuple. In the normally returned object, ``intercept_stderr`` is an extra field that is
         not included when converting the named tuple, so this allows it to be included when using
         something like groupby.
         """
-        regr = sps.linregress(*args, **kwargs)
+        x, y = df.iloc[:, 0].to_numpy(), df.iloc[:, 1].to_numpy()
+        regr = sps.linregress(x, y)
         return {
             "slope": regr.slope,
             "intercept": regr.intercept,
