@@ -224,7 +224,7 @@ class Hypnogram:
     """
 
     def __init__(self, values, n_stages=5, *, freq="30s", start=None, scorer=None, proba=None):
-        assert isinstance(values, (list, np.ndarray, pd.Series)), (
+        assert isinstance(values, (list, np.ndarray, pd.Series, pd.api.extensions.ExtensionArray)), (
             "`values` must be a list, numpy.array or pandas.Series"
         )
         assert all(isinstance(val, str) for val in values), (
@@ -268,7 +268,10 @@ class Hypnogram:
                 )
             raise ValueError(msg)
 
-        if isinstance(values, pd.Series):
+        if isinstance(values, pd.api.extensions.ExtensionArray):
+            # pandas 3.0 may return ArrowStringArray from .to_numpy() on Categorical series
+            values = np.asarray(values, dtype=object)
+        elif isinstance(values, pd.Series):
             # Make sure to remove index if the input is a pandas.Series
             values = values.to_numpy(copy=True)
         hypno = pd.Series(values).str.upper()
@@ -602,7 +605,7 @@ class Hypnogram:
     def copy(self):
         """Return a new copy of the current Hypnogram."""
         return type(self)(
-            values=self.hypno.to_numpy(),
+            values=np.asarray(self.hypno, dtype=object),
             n_stages=self.n_stages,
             freq=self.freq,
             start=self.start,
