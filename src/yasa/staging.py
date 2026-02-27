@@ -471,7 +471,9 @@ class SleepStaging:
         proba.index.name = "Epoch"
         self._proba = proba
         # Convert to a `yasa.Hypnogram` instance (including `proba`)
-        return Hypnogram(values=self._predicted.copy(), freq="30s", n_stages=5, scorer="YASA", proba=proba.copy())
+        return Hypnogram(
+            values=self._predicted.copy(), freq="30s", n_stages=5, scorer="YASA", proba=proba.copy()
+        )
 
     def predict_proba(self, path_to_model="auto"):
         """

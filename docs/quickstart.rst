@@ -88,7 +88,6 @@ Optionally, we can apply a 0.3-45 Hz bandpass-filter:
 
 .. code-block:: python
 
-    # We use "verbose" and ";" to disable the text output
     >>> raw.filter(0.3, 45)
 
 Finally, the underlying data can be accessed with:
@@ -179,8 +178,15 @@ Furthermore, we can also calculate the sleep stages transition matrix using the 
     >>> counts, probs = hyp.transition_matrix()
     >>> probs.round(3)
 
-.. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/transition_matrix.png
-    :align: center
+============  ======  =====  =====  =====  =====
+From Stage      WAKE     N1     N2     N3    REM
+============  ======  =====  =====  =====  =====
+WAKE           0.773  0.205  0.023  0      0
+N1             0.086  0.629  0.257  0      0.029
+N2             0.009  0.002  0.876  0.103  0.009
+N3             0.006  0.006  0.246  0.743  0
+REM            0.007  0.007  0.004  0      0.982
+============  ======  =====  =====  =====  =====
 
 ``probs`` is the probability transition matrix, i.e. given that the current sleep stage is A, what is the probability that the next sleep stage is B.
 

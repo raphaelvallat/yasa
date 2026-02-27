@@ -87,7 +87,7 @@ def _init_repository(name, version):
 
 def fetch_sample(fname, version="v1", **kwargs):
     """
-    Download (i.e., :py:meth:`~pooch.Pooch.fetch`) a single file -- _if not already downloaded_ --
+    Download (i.e., :py:meth:`~pooch.Pooch.fetch`) a single file, if not already downloaded,
     from the YASA samples dataset on `Zenodo <https://doi.org/10.5281/zenodo.14564284>`_.
 
     This function always returns a filename as a :py:class:`~pathlib.Path` to the local file.

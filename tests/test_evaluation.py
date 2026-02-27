@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import yasa
 from yasa.evaluation import EpochByEpochAgreement, SleepStatsAgreement
 from yasa.hypno import simulate_hypnogram
 
@@ -98,17 +97,15 @@ class TestGetAgreement(unittest.TestCase):
         assert isinstance(agr, pd.Series)
 
     def test_perfect_agreement(self):
-        ebe_perfect = ref_hyps[0].evaluate(ref_hyps[0].simulate_similar(scorer=OBS_SCORER, seed=0))
+        _ = ref_hyps[0].evaluate(ref_hyps[0].simulate_similar(scorer=OBS_SCORER, seed=0))
         # Replace observed with a copy of reference
-        ebe_perfect2 = EpochByEpochAgreement(
+        _ = EpochByEpochAgreement(
             [ref_hyps[0]], [ref_hyps[0].simulate_similar(scorer=OBS_SCORER, seed=99)]
         )
         # Build a perfect-agreement object by passing ref as both ref and obs
         # (different scorer names required, so we rename)
         ref0 = ref_hyps[0]
-        obs0_perfect = simulate_hypnogram(
-            tib=ref0.duration, scorer=OBS_SCORER, seed=0
-        )
+        _ = simulate_hypnogram(tib=ref0.duration, scorer=OBS_SCORER, seed=0)
         # Confirm accuracy is in [0, 1] — just sanity-check bounds
         agr = ebe.get_agreement()
         assert agr["accuracy"].between(0, 1).all()
@@ -266,7 +263,7 @@ class TestSleepStatsAgreementAssumptions(unittest.TestCase):
         assert set(ssa.assumptions.columns) == expected
 
     def test_assumptions_dtype_bool(self):
-        assert (ssa.assumptions.dtypes == bool).all()
+        assert (ssa.assumptions.dtypes == bool).all()  # noqa: E721
 
     def test_assumptions_index_matches_sleep_stats(self):
         assert set(ssa.assumptions.index) == set(ssa.sleep_statistics)

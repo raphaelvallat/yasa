@@ -32,10 +32,10 @@ logger = logging.getLogger("yasa")
 
 class Hypnogram:
     """
-    Experimental class for manipulating hypnogram in YASA (dev).
+    A class for manipulating hypnograms in YASA.
 
-    Starting with v0.7, YASA will take a more object-oriented approach to hypnograms. That is,
-    hypnograms are now stored as a class (aka object), which comes with its own attributes and
+    Starting with v0.7, YASA takes a more object-oriented approach to hypnograms. That is,
+    hypnograms are stored as a class (aka object), which comes with its own attributes and
     functions. Furthermore, YASA does not allow integer values to define the stages anymore.
     Instead, users must pass an array of strings with the actual stage names
     (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]). If your hypnogram is encoded as integers
