@@ -4,7 +4,7 @@ What's new
 ##########
 
 
-v0.7.0 (unreleased)
+v0.7.0 (March 2026)
 -------------------
 
 **New: Object-oriented Hypnogram class**
