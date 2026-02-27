@@ -143,9 +143,13 @@ class SleepStaging:
     >>> # Load an EDF file using MNE
     >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
     >>> # Initialize the sleep staging instance
-    >>> sls = yasa.SleepStaging(raw, eeg_name="C4-M1", eog_name="LOC-M2",
-    ...                         emg_name="EMG1-EMG2",
-    ...                         metadata=dict(age=29, male=True))
+    >>> sls = yasa.SleepStaging(
+    ...     raw,
+    ...     eeg_name="C4-M1",
+    ...     eog_name="LOC-M2",
+    ...     emg_name="EMG1-EMG2",
+    ...     metadata=dict(age=29, male=True),
+    ... )
     >>> # Print some basic info
     >>> sls
     >>> # Get the predicted sleep stages

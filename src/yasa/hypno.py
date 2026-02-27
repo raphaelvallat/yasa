@@ -3,10 +3,9 @@ Hypnogram-related functions and class.
 """
 
 import logging
+import warnings
 
 import mne
-
-import warnings
 import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
@@ -174,7 +173,8 @@ class Hypnogram:
 
     >>> from yasa import simulate_hypnogram
     >>> hyp = simulate_hypnogram(
-    ...     tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42)
+    ...     tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42
+    ... )
     >>> hyp
     <Hypnogram | 1000 epochs x 30s (500.00 minutes), 5 unique stages, scored by S1>
      - Use `.hypno` to get the string values as a pandas.Series
@@ -778,8 +778,9 @@ class Hypnogram:
         --------
         >>> import pandas as pd
         >>> from yasa import Hypnogram
-        >>> hyp = Hypnogram(
-        ...     ["W", "S", "W"], n_stages=2, freq="2min", scorer="Human").upsample("30s")
+        >>> hyp = Hypnogram(["W", "S", "W"], n_stages=2, freq="2min", scorer="Human").upsample(
+        ...     "30s"
+        ... )
         >>> shyp = hyp.simulate_similar(scorer="Simulated", seed=6)
         >>> df = pd.concat([hyp.hypno, shyp.hypno], axis=1)
         >>> print(df)
@@ -1528,7 +1529,7 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
 
     >>> import yasa
     >>> hypno = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0]
-    >>> yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold="0min")
+    >>> yasa.hypno_find_periods(hypno, sf_hypno=1 / 60, threshold="0min")
        values  start  length
     0       0      0      11
     1       1     11       3
@@ -1543,7 +1544,7 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     Now, we may want to keep only periods that are longer than a specific threshold,
     for example 5 minutes:
 
-    >>> yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold="5min")
+    >>> yasa.hypno_find_periods(hypno, sf_hypno=1 / 60, threshold="5min")
        values  start  length
     0       0      0      11
     1       1     16       9
@@ -1554,7 +1555,7 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     This function is not limited to binary arrays, e.g.
 
     >>> hypno = [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 0, 1]
-    >>> yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold="2min")
+    >>> yasa.hypno_find_periods(hypno, sf_hypno=1 / 60, threshold="2min")
        values  start  length
     0       0      0       4
     1       2      5       6
@@ -1564,7 +1565,7 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     same duration, i.e. the duration defined in ``threshold``:
 
     >>> hypno = [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 0, 1]
-    >>> yasa.hypno_find_periods(hypno, sf_hypno=1/60, threshold="2min", equal_length=True)
+    >>> yasa.hypno_find_periods(hypno, sf_hypno=1 / 60, threshold="2min", equal_length=True)
        values  start  length
     0       0      0       2
     1       0      2       2

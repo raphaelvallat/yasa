@@ -1502,8 +1502,9 @@ def sw_detect(
            .. code-block:: python
 
                import pingouin as pg
-               mean_direction = pg.circ_mean(sw['PhaseAtSigmaPeak'])
-               vector_length = pg.circ_r(sw['PhaseAtSigmaPeak'])
+
+               mean_direction = pg.circ_mean(sw["PhaseAtSigmaPeak"])
+               vector_length = pg.circ_r(sw["PhaseAtSigmaPeak"])
 
         3. ``ndPAC``: the normalized Mean Vector Length (also called the normalized direct PAC,
            or ndPAC) within a 2-sec epoch centered around the negative peak of the slow-wave.

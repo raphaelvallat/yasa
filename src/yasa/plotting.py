@@ -248,9 +248,12 @@ def plot_spectrogram(
         >>> # In the next 5 lines, we're loading the data from GitHub.
         >>> import requests
         >>> from io import BytesIO
-        >>> r = requests.get('https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_Cz%2BFz%2BPz.npz', stream=True)
+        >>> r = requests.get(
+        ...     "https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_Cz%2BFz%2BPz.npz",
+        ...     stream=True,
+        ... )
         >>> npz = np.load(BytesIO(r.raw.read()))
-        >>> data = npz.get('data')[0, :]
+        >>> data = npz.get("data")[0, :]
         >>> sf = 100
         >>> fig = yasa.plot_spectrogram(data, sf)
 
@@ -263,14 +266,19 @@ def plot_spectrogram(
         >>> # In the next lines, we're loading the data from GitHub.
         >>> import requests
         >>> from io import BytesIO
-        >>> r = requests.get('https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_Cz%2BFz%2BPz.npz', stream=True)
+        >>> r = requests.get(
+        ...     "https://github.com/raphaelvallat/yasa/raw/master/notebooks/data_full_6hrs_100Hz_Cz%2BFz%2BPz.npz",
+        ...     stream=True,
+        ... )
         >>> npz = np.load(BytesIO(r.raw.read()))
-        >>> data = npz.get('data')[0, :]
+        >>> data = npz.get("data")[0, :]
         >>> sf = 100
         >>> # Load the 30-sec hypnogram and upsample to data
-        >>> hypno = np.loadtxt('https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt')
-        >>> hypno = yasa.hypno_upsample_to_data(hypno, 1/30, data, sf)
-        >>> fig = yasa.plot_spectrogram(data, sf, hypno, cmap='Spectral_r')
+        >>> hypno = np.loadtxt(
+        ...     "https://raw.githubusercontent.com/raphaelvallat/yasa/master/notebooks/data_full_6hrs_100Hz_hypno_30s.txt"
+        ... )
+        >>> hypno = yasa.hypno_upsample_to_data(hypno, 1 / 30, data, sf)
+        >>> fig = yasa.plot_spectrogram(data, sf, hypno, cmap="Spectral_r")
     """
     from yasa.hypno import Hypnogram, hypno_int_to_str  # Avoiding circular imports
 
@@ -423,10 +431,12 @@ def topoplot(
 
         >>> import yasa
         >>> import pandas as pd
-        >>> data = pd.Series([4, 8, 7, 1, 2, 3, 5],
-        ...                  index=['F4', 'F3', 'C4', 'C3', 'P3', 'P4', 'Oz'],
-        ...                  name='Values')
-        >>> fig = yasa.topoplot(data, title='My first topoplot')
+        >>> data = pd.Series(
+        ...     [4, 8, 7, 1, 2, 3, 5],
+        ...     index=["F4", "F3", "C4", "C3", "P3", "P4", "Oz"],
+        ...     name="Values",
+        ... )
+        >>> fig = yasa.topoplot(data, title="My first topoplot")
 
     2. Plot correlation coefficients (values ranging from -1 to 1)
 
@@ -434,10 +444,11 @@ def topoplot(
 
         >>> import yasa
         >>> import pandas as pd
-        >>> data = pd.Series([-0.5, -0.7, -0.3, 0.1, 0.15, 0.3, 0.55],
-        ...                  index=['F3', 'Fz', 'F4', 'C3', 'Cz', 'C4', 'Pz'])
-        >>> fig = yasa.topoplot(data, vmin=-1, vmax=1, n_colors=8,
-        ...                     cbar_title="Pearson correlation")
+        >>> data = pd.Series(
+        ...     [-0.5, -0.7, -0.3, 0.1, 0.15, 0.3, 0.55],
+        ...     index=["F3", "Fz", "F4", "C3", "Cz", "C4", "Pz"],
+        ... )
+        >>> fig = yasa.topoplot(data, vmin=-1, vmax=1, n_colors=8, cbar_title="Pearson correlation")
     """
     # Increase font size while preserving original
     old_fontsize = plt.rcParams["font.size"]
