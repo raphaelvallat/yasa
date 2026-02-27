@@ -12,13 +12,17 @@ Prerequisites
 
 This is an introduction to `YASA <https://github.com/raphaelvallat/yasa>`_, geared mainly for new users. However, you'll need to know a bit of Python, and especially scientific libraries such as `NumPy <https://numpy.org/doc/stable/user/quickstart.html>`_ and `Pandas <https://pandas.pydata.org/pandas-docs/stable/user_guide/10min.html>`_. This tutorial also assumes that you are familiar with basic sleep research and methods for analyzing `polysomnography <https://en.wikipedia.org/wiki/Polysomnography>`_ (PSG) data.
 
-Make sure to install the latest version of YASA, by opening a terminal or Anaconda command prompt and entering: ``pip install --upgrade yasa``
+Make sure to install the latest version of YASA by opening a terminal and entering: ``uv pip install yasa`` (or ``pip install --upgrade yasa``).
 
-To follow this tutorial, you'll need to download the two following files on your computer. The files should be saved in the same folder as this notebook. The PSG data is saved in the `European Data Format <https://www.edfplus.info/>`_ (.edf).
+The sample files used in this tutorial can be downloaded automatically using :py:func:`yasa.fetch_sample`:
 
-* Full-night :download:`polysomnography data (.edf format, 266MB) <https://drive.google.com/uc?id=13YFQrvAGvcz77Qm8kFXu1nyRKhTti3VB>` from a 22-years-old healthy female. The PSG recording includes 19 EEGs, 2 EOGs, 1 EMG and 1 EKG. The recording spans an entire night of sleep from 11:59 PM to 08:01 AM.
+.. code-block:: python
 
-* :download:`Sleep stages (aka hypnogram, .csv format, 3KB) <https://drive.google.com/uc?id=1s-XXBIXt0YKsbihMa1imBo4oftpb1Ds_>`, in 30-seconds epoch. The sleep stages are encoded as follow: 0 = Wake, 1 = N1, 2 = N2, 3 = N3, and 4 = REM.
+    >>> import yasa
+    >>> edf_path = yasa.fetch_sample("night_young.edf")
+    >>> hypno_path = yasa.fetch_sample("night_young_hypno.csv")
+
+The PSG recording is a full-night polysomnography from a 22-year-old healthy female (19 EEGs, 2 EOGs, 1 EMG, 1 EKG), spanning 11:59 PM to 08:01 AM. The hypnogram is in 30-second epochs encoded as: 0 = Wake, 1 = N1, 2 = N2, 3 = N3, 4 = REM.
 
 ********
 
@@ -33,9 +37,9 @@ We will use the `MNE package <https://mne.tools/stable/index.html>`_ to load and
 .. code-block:: python
 
     >>> import mne
-    >>> raw = mne.io.read_raw_edf("yasa_example_night_young.edf", preload=True)
+    >>> raw = mne.io.read_raw_edf(edf_path, preload=True)
     >>> raw
-    <RawEDF | yasa_example_night_young.edf, 23 x 5784000 (28920.0 s), ~1015.0 MB, data loaded>
+    <RawEDF | night_young.edf, 23 x 5784000 (28920.0 s), ~1015.0 MB, data loaded>
 
 .. note::
 
@@ -108,10 +112,10 @@ We can load this file using :py:func:`pandas.read_csv` and then convert the inte
 
     >>> import pandas as pd
     >>> import yasa
-    >>> hypno = pd.read_csv("yasa_example_night_young_hypno.csv").squeeze().to_numpy()
-    >>> hyp = yasa.Hypnogram.from_integers(hypno, freq="30s")
+    >>> hypno = pd.read_csv(hypno_path).squeeze().to_numpy()
+    >>> hyp = yasa.Hypnogram.from_integers(hypno, freq="30s", scorer="Expert")
     >>> hyp
-    <Hypnogram | 964 epochs x 30s (482.00 minutes), 5 unique stages>
+    <Hypnogram | 964 epochs x 30s (482.00 minutes), 5 unique stages, scored by Expert>
      - Use `.hypno` to get the string values as a pandas.Series
      - Use `.as_int()` to get the integer values as a pandas.Series
      - Use `.plot_hypnogram()` to plot the hypnogram
@@ -121,11 +125,11 @@ We can load this file using :py:func:`pandas.read_csv` and then convert the inte
 
     If you do not have sleep staging, you can use YASA to automatically detect the sleep stages for you. We'll come back to this later on in this tutorial.
 
-Using the :py:func:`~yasa.plot_hypnogram` function, we can plot the hypnogram:
+It's easy to plot the hypnogram:
 
 .. code-block:: python
 
-    >>> yasa.plot_hypnogram(hyp);
+    >>> hyp.plot_hypnogram();
 
 .. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/hypnogram.png
     :align: center
@@ -162,6 +166,12 @@ Using the hypnogram, we can calculate standard sleep statistics using the :py:me
     'SE': 95.33195020746888,
     'SME': 98.07897545357524}
 
+.. tip::
+
+    To convert the result to a :py:class:`pandas.Series`, use ``pd.Series(hyp.sleep_statistics())``.
+    For multi-subject analyses, ``pd.DataFrame([hyp.sleep_statistics()])`` creates a one-row
+    DataFrame ready to concatenate across subjects.
+
 Furthermore, we can also calculate the sleep stages transition matrix using the :py:meth:`~yasa.Hypnogram.transition_matrix` method:
 
 .. code-block:: python
@@ -179,7 +189,7 @@ Several metrics of sleep fragmentation can be calculated from ``probs``. For exa
 .. code-block:: python
 
     >>> import numpy as np
-    >>> np.diag(probs.loc[2:, 2:]).mean().round(3)
+    >>> np.diag(probs.loc["N2":, "N2":]).mean().round(3)
 
 ********
 
@@ -222,29 +232,39 @@ It is especially relevant for sleep analysis, as it is well-known that the diffe
 
 Calculating the average spectral power in different frequency bands is straightforward with the :py:func:`~yasa.bandpower` function:
 
->>> yasa.bandpower(raw)
+.. code-block:: python
+
+    >>> yasa.bandpower(raw)
 
 .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/bandpower.png
     :align: center
 
 This calculates, for each channel separately, the average power in the main frequency bands across the entire recording. Importantly, the values are **relative** power, i.e. they are expressed as a proportion of the total power between the lowest frequency (default 0.5 Hz) and the highest frequency (default 40 Hz). We can disable this behavior and get the **absolute** spectral power values in :math:`μV^2 / Hz` by using the ``relative=False`` argument. Similarly, we can define custom frequency bands with the ``bands`` parameter. In the example below, we calculate the absolute power in the 1-9 Hz frequency range (named "Slow") and the 9-30 Hz range (named "Fast"):
 
->>> yasa.bandpower(raw, relative=False, bands=[(1, 9, "Slow"), (9, 30, "Fast")])
+.. code-block:: python
+
+    >>> yasa.bandpower(raw, relative=False, bands=[(1, 9, "Slow"), (9, 30, "Fast")])
 
 .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/bandpower2.png
     :align: center
 
 We can also pass an hypnogram to calculate the spectral powers separately for each sleep stage. In the example below, we use the upsampled hypnogram to calculate the spectral power separately for N2, N3 and REM. We save the results in a new variable named ``bandpower``.
 
->>> bandpower = yasa.bandpower(raw, hypno=hypno_up, include=(2, 3, 4))
+.. code-block:: python
+
+    >>> bandpower = yasa.bandpower(raw, hypno=hypno_up, include=(2, 3, 4))
 
 If desired, we can then export the ``bandpower`` dataframe to a CSV file using :py:meth:`pandas.DataFrame.to_csv`:
 
->>> bandpower.to_csv("bandpower.csv")
+.. code-block:: python
+
+    >>> bandpower.to_csv("bandpower.csv")
 
 Finally, we can use the :py:func:`~yasa.topoplot` function to visualize the spectral powers across all electrodes. In the example below, we only plot the spectral values of stage N3, using the :py:meth:`pandas.DataFrame.xs` function. As expected, the relative delta power is higher in frontal channels.
 
->>> fig = yasa.topoplot(bandpower.xs(3)["Delta"])
+.. code-block:: python
+
+    >>> fig = yasa.topoplot(bandpower.xs(3)["Delta"])
 
 .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/topoplot.png
     :align: center
@@ -259,18 +279,24 @@ Spindles
 
 Automatic spindles detection can be performed with the :py:func:`yasa.spindles_detect` function. The detection is based on the algorithm described in `Lacourse et al 2018 <https://pubmed.ncbi.nlm.nih.gov/30107208/>`_, and a step-by-step explanation is provided in `this notebook <https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb>`_. For the sake of this tutorial, we'll use the default detection thresholds, but these can (and should) be adjusted based on your own data. In the example below, we'll specify the hypnogram and limit the detection to stage N2 and 3 (``include=(2, 3)``).
 
->>> sp = yasa.spindles_detect(raw, hypno=hypno_up, include=(2, 3))
+.. code-block:: python
+
+    >>> sp = yasa.spindles_detect(raw, hypno=hypno_up, include=(2, 3))
 
 Here, the ``sp`` variable is a :py:class:`~yasa.SpindlesResults`, which is simply a bundle of functions (called methods) and data (attributes). For example, we can see a dataframe with all the detected events with:
 
->>> sp.summary()
+.. code-block:: python
+
+    >>> sp.summary()
 
 .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/spindles_summary.png
     :align: center
 
 The documentation of the :py:func:`~yasa.spindles_detect` function explains what each of these columns represent and how they're calculated. Furthermore, by specifying the ``grp_chan`` and ``grp_stage`` parameters, we tell YASA to first average across channels and sleep stages, respectively:
 
->>> sp.summary(grp_chan=True, grp_stage=True)
+.. code-block:: python
+
+    >>> sp.summary(grp_chan=True, grp_stage=True)
 
 Finally, we can plot the average spindle, calculated for each channel separately and time-synced to the most prominent peak of the spindles:
 
@@ -295,7 +321,9 @@ The exact same steps can be applied with the :py:func:`~yasa.sw_detect` function
 .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/sw_summary.png
   :align: center
 
->>> sw.plot_average(ci=None, legend=False, palette="Blues");
+.. code-block:: python
+
+    >>> sw.plot_average(ci=None, legend=False, palette="Blues");
 
 .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/avg_sw.png
   :align: center
@@ -318,10 +346,12 @@ In this final section, we'll see how to perform automatic sleep staging in YASA.
 .. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/hypno_pred.png
     :align: center
 
-Let's calculate the agreement against the ground-truth expert scoring:
+Let's evaluate the agreement against the ground-truth expert scoring using :py:meth:`~yasa.Hypnogram.evaluate`,
+which returns a :py:class:`~yasa.EpochByEpochAgreement` object with accuracy, Cohen's kappa, MCC, F1, and more:
 
 .. code-block:: python
 
-    >>> from sklearn.metrics import accuracy_score
-    >>> print(f"The accuracy is {100 * accuracy_score(hypno, hypno_pred.as_int()):.3f}%")
-    The accuracy is 82.676%
+    >>> ebe = hyp.evaluate(hypno_pred)
+    >>> ebe.get_agreement()
+
+For a full multi-night analysis, see :py:class:`yasa.EpochByEpochAgreement`.
