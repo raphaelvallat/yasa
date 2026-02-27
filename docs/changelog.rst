@@ -4,14 +4,14 @@ What's new
 ##########
 
 
-v0.7.dev
---------
+v0.7.0 (March 2024)
+-------------------
 
 **Object-oriented hypnogram**
 
-This version introduces the new :py:class:`yasa.Hypnogram` class, which will gradually become
+This version introduces the new :py:class:`yasa.Hypnogram` class, which will become
 the standard way to store and manipulate hypnograms in YASA. Put simply, YASA now uses an
-object-oriented approach to hypnograms. That is, hypnograms are now stored as a class (aka object),
+object-oriented approach to hypnograms. Hypnograms are now stored as a class (aka object),
 which comes with several pre-built functions (aka methods) and attributes. See for example below:
 
 .. code-block::  python
@@ -47,7 +47,7 @@ This brings along critical changes to several YASA function, for example:
 ----------------------------------------------------------------------------------------
 
 v0.6.5 (July 2024)
----------------------
+------------------
 
 Minor release with a brand new Evaluation module and several minor bugfixes
 
