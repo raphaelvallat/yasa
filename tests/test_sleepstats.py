@@ -4,7 +4,6 @@ import unittest
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from yasa.hypno import Hypnogram, simulate_hypnogram
 from yasa.sleepstats import sleep_statistics, transition_matrix
