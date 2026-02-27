@@ -1035,7 +1035,9 @@ class SleepStatsAgreement:
                 "unbiased": (
                     grouper["difference"].apply(lambda a: sps.ttest_1samp(a, 0).pvalue).ge(alpha)
                 ),
-                "normal": grouper["difference"].apply(lambda a: sps.shapiro(a).pvalue).ge(alpha),
+                "normal": grouper["difference"]
+                .apply(lambda a: sps.shapiro(a).pvalue if len(a) >= 3 else 1.0)
+                .ge(alpha),
                 "constant_bias": bias_regr["pvalue"].ge(alpha),
                 "homoscedastic": loa_regr["pvalue"].ge(alpha),
             }
