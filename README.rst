@@ -39,52 +39,17 @@ For more details, try the `quickstart <https://yasa-sleep.org/quickstart.html>`_
 Installation
 ~~~~~~~~~~~~
 
-Dependencies
-------------
-
-YASA is a Python 3 package and is currently tested for Python 3.10+.
-
-The main dependencies of YASA are:
-
-* `NumPy <https://numpy.org/>`_ >= 1.22.4
-* `SciPy <https://www.scipy.org/>`_ >= 1.8.1
-* `Pandas <https://pandas.pydata.org/>`_ >= 2.1.1
-* `Matplotlib <https://matplotlib.org/>`_
-* `Seaborn <https://seaborn.pydata.org/>`_
-* `MNE <https://mne.tools/stable/>`_ >= 1.3
-* `Numba <https://numba.readthedocs.io/>`_ >= 0.57.1
-* `Scikit-learn <https://scikit-learn.org/>`_
-* `LightGBM <https://lightgbm.readthedocs.io/>`_
-* `Antropy <https://github.com/raphaelvallat/antropy>`_
-* `TensorPAC <https://etiennecmb.github.io/tensorpac/>`_ >= 0.6.5
-* `PyRiemann <https://pyriemann.readthedocs.io/>`_ >= 0.2.7
-* `SleepECG <https://sleepecg.readthedocs.io/>`_ >= 0.5.0
-* `lspopt <https://github.com/hbldh/lspopt>`_ >= 1.4
-
 User installation
 -----------------
 
 YASA can be easily installed using pip, conda, or uv:
 
-.. tab-set::
 
-    .. tab-item:: uv (recommended)
+.. code-block:: shell
 
-        .. code-block:: shell
-
-            uv pip install yasa
-
-    .. tab-item:: pip
-
-        .. code-block:: shell
-
-            pip install --upgrade yasa
-
-    .. tab-item:: conda
-
-        .. code-block:: shell
-
-            conda install -c conda-forge yasa
+    uv pip install yasa
+    pip install --upgrade yasa
+    conda install -c conda-forge yasa
 
 Development
 -----------
@@ -149,14 +114,11 @@ Below some plots demonstrating the functionalities of YASA. To reproduce these, 
 Development
 ~~~~~~~~~~~
 
-* YASA was created and is maintained by `Raphael Vallat <https://raphaelvallat.com>`_, a former postdoctoral researcher in `Matthew Walker's lab <https://www.humansleepscience.com/>`_ at UC Berkeley. Contributions are more than welcome so feel free to contact me, open an issue or submit a pull request!
+YASA was created and is maintained by `Raphael Vallat <https://raphaelvallat.com>`_, a former postdoctoral researcher in `Matthew Walker's lab <https://www.humansleepscience.com/>`_ at UC Berkeley. Contributions are more than welcome so feel free to contact me, open an issue or submit a pull request!
 
-  To see the code or report a bug, please visit the `GitHub repository <https://github.com/raphaelvallat/yasa>`_.
+To see the code or report a bug, please visit the `GitHub repository <https://github.com/raphaelvallat/yasa>`_.
 
-  Note that this program is provided with NO WARRANTY OF ANY KIND.
-
-* YASA Flaskified is a web-based tool built on YASA that allows EEG analysis through a browser interface. It requires deployment on a server, which can be done using the preconfigured scripts available in the repository. For more details, visit the `YASA Flaskified GitHub repository <https://github.com/bartromb/YASAFlaskified>`_.
-
+Note that this program is provided with NO WARRANTY OF ANY KIND.
 
 Citation
 ~~~~~~~~
