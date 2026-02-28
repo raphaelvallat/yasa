@@ -17,6 +17,7 @@ on:
 env:
   FORCE_COLOR: 1
   UV_SYSTEM_PYTHON: 1
+  YASA_DATA_DIR: ${{ github.workspace }}/.yasa_data
 
 jobs:
   test:
@@ -38,6 +39,12 @@ jobs:
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
+
+      - name: Cache sample data
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.yasa_data
+          key: yasa-sample-data-14564285
 
       - name: Install libomp (macOS)
         if: ${{ matrix.platform == 'macos-latest' }}
@@ -86,6 +93,12 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
 
+      - name: Cache sample data
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.yasa_data
+          key: yasa-sample-data-14564285
+
       - name: Install setuptools (required by mne==1.3.0)
         if: ${{ matrix.deps.label == 'minimum-versions' }}
         run: uv pip install setuptools
@@ -116,6 +129,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - name: Cache sample data
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.yasa_data
+          key: yasa-sample-data-14564285
 
       - name: Set up Python
         uses: actions/setup-python@v6

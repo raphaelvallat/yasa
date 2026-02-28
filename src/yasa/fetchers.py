@@ -5,6 +5,7 @@ The YASA sample dataset is stored on Zenodo
 and can be accessed using the Pooch library.
 """
 
+import time
 from pathlib import Path
 
 import pooch
@@ -151,6 +152,14 @@ def fetch_sample(fname, version="v1", **kwargs):
     assert isinstance(version, str), "`version` must be a string"
     assert version in allowed_versions, f"`version` must be one of {allowed_versions}."
     pup = _init_repository("sample", version=version)
-    fname = pup.fetch(fname, **kwargs)
-    fpath = Path(fname)
+    for attempt in range(3):
+        try:
+            fetched = pup.fetch(fname, **kwargs)
+            break
+        except Exception:
+            if attempt < 2:
+                time.sleep(2**attempt)
+            else:
+                raise
+    fpath = Path(fetched)
     return fpath
