@@ -1,5 +1,13 @@
 name: Ruff
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - '*.rst'
+      - 'docs/**'
+  pull_request:
+    paths-ignore:
+      - '*.rst'
+      - 'docs/**'
 jobs:
   ruff:
     runs-on: ubuntu-latest
