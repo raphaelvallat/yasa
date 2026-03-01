@@ -454,7 +454,9 @@ class Hypnogram:
         >>> import numpy as np
         >>> from yasa import Hypnogram
         >>> int_hypno = np.loadtxt("path/to/hypnogram.txt").astype(int)  # doctest: +SKIP
-        >>> hyp = Hypnogram.from_integers(int_hypno, freq="30s", start="2022-12-15 22:30:00")  # doctest: +SKIP
+        >>> hyp = Hypnogram.from_integers(
+        ...     int_hypno, freq="30s", start="2022-12-15 22:30:00"
+        ... )  # doctest: +SKIP
 
         Use a custom mapping to handle non-standard integer encodings:
 

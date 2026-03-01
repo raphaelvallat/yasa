@@ -137,7 +137,9 @@ class EpochByEpochAgreement:
         >>> obs_hyps = [h.simulate_similar(scorer="YASA", seed=i) for i, h in enumerate(ref_hyps)]
         >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
         >>> fig, ax = plt.subplots(figsize=(6, 3))
-        >>> _ = ebe.plot_hypnograms(sleep_id=8, ax=ax, obs_kwargs={"color": "red", "lw": 2, "ls": "dotted"})
+        >>> _ = ebe.plot_hypnograms(
+        ...     sleep_id=8, ax=ax, obs_kwargs={"color": "red", "lw": 2, "ls": "dotted"}
+        ... )
         >>> plt.tight_layout()
 
     .. plot::
@@ -151,10 +153,16 @@ class EpochByEpochAgreement:
         >>> fig, ax = plt.subplots(figsize=(6.5, 2.5), constrained_layout=True)
         >>> style_a = dict(alpha=1, lw=2.5, ls="solid", color="gainsboro", label="Michel")
         >>> style_b = dict(alpha=1, lw=2.5, ls="solid", color="cornflowerblue", label="Jouvet")
-        >>> legend_style = dict(title="Scorer", frameon=False, ncol=2, loc="lower center", bbox_to_anchor=(0.5, 0.9))
-        >>> ax = ebe.plot_hypnograms(sleep_id=session, ref_kwargs=style_a, obs_kwargs=style_b, legend=legend_style, ax=ax)
+        >>> legend_style = dict(
+        ...     title="Scorer", frameon=False, ncol=2, loc="lower center", bbox_to_anchor=(0.5, 0.9)
+        ... )
+        >>> ax = ebe.plot_hypnograms(
+        ...     sleep_id=session, ref_kwargs=style_a, obs_kwargs=style_b, legend=legend_style, ax=ax
+        ... )
         >>> acc = ebe.get_agreement().multiply(100).at[session, "accuracy"]
-        >>> _ = ax.text(0.01, 1, f"Accuracy = {acc:.0f}%", ha="left", va="bottom", transform=ax.transAxes)
+        >>> _ = ax.text(
+        ...     0.01, 1, f"Accuracy = {acc:.0f}%", ha="left", va="bottom", transform=ax.transAxes
+        ... )
 
     When comparing only 2 hypnograms, use the :py:meth:`~yasa.Hypnogram.evaluate` method:
 
