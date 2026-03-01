@@ -64,7 +64,7 @@ class EpochByEpochAgreement:
             come from the same sleep session, and they must only differ in that they have different
             scorers.
 
-        .. seealso:: For comparing just two hypnograms, use :py:meth:`yasa.Hynogram.evaluate`.
+        .. seealso:: For comparing just two hypnograms, use :py:meth:`yasa.Hypnogram.evaluate`.
 
     Notes
     -----
@@ -164,7 +164,7 @@ class EpochByEpochAgreement:
         >>>     0.01, 1, f"Accuracy = {acc:.0f}%", ha="left", va="bottom", transform=ax.transAxes
         >>> )
 
-    When comparing only 2 hypnograms, use the :py:meth:`~yasa.Hynogram.evaluate` method:
+    When comparing only 2 hypnograms, use the :py:meth:`~yasa.Hypnogram.evaluate` method:
 
     >>> hypno_a = yasa.simulate_hypnogram(tib=90, scorer="RaterA", seed=8)
     >>> hypno_b = hypno_a.simulate_similar(scorer="RaterB", seed=9)
@@ -329,8 +329,6 @@ class EpochByEpochAgreement:
 
         Parameters
         ----------
-        self : :py:class:`~yasa.evaluation.EpochByEvaluation`
-            A :py:class:`~yasa.evaluation.EpochByEvaluation` instance.
         sample_weight : None or :py:class:`pandas.Series`
             Sample weights passed to underlying :py:mod:`sklearn.metrics` functions where possible.
             If a :py:class:`pandas.Series`, the index must match exactly that of
@@ -406,9 +404,8 @@ class EpochByEpochAgreement:
 
         Parameters
         ----------
-        self : :py:class:`~yasa.evaluation.EpochByEvaluation`
-            A :py:class:`~yasa.evaluation.EpochByEvaluation` instance.
         beta : float
+            Weight of recall relative to precision in the F-score. Default is 1.0 (i.e., F1).
             See :py:func:`sklearn.metrics.precision_recall_fscore_support`.
 
         Returns
@@ -465,8 +462,6 @@ class EpochByEpochAgreement:
 
         Parameters
         ----------
-        self : :py:class:`yasa.EpochByEpochAgreement`
-            A :py:class:`yasa.EpochByEpochAgreement` instance.
         sleep_id : None or a valid sleep ID
             If None (default), cross-tabulation is derived from the entire group dataset.
             If a valid sleep ID, cross-tabulation is derived using only the reference and observed
@@ -485,7 +480,7 @@ class EpochByEpochAgreement:
         -------
         conf_matr : :py:class:`pandas.DataFrame`
             A confusion matrix with stages from the reference scorer as indices and stages from the
-            test scorer as columns.
+            observed scorer as columns.
 
         Examples
         --------
@@ -580,16 +575,11 @@ class EpochByEpochAgreement:
 
         .. seealso:: :py:class:`yasa.SleepStatsAgreement`
 
-        Parameters
-        ----------
-        self : :py:class:`yasa.EpochByEpochAgreement`
-            A :py:class:`yasa.EpochByEpochAgreement` instance.
-
         Returns
         -------
         sstats : :py:class:`pandas.DataFrame`
             A :py:class:`~pandas.DataFrame` with sleep statistics as columns and two rows for each
-            individual (one for reference scorer and another for test scorer).
+            individual (one for reference scorer and another for observed scorer).
         """
         # Get all sleep statistics
         ref_sstats = pd.DataFrame({s: h.sleep_statistics() for s, h in self._ref_hyps.items()})
@@ -614,8 +604,6 @@ class EpochByEpochAgreement:
 
         Parameters
         ----------
-        self : :py:class:`yasa.EpochByEpochAgreement`
-            A :py:class:`yasa.EpochByEpochAgreement` instance.
         sleep_id : a valid sleep ID or None
             The sleep session to plot. If multiple sessions are included in the
             :py:class:`~yasa.EpochByEpochAgreement` instance, a ``sleep_id`` must be provided. If
@@ -698,8 +686,6 @@ class EpochByEpochAgreement:
 
         Parameters
         ----------
-        self : :py:class:`~yasa.evaluation.EpochByEpochAgreement`
-            A :py:class:`~yasa.evaluation.EpochByEpochAgreement` instance.
         by_stage : bool
             If ``False`` (default), ``summary`` will include agreement scores derived from
             average-based metrics. If ``True``, returned ``summary`` :py:class:`~pandas.DataFrame`
@@ -712,17 +698,24 @@ class EpochByEpochAgreement:
         -------
         summary : :py:class:`pandas.DataFrame`
             A :py:class:`pandas.DataFrame` summarizing agreement scores across the entire dataset
-            with descriptive statistics.
+            with descriptive statistics. Each row is an agreement metric and each column is a
+            descriptive statistic (e.g., mean, standard deviation).
 
-            >>> ebe = yasa.EpochByEpochAgreement(...)
-            >>> agreement = ebe.get_agreement()
-            >>> ebe.summary()
+        Examples
+        --------
+        Call :py:meth:`get_agreement` (or :py:meth:`get_agreement_bystage` if ``by_stage=True``)
+        before calling ``summary``:
 
-            This will give a :py:class:`~pandas.DataFrame` where each row is an agreement metric and
-            each column is a descriptive statistic (e.g., mean, standard deviation).
-            To control the descriptive statistics included as columns:
+        >>> import yasa
+        >>> ref_hyps = [yasa.simulate_hypnogram(tib=600, scorer="Human", seed=i) for i in range(5)]
+        >>> obs_hyps = [h.simulate_similar(scorer="YASA", seed=i) for i, h in enumerate(ref_hyps)]
+        >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
+        >>> _ = ebe.get_agreement()
+        >>> ebe.summary()
 
-            >>> ebe.summary(func=["count", "mean", "sem"])
+        To control the descriptive statistics included as columns:
+
+        >>> ebe.summary(func=["count", "mean", "sem"])
         """
         assert self.n_sleeps > 1, "Summary scores can not be computed with only one hypnogram pair."
         assert isinstance(by_stage, bool), "`by_stage` must be True or False"
@@ -798,8 +791,8 @@ class SleepStatsAgreement:
 
         .. note:: ``agreement`` gets adjusted for regression-modeled limits of agreement.
     confidence : float
-        The percentage confidence interval for the confidence intervals that are applied to bias and
-        limits of agreement. The same confidence interval percentage is applied to both standard and
+        Confidence level (between 0 and 1) for the confidence intervals applied to bias and limits
+        of agreement. Default is 0.95 (i.e., 95%). The same level is used for both parametric and
         bootstrapped confidence intervals.
     alpha : float
         Alpha cutoff used for all assumption tests.
@@ -807,6 +800,10 @@ class SleepStatsAgreement:
         Verbose level. Default (False) will only print warning and error messages. The logging
         levels are 'debug', 'info', 'warning', 'error', and 'critical'. For most users the choice is
         between 'info' (or ``verbose=True``) and warning (``verbose=False``).
+    bootstrap_kwargs : dict
+        Optional keyword arguments passed to :py:func:`scipy.stats.bootstrap`. Defaults use
+        ``n_resamples=1000`` and ``method='BCa'``. The keys ``'confidence_level'``,
+        ``'vectorized'``, and ``'paired'`` cannot be overridden.
 
     Notes
     -----
@@ -886,7 +883,7 @@ class SleepStatsAgreement:
     3  57.0  469.5  120.0
     4  71.0  531.0   69.0
 
-    >>> new_stats_calibrated = ssa.calibrate_stats(new_sstats, bias_method="auto")
+    >>> new_stats_calibrated = ssa.calibrate(new_sstats, bias_method="auto")
     >>> new_stats_calibrated.round(1).head(5)
          N1    TST   WASO
     0  42.9  433.8  150.0
@@ -1097,7 +1094,9 @@ class SleepStatsAgreement:
     @property
     def data(self):
         """A long-format :py:class:`pandas.DataFrame` containing all raw sleep statistics from
-        ``ref_data`` and ``obs_data``.
+        ``ref_data`` and ``obs_data``, with a :py:class:`~pandas.MultiIndex` with levels
+        ``sleep_stat`` and ``session_id`` (or the original index name from the input data).
+        Columns are the reference and observed scorer names.
         """
         return self._data.drop(columns=["difference", "residuals", "residuals_abs"])
 
@@ -1117,6 +1116,14 @@ class SleepStatsAgreement:
     def auto_methods(self):
         """
         A :py:class:`pandas.DataFrame` containing the methods applied when ``'auto'`` is selected.
+
+        Has three columns:
+
+        * ``bias`` — method used for bias (``'parm'`` if bias is constant, ``'regr'`` otherwise).
+        * ``loa`` — method used for limits of agreement (``'parm'`` if homoscedastic, ``'regr'``
+          otherwise).
+        * ``ci`` — method used for confidence intervals (``'parm'`` if differences are normally
+          distributed, ``'boot'`` otherwise).
         """
         return pd.concat(
             [
@@ -1374,8 +1381,9 @@ class SleepStatsAgreement:
         Returns
         -------
         summary : :py:class:`pandas.DataFrame`
-            A :py:class:`~pandas.DataFrame` of string representations for bias, limits of agreement,
-            and their confidence intervals for all sleep statistics.
+            A :py:class:`~pandas.DataFrame` of numeric bias, limits of agreement, and their
+            confidence intervals for all sleep statistics. Columns form a MultiIndex with levels
+            ``variable`` and ``interval`` (``'center'``, ``'lower'``, ``'upper'``).
         """
         assert isinstance(ci_method, str), "`ci_method` must be a string"
         assert ci_method in self._ci_method_opts, f"`ci_method` must be in {self._ci_method_opts}"
@@ -1430,7 +1438,7 @@ class SleepStatsAgreement:
         calibrated_data : :py:class:`pandas.DataFrame`
             A :py:class:`~pandas.DataFrame` with calibrated sleep statistics.
 
-        .. seealso:: :py:meth:`~yasa.SleepStatsAgreement.calibrate`
+        .. seealso:: :py:meth:`~yasa.SleepStatsAgreement.get_calibration_func`
         """
         assert isinstance(data, pd.DataFrame), "`data` must be a pandas DataFrame"
         assert all(col in self.sleep_statistics for col in data), (
@@ -1469,7 +1477,6 @@ class SleepStatsAgreement:
         >>> ssa = yasa.SleepStatsAgreement(...)
         >>> calibrate_rem = ssa.get_calibration_func("REM")
         >>> new_obs_rem_vals = np.array([50, 40, 30, 20])
-        >>> calibrate_rem(new_obs_rem_vals)
         >>> calibrate_rem(new_obs_rem_vals)
         array([50, 40, 30, 20])
         >>> calibrate_rem(new_obs_rem_vals, bias_test=False)
