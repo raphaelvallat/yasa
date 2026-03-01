@@ -57,7 +57,7 @@ class Hypnogram:
         number of stages in the hypnogram.
 
         .. note:: Abbreviated or full spellings for the stages are allowed, as well as
-            lower/upper/mixed case. Internally, YASA will convert the stages to to full spelling
+            lower/upper/mixed case. Internally, YASA will convert the stages to full spelling
             and uppercase (e.g. "w" -> "WAKE").
     n_stages : int
         Whether ``values`` comes from a 2, 3, 4 or 5-stage hypnogram. Default is 5-stage, meaning
@@ -65,8 +65,9 @@ class Hypnogram:
     freq : str
         A pandas frequency string indicating the frequency resolution of the hypnogram. Default is
         "30s" meaning that each value in the hypnogram represents a 30-seconds epoch.
-        Examples: "1min", "10s", "15min". A full list of accepted values can be found at
-        https://pandas.pydata.org/docs/user_guide/timeseries.html#timeseries-offset-aliases
+        Examples: "1min", "10s", "15min". A full list of accepted values can be found in the
+        `pandas offset aliases documentation
+        <https://pandas.pydata.org/docs/user_guide/timeseries.html#timeseries-offset-aliases>`_.
 
         ``freq`` will be passed to the :py:func:`pandas.date_range` function to create the time
         index of the hypnogram.
@@ -82,6 +83,35 @@ class Hypnogram:
         An optional dataframe with the probability of each sleep stage for each epoch in hypnogram.
         Each row must sum to 1. This is automatically included if the hypnogram is created with
         :py:class:`yasa.SleepStaging`.
+
+    Attributes
+    ----------
+    hypno : :py:class:`pandas.Series`
+        The hypnogram values as a categorical :py:class:`~pandas.Series`.
+    n_epochs : int
+        Number of epochs in the hypnogram.
+    freq : str
+        Frequency resolution of the hypnogram (e.g. ``'30s'``).
+    sampling_frequency : float
+        Sampling frequency of the hypnogram in Hz (e.g. ``1/30`` for 30-second epochs).
+    start : str or None
+        Start datetime of the hypnogram, if provided.
+    timedelta : :py:class:`pandas.TimedeltaIndex`
+        Elapsed time of each epoch relative to the first epoch.
+    duration : float
+        Total duration of the hypnogram in minutes (i.e., Time in Bed).
+    n_stages : int
+        Number of allowed sleep stages (2, 3, 4, or 5). Does not include ART and UNS.
+    labels : list
+        List of allowed stage label strings for this hypnogram.
+    mapping : dict
+        Mapping from stage string labels to integer values. Can be overridden by assignment.
+    mapping_int : dict
+        Reverse mapping from integer values to stage string labels.
+    scorer : str or None
+        Name of the scorer, if provided.
+    proba : :py:class:`pandas.DataFrame` or None
+        Per-epoch stage probabilities, if provided.
 
     Examples
     --------
@@ -480,9 +510,11 @@ class Hypnogram:
     @property
     def n_stages(self):
         """
-        The number of allowed stages in the hypnogram. This is not the number of unique stages
-        in the current hypnogram. This does not include Artefact and Unscored which are always
-        allowed.
+        The number of allowed sleep stages in the hypnogram (2, 3, 4, or 5). This reflects the
+        hypnogram type set at construction time, not the number of unique stages actually present
+        in the data. For example, a hypnogram with only N2 and REM epochs will still report
+        ``n_stages=5`` if it was created as a 5-stage hypnogram. Artefact (ART) and Unscored (UNS)
+        are always allowed and are not counted.
         """
         return self._n_stages
 
@@ -493,7 +525,12 @@ class Hypnogram:
 
     @property
     def mapping(self):
-        """A dictionary with the mapping from string to integer values."""
+        """A dictionary with the mapping from string to integer values.
+
+        Can be overridden by direct assignment, e.g. ``hyp.mapping = {"WAKE": 0, "SLEEP": 1}``.
+        When setting a custom mapping, ``ART`` and ``UNS`` are automatically added with values
+        ``-1`` and ``-2`` respectively, if they are not already present.
+        """
         return self._mapping
 
     @mapping.setter
@@ -627,13 +664,10 @@ class Hypnogram:
 
         Parameters
         ----------
-        self : :py:class:`yasa.Hypnogram`
-            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
-            Total Recording Time, i.e. "lights out" to "lights on").
         new_n_stages : int
             Desired number of sleep stages. Must be lower than the current number of stages.
+            Valid target values and their stage sets are:
 
-            - 5-stage (Wake, N1, N2, N3, REM)
             - 4-stage (Wake, Light, Deep, REM)
             - 3-stage (Wake, NREM, REM)
             - 2-stage (Wake, Sleep)
@@ -712,13 +746,11 @@ class Hypnogram:
         """Evaluate agreement between two hypnograms of the same sleep session.
 
         For example, the reference hypnogram (i.e., ``self``) might be a manually-scored hypnogram
-        and the reference hypnogram (i.e., ``ref_hyp``) might be a hypnogram from actigraphy, a
+        and the observed hypnogram (i.e., ``obs_hyp``) might be a hypnogram from actigraphy, a
         wearable device, or an automated scorer (e.g., :py:meth:`yasa.SleepStaging.predict`).
 
         Parameters
         ----------
-        self : :py:class:`yasa.Hypnogram`
-            Reference or ground-truth hypnogram.
         obs_hyp : :py:class:`yasa.Hypnogram`
             The observed or to-be-evaluated hypnogram.
 
@@ -750,9 +782,6 @@ class Hypnogram:
 
         Parameters
         ----------
-        self : :py:class:`yasa.Hypnogram`
-            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
-            Total Recording Time, i.e. "lights out" to "lights on").
         threshold : str
             This function will only keep periods that exceed a certain duration (default '5min'),
             e.g. '5min', '15min', '30sec', '1hour'. To disable thresholding, use '0sec'.
@@ -764,15 +793,15 @@ class Hypnogram:
         Returns
         -------
         periods : :py:class:`pandas.DataFrame`
-            Output dataframe
+            Output dataframe with one row per period and the following columns:
 
-            * ``values`` : The value in hypno of the current period
-            * ``start`` : The index of the start of the period in hypno
-            * ``length`` : The duration of the period, in number of epochs
+            * ``values`` (str): The stage label of the current period.
+            * ``start`` (int): The index of the first epoch of the period in the hypnogram.
+            * ``length`` (int): The duration of the period in number of epochs.
 
         Examples
         --------
-        Let's assume that we have an hypnogram where sleep = 1 and wake = 0, with one value
+        Let's assume that we have a hypnogram where sleep = 1 and wake = 0, with one value
         per minute.
 
         >>> from yasa import Hypnogram
@@ -862,8 +891,6 @@ class Hypnogram:
 
         Parameters
         ----------
-        self : :py:class:`yasa.Hypnogram`
-            Hypnogram, assumed to be already cropped to time in bed (TIB).
         **kwargs : dict
             Optional keyword arguments passed to :py:func:`yasa.simulate_hypnogram`.
 
@@ -914,15 +941,9 @@ class Hypnogram:
 
     def sleep_statistics(self):
         """
-        Compute standard sleep statistics from an hypnogram.
+        Compute standard sleep statistics from a hypnogram.
 
         This function supports a 2, 3, 4 or 5-stage hypnogram.
-
-        Parameters
-        ----------
-        self : :py:class:`yasa.Hypnogram`
-            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
-            Total Recording Time, i.e. "lights out" to "lights on").
 
         Returns
         -------
@@ -958,12 +979,13 @@ class Hypnogram:
 
         References
         ----------
-        * Iber (2007). The AASM manual for the scoring of sleep and associated events: rules,
-          terminology and technical specifications. American Academy of Sleep Medicine.
+        .. [Iber2007] Iber (2007). The AASM manual for the scoring of sleep and associated events:
+                      rules, terminology and technical specifications. American Academy of Sleep
+                      Medicine.
 
-        * Silber et al. (2007). `The visual scoring of sleep in adults
-          <https://www.ncbi.nlm.nih.gov/pubmed/17557422>`_. Journal of Clinical
-          Sleep Medicine, 3(2), 121-131.
+        .. [Silber2007] Silber et al. (2007). `The visual scoring of sleep in adults
+                        <https://www.ncbi.nlm.nih.gov/pubmed/17557422>`_. Journal of Clinical
+                        Sleep Medicine, 3(2), 121-131.
 
         Examples
         --------
@@ -1097,14 +1119,7 @@ class Hypnogram:
         return stats
 
     def transition_matrix(self):
-        """Create a state-transition matrix from an hypnogram.
-
-        Parameters
-        ----------
-        self : :py:class:`yasa.Hypnogram`
-            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
-            Total Recording Time, i.e. "lights out" to "lights on"). For best results, the
-            hypnogram should not contain any artefact or unscored epochs.
+        """Create a state-transition matrix from a hypnogram.
 
         Returns
         -------
@@ -1152,12 +1167,10 @@ class Hypnogram:
 
         Parameters
         ----------
-        self : :py:class:`yasa.Hypnogram`
-            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
-            Total Recording Time, i.e. "lights out" to "lights on"). For best results, the
-            hypnogram should not contain any artefact or unscored epochs.
         new_freq : str
-            Frequency is defined with a pandas frequency string, e.g. "10s" or "1min".
+            Target frequency as a pandas frequency string (e.g. ``"10s"`` or ``"1min"``). Must
+            represent a higher sampling rate than the current hypnogram frequency, i.e. a shorter
+            epoch duration (e.g. ``"10s"`` when the current frequency is ``"30s"``).
 
         Returns
         -------
@@ -1236,20 +1249,16 @@ class Hypnogram:
 
     def upsample_to_data(self, data, sf=None, verbose=True):
         """
-        Upsample an hypnogram to a given sampling frequency and fit the resulting hypnogram to
+        Upsample a hypnogram to a given sampling frequency and fit the resulting hypnogram to
         corresponding EEG data, such that the hypnogram and EEG data have the exact same number of
         samples.
 
         Parameters
         ----------
-        self : :py:class:`yasa.Hypnogram`
-            Hypnogram, assumed to be already cropped to time in bed (TIB, also referred to as
-            Total Recording Time, i.e. "lights out" to "lights on"). For best results, the
-            hypnogram should not contain any artefact or unscored epochs.
         data : array_like or :py:class:`mne.io.BaseRaw`
             1D or 2D EEG data. Can also be a :py:class:`mne.io.BaseRaw`, in which case ``data``
-            and ``sf_data`` will be automatically extracted.
-        sf_data : float
+            and ``sf`` will be automatically extracted.
+        sf : float
             The sampling frequency of ``data``, in Hz (e.g. 100 Hz, 256 Hz, ...).
             Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
         verbose : bool or str
@@ -1259,17 +1268,32 @@ class Hypnogram:
 
         Returns
         -------
-        hypno : array_like
-            The hypnogram values, upsampled to ``sf_data`` and cropped/padded to
-            ``max(data.shape)``. For compatibility with most YASA functions, the returned hypnogram
-            is an array with integer values, and not a :py:class:`yasa.Hypnogram` object.
+        hypno : :py:class:`numpy.ndarray`
+            The hypnogram values as a 1D integer array, upsampled to ``sf`` Hz and
+            cropped/padded to ``max(data.shape)`` samples. For compatibility with most YASA
+            functions, integer values are returned rather than a :py:class:`yasa.Hypnogram` object.
 
         Warns
         -----
         UserWarning
-            If the upsampled ``hypno`` is shorter / longer than ``max(data.shape)``
-            and therefore needs to be padded/cropped respectively. This output can be disabled by
-            passing ``verbose='ERROR'``.
+            If the upsampled ``hypno`` is shorter or longer than ``max(data.shape)``
+            and therefore needs to be padded or cropped respectively. This warning can be silenced
+            by passing ``verbose='error'``.
+
+        Examples
+        --------
+        Upsample a 30-second hypnogram to match 100 Hz EEG data:
+
+        >>> import numpy as np
+        >>> from yasa import Hypnogram
+        >>> hyp = Hypnogram(["W", "W", "N1", "N2", "N2", "REM"], freq="30s")
+        >>> # Simulate 3 minutes of EEG data at 100 Hz (= 18000 samples)
+        >>> data = np.zeros((1, 18000))
+        >>> hypno = hyp.upsample_to_data(data, sf=100)
+        >>> hypno.shape
+        (18000,)
+        >>> np.unique(hypno)
+        array([0, 1, 2, 4])
         """
         hypno_up = hypno_upsample_to_data(
             self.as_int(), self.sampling_frequency, data=data, sf_data=sf, verbose=verbose
