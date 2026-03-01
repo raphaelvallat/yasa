@@ -696,8 +696,6 @@ class EpochByEpochAgreement:
     def summary(self, by_stage=False, **kwargs):
         """Return group-level agreement scores.
 
-        Default aggregated measures are
-
         Parameters
         ----------
         self : :py:class:`~yasa.evaluation.EpochByEpochAgreement`
@@ -1355,6 +1353,7 @@ class SleepStatsAgreement:
     def summary(self, ci_method="auto"):
         """
         Return a :py:class:`~pandas.DataFrame` that includes all calculated metrics:
+
         * Parametric bias
         * Parametric lower and upper limits of agreement
         * Regression intercept and slope for modeled bias

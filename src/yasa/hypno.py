@@ -38,8 +38,7 @@ class Hypnogram:
     hypnograms are stored as a class (aka object), which comes with its own attributes and
     functions. Furthermore, YASA does not allow integer values to define the stages anymore.
     Instead, users must pass an array of strings with the actual stage names
-    (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]). If your hypnogram is encoded as integers
-    (e.g. loaded from a text file with :py:func:`numpy.loadtxt`), use
+    (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]). If your hypnogram is encoded as integers, use
     :py:meth:`Hypnogram.from_integers` instead.
 
     .. versionadded:: 0.7.0
@@ -390,8 +389,7 @@ class Hypnogram:
 
         Examples
         --------
-        Convert a legacy integer hypnogram (e.g. loaded from a ``.txt`` file) to a
-        :py:class:`Hypnogram` object:
+        Convert a legacy integer hypnogram to a :py:class:`Hypnogram` object:
 
         >>> import numpy as np
         >>> from yasa import Hypnogram
