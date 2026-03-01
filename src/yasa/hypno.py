@@ -144,7 +144,7 @@ class Hypnogram:
     10    SLEEP
     11    SLEEP
     Name: Stage, dtype: category
-    Categories (4, object): ['WAKE', 'SLEEP', 'ART', 'UNS']
+    Categories (4, str): ['WAKE', 'SLEEP', 'ART', 'UNS']
 
     >>> # Number of epochs in the hypnogram
     >>> hyp.n_epochs
@@ -176,17 +176,19 @@ class Hypnogram:
     Name: Stage, dtype: int16
 
     >>> # Calculate the summary sleep statistics
-    >>> hyp.sleep_statistics()
-    {'TIB': 6.0,
-     'SPT': 4.5,
-     'WASO': 0.5,
-     'TST': 4.0,
-     'SE': 66.6667,
-     'SME': 88.8889,
-     'SFI': 7.5,
-     'SOL': 1.5,
-     'SOL_5min': nan,
-     'WAKE': 2.0}
+    >>> import pandas as pd
+    >>> pd.Series(hyp.sleep_statistics())
+    TIB         6.0000
+    SPT         4.5000
+    WASO        0.5000
+    TST         4.0000
+    SE         66.6667
+    SME        88.8889
+    SFI         7.5000
+    SOL         1.5000
+    SOL_5min       NaN
+    WAKE        2.0000
+    dtype: float64
 
     >>> # Get the state-transition matrix
     >>> counts, probs = hyp.transition_matrix()
@@ -226,32 +228,33 @@ class Hypnogram:
     2022-12-16 06:48:30      N2
     2022-12-16 06:49:00      N2
     2022-12-16 06:49:30      N2
-    Freq: 30S, Name: S1, Length: 1000, dtype: category
-    Categories (7, object): ['WAKE', 'N1', 'N2', 'N3', 'REM', 'ART', 'UNS']
+    Freq: 30s, Name: S1, Length: 1000, dtype: category
+    Categories (7, str): ['WAKE', 'N1', 'N2', 'N3', 'REM', 'ART', 'UNS']
 
     The summary sleep statistics will include more items with a 5-stage hypnogram than a 2-stage
     hypnogram, i.e. the amount and percentage of each sleep stage, the REM latency, etc.
 
-    >>> hyp.sleep_statistics()
-    {'TIB': 500.0,
-     'SPT': 497.5,
-     'WASO': 79.5,
-     'TST': 418.0,
-     'SE': 83.6,
-     'SME': 84.0201,
-     'SFI': 0.7177,
-     'SOL': 2.5,
-     'SOL_5min': 2.5,
-     'Lat_REM': 67.0,
-     'WAKE': 82.0,
-     'N1': 69.0,
-     'N2': 247.0,
-     'N3': 64.5,
-     'REM': 37.5,
-     '%N1': 16.5072,
-     '%N2': 59.0909,
-     '%N3': 15.4306,
-     '%REM': 8.9713}
+    >>> pd.Series(hyp.sleep_statistics())
+    TIB        500.0000
+    SPT        497.5000
+    WASO        79.5000
+    TST        418.0000
+    SE          83.6000
+    SME         84.0201
+    SFI          0.7177
+    SOL          2.5000
+    SOL_5min     2.5000
+    Lat_REM     67.0000
+    WAKE        82.0000
+    N1          69.0000
+    N2         247.0000
+    N3          64.5000
+    REM         37.5000
+    %N1         16.5072
+    %N2         59.0909
+    %N3         15.4306
+    %REM         8.9713
+    dtype: float64
     """
 
     def __init__(self, values, n_stages=5, *, freq="30s", start=None, scorer=None, proba=None):
@@ -444,14 +447,14 @@ class Hypnogram:
         7     REM
         8    WAKE
         Name: Stage, dtype: category
-        Categories (7, object): ['WAKE', 'N1', 'N2', 'N3', 'REM', 'ART', 'UNS']
+        Categories (7, str): ['WAKE', 'N1', 'N2', 'N3', 'REM', 'ART', 'UNS']
 
         Typical usage when loading a hypnogram from a plain-text file:
 
         >>> import numpy as np
         >>> from yasa import Hypnogram
-        >>> int_hypno = np.loadtxt("path/to/hypnogram.txt").astype(int)
-        >>> hyp = Hypnogram.from_integers(int_hypno, freq="30s", start="2022-12-15 22:30:00")
+        >>> int_hypno = np.loadtxt("path/to/hypnogram.txt").astype(int)  # doctest: +SKIP
+        >>> hyp = Hypnogram.from_integers(int_hypno, freq="30s", start="2022-12-15 22:30:00")  # doctest: +SKIP
 
         Use a custom mapping to handle non-standard integer encodings:
 
@@ -619,7 +622,7 @@ class Hypnogram:
 
         Users can define a custom mapping:
 
-        >>> hyp.mapping = {"WAKE": 0, "NREM": 1, "REM": 2}
+        >>> hyp.mapping = {"WAKE": 0, "NREM": 1, "REM": 2}  # doctest: +SKIP
 
         Examples
         --------
@@ -685,7 +688,7 @@ class Hypnogram:
         >>> from yasa import Hypnogram
         >>> hyp = Hypnogram(["W", "W", "N1", "N2", "N2", "N2", "N2", "W"], n_stages=5)
         >>> hyp_2s = hyp.consolidate_stages(2)
-        >>> print(hyp_2s)
+        >>> print(hyp_2s.hypno)
         Epoch
         0     WAKE
         1     WAKE
@@ -696,7 +699,7 @@ class Hypnogram:
         6    SLEEP
         7     WAKE
         Name: Stage, dtype: category
-        Categories (4, object): ['WAKE', 'SLEEP', 'ART', 'UNS']
+        Categories (4, str): ['WAKE', 'SLEEP', 'ART', 'UNS']
         """
         assert self.n_stages in [3, 4, 5], "`self.n_stages` must be 3, 4, or 5"
         assert new_n_stages in [2, 3, 4], "`new_n_stages` must be 2, 3, or 4"
@@ -772,7 +775,7 @@ class Hypnogram:
         mcc             0.231
         precision       0.515
         recall          0.550
-        fbeta           0.524
+        f1              0.524
         Name: agreement, dtype: float64
         """
         return EpochByEpochAgreement([self], [obs_hyp])
@@ -991,47 +994,50 @@ class Hypnogram:
         --------
         Sleep statistics for a 2-stage hypnogram with a resolution of 15-seconds
 
+        >>> import pandas as pd
         >>> from yasa import Hypnogram
         >>> # Generate a fake hypnogram, where "S" = Sleep, "W" = Wake
         >>> values = 10 * ["W"] + 40 * ["S"] + 5 * ["W"] + 40 * ["S"] + 9 * ["W"]
         >>> hyp = Hypnogram(values, freq="15s", n_stages=2)
-        >>> hyp.sleep_statistics()
-        {'TIB': 26.0,
-        'SPT': 21.25,
-        'WASO': 1.25,
-        'TST': 20.0,
-        'SE': 76.9231,
-        'SME': 94.1176,
-        'SFI': 1.5,
-        'SOL': 2.5,
-        'SOL_5min': 2.5,
-        'WAKE': 6.0}
+        >>> pd.Series(hyp.sleep_statistics())
+        TIB         26.0000
+        SPT         21.2500
+        WASO         1.2500
+        TST         20.0000
+        SE          76.9231
+        SME         94.1176
+        SFI          1.5000
+        SOL          2.5000
+        SOL_5min     2.5000
+        WAKE         6.0000
+        dtype: float64
 
         Sleep statistics for a 5-stage hypnogram
 
         >>> from yasa import simulate_hypnogram
         >>> # Generate a 8 hr (= 480 minutes) 5-stage hypnogram with a 30-seconds resolution
         >>> hyp = simulate_hypnogram(tib=480, seed=42)
-        >>> hyp.sleep_statistics()
-        {'TIB': 480.0,
-        'SPT': 477.5,
-        'WASO': 79.5,
-        'TST': 398.0,
-        'SE': 82.9167,
-        'SME': 83.3508,
-        'SFI': 0.7538,
-        'SOL': 2.5,
-        'SOL_5min': 2.5,
-        'Lat_REM': 67.0,
-        'WAKE': 82.0,
-        'N1': 67.0,
-        'N2': 240.5,
-        'N3': 53.0,
-        'REM': 37.5,
-        '%N1': 16.8342,
-        '%N2': 60.4271,
-        '%N3': 13.3166,
-        '%REM': 9.4221}
+        >>> pd.Series(hyp.sleep_statistics())
+        TIB        480.0000
+        SPT        477.5000
+        WASO        79.5000
+        TST        398.0000
+        SE          82.9167
+        SME         83.3508
+        SFI          0.7538
+        SOL          2.5000
+        SOL_5min     2.5000
+        Lat_REM     67.0000
+        WAKE        82.0000
+        N1          67.0000
+        N2         240.5000
+        N3          53.0000
+        REM         37.5000
+        %N1         16.8342
+        %N2         60.4271
+        %N3         13.3166
+        %REM         9.4221
+        dtype: float64
         """
         hypno = self.hypno.to_numpy()
         assert self.n_epochs > 0, "Hypnogram is empty!"
@@ -1191,8 +1197,8 @@ class Hypnogram:
         2022-12-23 23:01:00    SLEEP
         2022-12-23 23:01:30    SLEEP
         2022-12-23 23:02:00     WAKE
-        Freq: 30S, Name: Stage, dtype: category
-        Categories (4, object): ['WAKE', 'SLEEP', 'ART', 'UNS']
+        Freq: 30s, Name: Stage, dtype: category
+        Categories (4, str): ['WAKE', 'SLEEP', 'ART', 'UNS']
 
         Upsample to a 15-seconds resolution
 
@@ -1209,8 +1215,8 @@ class Hypnogram:
         2022-12-23 23:01:45    SLEEP
         2022-12-23 23:02:00     WAKE
         2022-12-23 23:02:15     WAKE
-        Freq: 15S, Name: Stage, dtype: category
-        Categories (4, object): ['WAKE', 'SLEEP', 'ART', 'UNS']
+        Freq: 15s, Name: Stage, dtype: category
+        Categories (4, str): ['WAKE', 'SLEEP', 'ART', 'UNS']
         """
         assert pd.Timedelta(new_freq) < pd.Timedelta(self.freq), (
             f"The upsampling `new_freq` ({new_freq}) must be higher than the current frequency of "
@@ -1293,7 +1299,7 @@ class Hypnogram:
         >>> hypno.shape
         (18000,)
         >>> np.unique(hypno)
-        array([0, 1, 2, 4])
+        array([0, 1, 2, 4], dtype=int16)
         """
         hypno_up = hypno_upsample_to_data(
             self.as_int(), self.sampling_frequency, data=data, sf_data=sf, verbose=verbose
@@ -1862,7 +1868,8 @@ def simulate_hypnogram(
     7      N2
     8      N2
     9      N2
-    Name: Stage, dtype: object
+    Name: Stage, dtype: category
+    Categories (7, str): ['WAKE', 'N1', 'N2', 'N3', 'REM', 'ART', 'UNS']
 
     >>> hyp = simulate_hypnogram(tib=5, n_stages=2, seed=1)
     >>> hyp.hypno
@@ -1877,7 +1884,8 @@ def simulate_hypnogram(
     7    SLEEP
     8    SLEEP
     9    SLEEP
-    Name: Stage, dtype: object
+    Name: Stage, dtype: category
+    Categories (4, str): ['WAKE', 'SLEEP', 'ART', 'UNS']
 
     Add some Unscored epochs.
 
@@ -1895,7 +1903,8 @@ def simulate_hypnogram(
     7    SLEEP
     8      UNS
     9      UNS
-    Name: Stage, dtype: object
+    Name: Stage, dtype: category
+    Categories (4, str): ['WAKE', 'SLEEP', 'ART', 'UNS']
 
     Base the data off a real subject's transition matrix.
 
@@ -1911,8 +1920,8 @@ def simulate_hypnogram(
         >>> real_hyp = Hypnogram(values_str)
         >>> fake_hyp = real_hyp.simulate_similar(seed=2)
         >>> fig, (ax1, ax2) = plt.subplots(nrows=2, figsize=(7, 5))
-        >>> real_hyp.plot_hypnogram(ax=ax1).set_title("Real hypnogram")
-        >>> fake_hyp.plot_hypnogram(ax=ax2).set_title("Fake hypnogram")
+        >>> real_hyp.plot_hypnogram(ax=ax1).set_title("Real hypnogram")  # doctest: +SKIP
+        >>> fake_hyp.plot_hypnogram(ax=ax2).set_title("Fake hypnogram")  # doctest: +SKIP
         >>> plt.tight_layout()
     """
     # Extract yasa.Hypnogram defaults, which will be assumed later but need throughout
