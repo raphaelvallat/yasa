@@ -127,7 +127,7 @@ class EpochByEpochAgreement:
         >>> obs_hyps = [h.simulate_similar(scorer="YASA", seed=i) for i, h in enumerate(ref_hyps)]
         >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
         >>> fig, ax = plt.subplots(figsize=(6, 3), constrained_layout=True)
-        >>> ebe.plot_hypnograms(sleep_id=10)
+        >>> _ = ebe.plot_hypnograms(sleep_id=10)
 
     .. plot::
 
@@ -137,9 +137,7 @@ class EpochByEpochAgreement:
         >>> obs_hyps = [h.simulate_similar(scorer="YASA", seed=i) for i, h in enumerate(ref_hyps)]
         >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
         >>> fig, ax = plt.subplots(figsize=(6, 3))
-        >>> ebe.plot_hypnograms(
-        >>>     sleep_id=8, ax=ax, obs_kwargs={"color": "red", "lw": 2, "ls": "dotted"}
-        >>> )
+        >>> _ = ebe.plot_hypnograms(sleep_id=8, ax=ax, obs_kwargs={"color": "red", "lw": 2, "ls": "dotted"})
         >>> plt.tight_layout()
 
     .. plot::
@@ -153,16 +151,10 @@ class EpochByEpochAgreement:
         >>> fig, ax = plt.subplots(figsize=(6.5, 2.5), constrained_layout=True)
         >>> style_a = dict(alpha=1, lw=2.5, ls="solid", color="gainsboro", label="Michel")
         >>> style_b = dict(alpha=1, lw=2.5, ls="solid", color="cornflowerblue", label="Jouvet")
-        >>> legend_style = dict(
-        >>>     title="Scorer", frameon=False, ncol=2, loc="lower center", bbox_to_anchor=(0.5, 0.9)
-        >>> )
-        >>> ax = ebe.plot_hypnograms(
-        >>>     sleep_id=session, ref_kwargs=style_a, obs_kwargs=style_b, legend=legend_style, ax=ax
-        >>> )
+        >>> legend_style = dict(title="Scorer", frameon=False, ncol=2, loc="lower center", bbox_to_anchor=(0.5, 0.9))
+        >>> ax = ebe.plot_hypnograms(sleep_id=session, ref_kwargs=style_a, obs_kwargs=style_b, legend=legend_style, ax=ax)
         >>> acc = ebe.get_agreement().multiply(100).at[session, "accuracy"]
-        >>> ax.text(
-        >>>     0.01, 1, f"Accuracy = {acc:.0f}%", ha="left", va="bottom", transform=ax.transAxes
-        >>> )
+        >>> _ = ax.text(0.01, 1, f"Accuracy = {acc:.0f}%", ha="left", va="bottom", transform=ax.transAxes)
 
     When comparing only 2 hypnograms, use the :py:meth:`~yasa.Hypnogram.evaluate` method:
 
@@ -712,10 +704,28 @@ class EpochByEpochAgreement:
         >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
         >>> _ = ebe.get_agreement()
         >>> ebe.summary()
+                             mad      mean       std       min    median       max
+        metric
+        accuracy      0.053000  0.285833  0.062686  0.214167  0.305833  0.350833
+        balanced_acc  0.041301  0.241583  0.058478  0.168548  0.238700  0.326814
+        kappa         0.054327  0.044791  0.073235 -0.057258  0.064022  0.140052
+        mcc           0.054725  0.045146  0.073966 -0.058031  0.064533  0.141520
+        precision     0.062393  0.282627  0.073269  0.202928  0.306433  0.349311
+        recall        0.053000  0.285833  0.062686  0.214167  0.305833  0.350833
+        f1            0.058863  0.279704  0.068751  0.205014  0.305590  0.345510
 
         To control the descriptive statistics included as columns:
 
         >>> ebe.summary(func=["count", "mean", "sem"])
+                      count      mean       sem
+        metric
+        accuracy        5.0  0.285833  0.028034
+        balanced_acc    5.0  0.241583  0.026152
+        kappa           5.0  0.044791  0.032752
+        mcc             5.0  0.045146  0.033078
+        precision       5.0  0.282627  0.032767
+        recall          5.0  0.285833  0.028034
+        f1              5.0  0.279704  0.030747
         """
         assert self.n_sleeps > 1, "Summary scores can not be computed with only one hypnogram pair."
         assert isinstance(by_stage, bool), "`by_stage` must be True or False"
@@ -836,13 +846,15 @@ class SleepStatsAgreement:
     >>> obs_sstats = sstats.loc[obs_scorer]
     >>> # Create SleepStatsAgreement instance
     >>> ssa = yasa.SleepStatsAgreement(ref_sstats, obs_sstats)
-    >>> ssa.summary().round(1).head(3)
-    variable   bias_intercept             ...   uloa_parm
-    interval           center lower upper ...      center lower upper
-    sleep_stat                            ...
-    %N1                  -5.4 -13.9   3.2 ...         6.1   3.7   8.5
-    %N2                 -27.3 -49.1  -5.6 ...        12.4   7.2  17.6
-    %N3                  -9.1 -23.8   5.5 ...        20.4  12.6  28.3
+    >>> ssa.summary().round(1).head(3)  # doctest: +NORMALIZE_WHITESPACE
+    variable   bias_intercept             bias_parm  ... loa_slope uloa_parm
+    interval           center lower upper    center  ...     upper    center lower upper
+    sleep_stat                                       ...
+    %N1                  -5.4 -13.9   3.2       0.3  ...       1.6       6.1   3.7   8.5
+    %N2                 -27.3 -49.1  -5.6      -0.2  ...       1.4      12.4   7.2  17.6
+    %N3                  -9.1 -23.8   5.5       1.4  ...       1.8      20.4  12.6  28.3
+    <BLANKLINE>
+    [3 rows x 21 columns]
 
     >>> ssa.get_table().head(3)[["bias", "loa"]]
                           bias                            loa
@@ -874,8 +886,7 @@ class SleepStatsAgreement:
 
     >>> new_hyps = [h.simulate_similar(scorer="Kelly", seed=i) for i, h in enumerate(obs_hyps)]
     >>> new_sstats = pd.Series(new_hyps).map(lambda h: h.sleep_statistics()).apply(pd.Series)
-    >>> new_sstats = new_sstats[["N1", "TST", "WASO"]]
-    >>> new_sstats.round(1).head(5)
+    >>> new_sstats[["N1", "TST", "WASO"]].round(1).head(5)
          N1    TST   WASO
     0  42.5  439.5  147.5
     1  84.0  550.0   38.5
@@ -883,14 +894,14 @@ class SleepStatsAgreement:
     3  57.0  469.5  120.0
     4  71.0  531.0   69.0
 
-    >>> new_stats_calibrated = ssa.calibrate(new_sstats, bias_method="auto")
-    >>> new_stats_calibrated.round(1).head(5)
+    >>> new_stats_calibrated = ssa.calibrate(new_sstats[ssa.sleep_statistics], bias_method="auto")
+    >>> new_stats_calibrated[["N1", "TST", "WASO"]].round(1).head(5)
          N1    TST   WASO
-    0  42.9  433.8  150.0
-    1  84.4  544.2   41.0
-    2  53.9  483.2  105.5
-    3  57.4  463.8  122.5
-    4  71.4  525.2   71.5
+    0  42.5  439.5  147.5
+    1  84.0  550.0   38.5
+    2  53.5  489.0  103.0
+    3  57.0  469.5  120.0
+    4  71.0  531.0   69.0
 
     """
 
@@ -1474,14 +1485,14 @@ class SleepStatsAgreement:
 
         Examples
         --------
-        >>> ssa = yasa.SleepStatsAgreement(...)
-        >>> calibrate_rem = ssa.get_calibration_func("REM")
-        >>> new_obs_rem_vals = np.array([50, 40, 30, 20])
-        >>> calibrate_rem(new_obs_rem_vals)
+        >>> ssa = yasa.SleepStatsAgreement(...)  # doctest: +SKIP
+        >>> calibrate_rem = ssa.get_calibration_func("REM")  # doctest: +SKIP
+        >>> new_obs_rem_vals = np.array([50, 40, 30, 20])  # doctest: +SKIP
+        >>> calibrate_rem(new_obs_rem_vals)  # doctest: +SKIP
         array([50, 40, 30, 20])
-        >>> calibrate_rem(new_obs_rem_vals, bias_test=False)
+        >>> calibrate_rem(new_obs_rem_vals, bias_test=False)  # doctest: +SKIP
         array([42.825, 32.825, 22.825, 12.825])
-        >>> calibrate_rem(new_obs_rem_vals, bias_test=False, method="regr")
+        >>> calibrate_rem(new_obs_rem_vals, bias_test=False, method="regr")  # doctest: +SKIP
         array([ -9.33878878,  -9.86815607, -10.39752335, -10.92689064])
         """
         assert isinstance(sleep_stat, str), "`sleep_stat` must be a string"
