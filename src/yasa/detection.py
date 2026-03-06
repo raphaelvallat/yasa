@@ -171,6 +171,7 @@ class _DetectionResults(object):
                 "Start": "count",
                 "Duration": aggfunc,
                 "Amplitude": aggfunc,
+                "AmpFiltered": aggfunc,
                 "RMS": aggfunc,
                 "AbsPower": aggfunc,
                 "RelPower": aggfunc,
@@ -715,7 +716,9 @@ def spindles_detect(
     * ``'End'`` : End time (in seconds).
     * ``'Duration'``: Duration (in seconds)
     * ``'Amplitude'``: Peak-to-peak amplitude of the (detrended) spindle in
-      the raw data (in µV).
+      the broadband-filtered data (in µV).
+    * ``'AmpFiltered'``: Peak-to-peak amplitude of the spindle in the
+      sigma-band filtered data (in µV).
     * ``'RMS'``: Root-mean-square (in µV)
     * ``'AbsPower'``: Median absolute power (in log10 µV^2),
       calculated from the Hilbert-transform of the ``freq_sp`` filtered signal.
@@ -934,6 +937,7 @@ def spindles_detect(
 
         # Initialize empty variables
         sp_amp = np.zeros(len(sp))
+        sp_amp_filt = np.zeros(len(sp))
         sp_freq = np.zeros(len(sp))
         sp_rms = np.zeros(len(sp))
         sp_osc = np.zeros(len(sp))
@@ -955,6 +959,7 @@ def spindles_detect(
             sp_det = _detrend(sp_x, data_broad[i, sp[j]])
             # sp_det = signal.detrend(data_broad[i, sp[i]], type='linear')
             sp_amp[j] = np.ptp(sp_det)  # Peak-to-peak amplitude
+            sp_amp_filt[j] = np.ptp(data_sigma[i, sp[j]])  # Amplitude on sigma-filtered signal
             sp_rms[j] = _rms(sp_det)  # Root mean square
             sp_rel[j] = np.median(rel_pow[sp[j]])  # Median relative power
 
@@ -997,6 +1002,7 @@ def spindles_detect(
             "End": sp_end,
             "Duration": sp_dur,
             "Amplitude": sp_amp,
+            "AmpFiltered": sp_amp_filt,
             "RMS": sp_rms,
             "AbsPower": sp_abs,
             "RelPower": sp_rel,
@@ -1014,6 +1020,7 @@ def spindles_detect(
             col_keep = [
                 "Duration",
                 "Amplitude",
+                "AmpFiltered",
                 "RMS",
                 "AbsPower",
                 "RelPower",
