@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from yasa.hypno import Hypnogram, hypno_str_to_int, simulate_hypnogram
+from yasa.hypno import Hypnogram, hypno_int_to_str, hypno_str_to_int, simulate_hypnogram
 
 
 def create_raw(npts, ch_names=["F4-M1", "F3-M2"], sf=100):
@@ -201,3 +201,61 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp.consolidate_stages(new_n_stages=4).n_stages == 4
         assert hyp.consolidate_stages(new_n_stages=3).n_stages == 3
         assert hyp.consolidate_stages(new_n_stages=2).n_stages == 2
+
+    def test_from_integers(self):
+        """Test Hypnogram.from_integers classmethod."""
+        # --- default mapping, 5-stage ---
+        int_hypno = np.array([0, 0, 1, 2, 3, 2, 4, 4, 0])
+        hyp = Hypnogram.from_integers(int_hypno)
+        assert isinstance(hyp, Hypnogram)
+        assert hyp.n_stages == 5
+        assert hyp.freq == "30s"
+        assert hyp.n_epochs == len(int_hypno)
+        assert hyp.start is None
+        assert hyp.scorer is None
+        expected_str = np.array(["WAKE", "WAKE", "N1", "N2", "N3", "N2", "REM", "REM", "WAKE"])
+        np.testing.assert_array_equal(hyp.hypno.to_numpy(), expected_str)
+
+        # round-trip: from_integers -> as_int should recover the original array
+        np.testing.assert_array_equal(hyp.as_int().to_numpy(), int_hypno)
+
+        # --- list input ---
+        hyp_list = Hypnogram.from_integers([0, 1, 2, 3, 4])
+        assert hyp_list.n_epochs == 5
+        np.testing.assert_array_equal(hyp_list.hypno.to_numpy(), ["WAKE", "N1", "N2", "N3", "REM"])
+
+        # --- pd.Series input ---
+        hyp_series = Hypnogram.from_integers(pd.Series([0, 2, 4]))
+        np.testing.assert_array_equal(hyp_series.hypno.to_numpy(), ["WAKE", "N2", "REM"])
+
+        # --- ART / UNS epochs (-1, -2) ---
+        hyp_art = Hypnogram.from_integers([-1, -2, 0, 2])
+        np.testing.assert_array_equal(hyp_art.hypno.to_numpy(), ["ART", "UNS", "WAKE", "N2"])
+
+        # --- optional kwargs forwarded correctly ---
+        hyp_kw = Hypnogram.from_integers(
+            int_hypno, freq="30s", start="2023-01-01 22:00:00", scorer="S1"
+        )
+        assert isinstance(hyp_kw.hypno.index, pd.DatetimeIndex)
+        assert hyp_kw.hypno.index.name == "Time"
+        assert hyp_kw.scorer == "S1"
+        assert hyp_kw.hypno.name == "S1"
+        assert hyp_kw.start == "2023-01-01 22:00:00"
+
+        # --- custom mapping ---
+        custom = {1: "W", 2: "R", 3: "N1", 4: "N2", 5: "N3"}
+        hyp_custom = Hypnogram.from_integers([1, 3, 4, 5, 2], mapping=custom)
+        np.testing.assert_array_equal(
+            hyp_custom.hypno.to_numpy(), ["WAKE", "N1", "N2", "N3", "REM"]
+        )
+
+        # --- consistency with hypno_int_to_str ---
+        int_arr = np.array([0, 1, 2, 3, 4, -1, -2])
+        str_arr = hypno_int_to_str(int_arr)
+        hyp_via_fn = Hypnogram(str_arr)
+        hyp_via_cls = Hypnogram.from_integers(int_arr)
+        np.testing.assert_array_equal(hyp_via_fn.hypno.to_numpy(), hyp_via_cls.hypno.to_numpy())
+
+        # --- invalid integer (not in mapping) raises ---
+        with pytest.raises(Exception):
+            Hypnogram.from_integers([0, 99])

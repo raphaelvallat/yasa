@@ -11,8 +11,8 @@
     :target: https://codecov.io/gh/raphaelvallat/yasa
     :alt: Codecov
 
-.. image:: https://pepy.tech/badge/yasa
-    :target: https://pepy.tech/badge/yasa
+.. image:: https://static.pepy.tech/badge/yasa
+    :target: https://pepy.tech/projects/yasa
     :alt: PyPI - Downloads
 
 .. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
@@ -42,6 +42,7 @@
 * Artefact rejection, on single or multi-channel EEG data.
 * Spectral analyses: bandpower, phase-amplitude coupling, 1/f slope, and more!
 * Hypnogram analysis: sleep statistics and stage transitions.
+* Scorer agreement evaluation: epoch-by-epoch and sleep-statistics Bland–Altman agreement between two scorers.
 
 For more details, try the :ref:`quickstart` or read the :ref:`faq`.
 
@@ -50,50 +51,68 @@ For more details, try the :ref:`quickstart` or read the :ref:`faq`.
 Installation
 ~~~~~~~~~~~~
 
-To install YASA, simply open a terminal or Anaconda command prompt and enter:
+YASA is a Python 3 package and is currently tested for Python 3.10+.
+
+Dependencies
+------------
+
+The main dependencies of YASA are:
+
+* `NumPy <https://numpy.org/>`_ >= 1.22.4
+* `SciPy <https://www.scipy.org/>`_ >= 1.8.1
+* `Pandas <https://pandas.pydata.org/>`_ >= 2.1.1
+* `Matplotlib <https://matplotlib.org/>`_
+* `Seaborn <https://seaborn.pydata.org/>`_
+* `MNE <https://mne.tools/stable/>`_ >= 1.3
+* `Numba <https://numba.readthedocs.io/>`_ >= 0.57.1
+* `Scikit-learn <https://scikit-learn.org/>`_
+* `LightGBM <https://lightgbm.readthedocs.io/>`_
+* `Antropy <https://github.com/raphaelvallat/antropy>`_
+* `TensorPAC <https://etiennecmb.github.io/tensorpac/>`_ >= 0.6.5
+* `PyRiemann <https://pyriemann.readthedocs.io/>`_ >= 0.2.7
+* `SleepECG <https://sleepecg.readthedocs.io/>`_ >= 0.5.0
+* `lspopt <https://github.com/hbldh/lspopt>`_ >= 1.4
+
+User installation
+-----------------
+
+YASA can be easily installed using pip, conda, or uv:
+
+.. tab-set::
+
+    .. tab-item:: uv (recommended)
+
+        .. code-block:: shell
+
+            uv pip install yasa
+
+    .. tab-item:: pip
+
+        .. code-block:: shell
+
+            pip install --upgrade yasa
+
+    .. tab-item:: conda
+
+        .. code-block:: shell
+
+            conda install -c conda-forge yasa
+
+Development
+-----------
+
+To build and install from source, clone this repository and install in editable mode with `uv <https://docs.astral.sh/uv/>`_
 
 .. code-block:: shell
 
-    pip install --upgrade yasa
-
-Alternatively, YASA can be installed with conda:
-
-.. code-block:: shell
-
-    conda install conda-forge::yasa
-
-To build and install from source, clone this repository or download the source archive and decompress the files
-
-.. code-block:: shell
-
+    git clone https://github.com/raphaelvallat/yasa.git
     cd yasa
-    pip install .[test]     # install the package
-    pip install -e .[test]  # or editable install
-    pytest                  # test the package
+    uv pip install --group=test --editable .
 
-**What are the prerequisites for using YASA?**
+    # test the package
+    pytest --verbose
 
-To use YASA, all you need is:
-
-- Some basic knowledge of Python, especially the `NumPy <https://docs.scipy.org/doc/numpy/user/quickstart.html>`_, `Pandas <https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html>`_ and `MNE <https://martinos.org/mne/stable/index.html>`_ packages.
-- A Python editor: YASA works best with `Jupyter Lab <https://jupyterlab.readthedocs.io/en/stable/index.html>`_, a web-based interactive user interface.
-- Some sleep EEG data and optionally a sleep staging file (hypnogram).
-
-**I have sleep EEG data in European Data Format (.edf), how do I load the data in Python?**
-
-If you have sleep EEG data in standard formats (e.g. EDF or BrainVision), you can use the `MNE package <https://mne.tools/stable/index.html>`_ to load and preprocess your data in Python. A simple preprocessing pipeline using MNE is shown below:
-
-.. code-block:: python
-
-    import mne
-    # Load the EDF file
-    raw = mne.io.read_raw_edf("MYEDFFILE.edf", preload=True)
-    # Downsample the data to 100 Hz
-    raw.resample(100)
-    # Apply a bandpass filter from 0.1 to 40 Hz
-    raw.filter(0.1, 40)
-    # Select a subset of EEG channels
-    raw.pick(["C4-A1", "C3-A2"])
+For common questions about prerequisites, data formats, and how to load EEG data, see the :ref:`faq`.
 
 **********
 

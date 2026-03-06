@@ -342,7 +342,9 @@ class _DetectionResults(object):
 
         if not scaled:
             # Otherwise diagonal values are set to 1
-            np.fill_diagonal(coinc_mat.values, mask.sum())
+            # Use np.diag_indices_from to avoid read-only array issue in pandas 3.0
+            idx = np.diag_indices_from(coinc_mat.values)
+            coinc_mat.iloc[idx] = mask.sum().values
             coinc_mat = coinc_mat.astype(int)
 
         return coinc_mat
@@ -621,12 +623,11 @@ def spindles_detect(
         ``include`` (default = N1 + N2 + N3 sleep).
 
         The hypnogram must have the same number of samples as ``data``.
-        To upsample your hypnogram, please refer to
-        :py:func:`yasa.hypno_upsample_to_data`.
+        To upsample your hypnogram, use :py:meth:`yasa.Hypnogram.upsample_to_data`
+        or :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
-            The default hypnogram format in YASA is a 1D integer
-            vector where:
+            Hypnogram values are integers with the following mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
@@ -1440,12 +1441,11 @@ def sw_detect(
         ``include`` (default = N2 + N3 sleep).
 
         The hypnogram must have the same number of samples as ``data``.
-        To upsample your hypnogram, please refer to
-        :py:func:`yasa.hypno_upsample_to_data`.
+        To upsample your hypnogram, use :py:meth:`yasa.Hypnogram.upsample_to_data`
+        or :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
-            The default hypnogram format in YASA is a 1D integer
-            vector where:
+            Hypnogram values are integers with the following mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
@@ -1504,8 +1504,9 @@ def sw_detect(
            .. code-block:: python
 
                import pingouin as pg
-               mean_direction = pg.circ_mean(sw['PhaseAtSigmaPeak'])
-               vector_length = pg.circ_r(sw['PhaseAtSigmaPeak'])
+
+               mean_direction = pg.circ_mean(sw["PhaseAtSigmaPeak"])
+               vector_length = pg.circ_r(sw["PhaseAtSigmaPeak"])
 
         3. ``ndPAC``: the normalized Mean Vector Length (also called the normalized direct PAC,
            or ndPAC) within a 2-sec epoch centered around the negative peak of the slow-wave.
@@ -1594,7 +1595,7 @@ def sw_detect(
       of the slow-wave. This is only calculated when ``coupling=True``
     * ``'Stage'``: Sleep stage (only if hypno was provided)
 
-    .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/master/docs/pictures/slow_waves.png  # noqa
+    .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/slow_waves.png  # noqa
       :width: 500px
       :align: center
       :alt: slow-wave
@@ -2366,12 +2367,11 @@ def rem_detect(
         ``include`` (default = REM sleep).
 
         The hypnogram must have the same number of samples as ``data``.
-        To upsample your hypnogram, please refer to
-        :py:func:`yasa.hypno_upsample_to_data`.
+        To upsample your hypnogram, use :py:meth:`yasa.Hypnogram.upsample_to_data`
+        or :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
-            The default hypnogram format in YASA is a 1D integer
-            vector where:
+            Hypnogram values are integers with the following mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
@@ -2851,12 +2851,11 @@ def art_detect(
         ``include``.
 
         The hypnogram must have the same number of samples as ``data``.
-        To upsample your hypnogram, please refer to
-        :py:func:`yasa.hypno_upsample_to_data`.
+        To upsample your hypnogram, use :py:meth:`yasa.Hypnogram.upsample_to_data`
+        or :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
-            The default hypnogram format in YASA is a 1D integer
-            vector where:
+            Hypnogram values are integers with the following mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
@@ -2910,7 +2909,7 @@ def art_detect(
         This function will only detect major body artefacts present on the EEG
         channel. It will not detect EKG contamination or eye blinks. For more
         artifact rejection tools, please refer to the `MNE Python package
-        <https://mne.tools/stable/auto_tutorials/preprocessing/plot_10_preprocessing_overview.html>`_.
+        <https://mne.tools/stable/auto_tutorials/preprocessing/10_preprocessing_overview.html>`_.
 
     .. tip::
         For best performance, apply this function on pre-staged data and make
@@ -2976,7 +2975,7 @@ def art_detect(
     * Barachant, A., Andreev, A., & Congedo, M. (2013). `The Riemannian
       Potato: an automatic and adaptive artifact detection method for online
       experiments using Riemannian geometry.
-      <https://hal.archives-ouvertes.fr/hal-00781701/>`_ TOBI
+      <https://hal.science/hal-00781701/>`_ TOBI
       Workshop lV, 19–20.
 
     * Barthélemy, Q., Mayaud, L., Ojeda, D., & Congedo, M. (2019).

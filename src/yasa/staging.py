@@ -143,9 +143,13 @@ class SleepStaging:
     >>> # Load an EDF file using MNE
     >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
     >>> # Initialize the sleep staging instance
-    >>> sls = yasa.SleepStaging(raw, eeg_name="C4-M1", eog_name="LOC-M2",
-    ...                         emg_name="EMG1-EMG2",
-    ...                         metadata=dict(age=29, male=True))
+    >>> sls = yasa.SleepStaging(
+    ...     raw,
+    ...     eeg_name="C4-M1",
+    ...     eog_name="LOC-M2",
+    ...     emg_name="EMG1-EMG2",
+    ...     metadata=dict(age=29, male=True),
+    ... )
     >>> # Print some basic info
     >>> sls
     >>> # Get the predicted sleep stages
@@ -348,14 +352,12 @@ class SleepStaging:
         # TEMPORAL + METADATA FEATURES AND EXPORT
         #######################################################################
 
-        # Add temporal features
-        features["time_hour"] = times / 3600
-        features["time_norm"] = times / times[-1]
-
-        # Add metadata if present
+        # Add temporal features and metadata using concat to avoid fragmentation
+        extra = {"time_hour": times / 3600, "time_norm": times / times[-1]}
         if self.metadata is not None:
             for c in self.metadata.keys():
-                features[c] = self.metadata[c]
+                extra[c] = self.metadata[c]
+        features = pd.concat([features, pd.DataFrame(extra, index=features.index)], axis=1)
 
         # Downcast float64 to float32 (to reduce size of training datasets)
         cols_float = features.select_dtypes(np.float64).columns.tolist()
@@ -469,7 +471,9 @@ class SleepStaging:
         proba.index.name = "Epoch"
         self._proba = proba
         # Convert to a `yasa.Hypnogram` instance (including `proba`)
-        return Hypnogram(values=self._predicted.copy(), freq="30s", n_stages=5, proba=proba.copy())
+        return Hypnogram(
+            values=self._predicted.copy(), freq="30s", n_stages=5, scorer="YASA", proba=proba.copy()
+        )
 
     def predict_proba(self, path_to_model="auto"):
         """

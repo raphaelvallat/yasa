@@ -22,15 +22,22 @@ def transition_matrix(hypno):
 
     Parameters
     ----------
-    hypno : array_like
-        Hypnogram. The dtype of ``hypno`` must be integer
-        (e.g. [0, 2, 2, 1, 1, 1, ...]). The sampling frequency must be the
-        original one, i.e. 1 value per 30 seconds if the staging was done in
-        30 seconds epochs. Using an upsampled hypnogram will result in an
-        incorrect transition matrix.
-        For best results, we recommend using an hypnogram cropped to
-        either the time in bed (TIB) or the sleep period time (SPT), without
-        any artefact / unscored epochs.
+    hypno : array_like or :py:class:`yasa.Hypnogram`
+        Hypnogram. Can be either:
+
+        * An integer array (e.g. ``[0, 2, 2, 1, 1, 1, ...]``). The sampling
+          frequency must be the original one, i.e. 1 value per 30 seconds if
+          the staging was done in 30-second epochs. Using an upsampled
+          hypnogram will result in an incorrect transition matrix. The output
+          DataFrames will use integer index and column labels.
+        * A :py:class:`yasa.Hypnogram` instance. The output DataFrames will
+          use string stage labels (e.g. ``"WAKE"``, ``"N1"``). This is
+          equivalent to calling :py:meth:`yasa.Hypnogram.transition_matrix`
+          directly.
+
+        For best results, the hypnogram should be cropped to either the time
+        in bed (TIB) or the sleep period time (SPT), without any artefact or
+        unscored epochs.
 
     Returns
     -------
@@ -48,25 +55,27 @@ def transition_matrix(hypno):
 
     Examples
     --------
+    Integer array input — output uses integer labels:
+
     >>> import numpy as np
     >>> from yasa import transition_matrix
     >>> a = [0, 0, 0, 1, 1, 0, 1, 2, 2, 3, 3, 2, 3, 3, 0, 2, 2, 1, 2, 2, 3, 3]
     >>> counts, probs = transition_matrix(a)
     >>> counts
-           0  1  2  3
-    Stage
-    0      2  2  1  0
-    1      1  1  2  0
-    2      0  1  3  3
-    3      1  0  1  3
+    To Stage  0  1  2  3
+    From Stage
+    0         2  2  1  0
+    1         1  1  2  0
+    2         0  1  3  3
+    3         1  0  1  3
 
     >>> probs.round(2)
-              0     1     2     3
-    Stage
-    0      0.40  0.40  0.20  0.00
-    1      0.25  0.25  0.50  0.00
-    2      0.00  0.14  0.43  0.43
-    3      0.20  0.00  0.20  0.60
+    To Stage     0     1     2     3
+    From Stage
+    0         0.40  0.40  0.20  0.00
+    1         0.25  0.25  0.50  0.00
+    2         0.00  0.14  0.43  0.43
+    3         0.20  0.00  0.20  0.60
 
     Several metrics of sleep fragmentation can be calculated from the
     probability matrix. For example, the stability of sleep stages can be
@@ -75,6 +84,20 @@ def transition_matrix(hypno):
 
     >>> np.diag(probs.loc[2:, 2:]).mean().round(3)
     0.514
+
+    :py:class:`yasa.Hypnogram` input — output uses string stage labels:
+
+    >>> from yasa import Hypnogram, transition_matrix
+    >>> hyp = Hypnogram(["W", "N1", "N2", "N3", "N2", "REM", "W"])
+    >>> counts, probs = transition_matrix(hyp)
+    >>> counts
+    To Stage    WAKE  N1  N2  N3  REM
+    From Stage
+    WAKE           0   1   0   0    0
+    N1             0   0   1   0    0
+    N2             0   0   0   1    1
+    N3             0   0   1   0    0
+    REM            1   0   0   0    0
 
     Finally, we can plot the transition matrix using :py:func:`seaborn.heatmap`
 
@@ -88,20 +111,37 @@ def transition_matrix(hypno):
         >>> a = [1, 1, 1, 0, 0, 2, 2, 0, 2, 0, 1, 1, 0, 0]
         >>> _, probs = transition_matrix(a)
         >>> # Start the plot
-        >>> grid_kws = {"height_ratios": (.9, .05), "hspace": .1}
-        >>> f, (ax, cbar_ax) = plt.subplots(2, gridspec_kw=grid_kws,
-        ...                                 figsize=(5, 5))
-        >>> sns.heatmap(probs, ax=ax, square=False, vmin=0, vmax=1, cbar=True,
-        ...             cbar_ax=cbar_ax, cmap='YlOrRd', annot=True, fmt='.2f',
-        ...             cbar_kws={"orientation": "horizontal", "fraction": 0.1,
-        ...                       "label": "Transition probability"})
+        >>> grid_kws = {"height_ratios": (0.9, 0.05), "hspace": 0.1}
+        >>> f, (ax, cbar_ax) = plt.subplots(2, gridspec_kw=grid_kws, figsize=(5, 5))
+        >>> sns.heatmap(
+        ...     probs,
+        ...     ax=ax,
+        ...     square=False,
+        ...     vmin=0,
+        ...     vmax=1,
+        ...     cbar=True,
+        ...     cbar_ax=cbar_ax,
+        ...     cmap="YlOrRd",
+        ...     annot=True,
+        ...     fmt=".2f",
+        ...     cbar_kws={
+        ...         "orientation": "horizontal",
+        ...         "fraction": 0.1,
+        ...         "label": "Transition probability",
+        ...     },
+        ... )
         >>> ax.set_xlabel("To sleep stage")
         >>> ax.xaxis.tick_top()
         >>> ax.set_ylabel("From sleep stage")
-        >>> ax.xaxis.set_label_position('top')
+        >>> ax.xaxis.set_label_position("top")
     """
-    # NOTE: FutureWarning not added here otherwise it would also be shown when calling
-    # yasa.Hypnogram.transition_matrix
+    # Local import avoids a circular dependency: hypno.py imports transition_matrix from
+    # this module at the top level, so we cannot import Hypnogram at module level here.
+    from yasa.hypno import Hypnogram
+
+    if isinstance(hypno, Hypnogram):
+        return hypno.transition_matrix()
+
     x = np.asarray(hypno, dtype=int)
     unique, inverse = np.unique(x, return_inverse=True)  # unique is sorted
     n = unique.size
@@ -138,8 +178,7 @@ def sleep_statistics(hypno, sf_hyp):
         i.e. "lights out" to "lights on").
 
         .. note::
-            The default hypnogram format in YASA is a 1D integer
-            vector where:
+            Hypnogram values are integers with the following mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
@@ -204,7 +243,7 @@ def sleep_statistics(hypno, sf_hyp):
     >>> from yasa import sleep_statistics
     >>> hypno = [0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 2, 3, 3, 4, 4, 4, 4, 0, 0]
     >>> # Assuming that we have one-value per 30-second.
-    >>> sleep_statistics(hypno, sf_hyp=1/30)
+    >>> sleep_statistics(hypno, sf_hyp=1 / 30)
     {'TIB': 10.0,
      'SPT': 8.0,
      'WASO': 0.0,

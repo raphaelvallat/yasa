@@ -442,7 +442,7 @@ def get_centered_indices(data, idx, npts_before, npts_after):
     >>> from yasa import get_centered_indices
     >>> np.random.seed(123)
     >>> data = np.random.normal(size=100).round(2)
-    >>> idx = [1., 10., 20., 30., 50., 102]
+    >>> idx = [1.0, 10.0, 20.0, 30.0, 50.0, 102]
     >>> before, after = 3, 2
     >>> idx_ep, idx_nomask = get_centered_indices(data, idx, before, after)
     >>> idx_ep

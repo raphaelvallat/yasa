@@ -6,10 +6,18 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 For the full list of extension configuration values, see respective sites.
 """
-# import sys
-# from pathlib import Path
+import inspect
+import os
+import sys
+from pathlib import Path
 
 import yasa
+
+# Configure for source links
+GITHUB_USER = "raphaelvallat"
+GITHUB_REPO = "yasa"
+GITHUB_BRANCH = "master"
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 # -- Path setup --------------------------------------------------------------
@@ -61,9 +69,11 @@ extensions = [
     # Extensions bundled with Sphinx
     "sphinx.ext.autodoc",       # Includes documentation from docstrings
     "sphinx.ext.autosummary",   # Generates autodoc summaries
+    "sphinx.ext.doctest",       # Tests code snippets in documentation
+    "sphinx.ext.githubpages",   # Adds .nojekyll file for GitHub Pages
     "sphinx.ext.intersphinx",   # Links to other package docs
+    "sphinx.ext.linkcode",      # Adds "view source" links to GitHub with line numbers
     "sphinx.ext.mathjax",       # LaTeX math display
-    # "sphinx.ext.viewcode",
 
     # Third-party extensions
     "matplotlib.sphinxext.plot_directive",  # Includes matplotlib plots
@@ -120,6 +130,10 @@ toc_object_entries_show_parents = "hide"
 # ``exclude_patterns`` has priority over ``include_patterns``
 # Defaults to []
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
+# A list of paths that contain extra templates, relative to this directory.
+# Defaults to []
+templates_path = ["_templates"]
 
 # A list of glob-style patterns that are used to find source files.
 # ``exclude_patterns`` has priority over ``include_patterns``
@@ -312,11 +326,7 @@ html_theme_options = {
 
     # -- Announcement banner -------------------
 
-    # Options: True | False (default)
-    "show_version_warning_banner": True,
-
     # Defaults to ""
-    # "announcement": "&#128680; This is documentation for the <b>unstable development version</b> of YASA. <a href='https://yasa-sleep.org'>Switch to stable version</a> &#128680;",
     # "announcement": "<span style='font-family: Consolas, monospace;'>pip install yasa --upgrade</span> &#127881;",
 }
 
@@ -406,7 +416,7 @@ html_use_index = False
 
 # If True, the reStructuredText sources are included in the HTML build as `_sources/docname`.
 # Options: True (default) | False
-html_copy_source = True
+html_copy_source = False
 
 # If True (and ``html_copy_source`` is true as well),
 # links to the reStructuredText sources will be added to the sidebar.
@@ -702,6 +712,53 @@ notfound_urls_prefix = None
 # https://documatt.com/sphinx-reredirects/usage.html
 # Defaults to {}
 redirects = {}
+
+# -- Linkcode ------------------------------------------------
+
+
+def linkcode_resolve(domain, info):
+    """Resolve source code links to GitHub for Python objects."""
+    if domain != "py":
+        return None
+
+    module_name = info.get("module")
+    full_name = info.get("fullname")
+
+    if not module_name or not full_name:
+        return None
+
+    module = sys.modules.get(module_name)
+    if module is None:
+        return None
+
+    obj = module
+    for part in full_name.split("."):
+        try:
+            obj = inspect.getattr_static(obj, part)
+        except AttributeError:
+            return None
+
+    obj = inspect.unwrap(obj)
+    if isinstance(obj, property):
+        obj = obj.fget
+    if obj is None:
+        return None
+    try:
+        source_file = inspect.getsourcefile(obj) or inspect.getfile(obj)
+        source_lines, start_line = inspect.getsourcelines(obj)
+    except (TypeError, OSError):
+        return None
+    source_path = Path(source_file).resolve()
+    relative_path = source_path.relative_to(REPO_ROOT)
+
+    end_line = start_line + len(source_lines) - 1
+
+    return (
+        f"https://github.com/{GITHUB_USER}/{GITHUB_REPO}"
+        f"/blob/{GITHUB_BRANCH}/{relative_path.as_posix()}"
+        f"#L{start_line}-L{end_line}"
+    )
+
 
 # TEMPORARY: This can be removed after people stop using old links.
 # We need to generate a list of redirects for the old documentation

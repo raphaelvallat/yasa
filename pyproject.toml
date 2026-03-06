@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=70.0", "wheel"]
+requires = ["setuptools>=80.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -20,17 +20,17 @@ classifiers = [
     "Operating System :: MacOS",
     "Operating System :: POSIX",
     "Operating System :: Unix",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dynamic = ["version"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
-    "numpy>=1.18.1",
-    "scipy",
-    "pandas",
+    "numpy>=1.22.4",
+    "scipy>=1.8.1",
+    "pandas>=2.1.1",
     "matplotlib",
     "seaborn",
     "mne>=1.3",
@@ -40,7 +40,6 @@ dependencies = [
     "tensorpac>=0.6.5",
     "pyriemann>=0.2.7",
     "sleepecg>=0.5.0",
-    "setuptools>=70",
     "lspopt>=1.4",
     "ipywidgets",
     "joblib",
@@ -48,13 +47,15 @@ dependencies = [
     "pooch>=1.8",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
+dev = [
+    "ruff>=0.9",
+]
 test = [
     "pytest>=6",
     "pytest-cov",
     # Ensure coverage is new enough for `source_pkgs`.
     "coverage[toml]>=5.3",
-    "ruff>=0.9",
 ]
 docs = [
     "sphinx>=8.1",
@@ -88,7 +89,7 @@ version = {attr = "yasa.__version__"}
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--showlocals --durations=10 --maxfail=2 --cov"
+addopts = "--showlocals --durations=10"  # --cov
 doctest_optionflags= ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
 filterwarnings = [
     "ignore::UserWarning",
@@ -100,7 +101,10 @@ markers = ["slow"]
 [tool.coverage.run]
 branch = true
 omit = [
+    "*/setup.py",
+    "*/examples/*",
     "*/tests/*",
+    "*/classifiers/*",
 ]
 source_pkgs = ["yasa"]
 
@@ -114,21 +118,34 @@ show_missing = true
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
-# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
-# McCabe complexity (`C901`) by default.
-lint.select = ["E4", "E7", "E9", "F", "I", "NPY201"]
 exclude = [
+    "__init__.py",  # Skip init files bc they use star imports (breaking rules F401, F403)
     "notebooks",  # Skip jupyter notebook examples
     "docs",
 ]
 
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401", "F403"]  # Ignore star and unused import violations for __init__.py files
-
-[tool.ruff.lint.pydocstyle]
-convention = "numpy"
-
 [tool.ruff.format]
-docstring-code-format = false
-docstring-code-line-length = 90
+docstring-code-format = true
+
+[tool.ruff.lint.flake8-import-conventions.aliases]
+"matplotlib.pyplot" = "plt"
+numpy = "np"
+"numpy.typing" = "npt"
+pandas = "pd"
+seaborn = "sns"
+scipy = "sp"
+
+[tool.ruff.lint]
+select = [
+    "E4",  # Subset of pycodestyle rules
+    "E7",  # Subset of pycodestyle rules
+    "E9",  # Subset of pycodestyle rules
+    "F",  # All Pyflakes rules
+    "NPY",  # numpy
+    "W",
+    "I",
+]
+
+ignore = [
+    "NPY002",  # exclude numpy random
+]
