@@ -120,7 +120,7 @@ class TestGetAgreementByStage(unittest.TestCase):
 
     def test_columns(self):
         agr = ebe.get_agreement_bystage()
-        assert set(agr.columns) == {"fbeta", "precision", "recall", "support"}
+        assert set(agr.columns) == {"fbeta", "npv", "precision", "recall", "specificity", "support"}
 
     def test_multiindex(self):
         agr = ebe.get_agreement_bystage()
@@ -308,32 +308,6 @@ class TestSleepStatsAgreementSummary(unittest.TestCase):
             ssa.summary(ci_method="invalid")
 
 
-class TestSleepStatsAgreementGetTable(unittest.TestCase):
-    """Test the get_table method.
-
-    Use ci_method="param" throughout to avoid the bootstrap path, which can fail
-    with small samples (≤5 nights) when bootstrap resamples produce constant x arrays.
-    """
-
-    def test_returns_dataframe(self):
-        tbl = ssa.get_table(bias_method="param", loa_method="param", ci_method="param")
-        assert isinstance(tbl, pd.DataFrame)
-
-    def test_columns(self):
-        tbl = ssa.get_table(bias_method="param", loa_method="param", ci_method="param")
-        assert set(tbl.columns) == {"bias", "bias_ci", "loa", "loa_ci"}
-
-    def test_index_matches_sleep_stats(self):
-        tbl = ssa.get_table(bias_method="param", loa_method="param", ci_method="param")
-        assert set(tbl.index) == set(ssa.sleep_statistics)
-
-    def test_cells_are_strings(self):
-        tbl = ssa.get_table(bias_method="param", loa_method="param", ci_method="param")
-        assert all(pd.api.types.is_string_dtype(tbl[col]) for col in tbl)
-
-    def test_invalid_bias_method_raises(self):
-        with pytest.raises(AssertionError):
-            ssa.get_table(bias_method="invalid")
 
 
 class TestSleepStatsAgreementCalibrate(unittest.TestCase):
@@ -359,3 +333,52 @@ class TestSleepStatsAgreementCalibrate(unittest.TestCase):
         bad = obs_subset.rename(columns={ssa.sleep_statistics[0]: "NOT_A_STAT"})
         with pytest.raises(AssertionError):
             ssa.calibrate(bad)
+
+
+class TestSleepStatsAgreementReport(unittest.TestCase):
+    """Test the report method.
+
+    Use ci_method="param" to avoid the bootstrap path with small samples (N_NIGHTS=5).
+    """
+
+    def test_returns_dataframe(self):
+        rpt = ssa.report(ci_method="param")
+        assert isinstance(rpt, pd.DataFrame)
+
+    def test_index_contains_units(self):
+        rpt = ssa.report(ci_method="param")
+        # Every index label must contain a parenthesised unit
+        assert all("(" in label and ")" in label for label in rpt.index)
+
+    def test_columns(self):
+        rpt = ssa.report(ci_method="param")
+        pct = int(ssa._confidence * 100)
+        assert f"Bias [{pct}% CI]" in rpt.columns
+        assert f"LoA [{pct}% CI]" in rpt.columns
+        assert "Assumptions" in rpt.columns
+        assert f"{REF_SCORER} mean" in rpt.columns
+        assert f"{OBS_SCORER} mean" in rpt.columns
+
+    def test_mean_columns_are_numeric(self):
+        rpt = ssa.report(ci_method="param")
+        assert pd.api.types.is_numeric_dtype(rpt[f"{REF_SCORER} mean"])
+        assert pd.api.types.is_numeric_dtype(rpt[f"{OBS_SCORER} mean"])
+
+    def test_string_columns_are_strings(self):
+        rpt = ssa.report(ci_method="param")
+        pct = int(ssa._confidence * 100)
+        for col in [f"Bias [{pct}% CI]", f"LoA [{pct}% CI]", "Assumptions"]:
+            assert pd.api.types.is_string_dtype(rpt[col])
+
+    def test_assumptions_contains_checkmarks(self):
+        rpt = ssa.report(ci_method="param")
+        # Every assumptions cell must contain at least one ✓ or ✗
+        assert rpt["Assumptions"].str.contains("\u2713|\u2717").all()
+
+    def test_invalid_decimals_raises(self):
+        with pytest.raises(AssertionError):
+            ssa.report(decimals=-1)
+
+    def test_invalid_bias_method_raises(self):
+        with pytest.raises(AssertionError):
+            ssa.report(bias_method="invalid")

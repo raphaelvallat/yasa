@@ -899,12 +899,7 @@ class SleepStatsAgreement:
     <BLANKLINE>
     [3 rows x 21 columns]
 
-    >>> ssa.get_table().head(3)[["bias", "loa"]]
-                          bias                            loa
-    sleep_stat
-    %N1                   0.25  Bias ± 2.46 * (-0.00 + 1.00x)
-    %N2         -27.34 + 0.55x   Bias ± 2.46 * (0.00 + 1.00x)
-    %N3                   1.38   Bias ± 2.46 * (0.00 + 1.00x)
+    >>> ssa.report(ci_method="param").head(3)[["Bias [95% CI]", "LoA [95% CI]"]]  # doctest: +SKIP
 
     >>> ssa.assumptions.head(3)
                 unbiased  normal  constant_bias  homoscedastic
@@ -919,13 +914,6 @@ class SleepStatsAgreement:
     %N1         param  regr  param
     %N2          regr  regr  param
     %N3         param  regr  param
-
-    >>> ssa.get_table(bias_method="param", loa_method="param").head(3)[["bias", "loa"]]
-                 bias            loa
-    sleep_stat
-    %N1          0.25    -5.55, 6.06
-    %N2         -0.23  -12.87, 12.40
-    %N3          1.38  -17.67, 20.44
 
     >>> new_hyps = [h.simulate_similar(scorer="Kelly", seed=i) for i, h in enumerate(obs_hyps)]
     >>> new_sstats = pd.Series(new_hyps).map(lambda h: h.sleep_statistics()).apply(pd.Series)
@@ -1194,8 +1182,8 @@ class SleepStatsAgreement:
         return (
             f"<SleepStatsAgreement | Observed scorer ('{self.obs_scorer}') evaluated against "
             f"reference scorer ('{self.ref_scorer}'), {self.n_sessions} sleep sessions>\n"
-            " - Use `.summary()` to get a dataframe of bias and limits of agreement for each sleep "
-            "statistic\n"
+            " - Use `.report()` to get a human-readable summary table\n"
+            " - Use `.summary()` to get a numeric dataframe of bias and limits of agreement\n"
             # ()` to get a Bland-Altman-plot grid for sleep statistics\n"
             "See the online documentation for more details."
         )
@@ -1303,44 +1291,44 @@ class SleepStatsAgreement:
         # Merge with existing CI dataframe
         self._ci["boot"] = self._ci["boot"].fillna(boot_ci)
 
-    def get_table(self, bias_method="auto", loa_method="auto", ci_method="auto", fstrings={}):
+    def report(self, bias_method="auto", loa_method="auto", ci_method="auto", decimals=2):
         """
-        Return a :py:class:`~pandas.DataFrame` with bias, loa, bias_ci, loa_ci as string equations.
+        Return a human-readable :py:class:`~pandas.DataFrame` for reporting bias, limits of
+        agreement, and statistical assumption results.
+
+        Each row corresponds to one sleep statistic, labelled with its unit (e.g.
+        ``"TST (min)"``). Reference and observed scorer means are shown first, followed by bias
+        and LoA merged with their confidence intervals (e.g. ``"2.34 [1.10, 3.58]"``). An
+        ``"Assumptions"`` column shows whether each statistical assumption was met (``"\u2713"``) or
+        violated (``"\u2717"``), which drives the automatic method selection.
 
         Parameters
         ----------
         bias_method : str
-            If ``'param'`` (i.e., parametric), bias is always represented as the mean difference
-            (observed minus reference).
-            If ``'regr'`` (i.e., regression), bias is always represented as a regression equation.
-            If ``'auto'`` (default), bias is represented as a regression equation for sleep
-            statistics where the score differences are proportionally biased and as the mean
-            difference otherwise.
+            If ``'param'`` (parametric), bias is always the mean difference. If ``'regr'``
+            (regression), bias is always a regression equation. If ``'auto'`` (default), the method
+            is chosen per statistic based on the proportional-bias assumption test.
         loa_method : str
-            If ``'param'`` (i.e., parametric), limits of agreement are always represented as
-            bias +/- 1.96 standard deviations (where 1.96 can be adjusted through the ``agreement``
-            parameter).
-            If ``'regr'`` (i.e., regression), limits of agreement are always represented as a
-            regression equation.
-            If ``'auto'`` (default), limits of agreement are represented as a regression equation
-            for sleep statistics where the score differences are proportionally biased and as
-            bias +/- 1.96 standard deviation otherwise.
+            If ``'param'``, limits of agreement are always bias ± 1.96 SD. If ``'regr'``, they
+            are always a regression equation. If ``'auto'`` (default), the method is chosen per
+            statistic based on the homoscedasticity assumption test.
         ci_method : str
-            If ``'param'`` (i.e., parametric), confidence intervals are always represented using a
-            standard t-distribution.
-            If ``'boot'`` (i.e., bootstrap), confidence intervals are always represented using a
-            bootstrap resampling procedure.
-            If  ``'auto'`` (default), confidence intervals are represented using a bootstrap
-            resampling procedure for sleep statistics where the distribution of score differences is
-            non-normal and using a standard t-distribution otherwise.
-        fstrings : dict
-            Optional custom strings for formatting cells.
+            If ``'param'``, parametric t-distribution CIs are used. If ``'boot'``, BCa bootstrap
+            CIs are used. If ``'auto'`` (default), the method is chosen per statistic based on
+            the normality assumption test.
+        decimals : int
+            Number of decimal places. Default is 2.
 
         Returns
         -------
-        table : :py:class:`pandas.DataFrame`
-            A :py:class:`~pandas.DataFrame` of string representations for bias, limits of agreement,
-            and their confidence intervals for all sleep statistics.
+        report : :py:class:`pandas.DataFrame`
+            A DataFrame indexed by ``"sleep_stat (unit)"`` with columns:
+
+            * ``f"{ref_scorer} mean"`` — mean value for the reference scorer.
+            * ``f"{obs_scorer} mean"`` — mean value for the observed scorer.
+            * ``f"Bias [{pct}% CI]"`` — mean bias or regression equation, with CI in brackets.
+            * ``f"LoA [{pct}% CI]"`` — lower–upper LoA or regression equation, with CI in brackets.
+            * ``"Assumptions"`` — pass/fail for unbiased, normal, constant bias, homoscedastic.
         """
         assert isinstance(bias_method, str), "`bias_method` must be a string"
         assert bias_method in self._bias_method_opts, (
@@ -1350,67 +1338,99 @@ class SleepStatsAgreement:
         assert loa_method in self._loa_method_opts, (
             f"`loa_method` must be one of {self._loa_method_opts}"
         )
-        assert isinstance(fstrings, dict), "`fstrings` must be a dictionary"
-        # Agreement gets adjusted when LoA is modeled
+        assert isinstance(decimals, int) and decimals >= 0, (
+            "`decimals` must be a non-negative integer"
+        )
+        pct = int(self._confidence * 100)
         loa_regr_agreement = self._agreement * np.sqrt(np.pi / 2)
-        if not fstrings:
-            fstrings = {
-                "bias_mean": "{bias_mean_center:.2f}",
-                "bias_regr": "{bias_intercept_center:.2f} + {bias_slope_center:.2f}x",
-                "loa_const": "{loa_lower_center:.2f}, {loa_upper_center:.2f}",
-                "loa_regr": (
-                    "Bias \u00b1 {loa_regr_agreement:.2f} "
-                    "* ({loa_intercept_center:.2f} + {loa_slope_center:.2f}x)"
-                ),
-                "bias_mean_ci": ("[{bias_mean_lower:.2f}, {bias_mean_upper:.2f}]"),
-                "bias_regr_ci": (
-                    "[{bias_intercept_lower:.2f}, {bias_intercept_upper:.2f}], "
-                    "[{bias_slope_lower:.2f}, {bias_slope_upper:.2f}]"
-                ),
-                "loa_const_ci": (
-                    "[{loa_lower_lower:.2f}, {loa_lower_upper:.2f}], "
-                    "[{loa_upper_lower:.2f}, {loa_upper_upper:.2f}]"
-                ),
-                "loa_regr_ci": (
-                    "[{loa_intercept_lower:.2f}, {loa_intercept_upper:.2f}], "
-                    "[{loa_slope_lower:.2f}, {loa_slope_upper:.2f}]"
-                ),
-            }
+        d = decimals
+
+        # Unit lookup: %-based stats, SFI (events/h), everything else in minutes
+        _pct_stats = {"SE", "SME"}
+
+        def _unit(stat):
+            if stat.startswith("%") or stat in _pct_stats:
+                return "%"
+            if stat == "SFI":
+                return "events/h"
+            return "min"
+
         values = self.summary(ci_method=ci_method)
-        values.columns = values.columns.map("_".join)  # Convert MultiIndex columns to Index
-        # Add a column of regr agreement so it can be used as variable
-        values["loa_regr_agreement"] = loa_regr_agreement
+        values.columns = values.columns.map("_".join)
 
-        def format_all_str(row, fstrings_dict):
-            return {var: fstr.format(**row) for var, fstr in fstrings_dict.items()}
+        # Reference and observed means per sleep stat
+        grouper = self._data.groupby("sleep_stat")
+        ref_means = grouper[self.ref_scorer].mean()
+        obs_means = grouper[self.obs_scorer].mean()
 
-        all_strings = values.apply(format_all_str, fstrings_dict=fstrings, axis=1).apply(pd.Series)
         if bias_method == "auto":
             bias_param_idx = self.auto_methods.query("bias == 'param'").index.tolist()
         elif bias_method == "param":
             bias_param_idx = self.sleep_statistics
-        elif bias_method == "regr":
+        else:
             bias_param_idx = []
+
         if loa_method == "auto":
             loa_param_idx = self.auto_methods.query("loa == 'param'").index.tolist()
         elif loa_method == "param":
             loa_param_idx = self.sleep_statistics
-        elif loa_method == "regr":
+        else:
             loa_param_idx = []
-        bias_regr_idx = [ss for ss in self.sleep_statistics if ss not in bias_param_idx]
-        loa_regr_idx = [ss for ss in self.sleep_statistics if ss not in loa_param_idx]
-        bias_param = all_strings.loc[bias_param_idx, ["bias_mean", "bias_mean_ci"]]
-        bias_regr = all_strings.loc[bias_regr_idx, ["bias_regr", "bias_regr_ci"]]
-        bias_param.columns = bias_param.columns.str.replace("_mean", "")
-        bias_regr.columns = bias_regr.columns.str.replace("_regr", "")
-        bias = pd.concat([bias_param, bias_regr])
-        loa_param = all_strings.loc[loa_param_idx, ["loa_const", "loa_const_ci"]]
-        loa_regr = all_strings.loc[loa_regr_idx, ["loa_regr", "loa_regr_ci"]]
-        loa_param.columns = loa_param.columns.str.replace("_const", "")
-        loa_regr.columns = loa_regr.columns.str.replace("_regr", "")
-        loa = pd.concat([loa_param, loa_regr])
-        table = bias.join(loa, validate="1:1").sort_index(axis=0)
-        return table
+
+        def _check(b):
+            return "\u2713" if b else "\u2717"  # ✓ or ✗
+
+        rows = {}
+        for stat in self.sleep_statistics:
+            v = values.loc[stat]
+            unit = _unit(stat)
+            label = f"{stat} ({unit})"
+
+            if stat in bias_param_idx:
+                bias_str = (
+                    f"{v['bias_mean_center']:.{d}f} "
+                    f"[{v['bias_mean_lower']:.{d}f}, {v['bias_mean_upper']:.{d}f}]"
+                )
+            else:
+                bias_str = (
+                    f"{v['bias_intercept_center']:.{d}f} + {v['bias_slope_center']:.{d}f}x "
+                    f"[b0: {v['bias_intercept_lower']:.{d}f}, {v['bias_intercept_upper']:.{d}f}; "
+                    f"b1: {v['bias_slope_lower']:.{d}f}, {v['bias_slope_upper']:.{d}f}]"
+                )
+
+            if stat in loa_param_idx:
+                loa_str = (
+                    f"{v['loa_lower_center']:.{d}f} to {v['loa_upper_center']:.{d}f} "
+                    f"[{v['loa_lower_lower']:.{d}f}, {v['loa_lower_upper']:.{d}f}; "
+                    f"{v['loa_upper_lower']:.{d}f}, {v['loa_upper_upper']:.{d}f}]"
+                )
+            else:
+                loa_str = (
+                    f"\u00b1{loa_regr_agreement:.{d}f} "
+                    f"({v['loa_intercept_center']:.{d}f} + {v['loa_slope_center']:.{d}f}x) "
+                    f"[c0: {v['loa_intercept_lower']:.{d}f}, {v['loa_intercept_upper']:.{d}f}; "
+                    f"c1: {v['loa_slope_lower']:.{d}f}, {v['loa_slope_upper']:.{d}f}]"
+                )
+
+            asmp = self.assumptions.loc[stat]
+            assumptions_str = (
+                f"{_check(asmp['unbiased'])} unbiased  "
+                f"{_check(asmp['normal'])} normal  "
+                f"{_check(asmp['constant_bias'])} constant bias  "
+                f"{_check(asmp['homoscedastic'])} homoscedastic"
+            )
+
+            rows[label] = {
+                f"{self.ref_scorer} mean": round(ref_means[stat], d),
+                f"{self.obs_scorer} mean": round(obs_means[stat], d),
+                f"Bias [{pct}% CI]": bias_str,
+                f"LoA [{pct}% CI]": loa_str,
+                "Assumptions": assumptions_str,
+            }
+
+        result = pd.DataFrame.from_dict(rows, orient="index")
+        result.index.name = "sleep_stat"
+        return result
 
     def summary(self, ci_method="auto"):
         """
