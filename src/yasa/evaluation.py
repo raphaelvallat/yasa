@@ -399,7 +399,9 @@ class EpochByEpochAgreement:
             agreement = pd.Series(self.multi_scorer(df, scorers=scorers), name="agreement")
         else:
             # Get per-session averaged/weighted agreement scores
-            agreement = df.groupby(level=0).apply(self.multi_scorer, scorers=scorers).apply(pd.Series)
+            agreement = (
+                df.groupby(level=0).apply(self.multi_scorer, scorers=scorers).apply(pd.Series)
+            )
             # Convert to Series if just one session being evaluated
             if self.n_sleeps == 1:
                 agreement = agreement.squeeze().rename("agreement")
@@ -456,7 +458,10 @@ class EpochByEpochAgreement:
             .explode()
             .apply(pd.Series)
             # Add metric labels column and prepend it to index, creating MultiIndex
-            .assign(metric=["precision", "recall", "fbeta", "support", "specificity", "npv"] * self.n_sleeps)
+            .assign(
+                metric=["precision", "recall", "fbeta", "support", "specificity", "npv"]
+                * self.n_sleeps
+            )
             .set_index("metric", append=True)
             # Convert stage column names to string labels
             .rename_axis(columns="stage")
@@ -1175,7 +1180,9 @@ class SleepStatsAgreement:
         """
         return pd.concat(
             [
-                self.assumptions["constant_bias"].map({True: "param", False: "regr"}).rename("bias"),
+                self.assumptions["constant_bias"]
+                .map({True: "param", False: "regr"})
+                .rename("bias"),
                 self.assumptions["homoscedastic"].map({True: "param", False: "regr"}).rename("loa"),
                 self.assumptions["normal"].map({True: "param", False: "boot"}).rename("ci"),
             ],
