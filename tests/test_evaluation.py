@@ -308,8 +308,6 @@ class TestSleepStatsAgreementSummary(unittest.TestCase):
             ssa.summary(ci_method="invalid")
 
 
-
-
 class TestSleepStatsAgreementCalibrate(unittest.TestCase):
     """Test the calibrate method.
 
