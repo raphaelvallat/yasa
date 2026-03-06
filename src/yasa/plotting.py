@@ -87,6 +87,9 @@ def plot_hypnogram(hyp, sf_hypno=1 / 30, highlight="REM", fill_color=None, ax=No
     if not isinstance(hyp, Hypnogram):
         # Convert sampling frequency to pandas timefrequency string (e.g., "30s")
         freq_str = pd.tseries.frequencies.to_offset(pd.Timedelta(1 / sf_hypno, "s")).freqstr
+        # Prepend "1" if freqstr has no numeric prefix (e.g. "s" -> "1s" when sf_hypno=1)
+        if not freq_str[0].isdigit():
+            freq_str = "1" + freq_str
         # Create Hypnogram instance for plotting
         hyp = Hypnogram(hypno_int_to_str(hyp), freq=freq_str)
 
