@@ -575,11 +575,13 @@ class Hypnogram:
         """
         Return a pandas DataFrame summarizing epoch-level information.
 
-        Column order and names are compliant with BIDS
-        `events files
-        <https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/05-task-events.html>`_
-        and MNE `events/annotations dataframes
-        <https://mne.tools/stable/glossary.html#term-annotations>`_.
+        The ``onset`` and ``duration`` columns (in seconds) follow the
+        `BIDS events file specification
+        <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/events.html>`_.
+        The ``description`` column is compatible with
+        `MNE Annotations <https://mne.tools/stable/generated/mne.Annotations.html>`_,
+        making it straightforward to attach the hypnogram to an MNE
+        :py:class:`~mne.io.Raw` object (see Examples below).
 
         Returns
         -------
@@ -600,6 +602,22 @@ class Hypnogram:
         4      120.0      30.0      3        DEEP
         5      150.0      30.0      4         REM
         6      180.0      30.0      0        WAKE
+
+        To attach the hypnogram to an MNE :py:class:`~mne.io.Raw` object as
+        annotations, pass the ``onset``, ``duration``, and ``description``
+        columns to :py:class:`mne.Annotations` and call
+        :py:meth:`~mne.io.Raw.set_annotations`:
+
+        .. code-block:: python
+
+            import mne
+            events = hyp.as_events()
+            annotations = mne.Annotations(
+                onset=events["onset"],
+                duration=events["duration"],
+                description=events["description"],
+            )
+            raw.set_annotations(annotations)  # raw is an mne.io.Raw object
         """
         data = {
             "onset": self.timedelta.total_seconds(),
