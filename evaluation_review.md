@@ -147,6 +147,7 @@ return (x - intercept) / (1 + slope)
 | BCa bootstrap (more robust) | ✅ | ❌ (R uses "basic" default) |
 | Overlaid hypnogram plots | ✅ `plot_hypnograms()` | ❌ |
 | MAD / median in group summary | ✅ `summary()` | ❌ |
+| Human-readable report table | ✅ `report()` | ❌ |
 
 ---
 
@@ -183,7 +184,7 @@ One scatter plot per sleep statistic (obs − ref differences vs reference), wit
 - `SleepStatsAgreement` has **no `plot_blandaltman()` method** (confirmed by grep)
 - All statistical values needed for the plot are already stored: `_vals`, `_ci`, `_regr`, `_data`
 - YASA already detects proportional bias and heteroscedasticity and chooses parm/regr methods accordingly — these would drive which line style to draw
-- Log-transform Euser slopes are now stored in `_vals["loa_log_slope"]` (after item 6 fix)
+- Log-transform Euser slopes are deferred (item 6, separate PR)
 
 ### What a `plot_blandaltman()` method would need to implement
 
@@ -207,16 +208,17 @@ One scatter plot per sleep statistic (obs − ref differences vs reference), wit
 | Column in `_vals` / `summary()` | `lloa_parm` | `loa_lower` | Drop redundant method suffix; symmetric naming |
 | Column in `_vals` / `summary()` | `uloa_parm` | `loa_upper` | Symmetric with `loa_lower` |
 | CI MultiIndex key | `"parm"` | `"param"` | Consistent with option strings |
-| fstring key in `get_table()` | `"bias_parm"` | `"bias_mean"` | Matches column rename |
-| fstring key in `get_table()` | `"loa_parm"` | `"loa_const"` | "const" = constant/homoscedastic LoA (±1.96 SD) |
-| fstring key in `get_table()` | `"bias_parm_ci"` | `"bias_mean_ci"` | Matches |
-| fstring key in `get_table()` | `"loa_parm_ci"` | `"loa_const_ci"` | Matches |
 | Local vars | `parm_vals`, `parm_ci`, `t_parm`, `parm_adjusted`, `parm_idx` | `param_vals`, `param_ci`, `t_param`, `param_adjusted`, `param_idx` | Follow from option rename |
 | `_generate_bootstrap_ci` local vars | `bias_parm`, `lloa_parm`, `uloa_parm` | `bias_mean`, `loa_lower`, `loa_upper` | Match column renames |
 | `_generate_bootstrap_ci` variable_order | `"bias_parm"`, `"lloa_parm"`, `"uloa_parm"` | `"bias_mean"`, `"loa_lower"`, `"loa_upper"` | Must match `_vals` column names |
 | `get_calibration_func()` local var | `parm` | `bias_mean` | Descriptive and matches column |
 
-Unchanged: `"regr"`, `bias_slope`, `bias_intercept`, `loa_slope`, `loa_intercept`, `loa_log_slope`.
+Unchanged: `"regr"`, `bias_slope`, `bias_intercept`, `loa_slope`, `loa_intercept`.
+
+### `get_table()` removed (0.7.0, pre-release)
+
+`get_table()` was removed from the public API before 0.7.0 was released.
+`report()` supersedes it with a human-readable format (units in index, scorer means, merged CI strings, assumptions column).
 
 ---
 
