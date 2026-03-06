@@ -275,33 +275,33 @@ class TestSleepStatsAgreementAssumptions(unittest.TestCase):
         assert set(ssa.auto_methods.columns) == {"bias", "loa", "ci"}
 
     def test_auto_methods_valid_values(self):
-        assert ssa.auto_methods["bias"].isin(["parm", "regr"]).all()
-        assert ssa.auto_methods["loa"].isin(["parm", "regr"]).all()
-        assert ssa.auto_methods["ci"].isin(["parm", "boot"]).all()
+        assert ssa.auto_methods["bias"].isin(["param", "regr"]).all()
+        assert ssa.auto_methods["loa"].isin(["param", "regr"]).all()
+        assert ssa.auto_methods["ci"].isin(["param", "boot"]).all()
 
 
 class TestSleepStatsAgreementSummary(unittest.TestCase):
     """Test the summary method."""
 
     def test_returns_dataframe(self):
-        assert isinstance(ssa.summary(ci_method="parm"), pd.DataFrame)
+        assert isinstance(ssa.summary(ci_method="param"), pd.DataFrame)
 
     def test_index_matches_sleep_stats(self):
-        s = ssa.summary(ci_method="parm")
+        s = ssa.summary(ci_method="param")
         assert set(s.index) == set(ssa.sleep_statistics)
 
     def test_has_multiindex_columns(self):
-        s = ssa.summary(ci_method="parm")
+        s = ssa.summary(ci_method="param")
         assert isinstance(s.columns, pd.MultiIndex)
 
-    def test_bias_parm_is_finite(self):
-        s = ssa.summary(ci_method="parm")
-        assert np.isfinite(s["bias_parm"]["center"].to_numpy()).all()
+    def test_bias_mean_is_finite(self):
+        s = ssa.summary(ci_method="param")
+        assert np.isfinite(s["bias_mean"]["center"].to_numpy()).all()
 
     def test_loa_ordering(self):
         # Lower LoA must be < upper LoA for every sleep stat
-        s = ssa.summary(ci_method="parm")
-        assert (s["lloa_parm"]["center"] < s["uloa_parm"]["center"]).all()
+        s = ssa.summary(ci_method="param")
+        assert (s["loa_lower"]["center"] < s["loa_upper"]["center"]).all()
 
     def test_invalid_ci_method_raises(self):
         with pytest.raises(AssertionError):
@@ -311,24 +311,24 @@ class TestSleepStatsAgreementSummary(unittest.TestCase):
 class TestSleepStatsAgreementGetTable(unittest.TestCase):
     """Test the get_table method.
 
-    Use ci_method="parm" throughout to avoid the bootstrap path, which can fail
+    Use ci_method="param" throughout to avoid the bootstrap path, which can fail
     with small samples (≤5 nights) when bootstrap resamples produce constant x arrays.
     """
 
     def test_returns_dataframe(self):
-        tbl = ssa.get_table(bias_method="parm", loa_method="parm", ci_method="parm")
+        tbl = ssa.get_table(bias_method="param", loa_method="param", ci_method="param")
         assert isinstance(tbl, pd.DataFrame)
 
     def test_columns(self):
-        tbl = ssa.get_table(bias_method="parm", loa_method="parm", ci_method="parm")
+        tbl = ssa.get_table(bias_method="param", loa_method="param", ci_method="param")
         assert set(tbl.columns) == {"bias", "bias_ci", "loa", "loa_ci"}
 
     def test_index_matches_sleep_stats(self):
-        tbl = ssa.get_table(bias_method="parm", loa_method="parm", ci_method="parm")
+        tbl = ssa.get_table(bias_method="param", loa_method="param", ci_method="param")
         assert set(tbl.index) == set(ssa.sleep_statistics)
 
     def test_cells_are_strings(self):
-        tbl = ssa.get_table(bias_method="parm", loa_method="parm", ci_method="parm")
+        tbl = ssa.get_table(bias_method="param", loa_method="param", ci_method="param")
         assert all(pd.api.types.is_string_dtype(tbl[col]) for col in tbl)
 
     def test_invalid_bias_method_raises(self):
@@ -346,12 +346,12 @@ class TestSleepStatsAgreementCalibrate(unittest.TestCase):
 
     def test_returns_dataframe(self):
         obs_subset = _obs_stats[ssa.sleep_statistics]
-        result = ssa.calibrate(obs_subset, bias_method="parm")
+        result = ssa.calibrate(obs_subset, bias_method="param")
         assert isinstance(result, pd.DataFrame)
 
     def test_shape_preserved(self):
         obs_subset = _obs_stats[ssa.sleep_statistics]
-        result = ssa.calibrate(obs_subset, bias_method="parm")
+        result = ssa.calibrate(obs_subset, bias_method="param")
         assert result.shape == obs_subset.shape
 
     def test_invalid_column_raises(self):
