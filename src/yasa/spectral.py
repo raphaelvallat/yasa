@@ -105,9 +105,24 @@ def bandpower(
     bandpowers : :py:class:`pandas.DataFrame`
         Bandpower dataframe, in which each row is a channel and each column a spectral band.
 
-    Notes
-    -----
-    For an example of how to use this function, please refer to
+    Examples
+    --------
+    1. Bandpower per sleep stage using an upsampled integer hypnogram (legacy):
+
+    .. code-block:: python
+
+        >>> import yasa
+        >>> bp = yasa.bandpower(raw, hypno=hypno_up, include=(2, 3, 4))
+
+    2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling is handled automatically.
+       String stage labels can be used for ``include``:
+
+    .. code-block:: python
+
+        >>> hyp = yasa.Hypnogram.from_integers(hypno_30s, freq="30s")
+        >>> bp = yasa.bandpower(raw, hypno=hyp, include=["N2", "N3", "REM"])
+
+    For a full walkthrough, please refer to:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_bandpower.ipynb
     """
     # Type checks

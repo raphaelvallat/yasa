@@ -257,7 +257,7 @@ def plot_spectrogram(
         >>> sf = 100
         >>> fig = yasa.plot_spectrogram(data, sf)
 
-    2. Full-night multitaper spectrogram on Cz with the hypnogram on top
+    2. Full-night multitaper spectrogram on Cz with the hypnogram on top (legacy integer array)
 
     .. plot::
 
@@ -270,6 +270,22 @@ def plot_spectrogram(
         >>> hypno = np.loadtxt(yasa.fetch_sample("full_6hrs_100Hz_hypno_30s.txt"))
         >>> hypno = yasa.hypno_upsample_to_data(hypno, 1 / 30, data, sf)
         >>> fig = yasa.plot_spectrogram(data, sf, hypno, cmap="Spectral_r")
+
+    3. Same plot using a :py:class:`~yasa.Hypnogram` directly — no upsampling needed:
+
+    .. plot::
+
+        >>> import yasa
+        >>> import numpy as np
+        >>> fpath = yasa.fetch_sample("full_6hrs_100Hz_Cz+Fz+Pz.npz")
+        >>> npz = np.load(fpath)
+        >>> data = npz["data"][0, :]
+        >>> sf = 100
+        >>> hypno_30s = yasa.hypno_int_to_str(
+        ...     np.loadtxt(yasa.fetch_sample("full_6hrs_100Hz_hypno_30s.txt")).astype(int)
+        ... )
+        >>> hyp = yasa.Hypnogram(hypno_30s, freq="30s")
+        >>> fig = yasa.plot_spectrogram(data, sf, hyp, cmap="Spectral_r")
     """
     from yasa.hypno import Hypnogram, hypno_int_to_str  # Avoiding circular imports
 

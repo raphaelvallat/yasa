@@ -778,8 +778,22 @@ def spindles_detect(
 
     Examples
     --------
-    For a walkthrough of the spindles detection, please refer to the following
-    Jupyter notebooks:
+    1. Detect spindles on an MNE Raw object with an upsampled integer hypnogram (legacy):
+
+    .. code-block:: python
+
+        >>> import yasa
+        >>> sp = yasa.spindles_detect(raw, hypno=hypno_up, include=(1, 2, 3))
+
+    2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling and stage filtering are
+       handled automatically. String stage labels can be used for ``include``:
+
+    .. code-block:: python
+
+        >>> hyp = yasa.Hypnogram(["W", "N1", "N2", "N2", "N3", "REM"], freq="30s")
+        >>> sp = yasa.spindles_detect(raw, hypno=hyp, include=["N1", "N2", "N3"])
+
+    For a full walkthrough, please refer to the following Jupyter notebooks:
 
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb
 
@@ -1649,7 +1663,22 @@ def sw_detect(
 
     Examples
     --------
-    For an example of how to run the detection, please refer to the tutorial:
+    1. Detect slow-waves on an MNE Raw object with an upsampled integer hypnogram (legacy):
+
+    .. code-block:: python
+
+        >>> import yasa
+        >>> sw = yasa.sw_detect(raw, hypno=hypno_up, include=(2, 3))
+
+    2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling and stage filtering are
+       handled automatically. String stage labels can be used for ``include``:
+
+    .. code-block:: python
+
+        >>> hyp = yasa.Hypnogram(["W", "N1", "N2", "N2", "N3", "REM"], freq="30s")
+        >>> sw = yasa.sw_detect(raw, hypno=hyp, include=["N2", "N3"])
+
+    For a full walkthrough, please refer to the tutorial:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb
     """
     set_log_level(verbose)
@@ -2503,7 +2532,22 @@ def rem_detect(
 
     Examples
     --------
-    For an example of how to run the detection, please refer to
+    1. Detect REMs with an upsampled integer hypnogram (legacy):
+
+    .. code-block:: python
+
+        >>> import yasa
+        >>> rem = yasa.rem_detect(loc, roc, sf, hypno=hypno_up, include=4)
+
+    2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling and stage filtering are
+       handled automatically. String stage labels can be used for ``include``:
+
+    .. code-block:: python
+
+        >>> hyp = yasa.Hypnogram(["W", "N1", "N2", "N3", "REM", "REM"], freq="30s")
+        >>> rem = yasa.rem_detect(loc, roc, sf, hypno=hyp, include="REM")
+
+    For a full walkthrough, please refer to:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb
     """
     set_log_level(verbose)
@@ -3031,7 +3075,22 @@ def art_detect(
 
     Examples
     --------
-    For an example of how to run the detection, please refer to
+    1. Detect artefacts per sleep stage with an upsampled integer hypnogram (legacy):
+
+    .. code-block:: python
+
+        >>> import yasa
+        >>> art = yasa.art_detect(data, sf, hypno=hypno_up, include=(1, 2, 3, 4))
+
+    2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling and stage filtering are
+       handled automatically. String stage labels can be used for ``include``:
+
+    .. code-block:: python
+
+        >>> hyp = yasa.Hypnogram(["W", "N1", "N2", "N3", "REM"], freq="30s")
+        >>> art = yasa.art_detect(data, sf, hypno=hyp, include=["N1", "N2", "N3", "REM"])
+
+    For a full walkthrough, please refer to:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb
     """
     ###########################################################################
