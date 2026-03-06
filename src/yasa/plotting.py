@@ -197,15 +197,18 @@ def plot_spectrogram(
         Single-channel EEG data. Must be a 1D NumPy array.
     sf : float
         The sampling frequency of data AND the hypnogram.
-    hypno : array_like
+    hypno : array_like or :py:class:`yasa.Hypnogram`
         Sleep stage (hypnogram), optional.
 
-        The hypnogram must have the exact same number of samples as ``data``.
-        To upsample your hypnogram, use :py:meth:`yasa.Hypnogram.upsample_to_data` or
+        Can be an upsampled integer array (same number of samples as ``data``) or a
+        :py:class:`yasa.Hypnogram` instance (automatically upsampled). When a
+        :py:class:`yasa.Hypnogram` is passed, the hypnogram is used directly for plotting.
+
+        To manually upsample an integer array, use :py:meth:`yasa.Hypnogram.upsample_to_data` or
         :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
-            Hypnogram values are integers with the following mapping:
+            When passing an integer array, hypnogram values follow this mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
@@ -274,6 +277,12 @@ def plot_spectrogram(
     old_fontsize = plt.rcParams["font.size"]
     plt.rcParams.update({"font.size": 18})
 
+    # If hypno is a Hypnogram instance, upsample it and keep the original for plotting
+    hyp_obj = None
+    if isinstance(hypno, Hypnogram):
+        hyp_obj = hypno  # Use directly for plotting
+        hypno = hypno.upsample_to_data(data, sf=sf)
+
     # Safety checks
     assert isinstance(data, np.ndarray), "`data` must be a 1D NumPy array."
     assert isinstance(sf, (int, float)), "`sf` must be int or float."
@@ -326,14 +335,18 @@ def plot_spectrogram(
     ax1.set_xlabel("Time [hrs]")
 
     if hypno is not None:
-        # Convert sampling frequency to pandas timefrequency string (e.g., "30s")
-        freq_str = pd.tseries.frequencies.to_offset(pd.Timedelta(1 / sf, "s")).freqstr
-        # Create Hypnogram instance for plotting
-        hyp = Hypnogram(hypno_int_to_str(hypno), freq=freq_str)
+        if hyp_obj is None:
+            # Convert sampling frequency to pandas timefrequency string (e.g., "30s")
+            freq_str = pd.tseries.frequencies.to_offset(pd.Timedelta(1 / sf, "s")).freqstr
+            # Prepend "1" if freqstr has no numeric prefix (e.g. "s" -> "1s" when sf=1)
+            if not freq_str[0].isdigit():
+                freq_str = "1" + freq_str
+            # Create Hypnogram instance for plotting
+            hyp_obj = Hypnogram(hypno_int_to_str(hypno), freq=freq_str)
         hypnoplot_kwargs = dict(lw=1.5, fill_color=None)
         hypnoplot_kwargs.update(kwargs)
         # Draw hypnogram
-        ax0 = hyp.plot_hypnogram(ax=ax0, **hypnoplot_kwargs)
+        ax0 = hyp_obj.plot_hypnogram(ax=ax0, **hypnoplot_kwargs)
         ax0.xaxis.set_visible(False)
     else:
         # Add colorbar

@@ -10,7 +10,7 @@ import pytest
 from scipy.signal import welch
 
 from yasa.fetchers import fetch_sample
-from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
+from yasa.hypno import Hypnogram, hypno_int_to_str, hypno_str_to_int, hypno_upsample_to_data
 from yasa.plotting import plot_spectrogram
 from yasa.spectral import (
     bandpower,
@@ -43,6 +43,10 @@ hypno_mne = np.loadtxt(hypno_mne_fp, dtype=str)
 hypno_mne = hypno_str_to_int(hypno_mne)
 hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30), data=data_mne)
 
+# Hypnogram objects for testing Hypnogram-based hypno support
+hypno_full_30s = hypno_full[:: int(sf_full * 30)]  # 1 value per 30s epoch
+hyp_full = Hypnogram(hypno_int_to_str(hypno_full_30s), freq="30s")
+
 # Eyes-open 6 minutes resting-state, 2 channels, 200 Hz
 raw_eo_fp = fetch_sample("resting_EO_200Hz_raw.fif")
 raw_eo = mne.io.read_raw_fif(raw_eo_fp, verbose=0)
@@ -65,6 +69,17 @@ class TestSpectral(unittest.TestCase):
             data_full, sf=sf_full, hypno=hypno_full, include=(3, 4, 5), bandpass=True
         )  # Multi channel numpy
         bandpower(data_mne, hypno=hypno_mne, include=2)  # Raw MNE with hypno
+
+        # Test with Hypnogram instance + integer include
+        bp_hyp_int = bandpower(
+            data_full, sf=sf_full, ch_names=chan_full, hypno=hyp_full, include=(2, 3)
+        )
+        # Test with Hypnogram instance + string include
+        bp_hyp_str = bandpower(
+            data_full, sf=sf_full, ch_names=chan_full, hypno=hyp_full, include=["N2", "N3"]
+        )
+        # Both should give the same result
+        np.testing.assert_array_almost_equal(bp_hyp_int.values, bp_hyp_str.values)
 
         # BANDPOWER_FROM_PSD
         # 1-D EEG data
@@ -172,6 +187,9 @@ class TestSpectral(unittest.TestCase):
         plot_spectrogram(data_full[0, :], sf_full, hypno_full_art)
         # Pass kwargs to the hypnogram plot
         plot_spectrogram(data_full[0, :], sf_full, hypno_full_art, lw=1, fill_color="blue")
+        # Test with a Hypnogram instance (automatically upsampled)
+        plot_spectrogram(data_full[0, :], sf_full, hyp_full)
+        plot_spectrogram(data_full[0, :], sf_full, hyp_full, lw=1, fill_color="whitesmoke")
         plt.close("all")
         # Errors
         with pytest.raises(AssertionError):

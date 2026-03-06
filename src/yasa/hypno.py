@@ -611,6 +611,7 @@ class Hypnogram:
         .. code-block:: python
 
             import mne
+
             events = hyp.as_events()
             annotations = mne.Annotations(
                 onset=events["onset"],

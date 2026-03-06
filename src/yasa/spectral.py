@@ -57,16 +57,17 @@ def bandpower(
         List of channel names, e.g. ['Cz', 'F3', 'F4', ...], if ``data`` is *array_like*.
         If None, channels will be labelled ['CHAN000', 'CHAN001', ...].
         Should be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw`.
-    hypno : array_like
+    hypno : array_like or :py:class:`yasa.Hypnogram`
         Sleep stage (hypnogram). If the hypnogram is loaded, the bandpower will be extracted for
         each sleep stage defined in ``include``.
 
-        The hypnogram must have the exact same number of samples as ``data``. To upsample your
-        hypnogram, use :py:meth:`yasa.Hypnogram.upsample_to_data` or
+        Can be an upsampled integer array (same number of samples as ``data``) or a
+        :py:class:`yasa.Hypnogram` instance (automatically upsampled). To manually upsample an
+        integer array, use :py:meth:`yasa.Hypnogram.upsample_to_data` or
         :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
-            Hypnogram values are integers with the following mapping:
+            When passing an integer array, hypnogram values follow this mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
@@ -75,10 +76,13 @@ def bandpower(
             - 2 = N2 sleep
             - 3 = N3 sleep
             - 4 = REM sleep
-    include : tuple, list or int
+    include : tuple, list or int or str
         Values in ``hypno`` that will be included in the mask. The default is (2, 3), meaning that
         the bandpower are sequentially calculated for N2 and N3 sleep. This has no effect when
         ``hypno`` is None.
+
+        When ``hypno`` is a :py:class:`yasa.Hypnogram`, string labels can be used instead of
+        integers (e.g. ``["N2", "N3"]``).
     win_sec : int or float
         The length of the sliding window, in seconds, used for the Welch PSD calculation.
         Ideally, this should be at least two times the inverse of the lower frequency of
@@ -149,6 +153,16 @@ def bandpower(
         )
     else:
         # Per each sleep stage defined in ``include``.
+        from .hypno import Hypnogram  # Avoid circular import
+
+        if isinstance(hypno, Hypnogram):
+            # Translate string include labels to integers using the Hypnogram mapping
+            if include is not None:
+                include_arr = np.atleast_1d(np.asarray(include))
+                if include_arr.dtype.kind in ("U", "S", "O"):
+                    include = np.array([hypno.mapping[s] for s in include_arr], dtype=int)
+            # Upsample the Hypnogram to match data
+            hypno = hypno.upsample_to_data(data, sf=sf)
         hypno = np.asarray(hypno)
         assert include is not None, "include cannot be None if hypno is given"
         include = np.atleast_1d(np.asarray(include))
