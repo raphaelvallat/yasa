@@ -23,7 +23,6 @@ __all__ = [
     "hypno_upsample_to_sf",
     "hypno_upsample_to_data",
     "hypno_find_periods",
-    "load_profusion_hypno",
     "simulate_hypnogram",
 ]
 
@@ -33,14 +32,23 @@ logger = logging.getLogger("yasa")
 
 class Hypnogram:
     """
-    A class for manipulating hypnograms in YASA.
+    Standard class for representing and analyzing a sleep hypnogram.
 
-    Starting with v0.7, YASA takes a more object-oriented approach to hypnograms. That is,
-    hypnograms are stored as a class (aka object), which comes with its own attributes and
-    functions. Furthermore, YASA does not allow integer values to define the stages anymore.
-    Instead, users must pass an array of strings with the actual stage names
-    (e.g. ["WAKE", "WAKE", "N1", ..., "REM", "REM"]). If your hypnogram is encoded as integers, use
-    :py:meth:`Hypnogram.from_integers` instead.
+    Since v0.7, YASA represents hypnograms as a dedicated object rather than a plain array of
+    integers. The main benefits are:
+
+    * **Human-readable stages.** Sleep stages are stored as strings (``"WAKE"``, ``"N2"``,
+      ``"REM"``, ...) instead of integers, reducing the risk of misinterpretation.
+    * **Self-describing.** The object carries its own metadata: epoch duration, optional start
+      datetime with timezone, and scorer name.
+    * **Accurate alignment.** When a start datetime is provided, :py:meth:`upsample_to_data`
+      aligns the hypnogram to the EEG recording using absolute timestamps rather than sample
+      count, correctly handling recordings that start before or after the hypnogram.
+    * **Analysis built in.** Common operations — sleep statistics, stage transitions, period
+      detection, scorer agreement — are available as methods on the object itself.
+
+    To create a ``Hypnogram`` from a legacy integer array, use :py:meth:`from_integers`.
+    To load a Compumedics Profusion file, use :py:meth:`from_profusion`.
 
     .. versionadded:: 0.7.0
 
@@ -77,9 +85,7 @@ class Hypnogram:
         hypnogram index becomes a :py:class:`pandas.DatetimeIndex`, otherwise it is a
         :py:class:`pandas.RangeIndex` of epoch numbers. Accepts timezone-naive strings /
         datetimes as well as tz-aware :py:class:`~datetime.datetime` or
-        :py:class:`~pandas.Timestamp` objects. When the start time comes from a scoring tool
-        and is in local time (timezone-naive), pair it with ``tz`` so that
-        :py:meth:`upsample_to_data` can align the hypnogram to MNE's UTC ``meas_date``.
+        :py:class:`~pandas.Timestamp` objects.
     tz : str or :py:class:`datetime.timezone`, optional
         Timezone of the hypnogram ``start`` time, e.g. ``"Europe/Paris"`` or
         ``"America/New_York"``. Only used when ``start`` is timezone-naive.
@@ -393,6 +399,104 @@ class Hypnogram:
     def __str__(self):
         return self.__repr__()
 
+    def __len__(self):
+        """Return the number of epochs. Allows ``len(hyp)``."""
+        return self._n_epochs
+
+    def __eq__(self, other):
+        """Element-wise equality comparison with another :py:class:`Hypnogram`.
+
+        Returns a boolean NumPy array of length ``n_epochs``. Both hypnograms must have the same
+        number of epochs. To test full equality, use ``(hyp1 == hyp2).all()``.
+
+        Examples
+        --------
+        >>> from yasa import Hypnogram
+        >>> hyp1 = Hypnogram(["W", "N1", "N2", "REM"], freq="30s")
+        >>> hyp2 = Hypnogram(["W", "N1", "N3", "REM"], freq="30s")
+        >>> hyp1 == hyp2
+        array([ True,  True, False,  True])
+        >>> (hyp1 == hyp2).all()
+        False
+        """
+        if not isinstance(other, Hypnogram):
+            return NotImplemented
+        if self._n_epochs != other._n_epochs:
+            raise ValueError(
+                f"Cannot compare Hypnograms with different numbers of epochs "
+                f"({self._n_epochs} vs {other._n_epochs})."
+            )
+        return self._hypno.to_numpy() == other._hypno.to_numpy()
+
+    def __getitem__(self, key):
+        """Slice the hypnogram by epoch position, returning a new :py:class:`Hypnogram`.
+
+        Supports integer indexing (including negative) and slices. For time-based slicing,
+        use :py:meth:`crop` instead.
+
+        Parameters
+        ----------
+        key : int or slice
+            Epoch index or slice. Negative integers are supported (e.g. ``hyp[-1]``).
+
+        Returns
+        -------
+        hyp : :py:class:`Hypnogram`
+            A new :py:class:`Hypnogram` covering the selected epochs.
+
+        Examples
+        --------
+        >>> from yasa import Hypnogram
+        >>> hyp = Hypnogram(["W", "W", "N1", "N2", "N3", "REM"], freq="30s")
+        >>> hyp[0]
+        <Hypnogram | 1 epochs x 30s (0.50 minutes), 5 unique stages>
+         - Use `.hypno` to get the string values as a pandas.Series
+         - Use `.as_int()` to get the integer values as a pandas.Series
+         - Use `.plot_hypnogram()` to plot the hypnogram
+        See the online documentation for more details.
+
+        >>> hyp[-1].hypno.iloc[0]
+        'REM'
+
+        >>> hyp[1:4].hypno.to_list()
+        ['WAKE', 'N1', 'N2']
+        """
+        if isinstance(key, (int, np.integer)):
+            idx = int(key) % self._n_epochs  # supports negative indexing
+            sliced = self._hypno.iloc[[idx]]
+            proba_sliced = self._proba.iloc[[idx]] if self._proba is not None else None
+            new_start = (
+                self._start + pd.Timedelta(self._freq) * idx if self._start is not None else None
+            )
+        elif isinstance(key, slice):
+            if key.step is not None:
+                raise ValueError(
+                    "Step slicing is not supported for Hypnogram. Use crop() for range selection."
+                )
+            epoch_range = range(*key.indices(self._n_epochs))
+            if not epoch_range:
+                raise IndexError("Slice results in an empty Hypnogram.")
+            sliced = self._hypno.iloc[key]
+            proba_sliced = self._proba.iloc[key] if self._proba is not None else None
+            new_start = (
+                self._start + pd.Timedelta(self._freq) * epoch_range[0]
+                if self._start is not None
+                else None
+            )
+        else:
+            raise TypeError(
+                f"Unsupported key type '{type(key).__name__}'. Use int or slice, "
+                "or use crop() for time-based selection."
+            )
+        return type(self)(
+            values=np.asarray(sliced, dtype=object),
+            n_stages=self._n_stages,
+            freq=self._freq,
+            start=new_start,
+            scorer=self._scorer,
+            proba=proba_sliced.reset_index(drop=True) if proba_sliced is not None else None,
+        )
+
     @classmethod
     def from_integers(
         cls,
@@ -492,6 +596,59 @@ class Hypnogram:
             str_hypno, n_stages=n_stages, freq=freq, start=start, tz=tz, scorer=scorer, proba=proba
         )
 
+    @classmethod
+    def from_profusion(cls, fname, *, start=None, tz=None, scorer=None):  # pragma: no cover
+        """Create a :py:class:`Hypnogram` from a Compumedics Profusion hypnogram (.xml).
+
+        The Compumedics Profusion hypnogram format is one of the two hypnogram formats found on
+        the `National Sleep Research Resource (NSRR) <https://sleepdata.org/>`_ website. For
+        details on the format, see
+        https://github.com/nsrr/edf-editor-translator/wiki/Compumedics-Annotation-Format.
+
+        The epoch length and sleep stage integers are read directly from the XML file. Profusion
+        integer stages are mapped to YASA conventions: stage 4 (S4/N3) → 3, stage 5 (REM) → 4.
+
+        .. versionadded:: 0.7.0
+
+        Parameters
+        ----------
+        fname : str or path-like
+            Path to the Profusion XML file.
+        start : str, datetime, or pd.Timestamp, optional
+            Start datetime of the recording (e.g. ``"2022-12-15 22:30:00"``). Can be combined
+            with ``tz`` to localize a naive string to a specific timezone.
+        tz : str, optional
+            Timezone string to localize a naive ``start`` (e.g. ``"Europe/Paris"``). See
+            :py:class:`Hypnogram` for details.
+        scorer : str, optional
+            Name of the scorer.
+
+        Returns
+        -------
+        hyp : :py:class:`Hypnogram`
+            A :py:class:`Hypnogram` instance with string-encoded stages.
+
+        Examples
+        --------
+        >>> from yasa import Hypnogram
+        >>> hyp = Hypnogram.from_profusion("path/to/hypnogram.xml")  # doctest: +SKIP
+        >>> hyp = Hypnogram.from_profusion(
+        ...     "path/to/hypnogram.xml",
+        ...     start="2022-12-15 22:30:00",
+        ...     tz="Europe/Paris",
+        ... )  # doctest: +SKIP
+        """
+        import xml.etree.ElementTree as ET
+
+        tree = ET.parse(fname)
+        root = tree.getroot()
+        epoch_length = float(root[0].text)
+        freq = f"{int(epoch_length)}s"
+        hypno_int = np.array([int(s.text) for s in root[4]])
+        # Map Profusion integers to YASA: stage 4 (S4) → 3 (N3), stage 5 (REM) → 4
+        hypno_int = pd.Series(hypno_int).replace({4: 3, 5: 4}).to_numpy()
+        return cls.from_integers(hypno_int, freq=freq, start=start, tz=tz, scorer=scorer)
+
     @property
     def hypno(self):
         """
@@ -523,6 +680,28 @@ class Hypnogram:
     def start(self):
         """The start date/time of the hypnogram. Default is None."""
         return self._start
+
+    @property
+    def end(self):
+        """End date/time of the hypnogram (exclusive: start of the epoch after the last one).
+
+        Returns ``None`` if :py:attr:`start` is not set. When set, ``end - start`` equals the
+        total recording duration.
+
+        Examples
+        --------
+        >>> from yasa import simulate_hypnogram
+        >>> hyp = simulate_hypnogram(tib=60, start="2022-12-15 22:30:00", seed=0)
+        >>> hyp.start
+        Timestamp('2022-12-15 22:30:00')
+        >>> hyp.end
+        Timestamp('2022-12-15 23:30:00')
+        >>> hyp.end - hyp.start
+        Timedelta('0 days 01:00:00')
+        """
+        if self._start is None:
+            return None
+        return self._start + pd.Timedelta(self._freq) * self._n_epochs
 
     @property
     def timedelta(self):
@@ -791,12 +970,89 @@ class Hypnogram:
             proba=self.proba,
         )
 
+    def crop(self, start=None, end=None):
+        """Crop the hypnogram to a range of epochs or absolute timestamps.
+
+        Both ``start`` and ``end`` are **inclusive**. Pass integers for epoch-based cropping,
+        or strings / :py:class:`~pandas.Timestamp` objects for time-based cropping (requires
+        :py:attr:`start` to be set on the hypnogram).
+
+        Parameters
+        ----------
+        start : int, str, or :py:class:`pandas.Timestamp`, optional
+            First epoch to include. Defaults to the first epoch.
+        end : int, str, or :py:class:`pandas.Timestamp`, optional
+            Last epoch to include (inclusive). Defaults to the last epoch.
+
+        Returns
+        -------
+        hyp : :py:class:`Hypnogram`
+            A new :py:class:`Hypnogram` covering the selected range.
+
+        Examples
+        --------
+        Epoch-based crop (first 10 epochs):
+
+        >>> from yasa import simulate_hypnogram
+        >>> hyp = simulate_hypnogram(tib=60, seed=0)
+        >>> hyp.crop(end=9).n_epochs
+        10
+
+        Time-based crop (requires ``start`` to be set):
+
+        >>> hyp = simulate_hypnogram(tib=60, start="2022-12-15 22:30:00", seed=0)
+        >>> cropped = hyp.crop(start="2022-12-15 23:00:00", end="2022-12-15 23:30:00")
+        >>> cropped.n_epochs
+        60
+        >>> cropped.start
+        Timestamp('2022-12-15 23:00:00')
+        """
+        time_types = (str, pd.Timestamp, datetime.datetime)
+        is_time = isinstance(start, time_types) or isinstance(end, time_types)
+
+        if is_time:
+            if self._start is None:
+                raise ValueError(
+                    "Time-based crop requires the Hypnogram to have a `start` datetime set."
+                )
+            start_key = pd.Timestamp(start) if start is not None else self._hypno.index[0]
+            end_key = pd.Timestamp(end) if end is not None else self._hypno.index[-1]
+            sliced = self._hypno.loc[start_key:end_key]
+            proba_sliced = self._proba.loc[start_key:end_key] if self._proba is not None else None
+            new_start = sliced.index[0]
+        else:
+            start_idx = start if start is not None else 0
+            # Convert inclusive end to exclusive for iloc
+            end_idx = (end + 1) if end is not None else self._n_epochs
+            sliced = self._hypno.iloc[start_idx:end_idx]
+            proba_sliced = self._proba.iloc[start_idx:end_idx] if self._proba is not None else None
+            new_start = (
+                self._start + pd.Timedelta(self._freq) * start_idx
+                if self._start is not None
+                else None
+            )
+
+        if len(sliced) == 0:
+            raise ValueError("Crop window is empty. Check your start/end parameters.")
+
+        return type(self)(
+            values=np.asarray(sliced, dtype=object),
+            n_stages=self._n_stages,
+            freq=self._freq,
+            start=new_start,
+            scorer=self._scorer,
+            proba=proba_sliced.reset_index(drop=True) if proba_sliced is not None else None,
+        )
+
     def evaluate(self, obs_hyp):
         """Evaluate agreement between two hypnograms of the same sleep session.
 
         For example, the reference hypnogram (i.e., ``self``) might be a manually-scored hypnogram
         and the observed hypnogram (i.e., ``obs_hyp``) might be a hypnogram from actigraphy, a
         wearable device, or an automated scorer (e.g., :py:meth:`yasa.SleepStaging.predict`).
+
+        .. warning:: **Experimental** — this method returns a :py:class:`yasa.EpochByEpochAgreement`
+            object whose API may change before the full release planned for v0.8.0.
 
         Parameters
         ----------
@@ -1305,15 +1561,10 @@ class Hypnogram:
         corresponding EEG data, such that the hypnogram and EEG data have the exact same number of
         samples.
 
-        When the hypnogram has a ``start`` attribute set **and** ``data`` is a
-        :py:class:`mne.io.BaseRaw` with a valid ``meas_date``, the alignment is based on the
-        actual recording timestamps rather than just the number of samples. This means the correct
-        hypnogram epochs are selected even when the hypnogram and the recording do not share the
-        same start time (e.g. the recording is a segment extracted from a full-night file).
-
-        For timestamp-aware alignment to work, ``self.start`` must be timezone-aware. Pass ``tz``
-        when creating the :py:class:`Hypnogram` (e.g. ``Hypnogram(..., tz='Europe/Paris')``) or
-        pass a tz-aware datetime directly as ``start``.
+        When ``self.start`` is set **and** ``data`` is a :py:class:`mne.io.BaseRaw` with a
+        valid ``meas_date``, alignment uses absolute timestamps rather than sample
+        count. See the :ref:`FAQ <hypno_alignment>` for a full description of all alignment
+        scenarios and when to use ``start`` / ``tz``.
 
         Parameters
         ----------
@@ -1345,46 +1596,20 @@ class Hypnogram:
         Warns
         -----
         UserWarning
-            If the upsampled ``hypno`` is shorter or longer than ``max(data.shape)``
-            and therefore needs to be padded or cropped respectively. This warning can be silenced
-            by passing ``verbose='error'``.
+            If the hypnogram is shorter or longer than the data and needs to be padded or
+            cropped. Silenced by passing ``verbose='error'``.
 
         Examples
         --------
-        Upsample a 30-second hypnogram to match 100 Hz EEG data:
-
         >>> import numpy as np
         >>> from yasa import Hypnogram
         >>> hyp = Hypnogram(["W", "W", "N1", "N2", "N2", "REM"], freq="30s")
-        >>> # Simulate 3 minutes of EEG data at 100 Hz (= 18000 samples)
         >>> data = np.zeros((1, 18000))
         >>> hypno = hyp.upsample_to_data(data, sf=100)
         >>> hypno.shape
         (18000,)
         >>> np.unique(hypno)
         array([0, 1, 2, 4], dtype=int16)
-
-        Timestamp-aware upsampling for a cropped MNE Raw recording. Here the hypnogram covers a
-        full 5-minute night starting at 23:00 local time (Paris, CET = UTC+1), but the EEG
-        recording only captures the last 3 minutes (starting 2 minutes in). Passing ``tz`` at
-        construction means no timezone handling is needed at upsampling time:
-
-        >>> import mne
-        >>> import datetime
-        >>> stages = ["W", "W", "N1", "N2", "N2", "N3", "N3", "REM", "REM", "W"]
-        >>> hyp_ts = Hypnogram(stages, freq="30s", start="2024-01-15 23:00:00", tz="Europe/Paris")
-        >>> hyp_ts.start  # stored as tz-aware local time
-        Timestamp('2024-01-15 23:00:00+0100', tz='Europe/Paris')
-        >>> info = mne.create_info(["EEG"], sfreq=100, ch_types=["eeg"], verbose=False)
-        >>> raw = mne.io.RawArray(np.zeros((1, 18000)), info, verbose=False)
-        >>> # meas_date is UTC: 22:02 UTC = 23:02 CET, i.e. 2 min (4 epochs) into the hypnogram
-        >>> meas_date = datetime.datetime(2024, 1, 15, 22, 2, 0, tzinfo=datetime.timezone.utc)
-        >>> _ = raw.set_meas_date(meas_date)
-        >>> hypno_ts = hyp_ts.upsample_to_data(raw)
-        >>> hypno_ts.shape
-        (18000,)
-        >>> np.unique(hypno_ts)  # epochs 4–9: N2, N3, N3, REM, REM, W
-        array([0, 2, 3, 4], dtype=int16)
         """
         if (
             self.start is not None
@@ -1401,8 +1626,8 @@ class Hypnogram:
         """Timestamp-aware upsampling for MNE Raw objects with a valid meas_date.
 
         Internal method called by :py:meth:`upsample_to_data` when both ``self.start`` and
-        ``raw.meas_date`` are available. Aligns the hypnogram to the recording based on wall-clock
-        time rather than sample count.
+        ``raw.meas_date`` are available. Aligns the hypnogram to the recording based on absolute
+        timestamps rather than sample count.
         """
         set_log_level(verbose)
         sf_data = raw.info["sfreq"]
@@ -1632,20 +1857,20 @@ def hypno_fit_to_data(hypno, data, sf=None):
     npts_hyp = hypno.size
     npts_data = max(data.shape)  # Support for 2D data
     if npts_hyp < npts_data:
-        # Hypnogram is shorter than data
+        # Hypnogram is shorter than data: trailing samples are Unscored (UNS = -2)
         npts_diff = npts_data - npts_hyp
         if sf is not None:
             dur_diff = npts_diff / sf
             logger.warning(
                 "Hypnogram is SHORTER than data by %.2f seconds. "
-                "Padding hypnogram with last value to match data.size." % dur_diff
+                "Padding hypnogram with Unscored (UNS) to match data.size." % dur_diff
             )
         else:
             logger.warning(
                 "Hypnogram is SHORTER than data by %i samples. "
-                "Padding hypnogram with last value to match data.size." % npts_diff
+                "Padding hypnogram with Unscored (UNS) to match data.size." % npts_diff
             )
-        hypno = np.pad(hypno, (0, npts_diff), mode="edge")
+        hypno = np.pad(hypno, (0, npts_diff), mode="constant", constant_values=np.int16(-2))
     elif npts_hyp > npts_data:
         # Hypnogram is longer than data
         npts_diff = npts_hyp - npts_data
@@ -1720,54 +1945,42 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=True):
 
 
 def load_profusion_hypno(fname, replace=True):  # pragma: no cover
-    """
-    Load a Compumedics Profusion hypnogram (.xml).
+    """Load a Compumedics Profusion hypnogram (.xml).
 
-    The Compumedics Profusion hypnogram format is one of the two hypnogram
-    formats found in the `National Sleep Research Resource (NSRR)
-    <https://sleepdata.org/>`_ website. For more details on the format,
-    please refer to
-    https://github.com/nsrr/edf-editor-translator/wiki/Compumedics-Annotation-Format
+    .. deprecated:: 0.7.0
+        Use :py:meth:`yasa.Hypnogram.from_profusion` instead, which returns a
+        :py:class:`~yasa.Hypnogram` object directly.
 
     Parameters
     ----------
     fname : str
         Filename with full path.
     replace : bool
-        If True, the integer values will be mapped to YASA default, i.e.
-        0 for Wake, 1 for N1, 2 for N2, 3 for N3 / S4 and 4 for REM.
-        Note that the native profusion format is identical except for REM
-        sleep which is marked as 5.
+        If True (default), integer values are mapped to YASA convention:
+        0=Wake, 1=N1, 2=N2, 3=N3/S4, 4=REM. The native Profusion format is
+        identical except REM is encoded as 5.
 
     Returns
     -------
-    hypno : 1D array (n_epochs, )
-        Hypnogram, with one value per 30 second epochs.
+    hypno : 1D array
+        Hypnogram with one value per epoch.
     sf_hyp : float
-        Sampling frequency of the hypnogram. Default is 1 / 30 Hz.
+        Sampling frequency of the hypnogram (e.g. 1/30 Hz).
     """
-    # Note that an alternative is to use the `xmltodict` library:
-    # >>> with open(fname) as in_file:
-    # >>>   xml = in_file.read()
-    # >>> epoch_length = xml['EpochLength']
-    # >>> hypno = np.array(xml['SleepStages']['SleepStage'], dtype='int')
-    # >>> xml = xmltodict.parse(xml, process_namespaces=True)['CMPStudyConfig']
-    # >>> annotations = pd.DataFrame(xml['ScoredEvents']['ScoredEvent'])
-    # >>> annotations["Start"] = annotations["Start"].astype(float)
-    # >>> annotations["Duration"] = annotations["Duration"].astype(float)
+    warnings.warn(
+        "load_profusion_hypno is deprecated and will be removed in a future release. "
+        "Use yasa.Hypnogram.from_profusion() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     import xml.etree.ElementTree as ET
 
     tree = ET.parse(fname)
     root = tree.getroot()
     epoch_length = float(root[0].text)
     sf_hyp = 1 / epoch_length
-    hypno = []
-    for s in root[4]:
-        hypno.append(s.text)
-    # TODO: This should return a yasa.Hypnogram object
-    hypno = np.array(hypno).astype(int)
+    hypno = np.array([s.text for s in root[4]]).astype(int)
     if replace:
-        # Stage 4 --> 3 and REM --> 4
         hypno = pd.Series(hypno).replace({4: 3, 5: 4}).to_numpy()
     return hypno, sf_hyp
 

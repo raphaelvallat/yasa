@@ -36,7 +36,6 @@ Hypnogram & sleep statistics
     Hypnogram
     EpochByEpochAgreement
     SleepStatsAgreement
-    load_profusion_hypno
     simulate_hypnogram
 
 Spectral analyses

@@ -43,7 +43,7 @@ We will use the `MNE package <https://mne.tools/stable/index.html>`_ to load and
 
 .. note::
 
-    YASA does not allow to visualize or scroll through the PSG data. However, this can be done using the free and excellent `EDFBrowser <https://www.teuniz.net/edfbrowser/>`_ software.
+    YASA does not allow to visualize or scroll through the PSG data. However, this can be done using the free `EDFBrowser <https://www.teuniz.net/edfbrowser/>`_ software.
 
 **Selecting channels**
 
@@ -126,9 +126,8 @@ We can load this file using :py:func:`pandas.read_csv` and then convert the inte
 
 .. tip::
 
-    If your EEG recording is a **segment** of a longer file (for example, a file cropped
-    with :py:meth:`mne.io.Raw.crop` or loaded from a split recording), pass the hypnogram's
-    start time via the ``start`` argument when creating the :py:class:`~yasa.Hypnogram`:
+    If available, we recommend passing the hypnogram's start time via the ``start`` argument when
+    creating the :py:class:`~yasa.Hypnogram`:
 
     .. code-block:: python
 
@@ -137,11 +136,9 @@ We can load this file using :py:func:`pandas.read_csv` and then convert the inte
         ...     start="2024-01-15 23:59:00", tz="Europe/Paris"
         ... )
 
-    The ``tz`` argument localizes the naive start string to your local timezone (e.g.
-    ``"Europe/Paris"``, ``"America/New_York"``). Alternatively, pass a tz-aware
-    :py:class:`datetime.datetime` directly as ``start`` and omit ``tz``.
-    When you later call :py:meth:`~yasa.Hypnogram.upsample_to_data` with an
-    :py:class:`mne.io.BaseRaw` that has a valid ``meas_date``, YASA will automatically
+    The ``tz`` argument localizes the naive start string to your local timezone. Alternatively,
+    pass a tz-aware :py:class:`datetime.datetime` directly as ``start`` and omit ``tz``.
+    When you later call :py:meth:`~yasa.Hypnogram.upsample_to_data`, YASA will automatically
     compute the offset between the hypnogram start and the recording start, and select
     the correct epochs:
 
@@ -149,8 +146,9 @@ We can load this file using :py:func:`pandas.read_csv` and then convert the inte
 
         >>> hypno_up = hyp.upsample_to_data(raw_cropped)
 
-    If ``start`` is not set, or if ``data`` is a NumPy array, the existing
-    length-based alignment is used unchanged.
+    If ``start`` is not set, or if ``data`` is a NumPy array, the hypnogram is upsampled to
+    match the number of samples in ``data``. Any samples beyond the hypnogram end are set to
+    **Unscored** (``UNS``, integer value ``-2``).
 
 It's easy to plot the hypnogram:
 
@@ -175,29 +173,21 @@ Using the hypnogram, we can calculate standard sleep statistics using the :py:me
     'SPT': 468.5,
     'WASO': 9.0,
     'TST': 459.5,
+    'SE': 95.332,
+    'SME': 98.079,
+    'SFI': 0.6529,
+    'SOL': 13.0,
+    'SOL_5min': 14.5,
+    'Lat_REM': 77.0,
+    'WAKE': 22.5,
     'N1': 17.5,
     'N2': 214.0,
     'N3': 85.5,
     'REM': 142.5,
-    'NREM': 317.0,
-    'SOL': 13.0,
-    'Lat_N1': 13.0,
-    'Lat_N2': 16.5,
-    'Lat_N3': 31.5,
-    'Lat_REM': 77.0,
-    '%N1': 3.808487486398259,
-    '%N2': 46.572361262241564,
-    '%N3': 18.607181719260065,
-    '%REM': 31.01196953210011,
-    '%NREM': 68.98803046789989,
-    'SE': 95.33195020746888,
-    'SME': 98.07897545357524}
-
-.. tip::
-
-    To convert the result to a :py:class:`pandas.Series`, use ``pd.Series(hyp.sleep_statistics())``.
-    For multi-subject analyses, ``pd.DataFrame([hyp.sleep_statistics()])`` creates a one-row
-    DataFrame ready to concatenate across subjects.
+    '%N1': 3.8085,
+    '%N2': 46.5724,
+    '%N3': 18.6072,
+    '%REM': 31.012}
 
 Furthermore, we can also calculate the sleep stages transition matrix using the :py:meth:`~yasa.Hypnogram.transition_matrix` method:
 
@@ -256,10 +246,8 @@ Warmer colors indicate higher spectral power in this specific frequency band at 
 EEG power in specific frequency bands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For a primer on EEG spectral bandpower please refer to https://raphaelvallat.com/bandpower.html.
-
 Spectral analysis quantifies the power (or amplitude) of the EEG signal in different frequency bands. In neuroscience, the most common frequency bands are **delta** (0.5–4 Hz), **theta** (4–8 Hz), **alpha** (8–12 Hz), **beta** (12–30 Hz), and **gamma** (30–~100 Hz). There are numerous studies that have reported significant relationship between the EEG power spectrum and human behavior, cognitive state, or mental illnesses, and EEG spectral analysis is now one of the principal analysis methods in the field of neuroscience and sleep research.
-It is especially relevant for sleep analysis, as it is well-known that the different stages of sleep `vary drastically in their spectral content <https://raphaelvallat.com/bandpower.html>`_. For example, deep slow-wave sleep (N3) is associated with increased power in the low frequencies, especially the delta band (0.5-4Hz), and decreased power in the beta and gamma bands.
+It is especially relevant for sleep analysis, as it is well-known that the different stages of sleep vary drastically in their spectral content. For example, deep slow-wave sleep (N3) is associated with increased power in the low frequencies, especially the delta band (0.5-4Hz), and decreased power in the beta and gamma bands.
 
 Calculating the average spectral power in different frequency bands is straightforward with the :py:func:`~yasa.bandpower` function:
 
@@ -374,23 +362,5 @@ In this final section, we'll see how to perform automatic sleep staging in YASA.
     >>> hypno_pred = sls.predict()  # Returns a yasa.Hypnogram
     >>> yasa.plot_hypnogram(hypno_pred);  # Plot
 
-.. note::
-
-    If ``raw.meas_date`` is set (which is the case for most EDF files recorded by clinical PSG
-    systems), the predicted :py:class:`~yasa.Hypnogram` will automatically have its ``start``
-    attribute populated with that UTC timestamp. This means that any subsequent call to
-    :py:meth:`~yasa.Hypnogram.upsample_to_data` will align the hypnogram to the data using
-    actual wall-clock timestamps rather than sample count, which is more accurate.
-
 .. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/hypno_pred.png
     :align: center
-
-Let's evaluate the agreement against the ground-truth expert scoring using :py:meth:`~yasa.Hypnogram.evaluate`,
-which returns a :py:class:`~yasa.EpochByEpochAgreement` object with accuracy, Cohen's kappa, MCC, F1, and more:
-
-.. code-block:: python
-
-    >>> ebe = hyp.evaluate(hypno_pred)
-    >>> ebe.get_agreement()
-
-For a full multi-night analysis, see :py:class:`yasa.EpochByEpochAgreement`.
