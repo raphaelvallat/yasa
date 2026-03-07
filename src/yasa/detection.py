@@ -496,6 +496,11 @@ class _DetectionResults(object):
             title = "Average SW"
 
         # Start figure
+        # Translate deprecated seaborn ci= kwarg to errorbar= (seaborn >= 0.12)
+        if "ci" in kwargs:
+            ci_val = kwargs.pop("ci")
+            if "errorbar" not in kwargs:
+                kwargs["errorbar"] = None if ci_val is None else ("ci", ci_val)
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         sns.lineplot(data=df_sync, x="Time", y="Amplitude", hue=hue, ax=ax, **kwargs)
         # ax.legend(frameon=False, loc='lower right')
@@ -2877,6 +2882,11 @@ class REMResults(_DetectionResults):
         )
 
         # Start figure
+        # Translate deprecated seaborn ci= kwarg to errorbar= (seaborn >= 0.12)
+        if "ci" in kwargs:
+            ci_val = kwargs.pop("ci")
+            if "errorbar" not in kwargs:
+                kwargs["errorbar"] = None if ci_val is None else ("ci", ci_val)
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         sns.lineplot(data=df_sync, x="Time", y="Amplitude", hue="Channel", ax=ax, **kwargs)
         # ax.legend(frameon=False, loc='lower right')
