@@ -574,7 +574,7 @@ autosummary_ignore_module_all = True
 # This config value contains the locations and names of other projects
 # that should be linked to in this documentation.
 intersphinx_mapping = {
-    "antropy": ("https://raphaelvallat.com/antropy/build/html", None),
+    "antropy": ("https://raphaelvallat.com/antropy", None),
     "lightgbm": ("https://lightgbm.readthedocs.io/en/latest", None),
     "matplotlib": ("https://matplotlib.org/stable", None),
     "mne": ("https://mne.tools/stable", None),
