@@ -133,19 +133,21 @@ We can load this file using :py:func:`pandas.read_csv` and then convert the inte
     .. code-block:: python
 
         >>> hyp = yasa.Hypnogram.from_integers(
-        ...     hypno, freq="30s", scorer="Expert", start="2024-01-15 23:59:00"
+        ...     hypno, freq="30s", scorer="Expert",
+        ...     start="2024-01-15 23:59:00", tz="Europe/Paris"
         ... )
 
+    The ``tz`` argument localizes the naive start string to your local timezone (e.g.
+    ``"Europe/Paris"``, ``"America/New_York"``). Alternatively, pass a tz-aware
+    :py:class:`datetime.datetime` directly as ``start`` and omit ``tz``.
     When you later call :py:meth:`~yasa.Hypnogram.upsample_to_data` with an
     :py:class:`mne.io.BaseRaw` that has a valid ``meas_date``, YASA will automatically
     compute the offset between the hypnogram start and the recording start, and select
-    the correct epochs — no manual epoch counting needed.
-    If your hypnogram start time is in local time (as is common when the time comes from a
-    scoring software), pass the local timezone with ``tz``:
+    the correct epochs:
 
     .. code-block:: python
 
-        >>> hypno_up = hyp.upsample_to_data(raw_cropped, tz="Europe/Paris")
+        >>> hypno_up = hyp.upsample_to_data(raw_cropped)
 
     If ``start`` is not set, or if ``data`` is a NumPy array, the existing
     length-based alignment is used unchanged.
@@ -371,6 +373,14 @@ In this final section, we'll see how to perform automatic sleep staging in YASA.
     >>> sls = yasa.SleepStaging(raw, eeg_name="C3-A2")
     >>> hypno_pred = sls.predict()  # Returns a yasa.Hypnogram
     >>> yasa.plot_hypnogram(hypno_pred);  # Plot
+
+.. note::
+
+    If ``raw.meas_date`` is set (which is the case for most EDF files recorded by clinical PSG
+    systems), the predicted :py:class:`~yasa.Hypnogram` will automatically have its ``start``
+    attribute populated with that UTC timestamp. This means that any subsequent call to
+    :py:meth:`~yasa.Hypnogram.upsample_to_data` will align the hypnogram to the data using
+    actual wall-clock timestamps rather than sample count, which is more accurate.
 
 .. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/hypno_pred.png
     :align: center

@@ -40,7 +40,8 @@ class TestStaging(unittest.TestCase):
         assert y_true.duration == y_pred.duration
         assert y_true.n_stages == y_pred.n_stages
         # Check that the accuracy is at least 80%
-        accuracy = (y_true.hypno == y_pred.hypno).mean()
+        # Compare values directly (indexes differ: y_true has integer Epoch, y_pred has Time)
+        accuracy = (y_true.hypno.to_numpy() == y_pred.hypno.to_numpy()).mean()
         assert accuracy > 0.80
 
         # Plot

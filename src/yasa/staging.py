@@ -58,6 +58,9 @@ class SleepStaging:
     Notes
     -----
 
+    If ``raw.info["meas_date"]`` is set, the :py:class:`~yasa.Hypnogram` returned by
+    :py:meth:`predict` will automatically have its ``start`` attribute set to that UTC timestamp.
+
     If you use the SleepStaging module in a publication, please cite the following publication:
 
     * Vallat, R., & Walker, M. P. (2021). An open-source, high-performance tool for automated
@@ -224,6 +227,7 @@ class SleepStaging:
         self.ch_types = ch_types
         self.data = data
         self.metadata = metadata
+        self._meas_date = raw.info["meas_date"]  # UTC-aware datetime or None
 
     def __repr__(self):
         n_samples = self.data.shape[-1]
@@ -471,8 +475,16 @@ class SleepStaging:
         proba.index.name = "Epoch"
         self._proba = proba
         # Convert to a `yasa.Hypnogram` instance (including `proba`)
+        # If meas_date was set on the original Raw, pass it as start so that the returned
+        # Hypnogram is timestamp-aware and upsample_to_data aligns correctly on cropped data.
+        start = pd.Timestamp(self._meas_date) if self._meas_date is not None else None
         return Hypnogram(
-            values=self._predicted.copy(), freq="30s", n_stages=5, scorer="YASA", proba=proba.copy()
+            values=self._predicted.copy(),
+            freq="30s",
+            n_stages=5,
+            scorer="YASA",
+            proba=proba.copy(),
+            start=start,
         )
 
     def predict_proba(self, path_to_model="auto"):

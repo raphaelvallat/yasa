@@ -2,6 +2,7 @@
 Hypnogram-related functions and class.
 """
 
+import datetime
 import logging
 import warnings
 
@@ -71,11 +72,19 @@ class Hypnogram:
 
         ``freq`` will be passed to the :py:func:`pandas.date_range` function to create the time
         index of the hypnogram.
-    start : str or datetime
-        An optional string indicating the starting datetime of the hypnogram
-        (e.g. "2022-12-15 22:30:00"). If ``start`` is specified and valid, the index of the
-        hypnogram will be a :py:class:`pandas.DatetimeIndex`. Otherwise it will be a
-        :py:class:`pandas.RangeIndex`, indicating the epoch number.
+    start : str, :py:class:`datetime.datetime`, or :py:class:`pandas.Timestamp`, optional
+        Start datetime of the hypnogram (e.g. ``"2022-12-15 22:30:00"``). When provided, the
+        hypnogram index becomes a :py:class:`pandas.DatetimeIndex`, otherwise it is a
+        :py:class:`pandas.RangeIndex` of epoch numbers. Accepts timezone-naive strings /
+        datetimes as well as tz-aware :py:class:`~datetime.datetime` or
+        :py:class:`~pandas.Timestamp` objects. When the start time comes from a scoring tool
+        and is in local time (timezone-naive), pair it with ``tz`` so that
+        :py:meth:`upsample_to_data` can align the hypnogram to MNE's UTC ``meas_date``.
+    tz : str or :py:class:`datetime.timezone`, optional
+        Timezone of the hypnogram ``start`` time, e.g. ``"Europe/Paris"`` or
+        ``"America/New_York"``. Only used when ``start`` is timezone-naive.
+        A full list of valid timezone strings is available via
+        ``import zoneinfo; zoneinfo.available_timezones()``.
     scorer : str
         An optional string indicating the scorer name. If specified, this will be set as the name
         of the :py:class:`pandas.Series`, otherwise the name will be set to "Stage".
@@ -94,8 +103,9 @@ class Hypnogram:
         Frequency resolution of the hypnogram (e.g. ``'30s'``).
     sampling_frequency : float
         Sampling frequency of the hypnogram in Hz (e.g. ``1/30`` for 30-second epochs).
-    start : str or None
-        Start datetime of the hypnogram, if provided.
+    start : :py:class:`pandas.Timestamp` or None
+        Start datetime of the hypnogram. Tz-aware in local time when ``tz`` was provided or a
+        tz-aware datetime was passed as ``start``, timezone-naive otherwise.
     timedelta : :py:class:`pandas.TimedeltaIndex`
         Elapsed time of each epoch relative to the first epoch.
     duration : float
@@ -257,7 +267,9 @@ class Hypnogram:
     dtype: float64
     """
 
-    def __init__(self, values, n_stages=5, *, freq="30s", start=None, scorer=None, proba=None):
+    def __init__(
+        self, values, n_stages=5, *, freq="30s", start=None, tz=None, scorer=None, proba=None
+    ):
         assert isinstance(
             values, (list, np.ndarray, pd.Series, pd.api.extensions.ExtensionArray)
         ), "`values` must be a list, numpy.array or pandas.Series"
@@ -268,8 +280,8 @@ class Hypnogram:
         assert isinstance(n_stages, int), "`n_stages` must be an integer between 2 and 5."
         assert n_stages in [2, 3, 4, 5], "`n_stages` must be an integer between 2 and 5."
         assert isinstance(freq, str), "`freq` must be a pandas frequency string."
-        assert isinstance(start, (type(None), str, pd.Timestamp)), (
-            "`start` must be either None, a string or a pandas.Timestamp."
+        assert isinstance(start, (type(None), str, pd.Timestamp, datetime.datetime)), (
+            "`start` must be None, a string, a pandas.Timestamp, or a datetime.datetime."
         )
         assert isinstance(scorer, (type(None), str, int)), (
             "`scorer` must be either None, a string or an integer."
@@ -320,6 +332,16 @@ class Hypnogram:
         # Change dtype of series to "categorical" (reduces memory)
         cat_dtype = CategoricalDtype(labels, ordered=False)
         hypno = hypno.astype(cat_dtype)
+        # Normalize start to a pd.Timestamp and apply tz if provided
+        if start is not None:
+            start = pd.Timestamp(start)
+            if tz is not None:
+                if start.tzinfo is not None:
+                    raise ValueError(
+                        "`start` is already timezone-aware. Do not pass `tz` when `start` already "
+                        "contains timezone information."
+                    )
+                start = start.tz_localize(tz)
         # Create Index
         if start is not None:
             hypno.index = pd.date_range(start=start, freq=freq, periods=hypno.shape[0])
@@ -380,6 +402,7 @@ class Hypnogram:
         *,
         freq="30s",
         start=None,
+        tz=None,
         scorer=None,
         proba=None,
     ):
@@ -465,7 +488,9 @@ class Hypnogram:
         >>> hyp = Hypnogram.from_integers([1, 3, 4, 5, 2], mapping=custom_mapping)
         """
         str_hypno = hypno_int_to_str(values, mapping_dict=mapping)
-        return cls(str_hypno, n_stages=n_stages, freq=freq, start=start, scorer=scorer, proba=proba)
+        return cls(
+            str_hypno, n_stages=n_stages, freq=freq, start=start, tz=tz, scorer=scorer, proba=proba
+        )
 
     @property
     def hypno(self):
@@ -1274,7 +1299,7 @@ class Hypnogram:
             proba=None,  # NOTE: Do not upsample probability
         )
 
-    def upsample_to_data(self, data, sf=None, tz=None, verbose=True):
+    def upsample_to_data(self, data, sf=None, verbose=True):
         """
         Upsample a hypnogram to a given sampling frequency and fit the resulting hypnogram to
         corresponding EEG data, such that the hypnogram and EEG data have the exact same number of
@@ -1286,6 +1311,10 @@ class Hypnogram:
         hypnogram epochs are selected even when the hypnogram and the recording do not share the
         same start time (e.g. the recording is a segment extracted from a full-night file).
 
+        For timestamp-aware alignment to work, ``self.start`` must be timezone-aware. Pass ``tz``
+        when creating the :py:class:`Hypnogram` (e.g. ``Hypnogram(..., tz='Europe/Paris')``) or
+        pass a tz-aware datetime directly as ``start``.
+
         Parameters
         ----------
         data : array_like or :py:class:`mne.io.BaseRaw`
@@ -1294,13 +1323,6 @@ class Hypnogram:
         sf : float
             The sampling frequency of ``data``, in Hz (e.g. 100 Hz, 256 Hz, ...).
             Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
-        tz : str or :py:class:`datetime.timezone`, optional
-            Local timezone of the hypnogram ``start`` time, e.g. ``'Europe/Paris'`` or
-            ``'America/New_York'``. Only required when timestamp-aware alignment is used **and**
-            ``self.start`` is timezone-naive while ``raw.meas_date`` is timezone-aware (UTC).
-            Ignored when ``data`` is not a :py:class:`mne.io.BaseRaw` or when ``self.start`` is
-            ``None``. A full list of timezone strings is available in the ``pytz`` or
-            ``zoneinfo`` libraries (e.g. ``import zoneinfo; zoneinfo.available_timezones()``).
         verbose : bool or str
             Verbose level. Default (False) will only print warning and error messages. The logging
             levels are 'debug', 'info', 'warning', 'error', and 'critical'. For most users the
@@ -1317,8 +1339,8 @@ class Hypnogram:
         ------
         ValueError
             If timestamp-aware alignment is triggered but ``self.start`` is timezone-naive while
-            ``raw.meas_date`` is timezone-aware. Pass the local timezone via the ``tz`` parameter
-            to resolve this (e.g. ``tz='Europe/Paris'``).
+            ``raw.meas_date`` is timezone-aware (UTC). Fix by passing ``tz`` at construction:
+            ``Hypnogram(..., tz='Europe/Paris')``.
 
         Warns
         -----
@@ -1343,22 +1365,22 @@ class Hypnogram:
         array([0, 1, 2, 4], dtype=int16)
 
         Timestamp-aware upsampling for a cropped MNE Raw recording. Here the hypnogram covers a
-        full 5-minute night starting at 23:00 UTC, but the EEG recording only captures the last
-        3 minutes (starting at 23:02, i.e. 4 epochs into the hypnogram). Passing ``start`` to the
-        :py:class:`Hypnogram` and ``tz`` to this method lets YASA select the correct epochs
-        automatically, rather than blindly aligning from the first sample:
+        full 5-minute night starting at 23:00 local time (Paris, CET = UTC+1), but the EEG
+        recording only captures the last 3 minutes (starting 2 minutes in). Passing ``tz`` at
+        construction means no timezone handling is needed at upsampling time:
 
         >>> import mne
         >>> import datetime
         >>> stages = ["W", "W", "N1", "N2", "N2", "N3", "N3", "REM", "REM", "W"]
-        >>> hyp_ts = Hypnogram(stages, freq="30s", start="2024-01-15 23:00:00")
+        >>> hyp_ts = Hypnogram(stages, freq="30s", start="2024-01-15 23:00:00", tz="Europe/Paris")
+        >>> hyp_ts.start  # stored as tz-aware local time
+        Timestamp('2024-01-15 23:00:00+0100', tz='Europe/Paris')
         >>> info = mne.create_info(["EEG"], sfreq=100, ch_types=["eeg"], verbose=False)
         >>> raw = mne.io.RawArray(np.zeros((1, 18000)), info, verbose=False)
-        >>> meas_date = datetime.datetime(2024, 1, 15, 23, 2, 0, tzinfo=datetime.timezone.utc)
+        >>> # meas_date is UTC: 22:02 UTC = 23:02 CET, i.e. 2 min (4 epochs) into the hypnogram
+        >>> meas_date = datetime.datetime(2024, 1, 15, 22, 2, 0, tzinfo=datetime.timezone.utc)
         >>> _ = raw.set_meas_date(meas_date)
-        >>> # "23:00:00" in the start string is already UTC, so tz="UTC"
-        >>> # For a local-time start (e.g. Paris), use tz="Europe/Paris" instead
-        >>> hypno_ts = hyp_ts.upsample_to_data(raw, tz="UTC")
+        >>> hypno_ts = hyp_ts.upsample_to_data(raw)
         >>> hypno_ts.shape
         (18000,)
         >>> np.unique(hypno_ts)  # epochs 4–9: N2, N3, N3, REM, REM, W
@@ -1369,13 +1391,13 @@ class Hypnogram:
             and isinstance(data, mne.io.BaseRaw)
             and data.info["meas_date"] is not None
         ):
-            return self._upsample_to_raw_timestamps(data, tz=tz, verbose=verbose)
+            return self._upsample_to_raw_timestamps(data, verbose=verbose)
         hypno_up = hypno_upsample_to_data(
             self.as_int(), self.sampling_frequency, data=data, sf_data=sf, verbose=verbose
         )
         return hypno_up
 
-    def _upsample_to_raw_timestamps(self, raw, tz=None, verbose=True):
+    def _upsample_to_raw_timestamps(self, raw, verbose=True):
         """Timestamp-aware upsampling for MNE Raw objects with a valid meas_date.
 
         Internal method called by :py:meth:`upsample_to_data` when both ``self.start`` and
@@ -1387,26 +1409,22 @@ class Hypnogram:
         epoch_dur = 1.0 / self.sampling_frequency  # seconds per epoch, e.g. 30.0
 
         # --- resolve and align timestamps ---
-        hyp_start = pd.Timestamp(self.start)
-        raw_start = pd.Timestamp(raw.info["meas_date"])
+        # self.start is a pd.Timestamp (tz-aware when tz was passed at construction, else naive)
+        hyp_start = self.start
+        raw_start = pd.Timestamp(raw.info["meas_date"])  # always UTC-aware
 
-        hyp_tz_aware = hyp_start.tzinfo is not None
-        raw_tz_aware = raw_start.tzinfo is not None
-
-        if not hyp_tz_aware and raw_tz_aware:
-            # Most common case: hypnogram stored in local time, meas_date in UTC
-            if tz is None:
-                raise ValueError(
-                    "The hypnogram `start` time is timezone-naive but `raw.meas_date` is "
-                    "timezone-aware (UTC). YASA cannot determine whether the hypnogram start "
-                    "time is in UTC or local time, so it cannot safely align the two. Please "
-                    "pass the local timezone of the hypnogram via the `tz` parameter "
-                    "(e.g. tz='Europe/Paris', tz='America/New_York'). You can list available "
-                    "timezones with: import zoneinfo; zoneinfo.available_timezones()"
-                )
-            hyp_start = hyp_start.tz_localize(tz).tz_convert("UTC")
-        elif hyp_tz_aware and not raw_tz_aware:
-            # Unusual: hypnogram aware, meas_date naive — convert hyp to naive UTC for arithmetic
+        if hyp_start.tzinfo is None and raw_start.tzinfo is not None:
+            # Hypnogram start is naive — tz was not specified at construction
+            raise ValueError(
+                "The hypnogram `start` time is timezone-naive but `raw.meas_date` is "
+                "timezone-aware (UTC). YASA cannot safely align the two without knowing the "
+                "timezone of the hypnogram. Pass `tz` when creating the Hypnogram, e.g.:\n"
+                "    Hypnogram(..., tz='Europe/Paris')\n"
+                "Or pass a tz-aware datetime as `start` directly. Available timezone strings: "
+                "import zoneinfo; zoneinfo.available_timezones()"
+            )
+        elif hyp_start.tzinfo is not None and raw_start.tzinfo is None:
+            # Unusual: hypnogram aware, meas_date naive — strip tz for arithmetic
             hyp_start = hyp_start.tz_convert("UTC").tz_localize(None)
         # else: both naive or both aware — subtraction works directly
 
