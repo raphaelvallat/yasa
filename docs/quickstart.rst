@@ -124,6 +124,32 @@ We can load this file using :py:func:`pandas.read_csv` and then convert the inte
 
     If you do not have sleep staging, you can use YASA to automatically detect the sleep stages for you. We'll come back to this later on in this tutorial.
 
+.. tip::
+
+    If your EEG recording is a **segment** of a longer file (for example, a file cropped
+    with :py:meth:`mne.io.Raw.crop` or loaded from a split recording), pass the hypnogram's
+    start time via the ``start`` argument when creating the :py:class:`~yasa.Hypnogram`:
+
+    .. code-block:: python
+
+        >>> hyp = yasa.Hypnogram.from_integers(
+        ...     hypno, freq="30s", scorer="Expert", start="2024-01-15 23:59:00"
+        ... )
+
+    When you later call :py:meth:`~yasa.Hypnogram.upsample_to_data` with an
+    :py:class:`mne.io.BaseRaw` that has a valid ``meas_date``, YASA will automatically
+    compute the offset between the hypnogram start and the recording start, and select
+    the correct epochs — no manual epoch counting needed.
+    If your hypnogram start time is in local time (as is common when the time comes from a
+    scoring software), pass the local timezone with ``tz``:
+
+    .. code-block:: python
+
+        >>> hypno_up = hyp.upsample_to_data(raw_cropped, tz="Europe/Paris")
+
+    If ``start`` is not set, or if ``data`` is a NumPy array, the existing
+    length-based alignment is used unchanged.
+
 It's easy to plot the hypnogram:
 
 .. code-block:: python

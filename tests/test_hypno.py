@@ -1,5 +1,6 @@
 """Test the functions in the yasa/hypno.py file."""
 
+import datetime
 import unittest
 
 import mne
@@ -181,3 +182,69 @@ class TestHypno(unittest.TestCase):
         # Passing **kwargs through to yasa.Hypnogram
         shyp = simulate_hypnogram(tib=5, scorer="RV", start="2022-12-15 22:30:00")
         assert shyp.scorer == shyp.hypno.name == "RV"
+
+    def test_upsample_to_data_timestamps(self):
+        """Test timestamp-aware upsampling in Hypnogram.upsample_to_data."""
+        from yasa import Hypnogram
+
+        stages = ["W", "W", "N1", "N2", "N2", "N3", "N3", "REM", "REM", "W"]
+        # 10 epochs × 30s = 5 minutes, start given as timezone-naive local time
+        hyp = Hypnogram(stages, freq="30s", start="2024-01-15 23:00:00")
+        sf = 100
+        spe = int(30 * sf)  # samples per epoch = 3000
+
+        def make_raw(n_epochs, meas_date_utc=None):
+            raw = create_raw(n_epochs * spe, sf=sf)
+            if meas_date_utc is not None:
+                raw.set_meas_date(meas_date_utc)
+            return raw
+
+        def utc(h, m, s=0):
+            return datetime.datetime(2024, 1, 15, h, m, s, tzinfo=datetime.timezone.utc)
+
+        # --- Fallback cases (no timestamp-aware path) ---
+
+        # No start on hypnogram → length-based fallback
+        hyp_no_start = Hypnogram(stages, freq="30s")
+        assert hyp_no_start.upsample_to_data(make_raw(6, utc(23, 0))).size == 6 * spe
+
+        # Has start but Raw has no meas_date → length-based fallback
+        assert hyp.upsample_to_data(make_raw(6)).size == 6 * spe
+
+        # --- Timezone mismatch without tz → ValueError ---
+        with pytest.raises(ValueError, match="timezone"):
+            hyp.upsample_to_data(make_raw(6, utc(23, 0)))
+
+        # --- Positive offset: recording starts 4 epochs (2 min) after hypnogram ---
+        # Dropped leading epochs: W, W, N1, N2 (indices 0-3)
+        # Remaining: N2, N3, N3, REM, REM, W → ints: 2, 3, 3, 4, 4, 0
+        raw = make_raw(6, utc(23, 2))
+        result = hyp.upsample_to_data(raw, tz="UTC")
+        assert result.size == 6 * spe
+        assert np.all(result[:spe] == 2)  # N2
+        assert np.all(result[spe : 2 * spe] == 3)  # N3
+        assert np.all(result[-spe:] == 0)  # W
+
+        # --- Zero offset: recording perfectly aligned with hypnogram ---
+        raw = make_raw(6, utc(23, 0))
+        result = hyp.upsample_to_data(raw, tz="UTC")
+        assert result.size == 6 * spe
+        assert np.all(result[:spe] == 0)  # W
+        assert np.all(result[2 * spe : 3 * spe] == 1)  # N1
+
+        # --- Negative offset: recording starts 1 epoch (30s) before hypnogram ---
+        # Prepend 1 UNS epoch, then W, W, N1, N2, N2 fill the 5-epoch window
+        raw = make_raw(5, utc(22, 59, 30))
+        result = hyp.upsample_to_data(raw, tz="UTC")
+        assert result.size == 5 * spe
+        assert np.all(result[:spe] == -2)  # UNS (prepended)
+        assert np.all(result[spe : 2 * spe] == 0)  # W (first real epoch)
+
+        # --- Timezone-naive start in local time (CET = UTC+1 in January) ---
+        # hyp start = "2024-01-15 23:00:00" CET = "2024-01-15 22:00:00" UTC
+        # raw meas_date = 22:00:00 UTC → offset = 0 → perfect alignment
+        raw_cet = make_raw(6, utc(22, 0))
+        result_cet = hyp.upsample_to_data(raw_cet, tz="Europe/Paris")
+        assert result_cet.size == 6 * spe
+        assert np.all(result_cet[:spe] == 0)  # W
+        assert np.all(result_cet[2 * spe : 3 * spe] == 1)  # N1

@@ -1274,11 +1274,17 @@ class Hypnogram:
             proba=None,  # NOTE: Do not upsample probability
         )
 
-    def upsample_to_data(self, data, sf=None, verbose=True):
+    def upsample_to_data(self, data, sf=None, tz=None, verbose=True):
         """
         Upsample a hypnogram to a given sampling frequency and fit the resulting hypnogram to
         corresponding EEG data, such that the hypnogram and EEG data have the exact same number of
         samples.
+
+        When the hypnogram has a ``start`` attribute set **and** ``data`` is a
+        :py:class:`mne.io.BaseRaw` with a valid ``meas_date``, the alignment is based on the
+        actual recording timestamps rather than just the number of samples. This means the correct
+        hypnogram epochs are selected even when the hypnogram and the recording do not share the
+        same start time (e.g. the recording is a segment extracted from a full-night file).
 
         Parameters
         ----------
@@ -1288,6 +1294,13 @@ class Hypnogram:
         sf : float
             The sampling frequency of ``data``, in Hz (e.g. 100 Hz, 256 Hz, ...).
             Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+        tz : str or :py:class:`datetime.timezone`, optional
+            Local timezone of the hypnogram ``start`` time, e.g. ``'Europe/Paris'`` or
+            ``'America/New_York'``. Only required when timestamp-aware alignment is used **and**
+            ``self.start`` is timezone-naive while ``raw.meas_date`` is timezone-aware (UTC).
+            Ignored when ``data`` is not a :py:class:`mne.io.BaseRaw` or when ``self.start`` is
+            ``None``. A full list of timezone strings is available in the ``pytz`` or
+            ``zoneinfo`` libraries (e.g. ``import zoneinfo; zoneinfo.available_timezones()``).
         verbose : bool or str
             Verbose level. Default (False) will only print warning and error messages. The logging
             levels are 'debug', 'info', 'warning', 'error', and 'critical'. For most users the
@@ -1299,6 +1312,13 @@ class Hypnogram:
             The hypnogram values as a 1D integer array, upsampled to ``sf`` Hz and
             cropped/padded to ``max(data.shape)`` samples. For compatibility with most YASA
             functions, integer values are returned rather than a :py:class:`yasa.Hypnogram` object.
+
+        Raises
+        ------
+        ValueError
+            If timestamp-aware alignment is triggered but ``self.start`` is timezone-naive while
+            ``raw.meas_date`` is timezone-aware. Pass the local timezone via the ``tz`` parameter
+            to resolve this (e.g. ``tz='Europe/Paris'``).
 
         Warns
         -----
@@ -1321,11 +1341,114 @@ class Hypnogram:
         (18000,)
         >>> np.unique(hypno)
         array([0, 1, 2, 4], dtype=int16)
+
+        Timestamp-aware upsampling for a cropped MNE Raw recording. Here the hypnogram covers a
+        full 5-minute night starting at 23:00 UTC, but the EEG recording only captures the last
+        3 minutes (starting at 23:02, i.e. 4 epochs into the hypnogram). Passing ``start`` to the
+        :py:class:`Hypnogram` and ``tz`` to this method lets YASA select the correct epochs
+        automatically, rather than blindly aligning from the first sample:
+
+        >>> import mne
+        >>> import datetime
+        >>> stages = ["W", "W", "N1", "N2", "N2", "N3", "N3", "REM", "REM", "W"]
+        >>> hyp_ts = Hypnogram(stages, freq="30s", start="2024-01-15 23:00:00")
+        >>> info = mne.create_info(["EEG"], sfreq=100, ch_types=["eeg"], verbose=False)
+        >>> raw = mne.io.RawArray(np.zeros((1, 18000)), info, verbose=False)
+        >>> meas_date = datetime.datetime(2024, 1, 15, 23, 2, 0, tzinfo=datetime.timezone.utc)
+        >>> _ = raw.set_meas_date(meas_date)
+        >>> # "23:00:00" in the start string is already UTC, so tz="UTC"
+        >>> # For a local-time start (e.g. Paris), use tz="Europe/Paris" instead
+        >>> hypno_ts = hyp_ts.upsample_to_data(raw, tz="UTC")
+        >>> hypno_ts.shape
+        (18000,)
+        >>> np.unique(hypno_ts)  # epochs 4–9: N2, N3, N3, REM, REM, W
+        array([0, 2, 3, 4], dtype=int16)
         """
+        if (
+            self.start is not None
+            and isinstance(data, mne.io.BaseRaw)
+            and data.info["meas_date"] is not None
+        ):
+            return self._upsample_to_raw_timestamps(data, tz=tz, verbose=verbose)
         hypno_up = hypno_upsample_to_data(
             self.as_int(), self.sampling_frequency, data=data, sf_data=sf, verbose=verbose
         )
         return hypno_up
+
+    def _upsample_to_raw_timestamps(self, raw, tz=None, verbose=True):
+        """Timestamp-aware upsampling for MNE Raw objects with a valid meas_date.
+
+        Internal method called by :py:meth:`upsample_to_data` when both ``self.start`` and
+        ``raw.meas_date`` are available. Aligns the hypnogram to the recording based on wall-clock
+        time rather than sample count.
+        """
+        set_log_level(verbose)
+        sf_data = raw.info["sfreq"]
+        epoch_dur = 1.0 / self.sampling_frequency  # seconds per epoch, e.g. 30.0
+
+        # --- resolve and align timestamps ---
+        hyp_start = pd.Timestamp(self.start)
+        raw_start = pd.Timestamp(raw.info["meas_date"])
+
+        hyp_tz_aware = hyp_start.tzinfo is not None
+        raw_tz_aware = raw_start.tzinfo is not None
+
+        if not hyp_tz_aware and raw_tz_aware:
+            # Most common case: hypnogram stored in local time, meas_date in UTC
+            if tz is None:
+                raise ValueError(
+                    "The hypnogram `start` time is timezone-naive but `raw.meas_date` is "
+                    "timezone-aware (UTC). YASA cannot determine whether the hypnogram start "
+                    "time is in UTC or local time, so it cannot safely align the two. Please "
+                    "pass the local timezone of the hypnogram via the `tz` parameter "
+                    "(e.g. tz='Europe/Paris', tz='America/New_York'). You can list available "
+                    "timezones with: import zoneinfo; zoneinfo.available_timezones()"
+                )
+            hyp_start = hyp_start.tz_localize(tz).tz_convert("UTC")
+        elif hyp_tz_aware and not raw_tz_aware:
+            # Unusual: hypnogram aware, meas_date naive — convert hyp to naive UTC for arithmetic
+            hyp_start = hyp_start.tz_convert("UTC").tz_localize(None)
+        # else: both naive or both aware — subtraction works directly
+
+        # --- compute epoch offset ---
+        offset_sec = (raw_start - hyp_start).total_seconds()
+        epoch_offset_float = offset_sec / epoch_dur
+        epoch_offset = int(round(epoch_offset_float))
+
+        if abs(epoch_offset_float - epoch_offset) > 1e-6:
+            logger.warning(
+                "The offset between hypnogram start and recording start (%.6f s) is not a "
+                "whole number of %g-second epochs. Rounding to the nearest epoch (%d)."
+                % (offset_sec, epoch_dur, epoch_offset)
+            )
+
+        logger.info(
+            "Timestamp-aware upsampling: recording starts %.3f s after hypnogram start "
+            "(%d epoch(s) of %g s)." % (offset_sec, epoch_offset, epoch_dur)
+        )
+
+        # --- build the aligned integer hypnogram ---
+        hypno_int = self.as_int().to_numpy()
+        uns_val = np.int16(self.mapping.get("UNS", -2))
+
+        if epoch_offset >= 0:
+            # Recording starts at or after hypnogram start: drop leading epochs
+            hypno_sliced = hypno_int[epoch_offset:]
+        else:
+            # Recording starts before hypnogram start: prepend Unscored epochs
+            n_prepend = -epoch_offset
+            logger.warning(
+                "The recording starts %.3f s before the hypnogram start. "
+                "Prepending %d Unscored (UNS) epoch(s)." % (-offset_sec, n_prepend)
+            )
+            prepend = np.full(n_prepend, uns_val, dtype=np.int16)
+            hypno_sliced = np.concatenate([prepend, hypno_int])
+
+        # --- upsample and fit to exact sample count ---
+        hypno_up = hypno_upsample_to_sf(
+            hypno=hypno_sliced, sf_hypno=self.sampling_frequency, sf_data=sf_data
+        )
+        return hypno_fit_to_data(hypno=hypno_up, data=raw, sf=sf_data)
 
 
 #############################################################################
