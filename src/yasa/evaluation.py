@@ -36,6 +36,9 @@ class EpochByEpochAgreement:
     summarized across all sleep and summarized by sleep stage, and various plotting options to
     visualize the two hypnograms simultaneously. See examples for more detail.
 
+    .. warning:: **Experimental** — the API of this class may change before the full release
+        planned for v0.8.0. Use with caution.
+
     .. versionadded:: 0.7.0
 
     Parameters
@@ -785,6 +788,9 @@ class SleepStatsAgreement:
     * Return individual calibration functions.
     * Visualize discrepancies for outlier inspection.
     * Visualize Bland-Altman plots.
+
+    .. warning:: **Experimental** — the API of this class may change before the full release
+        planned for v0.8.0. Use with caution.
 
     .. seealso:: :py:meth:`yasa.Hypnogram.sleep_statistics`
 

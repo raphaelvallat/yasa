@@ -8,7 +8,7 @@ v0.7.0 (March 2026)
 -------------------
 
 This is the first major release of YASA in two years! It introduces a new object-oriented
-hypnogram API, a new module for inter-scorer agreement, and includes critical bugfixes. This version
+hypnogram API, and includes critical bugfixes. This version
 requires Python 3.10+ and is fully compatible with pandas 3.x and numpy 2.x.
 
 .. warning::
@@ -51,39 +51,6 @@ an object with several pre-built methods and attributes:
     hyp.sleep_statistics() # Calculate sleep statistics
     hyp.plot_hypnogram()   # Plot the hypnogram
     hyp.upsample_to_data() # Upsample to data
-
-**New: Scorer agreement evaluation**
-
-This version also promotes the :py:mod:`yasa.evaluation` module (experimental since v0.6.5) to a
-stable API. It provides two classes to quantify agreement between two scorers (e.g. human vs YASA),
-either epoch-by-epoch (:py:class:`yasa.EpochByEpochAgreement`) or at the level of summary sleep
-statistics (:py:class:`yasa.SleepStatsAgreement`):
-
-.. code-block:: python
-
-    import yasa
-
-    # Simulate reference (human) and observed (YASA) hypnograms for 10 nights
-    ref_hyps = [yasa.simulate_hypnogram(tib=600, scorer="Human", seed=i) for i in range(10)]
-    obs_hyps = [h.simulate_similar(scorer="YASA", seed=i) for i, h in enumerate(ref_hyps)]
-
-    # Epoch-by-epoch agreement
-    ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
-    ebe.get_agreement()              # Accuracy, kappa, MCC, F1, … per night
-    ebe.get_agreement_bystage()      # Same metrics broken down by sleep stage
-    ebe.get_confusion_matrix()       # Confusion matrix for a given night
-    ebe.plot_hypnograms(sleep_id=1)  # Overlay two hypnograms for visual inspection
-
-    # Sleep-statistics agreement (Bland–Altman style)
-    sstats = ebe.get_sleep_stats()  # DataFrame indexed by (scorer, sleep_id)
-    ref_stats = sstats.loc["Human"]
-    obs_stats = sstats.loc["YASA"]
-    ssa = yasa.SleepStatsAgreement(ref_stats, obs_stats, ref_scorer="Human", obs_scorer="YASA")
-    ssa.summary()  # Bias and limits of agreement for each statistic
-
-    # For a single-night comparison, use Hypnogram.evaluate():
-    ebe = ref_hyps[0].evaluate(obs_hyps[0])
-    ebe.get_agreement()
 
 **New functions**
 
