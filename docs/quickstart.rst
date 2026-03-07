@@ -205,21 +205,18 @@ Spectral analyses
 Full-night spectrogram plot
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The current sampling frequency of the hypnogram is one value every 30-seconds, i.e. ~0.3333 Hz. However, most YASA functions require the hypnogram to be upsampled to match the sampling frequency of the PSG data. In this example, we therefore need to upsample our hypnogram from 0.333 Hz to 100 Hz.
-This can be done with the :py:meth:`~yasa.Hypnogram.upsample_to_data` method:
+.. note::
 
-.. code-block:: python
+    As of YASA 0.7.0, you can pass the :py:class:`~yasa.Hypnogram` object directly to most YASA functions —
+    upsampling to the data sampling frequency is handled automatically.
 
-    >>> hypno_up = hyp.upsample_to_data(data=raw)
-    >>> print(len(hypno_up))
-
-Now that the hypnogram and data have the same shape, we can plot our hypnogram on top of a multitaper `spectrogram <https://en.wikipedia.org/wiki/Spectrogram>`_ using the :py:func:`~yasa.plot_spectrogram` function, which shows the time-frequency representation of a single EEG channel across the entire night. The x-axis of the spectrogram is time in hours, and the y-axis is the frequency range (from 0 to 25 Hz).
+We can plot the hypnogram on top of a multitaper `spectrogram <https://en.wikipedia.org/wiki/Spectrogram>`_ using the :py:func:`~yasa.plot_spectrogram` function, which shows the time-frequency representation of a single EEG channel across the entire night. The x-axis of the spectrogram is time in hours, and the y-axis is the frequency range (from 0 to 25 Hz).
 Warmer colors indicate higher spectral power in this specific frequency band at this specific time for this channel. This kind of plot is very useful to quickly identify periods of NREM sleep (high power in frequencies below 5 Hz and spindle-related activity around ~14 Hz) and REM sleep (almost no power in frequencies below 5 Hz).
 
 .. code-block:: python
 
     # We select only the C4-A1 EEG channel.
-    >>> yasa.plot_spectrogram(data[chan.index("C4-A1")], sf, hypno_up);
+    >>> yasa.plot_spectrogram(data[chan.index("C4-A1")], sf, hyp);
 
 .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/spectrogram.png
     :align: center
@@ -254,11 +251,11 @@ This calculates, for each channel separately, the average power in the main freq
 .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/bandpower2.png
     :align: center
 
-We can also pass an hypnogram to calculate the spectral powers separately for each sleep stage. In the example below, we use the upsampled hypnogram to calculate the spectral power separately for N2, N3 and REM. We save the results in a new variable named ``bandpower``.
+We can also pass a hypnogram to calculate the spectral powers separately for each sleep stage. In the example below, we pass the :py:class:`~yasa.Hypnogram` object directly and use string stage labels for ``include``. We save the results in a new variable named ``bandpower``.
 
 .. code-block:: python
 
-    >>> bandpower = yasa.bandpower(raw, hypno=hypno_up, include=(2, 3, 4))
+    >>> bandpower = yasa.bandpower(raw, hypno=hyp, include=["N2", "N3", "REM"])
 
 If desired, we can then export the ``bandpower`` dataframe to a CSV file using :py:meth:`pandas.DataFrame.to_csv`:
 
@@ -270,7 +267,7 @@ Finally, we can use the :py:func:`~yasa.topoplot` function to visualize the spec
 
 .. code-block:: python
 
-    >>> fig = yasa.topoplot(bandpower.xs(3)["Delta"])
+    >>> fig = yasa.topoplot(bandpower.xs("N3")["Delta"])
 
 .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/topoplot.png
     :align: center
@@ -283,11 +280,11 @@ Events detection
 Spindles
 ~~~~~~~~
 
-Automatic spindles detection can be performed with the :py:func:`yasa.spindles_detect` function. The detection is based on the algorithm described in `Lacourse et al 2018 <https://pubmed.ncbi.nlm.nih.gov/30107208/>`_, and a step-by-step explanation is provided in `this notebook <https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb>`_. For the sake of this tutorial, we'll use the default detection thresholds, but these can (and should) be adjusted based on your own data. In the example below, we'll specify the hypnogram and limit the detection to stage N2 and 3 (``include=(2, 3)``).
+Automatic spindles detection can be performed with the :py:func:`yasa.spindles_detect` function. The detection is based on the algorithm described in `Lacourse et al 2018 <https://pubmed.ncbi.nlm.nih.gov/30107208/>`_, and a step-by-step explanation is provided in `this notebook <https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb>`_. For the sake of this tutorial, we'll use the default detection thresholds, but these can (and should) be adjusted based on your own data. In the example below, we pass the :py:class:`~yasa.Hypnogram` object directly and limit the detection to N2 and N3 sleep using string stage labels.
 
 .. code-block:: python
 
-    >>> sp = yasa.spindles_detect(raw, hypno=hypno_up, include=(2, 3))
+    >>> sp = yasa.spindles_detect(raw, hypno=hyp, include=["N2", "N3"])
 
 Here, the ``sp`` variable is a :py:class:`~yasa.SpindlesResults`, which is simply a bundle of functions (called methods) and data (attributes). For example, we can see a dataframe with all the detected events with:
 
@@ -321,7 +318,7 @@ The exact same steps can be applied with the :py:func:`~yasa.sw_detect` function
 
 .. code-block:: python
 
-    >>> sw = yasa.sw_detect(raw, hypno=hypno_up, include=(2, 3))
+    >>> sw = yasa.sw_detect(raw, hypno=hyp, include=["N2", "N3"])
     >>> sw.summary()
 
 .. image:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/sw_summary.png

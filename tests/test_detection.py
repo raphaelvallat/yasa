@@ -19,7 +19,7 @@ from yasa.detection import (
     sw_detect,
 )
 from yasa.fetchers import fetch_sample
-from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
+from yasa.hypno import Hypnogram, hypno_int_to_str, hypno_str_to_int, hypno_upsample_to_data
 
 ##############################################################################
 # DATA LOADING
@@ -63,6 +63,14 @@ hypno_mne = np.loadtxt(hypno_mne_fp, dtype=str)
 hypno_mne = hypno_str_to_int(hypno_mne)
 hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30), data=data_mne)
 
+# Hypnogram objects for testing Hypnogram-based hypno support
+# Full-night 5-stage Hypnogram (30s epochs, 100 Hz data)
+hypno_full_30s = hypno_full[:: int(sf * 30)]  # downsample to 1 value per 30s epoch
+hyp_full = Hypnogram(hypno_int_to_str(hypno_full_30s), freq="30s")
+# sub-02 Hypnogram (30s epochs, string stages already)
+hypno_mne_str = np.loadtxt(fetch_sample("sub-02_hypno_30s.txt"), dtype=str)
+hyp_mne = Hypnogram(hypno_mne_str, freq="30s")
+
 
 class TestDetection(unittest.TestCase):
     """Unit tests for detection.py"""
@@ -73,6 +81,31 @@ class TestDetection(unittest.TestCase):
             _check_data_hypno(data_mne, sf=999)  # sf is ignored
         with self.assertLogs("yasa", level="WARNING"):
             _check_data_hypno(data_mne, ch_names=["CH999"])  # ch_names is ignored
+
+        # Test with Hypnogram instance + integer include (default behavior preserved)
+        _, _, _, hypno_out, include_out, mask, _, n_samples, _ = _check_data_hypno(
+            data_full[1, :], sf, hypno=hyp_full, include=(2, 3)
+        )
+        assert hypno_out.shape == (n_samples,)
+        assert set(include_out) == {2, 3}
+
+        # Test with Hypnogram instance + string include
+        _, _, _, hypno_out2, include_out2, _, _, _, _ = _check_data_hypno(
+            data_full[1, :], sf, hypno=hyp_full, include=["N2", "N3"]
+        )
+        np.testing.assert_array_equal(include_out, include_out2)
+
+        # Test with Hypnogram instance + single string include
+        _, _, _, _, include_out3, _, _, _, _ = _check_data_hypno(
+            data_full[1, :], sf, hypno=hyp_full, include="REM"
+        )
+        np.testing.assert_array_equal(include_out3, [4])
+
+        # Test with MNE raw + Hypnogram
+        _, _, _, hypno_out_mne, _, _, _, n_mne, _ = _check_data_hypno(
+            data_mne, hypno=hyp_mne, include=["N2", "N3"]
+        )
+        assert hypno_out_mne.shape == (n_mne,)
 
     def test_spindles_detect(self):
         """Test spindles_detect"""
@@ -229,6 +262,19 @@ class TestDetection(unittest.TestCase):
         # Using a MNE raw object (and disabling one threshold)
         spindles_detect(data_mne, thresh={"corr": None, "rms": 3})
         spindles_detect(data_mne, hypno=hypno_mne, include=2, verbose=True)
+
+        # Test with Hypnogram instance (integer include, default)
+        sp_hyp = spindles_detect(data_full[1, :], sf, hypno=hyp_full, include=(1, 2, 3))
+        assert sp_hyp is not None
+        # Test with Hypnogram instance + string include
+        sp_hyp_str = spindles_detect(
+            data_full[1, :], sf, hypno=hyp_full, include=["N1", "N2", "N3"]
+        )
+        assert sp_hyp_str is not None
+        # Both should detect the same spindles
+        assert sp_hyp.summary().shape[0] == sp_hyp_str.summary().shape[0]
+        # Test with MNE raw + Hypnogram
+        spindles_detect(data_mne, hypno=hyp_mne, include=["N2"], verbose=True)
         plt.close("all")
 
     def test_sw_detect(self):
@@ -327,6 +373,16 @@ class TestDetection(unittest.TestCase):
         # Using a MNE raw object
         sw_detect(data_mne)
         sw_detect(data_mne, hypno=hypno_mne, include=3)
+
+        # Test with Hypnogram instance + integer include
+        sw_hyp = sw_detect(data_full[1, :], sf, hypno=hyp_full, include=(2, 3))
+        assert sw_hyp is not None
+        # Test with Hypnogram instance + string include
+        sw_hyp_str = sw_detect(data_full[1, :], sf, hypno=hyp_full, include=["N2", "N3"])
+        assert sw_hyp_str is not None
+        assert sw_hyp.summary().shape[0] == sw_hyp_str.summary().shape[0]
+        # Test with MNE raw + Hypnogram
+        sw_detect(data_mne, hypno=hyp_mne, include=["N3"])
         plt.close("all")
 
     def test_rem_detect(self):
@@ -379,6 +435,15 @@ class TestDetection(unittest.TestCase):
         # No values in hypno intersect with include
         with pytest.raises(AssertionError):
             rem_detect(loc, roc, sf, hypno=hypno_rem, include=5)
+
+        # Test with Hypnogram instance + string include
+        hypno_rem_str = np.array(["REM"] * loc.size)
+        hyp_rem = Hypnogram(hypno_rem_str, freq="1s")
+        rem_hyp = rem_detect(loc, roc, sf_rem, hypno=hyp_rem, include="REM")
+        assert rem_hyp is not None
+        # Integer and string include should give the same result
+        rem_int = rem_detect(loc, roc, sf_rem, hypno=hyp_rem, include=4)
+        assert rem_hyp.summary().shape[0] == rem_int.summary().shape[0]
 
     def test_art_detect(self):
         """Test function art_detect"""
@@ -442,6 +507,9 @@ class TestDetection(unittest.TestCase):
         with pytest.raises(AssertionError):
             # None of include in hypno
             art_detect(data_mne, window=10.0, hypno=hypno_mne, include=[7, 8])
+
+        # Test with Hypnogram instance + string include
+        art_detect(data_9, sf=100, window=6, hypno=hyp_full, include=["N2", "N3"], method="covar")
 
     def test_compare_detect(self):
         """Test compare_detect function."""

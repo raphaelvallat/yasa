@@ -162,33 +162,6 @@ Sleep staging
     .. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/edfbrowser_with_hypnogram.png
         :align: center
 
-    **SpiSOP**
-
-    `SpiSOP <https://www.spisop.org/>`_ is an open-source Matlab toolbox for the analysis and visualization of polysomnography sleep data. It comes with a sleep scoring GUI.
-    As explained in `the documentation <https://www.spisop.org/faq/#What_is_needed_to_run_SpiSOP_and_in_what_format>`_, the hypnogram should be a tab-separated text file with two columns (no headers). The first column has the sleep stages (0: Wake, 1: N1, 2: N2, 3: N3, 5: REM) and the second column indicates whether the current epoch should be marked as artefact (1) or valid (0).
-
-    .. code-block:: python
-
-        hypno_int = pd.Series(hypno).map({"W": 0, "N1": 1, "N2": 2, "N3": 3, "R": 5}).to_numpy()
-        hypno_export = pd.DataFrame({"label": hypno_int, "artefact": 0})
-        hypno_export.to_csv("my_hypno_SpiSOP.txt", sep="\t", header=False, index=False)
-
-    **Visbrain**
-
-    `Visbrain <https://visbrain.org/sleep.html>`_ is an open-source Python toolbox that includes a module for visualizing polysomnography sleep data and scoring sleep (see screenshot below).
-
-    .. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/visbrain.PNG
-        :align: center
-
-    Visbrain accepts several `formats for the hypnogram <https://visbrain.org/sleep.html#hypnogram>`_. The code below show how to export the hypnogram in the `Elan software format <https://pubmed.ncbi.nlm.nih.gov/21687568/>`_ (i.e. a text file with the *.hyp* extension):
-
-    .. code-block:: python
-
-        hypno_int = pd.Series(hypno).map({"W": 0, "N1": 1, "N2": 2, "N3": 3, "R": 5}).to_numpy()
-        header = "time_base 30\nsampling_period 1/30\nepoch_nb %i\nepoch_list" % len(hypno_int)
-        np.savetxt("my_hypno_Visbrain.txt", hypno_int, fmt="%s", delimiter=",", newline="\n",
-                   header=header, comments="", encoding="utf-8")
-
 .. ----------------------------- ANIMAL DATA -----------------------------
 .. dropdown:: Can I use YASA to score animal data and/or human intracranial data?
     :animate: fade-in-slide-down

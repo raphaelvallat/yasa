@@ -51,7 +51,14 @@ __all__ = [
 
 
 def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, check_amp=True):
-    """Helper functions for preprocessing of data and hypnogram."""
+    """Helper functions for preprocessing of data and hypnogram.
+
+    Accepts an upsampled integer hypnogram (array_like) or a :py:class:`yasa.Hypnogram` instance.
+    When a :py:class:`yasa.Hypnogram` is passed, it is automatically upsampled to match ``data``
+    and ``include`` may be specified as string stage labels (e.g. ``["N2", "REM"]``).
+    """
+    from .hypno import Hypnogram  # Avoid circular import
+
     # 1) Extract data as a 2D NumPy array
     if isinstance(data, mne.io.BaseRaw):
         if sf is not None:
@@ -81,6 +88,14 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
 
     # 3) Check hypnogram
     if hypno is not None:
+        if isinstance(hypno, Hypnogram):
+            # Translate string include labels to integers using the Hypnogram mapping
+            if include is not None:
+                include_arr = np.atleast_1d(np.asarray(include))
+                if include_arr.dtype.kind in ("U", "S", "O"):
+                    include = np.array([hypno.mapping[s] for s in include_arr], dtype=int)
+            # Upsample the Hypnogram to match data
+            hypno = hypno.upsample_to_data(data, sf=sf)
         hypno = np.asarray(hypno, dtype=int)
         assert hypno.ndim == 1, "Hypno must be one dimensional."
         assert hypno.size == n_samples, "Hypno must have same size as data."
@@ -171,6 +186,7 @@ class _DetectionResults(object):
                 "Start": "count",
                 "Duration": aggfunc,
                 "Amplitude": aggfunc,
+                "AmpFiltered": aggfunc,
                 "RMS": aggfunc,
                 "AbsPower": aggfunc,
                 "RelPower": aggfunc,
@@ -617,17 +633,19 @@ def spindles_detect(
     ch_names : list of str
         Channel names if ``data`` is *array_like*.
         Should be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
-    hypno : array_like
+    hypno : array_like or :py:class:`yasa.Hypnogram`
         Sleep stage (hypnogram). If the hypnogram is loaded, the
         detection will only be applied to the value defined in
         ``include`` (default = N1 + N2 + N3 sleep).
 
-        The hypnogram must have the same number of samples as ``data``.
-        To upsample your hypnogram, use :py:meth:`yasa.Hypnogram.upsample_to_data`
-        or :py:func:`yasa.hypno_upsample_to_data`.
+        Can be an upsampled integer array (same number of samples as ``data``)
+        or a :py:class:`yasa.Hypnogram` instance (automatically upsampled).
+        To manually upsample an integer array, use
+        :py:meth:`yasa.Hypnogram.upsample_to_data` or
+        :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
-            Hypnogram values are integers with the following mapping:
+            When passing an integer array, hypnogram values follow this mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
@@ -636,10 +654,13 @@ def spindles_detect(
             - 2 = N2 sleep
             - 3 = N3 sleep
             - 4 = REM sleep
-    include : tuple, list or int
+    include : tuple, list or int or str
         Values in ``hypno`` that will be included in the mask. The default is
         (1, 2, 3), meaning that the detection is applied on N1, N2 and N3
         sleep. This has no effect when ``hypno`` is None.
+
+        When ``hypno`` is a :py:class:`yasa.Hypnogram`, string labels can be
+        used instead of integers (e.g. ``["N1", "N2", "N3"]``).
     freq_sp : tuple or list
         Spindles frequency range. Default is 12 to 15 Hz. Please note that YASA
         uses a FIR filter (implemented in MNE) with a 1.5Hz transition band,
@@ -715,7 +736,9 @@ def spindles_detect(
     * ``'End'`` : End time (in seconds).
     * ``'Duration'``: Duration (in seconds)
     * ``'Amplitude'``: Peak-to-peak amplitude of the (detrended) spindle in
-      the raw data (in µV).
+      the broadband-filtered data (in µV).
+    * ``'AmpFiltered'``: Peak-to-peak amplitude of the spindle in the
+      sigma-band filtered data (in µV).
     * ``'RMS'``: Root-mean-square (in µV)
     * ``'AbsPower'``: Median absolute power (in log10 µV^2),
       calculated from the Hilbert-transform of the ``freq_sp`` filtered signal.
@@ -755,8 +778,22 @@ def spindles_detect(
 
     Examples
     --------
-    For a walkthrough of the spindles detection, please refer to the following
-    Jupyter notebooks:
+    1. Detect spindles on an MNE Raw object with an upsampled integer hypnogram (legacy):
+
+    .. code-block:: python
+
+        >>> import yasa
+        >>> sp = yasa.spindles_detect(raw, hypno=hypno_up, include=(1, 2, 3))
+
+    2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling and stage filtering are
+       handled automatically. String stage labels can be used for ``include``:
+
+    .. code-block:: python
+
+        >>> hyp = yasa.Hypnogram(["W", "N1", "N2", "N2", "N3", "REM"], freq="30s")
+        >>> sp = yasa.spindles_detect(raw, hypno=hyp, include=["N1", "N2", "N3"])
+
+    For a full walkthrough, please refer to the following Jupyter notebooks:
 
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/01_spindles_detection.ipynb
 
@@ -934,6 +971,7 @@ def spindles_detect(
 
         # Initialize empty variables
         sp_amp = np.zeros(len(sp))
+        sp_amp_filt = np.zeros(len(sp))
         sp_freq = np.zeros(len(sp))
         sp_rms = np.zeros(len(sp))
         sp_osc = np.zeros(len(sp))
@@ -955,6 +993,7 @@ def spindles_detect(
             sp_det = _detrend(sp_x, data_broad[i, sp[j]])
             # sp_det = signal.detrend(data_broad[i, sp[i]], type='linear')
             sp_amp[j] = np.ptp(sp_det)  # Peak-to-peak amplitude
+            sp_amp_filt[j] = np.ptp(data_sigma[i, sp[j]])  # Amplitude on sigma-filtered signal
             sp_rms[j] = _rms(sp_det)  # Root mean square
             sp_rel[j] = np.median(rel_pow[sp[j]])  # Median relative power
 
@@ -997,6 +1036,7 @@ def spindles_detect(
             "End": sp_end,
             "Duration": sp_dur,
             "Amplitude": sp_amp,
+            "AmpFiltered": sp_amp_filt,
             "RMS": sp_rms,
             "AbsPower": sp_abs,
             "RelPower": sp_rel,
@@ -1014,6 +1054,7 @@ def spindles_detect(
             col_keep = [
                 "Duration",
                 "Amplitude",
+                "AmpFiltered",
                 "RMS",
                 "AbsPower",
                 "RelPower",
@@ -1435,17 +1476,19 @@ def sw_detect(
     ch_names : list of str
         Channel names if ``data`` is *array_like*.
         Should be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw` instance.
-    hypno : array_like
+    hypno : array_like or :py:class:`yasa.Hypnogram`
         Sleep stage (hypnogram). If the hypnogram is loaded, the
         detection will only be applied to the value defined in
         ``include`` (default = N2 + N3 sleep).
 
-        The hypnogram must have the same number of samples as ``data``.
-        To upsample your hypnogram, use :py:meth:`yasa.Hypnogram.upsample_to_data`
-        or :py:func:`yasa.hypno_upsample_to_data`.
+        Can be an upsampled integer array (same number of samples as ``data``)
+        or a :py:class:`yasa.Hypnogram` instance (automatically upsampled).
+        To manually upsample an integer array, use
+        :py:meth:`yasa.Hypnogram.upsample_to_data` or
+        :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
-            Hypnogram values are integers with the following mapping:
+            When passing an integer array, hypnogram values follow this mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
@@ -1454,10 +1497,13 @@ def sw_detect(
             - 2 = N2 sleep
             - 3 = N3 sleep
             - 4 = REM sleep
-    include : tuple, list or int
+    include : tuple, list or int or str
         Values in ``hypno`` that will be included in the mask. The default is
         (2, 3), meaning that the detection is applied on N2 and N3
         sleep. This has no effect when ``hypno`` is None.
+
+        When ``hypno`` is a :py:class:`yasa.Hypnogram`, string labels can be
+        used instead of integers (e.g. ``["N2", "N3"]``).
     freq_sw : tuple or list
         Slow wave frequency range. Default is 0.3 to 1.5 Hz. Please note that
         YASA uses a FIR filter (implemented in MNE) with a 0.2 Hz transition
@@ -1617,7 +1663,22 @@ def sw_detect(
 
     Examples
     --------
-    For an example of how to run the detection, please refer to the tutorial:
+    1. Detect slow-waves on an MNE Raw object with an upsampled integer hypnogram (legacy):
+
+    .. code-block:: python
+
+        >>> import yasa
+        >>> sw = yasa.sw_detect(raw, hypno=hypno_up, include=(2, 3))
+
+    2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling and stage filtering are
+       handled automatically. String stage labels can be used for ``include``:
+
+    .. code-block:: python
+
+        >>> hyp = yasa.Hypnogram(["W", "N1", "N2", "N2", "N3", "REM"], freq="30s")
+        >>> sw = yasa.sw_detect(raw, hypno=hyp, include=["N2", "N3"])
+
+    For a full walkthrough, please refer to the tutorial:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb
     """
     set_log_level(verbose)
@@ -2361,17 +2422,19 @@ def rem_detect(
             >>> data = raw.get_data(units="uV")  # Make sure that data is in uV
     sf : float
         Sampling frequency of the data, in Hz.
-    hypno : array_like
+    hypno : array_like or :py:class:`yasa.Hypnogram`
         Sleep stage (hypnogram). If the hypnogram is loaded, the
         detection will only be applied to the value defined in
         ``include`` (default = REM sleep).
 
-        The hypnogram must have the same number of samples as ``data``.
-        To upsample your hypnogram, use :py:meth:`yasa.Hypnogram.upsample_to_data`
-        or :py:func:`yasa.hypno_upsample_to_data`.
+        Can be an upsampled integer array (same number of samples as ``data``)
+        or a :py:class:`yasa.Hypnogram` instance (automatically upsampled).
+        To manually upsample an integer array, use
+        :py:meth:`yasa.Hypnogram.upsample_to_data` or
+        :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
-            Hypnogram values are integers with the following mapping:
+            When passing an integer array, hypnogram values follow this mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
@@ -2380,10 +2443,13 @@ def rem_detect(
             - 2 = N2 sleep
             - 3 = N3 sleep
             - 4 = REM sleep
-    include : tuple, list or int
+    include : tuple, list or int or str
         Values in ``hypno`` that will be included in the mask. The default is
         (4), meaning that the detection is applied on REM sleep.
         This has no effect when ``hypno`` is None.
+
+        When ``hypno`` is a :py:class:`yasa.Hypnogram`, string labels can be
+        used instead of integers (e.g. ``"REM"``).
     amplitude : tuple or list
         Minimum and maximum amplitude of the peak of the REM.
         Default is 50 uV to 325 uV.
@@ -2466,7 +2532,22 @@ def rem_detect(
 
     Examples
     --------
-    For an example of how to run the detection, please refer to
+    1. Detect REMs with an upsampled integer hypnogram (legacy):
+
+    .. code-block:: python
+
+        >>> import yasa
+        >>> rem = yasa.rem_detect(loc, roc, sf, hypno=hypno_up, include=4)
+
+    2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling and stage filtering are
+       handled automatically. String stage labels can be used for ``include``:
+
+    .. code-block:: python
+
+        >>> hyp = yasa.Hypnogram(["W", "N1", "N2", "N3", "REM", "REM"], freq="30s")
+        >>> rem = yasa.rem_detect(loc, roc, sf, hypno=hyp, include="REM")
+
+    For a full walkthrough, please refer to:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb
     """
     set_log_level(verbose)
@@ -2845,17 +2926,19 @@ def art_detect(
         The window length (= resolution) for artifact rejection, in seconds.
         Default to 5 seconds. Shorter windows (e.g. 1 or 2-seconds) will
         drastically increase computation time when ``method='covar'``.
-    hypno : array_like
+    hypno : array_like or :py:class:`yasa.Hypnogram`
         Sleep stage (hypnogram). If the hypnogram is passed, the
         detection will be applied separately for each of the stages defined in
         ``include``.
 
-        The hypnogram must have the same number of samples as ``data``.
-        To upsample your hypnogram, use :py:meth:`yasa.Hypnogram.upsample_to_data`
-        or :py:func:`yasa.hypno_upsample_to_data`.
+        Can be an upsampled integer array (same number of samples as ``data``)
+        or a :py:class:`yasa.Hypnogram` instance (automatically upsampled).
+        To manually upsample an integer array, use
+        :py:meth:`yasa.Hypnogram.upsample_to_data` or
+        :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
-            Hypnogram values are integers with the following mapping:
+            When passing an integer array, hypnogram values follow this mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
@@ -2864,11 +2947,14 @@ def art_detect(
             - 2 = N2 sleep
             - 3 = N3 sleep
             - 4 = REM sleep
-    include : tuple, list or int
+    include : tuple, list or int or str
         Sleep stages in ``hypno`` on which to perform the artifact rejection.
         The default is ``hypno=(1, 2, 3, 4)``, meaning that the artifact
         rejection is applied separately for all sleep stages, excluding wake.
         This parameter has no effect when ``hypno`` is None.
+
+        When ``hypno`` is a :py:class:`yasa.Hypnogram`, string labels can be
+        used instead of integers (e.g. ``["N1", "N2", "N3", "REM"]``).
     method : str
         Artifact detection method (see Notes):
 
@@ -2989,7 +3075,22 @@ def art_detect(
 
     Examples
     --------
-    For an example of how to run the detection, please refer to
+    1. Detect artefacts per sleep stage with an upsampled integer hypnogram (legacy):
+
+    .. code-block:: python
+
+        >>> import yasa
+        >>> art = yasa.art_detect(data, sf, hypno=hypno_up, include=(1, 2, 3, 4))
+
+    2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling and stage filtering are
+       handled automatically. String stage labels can be used for ``include``:
+
+    .. code-block:: python
+
+        >>> hyp = yasa.Hypnogram(["W", "N1", "N2", "N3", "REM"], freq="30s")
+        >>> art = yasa.art_detect(data, sf, hypno=hyp, include=["N1", "N2", "N3", "REM"])
+
+    For a full walkthrough, please refer to:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb
     """
     ###########################################################################

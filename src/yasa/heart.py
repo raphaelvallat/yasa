@@ -43,17 +43,17 @@ def hrv_stage(
         Single-channel ECG data. Must be a 1D NumPy array.
     sf : float
         The sampling frequency of the data.
-    hypno : array_like
+    hypno : array_like or :py:class:`yasa.Hypnogram`
         Sleep stage (hypnogram). The heart rate calculation will be applied for each sleep stage
         defined in ``include`` (default = N2, N3 and REM sleep separately).
 
-        The hypnogram must have the same number of samples as ``data``.
-        To upsample your hypnogram, please refer to
+        Can be an upsampled integer array (same number of samples as ``data``) or a
+        :py:class:`yasa.Hypnogram` instance (automatically upsampled). To manually upsample an
+        integer array, use :py:meth:`yasa.Hypnogram.upsample_to_data` or
         :py:func:`yasa.hypno_upsample_to_data`.
 
         .. note::
-            The default hypnogram format in YASA is a 1D integer
-            vector where:
+            When passing an integer array, hypnogram values follow this mapping:
 
             - -2 = Unscored
             - -1 = Artefact / Movement
@@ -62,10 +62,13 @@ def hrv_stage(
             - 2 = N2 sleep
             - 3 = N3 sleep
             - 4 = REM sleep
-    include : tuple, list or int
+    include : tuple, list or int or str
         Values in ``hypno`` that will be included in the mask. The default is
         (2, 3, 4), meaning that the detection is applied on N2, N3 and REM
         sleep separately.
+
+        When ``hypno`` is a :py:class:`yasa.Hypnogram`, string labels can be
+        used instead of integers (e.g. ``["N2", "N3", "REM"]``).
     threshold : str
         Only periods of a given stage that exceed the duration defined in ``threshold`` will be
         kept in subsequent analysis. The default is 2 minutes ('2min'). Other possible values
