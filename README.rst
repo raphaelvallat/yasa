@@ -29,10 +29,9 @@
 * Event detection: sleep spindles, slow-waves and rapid eye movements, on single or multi-channel EEG data.
 * Artefact rejection, on single or multi-channel EEG data.
 * Spectral analyses: bandpower, phase-amplitude coupling, 1/f slope, and more!
-* Hypnogram analysis: sleep statistics and stage transitions.
-* Scorer agreement evaluation: epoch-by-epoch and sleep-statistics Bland–Altman agreement between two scorers.
+* Hypnogram analysis: sleep statistics, stage transitions, visualization, and manipulation.
 
-For more details, try the `quickstart <https://yasa-sleep.org/quickstart.html>`_ or read the `FAQ <https://yasa-sleep.org/faq.html>`_.
+For more details, try the `tutorials <https://yasa-sleep.org/tutorials/index.html>`_ or read the `FAQ <https://yasa-sleep.org/faq.html>`_.
 
 ----------------
 
@@ -75,41 +74,20 @@ For common questions about prerequisites, data formats, and how to load EEG data
 How do I get started with YASA?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you want to dive right in, you can simply go to the main `documentation <https://yasa-sleep.org/quickstart.html>`_ and try to apply YASA's functions on your own EEG data.
-However, for most users, we strongly recommend that you first try running the examples Jupyter notebooks to get a sense of how YASA works and what it can do!
-The notebooks also come with example datasets so they should work right out of the box as long as you've installed YASA first.
-The notebooks and datasets can be found on `GitHub <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_ (make sure that you download the whole *notebooks/* folder). A short description of all notebooks is provided below:
+The best starting point is the `tutorials <https://yasa-sleep.org/tutorials/index.html>`_ section
+of the documentation, which includes a quickstart guide and step-by-step walkthroughs of the most
+common workflows.
 
-**Automatic sleep staging**
-
-* `automatic_staging <notebooks/14_automatic_sleep_staging.ipynb>`_: Automatic sleep staging of polysomnography data.
-
-**Event detection**
-
-* `spindles_detection <notebooks/01_spindles_detection.ipynb>`_: single-channel spindles detection and step-by-step description of the spindles detection algorithm.
-* `spindles_detection_multi <notebooks/02_spindles_detection_multi.ipynb>`_: multi-channel spindles detection.
-* `spindles_detection_NREM_only <notebooks/03_spindles_detection_NREM_only.ipynb>`_: how to limit the spindles detection on specific sleep stages using an hypnogram.
-* `spindles_slow_fast <notebooks/04_spindles_slow_fast.ipynb>`_: slow versus fast spindles.
-* `sw_detection <notebooks/05_sw_detection.ipynb>`_: single-channel slow-waves detection and step-by-step description of the slow-waves detection algorithm.
-* `sw_detection_multi <notebooks/06_sw_detection_multi.ipynb>`_: multi-channel slow-waves detection.
-* `artifact_rejection <notebooks/13_artifact_rejection.ipynb>`_: automatic artifact rejection on single and multi-channel EEG data.
-* `REMs_detection <notebooks/07_REMs_detection.ipynb>`_: REMs detection.
-* `run_visbrain <notebooks/run_visbrain.py>`_: interactive display of the detected spindles using the Visbrain visualization software in Python.
-
-**Spectral analysis**
-
-* `bandpower <notebooks/08_bandpower.ipynb>`_: calculate spectral band power, optionally averaged across channels and sleep stages.
-* `IRASA <notebooks/09_IRASA.ipynb>`_: separate the aperiodic (= fractal = 1/f) components of the EEG power spectrum using the IRASA method.
-* `spectrogram <notebooks/10_spectrogram.ipynb>`_: plot a multi-taper full-night spectrogram on single-channel EEG data with the hypnogram on top.
-* `nonlinear_features <notebooks/11_nonlinear_features.ipynb>`_: calculate non-linear EEG features on 30-seconds epochs and perform a naive sleep stage classification.
-* `SO-sigma_coupling <notebooks/12_SO-sigma_coupling.ipynb>`_: slow-oscillations/spindles phase-amplitude coupling and data-driven comodulogram.
-* `EEG-HRV coupling <notebooks/16_EEG-HRV_coupling.ipynb>`_: overnight coupling between EEG bandpower and heart rate variability.
-* `topoplot <notebooks/15_topoplot.ipynb>`_: topoplot.
+Additional worked examples are available as `Jupyter notebooks on GitHub
+<https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_. Note that some notebooks may
+not reflect the latest API.
 
 Gallery
 ~~~~~~~
 
-Below some plots demonstrating the functionalities of YASA. To reproduce these, check out the `tutorial (Jupyter notebooks) <https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_.
+Below some plots demonstrating the functionalities of YASA. For step-by-step examples, see the
+`tutorials <https://yasa-sleep.org/tutorials/index.html>`_ or the `Jupyter notebooks
+<https://github.com/raphaelvallat/yasa/tree/master/notebooks>`_.
 
 .. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/gallery.png
   :align: center
@@ -119,7 +97,7 @@ Below some plots demonstrating the functionalities of YASA. To reproduce these, 
 Development
 ~~~~~~~~~~~
 
-YASA was created and is maintained by `Raphael Vallat <https://raphaelvallat.com>`_, a former postdoctoral researcher in `Matthew Walker's lab <https://www.humansleepscience.com/>`_ at UC Berkeley. Contributions are more than welcome so feel free to contact me, open an issue or submit a pull request!
+YASA was created and is maintained by `Raphael Vallat <https://raphaelvallat.com>`_. Contributions are more than welcome! See the `contributing guide <https://yasa-sleep.org/contributing.html>`_ for guidelines.
 
 To see the code or report a bug, please visit the `GitHub repository <https://github.com/raphaelvallat/yasa>`_.
 

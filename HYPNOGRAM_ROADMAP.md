@@ -40,8 +40,5 @@ Goal: make `yasa.Hypnogram` the industry-standard Python object for handling sle
 
 ## Planned (future releases)
 
-### I/O
-- **`from_edf_annotations(raw)`** — load hypnogram from EDF+ annotations.
-
 ### Multi-scorer support
 - **`HypnogramSet`** — new container class for multiple scorers of the same night (alignment, pairwise agreement, consensus scoring). See [HYPNOGRAM_MULTIPLE_SCORERS.md](HYPNOGRAM_MULTIPLE_SCORERS.md) for the full design plan.
