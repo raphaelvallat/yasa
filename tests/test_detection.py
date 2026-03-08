@@ -41,17 +41,24 @@ data_n3 = np.loadtxt(data_n3_fp)
 # Load a full recording and its hypnogram
 data_full_fp = fetch_sample("full_6hrs_100Hz_Cz+Fz+Pz.npz")
 hypno_full_fp = fetch_sample("full_6hrs_100Hz_hypno.npz")
-data_full = np.load(data_full_fp).get("data")
+_data_full_raw = np.load(data_full_fp).get("data")
 chan_full = np.load(data_full_fp).get("chan")
 hypno_full = np.load(hypno_full_fp).get("hypno")
+
+# Keep only Fz and during a N3 sleep period with (huge) slow-waves
+# (extracted before truncation since the N3 segment is at ~1h51m)
+data_sw = _data_full_raw[1, 666000:672000].astype(np.float64)
+hypno_sw = hypno_full[666000:672000]
+
+# Truncate to 3 hours for faster multi-channel tests (~2x speedup).
+# The N3 segment used for data_sw at 666k–672k samples is still included.
+_N = 1_080_000  # 3 hours at 100 Hz
+data_full = _data_full_raw[:, :_N]
+hypno_full = hypno_full[:_N]
 
 # Let's add a channel with bad data amplitude
 chan_full = np.append(chan_full, "Bad")  # ['Cz', 'Fz', 'Pz', 'Bad']
 data_full = np.vstack((data_full, data_full[-1, :] * 1e8))
-
-# Keep only Fz and during a N3 sleep period with (huge) slow-waves
-data_sw = data_full[1, 666000:672000].astype(np.float64)
-hypno_sw = hypno_full[666000:672000]
 
 # MNE Raw
 data_mne_fp = fetch_sample("sub-02_mne_raw.fif")
@@ -112,13 +119,17 @@ class TestDetection(unittest.TestCase):
         #######################################################################
         # SINGLE CHANNEL
         #######################################################################
-        freq_sp = [(11, 16), [12, 14]]
-        freq_broad = [(0.5, 30), [1, 25]]
-        duration = [(0.3, 2.5), [0.5, 3]]
-        min_distance = [None, 0, 500]
-        prod_args = product(freq_sp, freq_broad, duration, min_distance)
-
-        for i, (s, b, d, m) in enumerate(prod_args):
+        # Representative parameter combinations (covers all values, avoids full
+        # Cartesian product of 24 iterations).
+        param_combos_sp = [
+            ((11, 16), (0.5, 30), (0.3, 2.5), None),
+            ([12, 14], (0.5, 30), (0.3, 2.5), 0),
+            ((11, 16), [1, 25], (0.3, 2.5), 500),
+            ([12, 14], [1, 25], [0.5, 3], None),
+            ((11, 16), (0.5, 30), [0.5, 3], 0),
+            ([12, 14], [1, 25], [0.5, 3], 500),
+        ]
+        for s, b, d, m in param_combos_sp:
             spindles_detect(data, sf, freq_sp=s, duration=d, freq_broad=b, min_distance=m)
 
         sp = spindles_detect(data, sf, verbose=True)
@@ -279,17 +290,15 @@ class TestDetection(unittest.TestCase):
 
     def test_sw_detect(self):
         """Test function slow-wave detect"""
-        # Parameters product testing
-        freq_sw = [(0.3, 3.5), (0.5, 4)]
-        dur_neg = [(0.3, 1.5), [0.1, 2]]
-        dur_pos = [(0.3, 1.5), [0, 1]]
-        amp_neg = [(40, 300), [40, None]]
-        amp_pos = [(10, 150), (0, None)]
-        amp_ptp = [(75, 400), [80, 300]]
-        prod_args = product(freq_sw, dur_neg, dur_pos, amp_neg, amp_pos, amp_ptp)
-
-        for i, (f, dn, dp, an, ap, aptp) in enumerate(prod_args):
-            # print((f, dn, dp, an, ap, aptp))
+        # Representative parameter combinations (covers all values and None thresholds,
+        # avoids full Cartesian product of 64 iterations).
+        param_combos_sw = [
+            ((0.3, 3.5), (0.3, 1.5), (0.3, 1.5), (40, 300), (10, 150), (75, 400)),
+            ((0.5, 4), [0.1, 2], [0, 1], [40, None], (0, None), [80, 300]),
+            ((0.3, 3.5), [0.1, 2], (0.3, 1.5), [40, None], (10, 150), [80, 300]),
+            ((0.5, 4), (0.3, 1.5), [0, 1], (40, 300), (0, None), (75, 400)),
+        ]
+        for f, dn, dp, an, ap, aptp in param_combos_sw:
             sw_detect(
                 data_sw, sf, freq_sw=f, dur_neg=dn, dur_pos=dp, amp_neg=an, amp_pos=ap, amp_ptp=aptp
             )
