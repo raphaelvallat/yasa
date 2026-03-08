@@ -48,7 +48,10 @@ class Hypnogram:
       detection, scorer agreement — are available as methods on the object itself.
 
     To create a ``Hypnogram`` from a legacy integer array, use :py:meth:`from_integers`.
-    To load a Compumedics Profusion file, use :py:meth:`from_profusion`.
+
+    To save a ``Hypnogram`` to disk, use :py:meth:`to_json`. The ``Hypnogram`` object and all
+    its metadata can then be reloaded with :py:meth:`from_json`. To work with an in-memory
+    dictionary instead, use :py:meth:`to_dict` and :py:meth:`from_dict`.
 
     .. versionadded:: 0.7.0
 
@@ -649,6 +652,74 @@ class Hypnogram:
         hypno_int = pd.Series(hypno_int).replace({4: 3, 5: 4}).to_numpy()
         return cls.from_integers(hypno_int, freq=freq, start=start, tz=tz, scorer=scorer)
 
+    @classmethod
+    def from_dict(cls, d):
+        """Reconstruct a :py:class:`Hypnogram` from a dictionary produced by :py:meth:`to_dict`.
+
+        All metadata is restored: epoch duration, start datetime (including timezone), scorer
+        name, and stage probabilities (if present).
+
+        .. versionadded:: 0.7.0
+
+        Parameters
+        ----------
+        d : dict
+            A dictionary with keys ``"values"``, ``"n_stages"``, ``"freq"``, ``"start"``,
+            ``"scorer"``, and ``"proba"``, as returned by :py:meth:`to_dict`.
+
+        Returns
+        -------
+        hyp : :py:class:`Hypnogram`
+            The reconstructed Hypnogram.
+
+        See Also
+        --------
+        to_dict : Return the Hypnogram as a JSON-serializable dictionary.
+        from_json : Load a :py:class:`Hypnogram` from a JSON file on disk.
+        """
+        start = pd.Timestamp(d["start"]) if d["start"] is not None else None
+        proba = pd.DataFrame(d["proba"]) if d["proba"] is not None else None
+        return cls(
+            values=d["values"],
+            n_stages=d["n_stages"],
+            freq=d["freq"],
+            start=start,
+            scorer=d["scorer"],
+            proba=proba,
+        )
+
+    @classmethod
+    def from_json(cls, fname):
+        """Load a :py:class:`Hypnogram` from a JSON file saved with :py:meth:`to_json`.
+
+        All metadata is restored: epoch duration, start datetime (including timezone), scorer
+        name, and stage probabilities (if present).
+
+        This method delegates to :py:meth:`from_dict` for deserialization.
+
+        .. versionadded:: 0.7.0
+
+        Parameters
+        ----------
+        fname : str or path-like
+            Path to the JSON file.
+
+        Returns
+        -------
+        hyp : :py:class:`Hypnogram`
+            The loaded Hypnogram.
+
+        See Also
+        --------
+        from_dict : Reconstruct a :py:class:`Hypnogram` from an in-memory dictionary.
+        to_json : Save the Hypnogram to a JSON file on disk.
+        """
+        import json
+
+        with open(fname) as f:
+            data = json.load(f)
+        return cls.from_dict(data)
+
     @property
     def hypno(self):
         """
@@ -969,6 +1040,64 @@ class Hypnogram:
             scorer=self.scorer,
             proba=self.proba,
         )
+
+    def to_dict(self):
+        """Return the Hypnogram as a JSON-serializable dictionary.
+
+        All metadata is preserved: epoch duration, start datetime (including timezone), scorer
+        name, and stage probabilities. Stage probabilities (``proba``) are rounded to 6 decimal
+        places.
+
+        The dictionary has the following keys: ``"values"``, ``"n_stages"``, ``"freq"``,
+        ``"start"``, ``"scorer"``, ``"proba"``. It can be passed to :py:meth:`from_dict` to
+        reconstruct the :py:class:`Hypnogram`.
+
+        .. versionadded:: 0.7.0
+
+        Returns
+        -------
+        d : dict
+            A JSON-serializable dictionary representing the Hypnogram and all its metadata.
+
+        See Also
+        --------
+        from_dict : Reconstruct a :py:class:`Hypnogram` from a dictionary.
+        to_json : Save the Hypnogram to a JSON file on disk.
+        """
+        return {
+            "values": self.hypno.to_numpy().tolist(),
+            "n_stages": self.n_stages,
+            "freq": self.freq,
+            "start": self.start.isoformat() if self.start is not None else None,
+            "scorer": self.scorer,
+            "proba": self.proba.round(6).to_dict(orient="list") if self.proba is not None else None,
+        }
+
+    def to_json(self, fname):
+        """Save the Hypnogram to a JSON file.
+
+        The file can be reloaded with :py:meth:`from_json`. All metadata is preserved: epoch
+        duration, start datetime (including timezone), scorer name, and stage probabilities.
+        Stage probabilities (``proba``) are rounded to 6 decimal places.
+
+        This method delegates to :py:meth:`to_dict` for serialization.
+
+        .. versionadded:: 0.7.0
+
+        Parameters
+        ----------
+        fname : str or path-like
+            Output file path. By convention, use a ``.json`` extension.
+
+        See Also
+        --------
+        to_dict : Return the same representation as an in-memory dictionary.
+        from_json : Reload the Hypnogram from a JSON file.
+        """
+        import json
+
+        with open(fname, "w") as f:
+            json.dump(self.to_dict(), f, indent=2)
 
     def crop(self, start=None, end=None):
         """Crop the hypnogram to a range of epochs or absolute timestamps.

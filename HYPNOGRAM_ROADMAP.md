@@ -31,6 +31,8 @@ Goal: make `yasa.Hypnogram` the industry-standard Python object for handling sle
 - `as_int()` — integer-encoded `pandas.Series`
 - `as_events()` — BIDS-compatible events `DataFrame` (onset, duration, stage)
 - `upsample(new_freq)` — change epoch resolution
+- `to_json(fname)` / `from_json(fname)` — save and load to disk, preserving all metadata
+- `to_dict()` / `from_dict(d)` — JSON-serializable in-memory representation (same format as `to_json`)
 
 ---
 
@@ -39,8 +41,6 @@ Goal: make `yasa.Hypnogram` the industry-standard Python object for handling sle
 ### I/O
 - **`to_csv()` / `from_csv()`** — round-trip to disk preserving metadata (freq, start, scorer, proba).
 - **`from_edf_annotations(raw)`** — load hypnogram from EDF+ annotations.
-- **`to_dict()` / `from_dict()`** — JSON-serializable representation.
-- **`to_json()` / `from_json()`** — round-trip to disk using JSON-serializable representation.
 
 
 ### Analysis

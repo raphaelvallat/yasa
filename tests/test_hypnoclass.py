@@ -259,3 +259,121 @@ class TestHypnoClass(unittest.TestCase):
         # --- invalid integer (not in mapping) raises ---
         with pytest.raises(Exception):
             Hypnogram.from_integers([0, 99])
+
+    def test_json_roundtrip(self):
+        """Test that to_json / from_json preserves all metadata."""
+        import json
+        import os
+        import tempfile
+
+        stages = ["W", "W", "N1", "N2", "N3", "REM", "W"]
+
+        # Basic round-trip: no start, no scorer, no proba
+        hyp = Hypnogram(stages, freq="30s")
+        fd, fname = tempfile.mkstemp(suffix=".json")
+        os.close(fd)
+        try:
+            hyp.to_json(fname)
+            hyp2 = Hypnogram.from_json(fname)
+            assert hyp2.freq == hyp.freq
+            assert hyp2.n_stages == hyp.n_stages
+            assert hyp2.start is None
+            assert hyp2.scorer is None
+            assert hyp2.proba is None
+            np.testing.assert_array_equal(hyp2.hypno.to_numpy(), hyp.hypno.to_numpy())
+        finally:
+            os.unlink(fname)
+
+        # With tz-aware start and scorer
+        hyp_ts = Hypnogram(
+            stages, freq="30s", start="2024-01-15 23:00:00", tz="UTC", scorer="Expert"
+        )
+        fd, fname = tempfile.mkstemp(suffix=".json")
+        os.close(fd)
+        try:
+            hyp_ts.to_json(fname)
+            hyp_ts2 = Hypnogram.from_json(fname)
+            assert hyp_ts2.start == hyp_ts.start
+            assert hyp_ts2.scorer == "Expert"
+            assert hyp_ts2.start.tzinfo is not None  # tz preserved
+        finally:
+            os.unlink(fname)
+
+        # File is valid JSON
+        fd, fname = tempfile.mkstemp(suffix=".json")
+        os.close(fd)
+        try:
+            hyp.to_json(fname)
+            with open(fname) as f:
+                parsed = json.load(f)
+            assert set(parsed.keys()) == {"values", "n_stages", "freq", "start", "scorer", "proba"}
+        finally:
+            os.unlink(fname)
+
+    def test_dict_roundtrip(self):
+        """Test that to_dict / from_dict preserves all metadata."""
+        stages = ["W", "W", "N1", "N2", "N3", "REM", "W"]
+
+        # Basic round-trip: no start, no scorer, no proba
+        hyp = Hypnogram(stages, freq="30s")
+        d = hyp.to_dict()
+        assert isinstance(d, dict)
+        assert set(d.keys()) == {"values", "n_stages", "freq", "start", "scorer", "proba"}
+        assert d["start"] is None
+        assert d["scorer"] is None
+        assert d["proba"] is None
+        assert d["values"] == list(hyp.hypno.to_numpy())
+        hyp2 = Hypnogram.from_dict(d)
+        assert hyp2.freq == hyp.freq
+        assert hyp2.n_stages == hyp.n_stages
+        assert hyp2.start is None
+        assert hyp2.scorer is None
+        assert hyp2.proba is None
+        np.testing.assert_array_equal(hyp2.hypno.to_numpy(), hyp.hypno.to_numpy())
+
+        # With tz-aware start and scorer
+        hyp_ts = Hypnogram(
+            stages, freq="30s", start="2024-01-15 23:00:00", tz="UTC", scorer="Expert"
+        )
+        d_ts = hyp_ts.to_dict()
+        assert d_ts["scorer"] == "Expert"
+        assert d_ts["start"] == "2024-01-15T23:00:00+00:00"  # isoformat with tz
+        hyp_ts2 = Hypnogram.from_dict(d_ts)
+        assert hyp_ts2.start == hyp_ts.start
+        assert hyp_ts2.scorer == "Expert"
+        assert hyp_ts2.start.tzinfo is not None
+
+        # to_dict and to_json produce identical serializable content
+        import json
+        import os
+        import tempfile
+
+        fd, fname = tempfile.mkstemp(suffix=".json")
+        os.close(fd)
+        try:
+            hyp_ts.to_json(fname)
+            with open(fname) as f:
+                from_file = json.load(f)
+            assert from_file == hyp_ts.to_dict()
+        finally:
+            os.unlink(fname)
+
+        # proba round-trip and 6-decimal rounding
+        proba = pd.DataFrame(
+            {
+                "WAKE": [0.8, 0.1],
+                "N1": [0.1, 0.2],
+                "N2": [0.05, 0.4],
+                "N3": [0.03, 0.2],
+                "REM": [0.02, 0.1],
+            },
+        )
+        hyp_p = Hypnogram(["W", "N2"], freq="30s", proba=proba)
+        d_p = hyp_p.to_dict()
+        assert d_p["proba"] is not None
+        # All values rounded to ≤ 6 decimal places
+        for col_vals in d_p["proba"].values():
+            for v in col_vals:
+                assert v == round(v, 6)
+        hyp_p2 = Hypnogram.from_dict(d_p)
+        pd.testing.assert_frame_equal(hyp_p2.proba, hyp_p.proba.round(6), check_like=True)
