@@ -93,6 +93,8 @@ class Hypnogram:
          - Compare two hypnograms epoch-by-epoch (kappa, F1, MCC, ...).
        * - :py:meth:`plot_hypnogram`
          - Plot the hypnogram as a standard hypnogram figure.
+       * - :py:meth:`plot_hypnodensity`
+         - Plot per-epoch stage probabilities as a stacked area chart (requires ``proba``).
        * - :py:meth:`simulate_similar`
          - Simulate a new hypnogram with the same transition probabilities as this one.
 
@@ -1666,7 +1668,7 @@ class Hypnogram:
 
         >>> from yasa import simulate_hypnogram
         >>> # Generate a 8 hr (= 480 minutes) 5-stage hypnogram with a 30-seconds resolution
-        >>> hyp = simulate_hypnogram(tib=480, seed=42)
+        >>> hyp = simulate_hypnogram(tib=300, seed=42)
         >>> pd.Series(hyp.sleep_statistics())
         TIB        480.0000
         SPT        477.5000
@@ -1791,7 +1793,7 @@ class Hypnogram:
         --------
         >>> from yasa import Hypnogram, simulate_hypnogram
         >>> # Generate a 8 hr (= 480 minutes) 5-stage hypnogram with a 30-seconds resolution
-        >>> hyp = simulate_hypnogram(tib=480, seed=42)
+        >>> hyp = simulate_hypnogram(tib=300, seed=42)
         >>> counts, probs = hyp.transition_matrix()
         >>> counts
         To Stage    WAKE  N1   N2  N3  REM
@@ -1963,9 +1965,166 @@ class Hypnogram:
         .. plot::
 
             >>> from yasa import simulate_hypnogram
-            >>> ax = simulate_hypnogram(tib=480, seed=88).plot_hypnogram(highlight="REM")
+            >>> ax = simulate_hypnogram(tib=300, seed=88).plot_hypnogram(highlight="REM")
         """
         return plot_hypnogram(self, **kwargs)
+
+    def plot_hypnodensity(self, palette=None, ax=None):
+        """Plot the hypnodensity: per-epoch stage probabilities as a stacked area chart.
+
+        Requires that the :py:attr:`proba` attribute is set (i.e. the hypnogram was created by
+        :py:meth:`yasa.SleepStaging.predict`).
+
+        Parameters
+        ----------
+        palette : dict or None
+            A dictionary mapping stage names to matplotlib colors, e.g.
+            ``{"WAKE": "#99d7f1", "REM": "xkcd:sunflower"}``. When ``None`` (default), a
+            built-in palette is used. Missing stage keys fall back to ``"gray"``.
+        ax : :py:class:`matplotlib.axes.Axes` or None
+            Axis on which to draw the plot. If ``None`` (default), the current axis is used.
+
+        Returns
+        -------
+        ax : :py:class:`matplotlib.axes.Axes`
+            Matplotlib Axes
+
+        Raises
+        ------
+        ValueError
+            If :py:attr:`proba` is ``None``.
+
+        Examples
+        --------
+        5-stage hypnogram:
+
+        .. plot::
+
+            >>> import numpy as np
+            >>> import pandas as pd
+            >>> from yasa import Hypnogram, simulate_hypnogram
+            >>> import matplotlib.pyplot as plt
+            >>> hyp = simulate_hypnogram(tib=300, n_stages=5, seed=42)
+            >>> stages = ["WAKE", "N1", "N2", "N3", "REM"]
+            >>> rng = np.random.default_rng(42)
+            >>> one_hot = (
+            ...     pd.get_dummies(hyp.hypno)
+            ...     .reindex(columns=stages, fill_value=0)
+            ...     .to_numpy(dtype=float)
+            ... )
+            >>> noise = rng.dirichlet(np.ones(5) * 0.5, size=hyp.n_epochs)
+            >>> raw = 0.75 * one_hot + 0.25 * noise
+            >>> proba = pd.DataFrame(raw / raw.sum(axis=1, keepdims=True), columns=stages)
+            >>> ax = Hypnogram(hyp.hypno, n_stages=5, proba=proba).plot_hypnodensity()
+            >>> plt.tight_layout()
+
+        4-stage hypnogram:
+
+        .. plot::
+
+            >>> import numpy as np
+            >>> import pandas as pd
+            >>> from yasa import Hypnogram, simulate_hypnogram
+            >>> import matplotlib.pyplot as plt
+            >>> hyp = simulate_hypnogram(tib=300, n_stages=4, seed=42)
+            >>> stages = ["WAKE", "LIGHT", "DEEP", "REM"]
+            >>> rng = np.random.default_rng(42)
+            >>> one_hot = (
+            ...     pd.get_dummies(hyp.hypno)
+            ...     .reindex(columns=stages, fill_value=0)
+            ...     .to_numpy(dtype=float)
+            ... )
+            >>> noise = rng.dirichlet(np.ones(4) * 0.5, size=hyp.n_epochs)
+            >>> raw = 0.75 * one_hot + 0.25 * noise
+            >>> proba = pd.DataFrame(raw / raw.sum(axis=1, keepdims=True), columns=stages)
+            >>> ax = Hypnogram(hyp.hypno, n_stages=4, proba=proba).plot_hypnodensity()
+            >>> plt.tight_layout()
+
+        2-stage hypnogram:
+
+        .. plot::
+
+            >>> import numpy as np
+            >>> import pandas as pd
+            >>> from yasa import Hypnogram, simulate_hypnogram
+            >>> import matplotlib.pyplot as plt
+            >>> hyp = simulate_hypnogram(tib=300, n_stages=2, seed=42)
+            >>> stages = ["WAKE", "SLEEP"]
+            >>> rng = np.random.default_rng(42)
+            >>> one_hot = (
+            ...     pd.get_dummies(hyp.hypno)
+            ...     .reindex(columns=stages, fill_value=0)
+            ...     .to_numpy(dtype=float)
+            ... )
+            >>> noise = rng.dirichlet(np.ones(2) * 0.5, size=hyp.n_epochs)
+            >>> raw = 0.75 * one_hot + 0.25 * noise
+            >>> proba = pd.DataFrame(raw / raw.sum(axis=1, keepdims=True), columns=stages)
+            >>> ax = Hypnogram(hyp.hypno, n_stages=2, proba=proba).plot_hypnodensity()
+            >>> plt.tight_layout()
+        """
+        import matplotlib.dates as mdates
+        import matplotlib.pyplot as plt
+
+        if self._proba is None:
+            raise ValueError(
+                "No probability data found. `proba` is only available when the Hypnogram "
+                "was created by `yasa.SleepStaging.predict()`."
+            )
+
+        # Default color palette covering all possible stage names.
+        # Base 5-stage colors: WAKE=#99d7f1, N1=#009ddc, N2=#0a437a, N3=#720058, REM=#ffc512
+        # Derived colors: LIGHT=avg(N1,N2), NREM=avg(N1,N2,N3), DEEP=N3, SLEEP=dark navy
+        _default_palette = {
+            "WAKE": "#99d7f1",
+            "N1": "#009ddc",
+            "N2": "#0a437a",
+            "N3": "#720058",
+            "REM": "#ffc512",
+            "LIGHT": "#0570ab",  # avg(N1, N2)
+            "DEEP": "#720058",  # = N3
+            "NREM": "#294b8f",  # avg(N1, N2, N3)
+            "SLEEP": "#003366",  # dark navy, pairs with light-blue WAKE
+            "ART": "#999999",
+            "UNS": "#cccccc",
+        }
+        if palette is None:
+            palette = _default_palette
+
+        proba = self._proba.copy()
+        stages = proba.columns.tolist()
+        colors = [palette.get(s, "gray") for s in stages]
+
+        # Increase font size while preserving original
+        old_fontsize = plt.rcParams["font.size"]
+        plt.rcParams.update({"font.size": 18})
+
+        if ax is None:
+            _, ax = plt.subplots(figsize=(12, 4))
+
+        # Build x-axis values
+        if self._start is not None:
+            times = pd.date_range(start=self._start, freq=self._freq, periods=self._n_epochs)
+            x = mdates.date2num(times)
+            xlabel = "Time"
+        else:
+            x = self._timedelta.total_seconds() / 60  # minutes
+            xlabel = "Time [mins]" if self._duration <= 90 else "Time [hrs]"
+            if self._duration > 90:
+                x = x / 60  # convert to hours
+
+        ax.stackplot(x, proba.to_numpy().T, labels=stages, colors=colors, alpha=0.85)
+        ax.set_xlim(x[0], x[-1])
+        ax.set_ylim(0, 1)
+        ax.set_ylabel("Probability")
+        ax.set_xlabel(xlabel)
+        ax.legend(frameon=False, bbox_to_anchor=(1, 1), loc="upper left")
+        ax.spines[["right", "top"]].set_visible(False)
+        if self._start is not None:
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+
+        plt.rcParams.update({"font.size": old_fontsize})
+        return ax
 
     #######################################################################
     # SIMULATION
@@ -2566,7 +2725,7 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
 
 
 def simulate_hypnogram(
-    tib=480,
+    tib=300,
     trans_probas=None,
     init_probas=None,
     seed=None,

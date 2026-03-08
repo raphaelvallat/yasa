@@ -750,3 +750,111 @@ def test_pad_negative_after_raises():
 def test_pad_bad_type_raises():
     with pytest.raises(TypeError):
         Hypnogram(_PAD_STAGES).pad(before=3.5)
+
+
+###############################################################################
+# plot_hypnodensity
+###############################################################################
+
+# Shared fixtures for hypnodensity tests
+_N = 100
+_rng = np.random.default_rng(0)
+
+
+def _make_proba(stages):
+    """Return a valid probability DataFrame for the given stage list."""
+    raw = _rng.dirichlet(np.ones(len(stages)), size=_N)
+    return pd.DataFrame(raw, columns=stages)
+
+
+def test_plot_hypnodensity_5stage_returns_axes():
+    proba = _make_proba(["WAKE", "N1", "N2", "N3", "REM"])
+    hyp = Hypnogram(
+        ["WAKE"] * 20 + ["N1"] * 10 + ["N2"] * 40 + ["N3"] * 20 + ["REM"] * 10, proba=proba
+    )
+    ax = hyp.plot_hypnodensity()
+    assert isinstance(ax, plt.Axes)
+    plt.close("all")
+
+
+def test_plot_hypnodensity_4stage_returns_axes():
+    stages_seq = ["WAKE"] * 25 + ["LIGHT"] * 25 + ["DEEP"] * 25 + ["REM"] * 25
+    proba = _make_proba(["WAKE", "LIGHT", "DEEP", "REM"])
+    hyp = Hypnogram(stages_seq, n_stages=4, proba=proba)
+    ax = hyp.plot_hypnodensity()
+    assert isinstance(ax, plt.Axes)
+    plt.close("all")
+
+
+def test_plot_hypnodensity_3stage_returns_axes():
+    stages_seq = ["WAKE"] * 34 + ["NREM"] * 33 + ["REM"] * 33
+    proba = _make_proba(["WAKE", "NREM", "REM"])
+    hyp = Hypnogram(stages_seq, n_stages=3, proba=proba)
+    ax = hyp.plot_hypnodensity()
+    assert isinstance(ax, plt.Axes)
+    plt.close("all")
+
+
+def test_plot_hypnodensity_2stage_returns_axes():
+    stages_seq = ["WAKE"] * 50 + ["SLEEP"] * 50
+    proba = _make_proba(["WAKE", "SLEEP"])
+    hyp = Hypnogram(stages_seq, n_stages=2, proba=proba)
+    ax = hyp.plot_hypnodensity()
+    assert isinstance(ax, plt.Axes)
+    plt.close("all")
+
+
+def test_plot_hypnodensity_no_proba_raises():
+    hyp = Hypnogram(["WAKE"] * 10 + ["N2"] * 90)
+    with pytest.raises(ValueError, match="proba"):
+        hyp.plot_hypnodensity()
+
+
+def test_plot_hypnodensity_with_start_uses_datetime_axis():
+    proba = _make_proba(["WAKE", "N1", "N2", "N3", "REM"])
+    hyp = Hypnogram(
+        ["WAKE"] * 20 + ["N1"] * 10 + ["N2"] * 40 + ["N3"] * 20 + ["REM"] * 10,
+        proba=proba,
+        start="2022-12-15 22:30:00",
+    )
+    ax = hyp.plot_hypnodensity()
+    assert isinstance(ax, plt.Axes)
+    # x-axis should use a DateFormatter when start is set
+    import matplotlib.dates as mdates
+
+    assert isinstance(ax.xaxis.get_major_formatter(), mdates.DateFormatter)
+    plt.close("all")
+
+
+def test_plot_hypnodensity_accepts_ax_argument():
+    proba = _make_proba(["WAKE", "N1", "N2", "N3", "REM"])
+    hyp = Hypnogram(
+        ["WAKE"] * 20 + ["N1"] * 10 + ["N2"] * 40 + ["N3"] * 20 + ["REM"] * 10, proba=proba
+    )
+    fig, ax = plt.subplots()
+    returned_ax = hyp.plot_hypnodensity(ax=ax)
+    assert returned_ax is ax
+    plt.close("all")
+
+
+def test_plot_hypnodensity_custom_palette():
+    proba = _make_proba(["WAKE", "N1", "N2", "N3", "REM"])
+    hyp = Hypnogram(
+        ["WAKE"] * 20 + ["N1"] * 10 + ["N2"] * 40 + ["N3"] * 20 + ["REM"] * 10, proba=proba
+    )
+    custom = {"WAKE": "red", "N1": "green", "N2": "blue", "N3": "purple", "REM": "orange"}
+    ax = hyp.plot_hypnodensity(palette=custom)
+    assert isinstance(ax, plt.Axes)
+    plt.close("all")
+
+
+def test_plot_hypnodensity_ylim_and_legend():
+    proba = _make_proba(["WAKE", "N1", "N2", "N3", "REM"])
+    hyp = Hypnogram(
+        ["WAKE"] * 20 + ["N1"] * 10 + ["N2"] * 40 + ["N3"] * 20 + ["REM"] * 10, proba=proba
+    )
+    ax = hyp.plot_hypnodensity()
+    assert ax.get_ylim() == (0, 1)
+    legend_labels = [t.get_text() for t in ax.get_legend().get_texts()]
+    assert set(legend_labels) == {"WAKE", "N1", "N2", "N3", "REM"}
+    plt.close("all")
