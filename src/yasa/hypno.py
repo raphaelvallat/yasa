@@ -55,6 +55,9 @@ class Hypnogram:
     To save a ``Hypnogram`` to disk and reload it with all metadata intact, use
     :py:meth:`to_json` and :py:meth:`from_json`.
 
+    For a step-by-step introduction covering all features, see the
+    :ref:`tutorial_hypnogram` tutorial.
+
     .. versionadded:: 0.7.0
 
     .. rubric:: Main methods
@@ -148,7 +151,7 @@ class Hypnogram:
 
     Examples
     --------
-    Create a 2-stage hypnogram
+    Create a 2-stage hypnogram and inspect its contents:
 
     >>> from yasa import Hypnogram
     >>> values = ["W", "W", "W", "S", "S", "S", "S", "S", "W", "S", "S", "S"]
@@ -159,8 +162,6 @@ class Hypnogram:
      - Use `.as_int()` to get the integer values as a pandas.Series
      - Use `.plot_hypnogram()` to plot the hypnogram
     See the online documentation for more details.
-
-    We can access the actual values, which are stored as a :py:class:`pandas.Series`, with:
 
     >>> hyp.hypno
     Epoch
@@ -179,36 +180,9 @@ class Hypnogram:
     Name: Stage, dtype: category
     Categories (4, str): ['WAKE', 'SLEEP', 'ART', 'UNS']
 
-    >>> # Number of epochs in the hypnogram
     >>> hyp.n_epochs
     12
 
-    >>> # Total duration of the hypnogram, in minutes (12 epochs * 30 seconds = 6 minutes)
-    >>> hyp.duration
-    6.0
-
-    >>> # Default mapping from strings to integers. Can be changed with `hyp.mapping = {}`
-    >>> hyp.mapping
-    {'WAKE': 0, 'SLEEP': 1, 'ART': -1, 'UNS': -2}
-
-    >>> # Get the hypnogram Series integer values
-    >>> hyp.as_int()
-    Epoch
-    0     0
-    1     0
-    2     0
-    3     1
-    4     1
-    5     1
-    6     1
-    7     1
-    8     0
-    9     1
-    10    1
-    11    1
-    Name: Stage, dtype: int16
-
-    >>> # Calculate the summary sleep statistics
     >>> import pandas as pd
     >>> pd.Series(hyp.sleep_statistics())
     TIB         6.0000
@@ -223,7 +197,6 @@ class Hypnogram:
     WAKE        2.0000
     dtype: float64
 
-    >>> # Get the state-transition matrix
     >>> counts, probs = hyp.transition_matrix()
     >>> counts
     To Stage    WAKE  SLEEP
@@ -231,63 +204,8 @@ class Hypnogram:
     WAKE           2      2
     SLEEP          1      6
 
-    All these methods and properties are also valid with a 5-stage hypnogram. In the example below,
-    we use the :py:func:`yasa.simulate_hypnogram` to generate a plausible 5-stage hypnogram with a
-    30-seconds resolution. A random seed is specified to ensure that we get reproducible results.
-    Lastly, we set an actual start time to the hypnogram. As a result, the index of the resulting
-    hypnogram is a :py:class:`pandas.DatetimeIndex`.
-
-    >>> from yasa import simulate_hypnogram
-    >>> hyp = simulate_hypnogram(
-    ...     tib=500, n_stages=5, start="2022-12-15 22:30:00", scorer="S1", seed=42
-    ... )
-    >>> hyp
-    <Hypnogram | 1000 epochs x 30s (500.00 minutes), 5 unique stages, scored by S1>
-     - Use `.hypno` to get the string values as a pandas.Series
-     - Use `.as_int()` to get the integer values as a pandas.Series
-     - Use `.plot_hypnogram()` to plot the hypnogram
-    See the online documentation for more details.
-
-    >>> hyp.hypno
-    Time
-    2022-12-15 22:30:00    WAKE
-    2022-12-15 22:30:30    WAKE
-    2022-12-15 22:31:00    WAKE
-    2022-12-15 22:31:30    WAKE
-    2022-12-15 22:32:00    WAKE
-                        ...
-    2022-12-16 06:47:30      N2
-    2022-12-16 06:48:00      N2
-    2022-12-16 06:48:30      N2
-    2022-12-16 06:49:00      N2
-    2022-12-16 06:49:30      N2
-    Freq: 30s, Name: S1, Length: 1000, dtype: category
-    Categories (7, str): ['WAKE', 'N1', 'N2', 'N3', 'REM', 'ART', 'UNS']
-
-    The summary sleep statistics will include more items with a 5-stage hypnogram than a 2-stage
-    hypnogram, i.e. the amount and percentage of each sleep stage, the REM latency, etc.
-
-    >>> pd.Series(hyp.sleep_statistics())
-    TIB        500.0000
-    SPT        497.5000
-    WASO        79.5000
-    TST        418.0000
-    SE          83.6000
-    SME         84.0201
-    SFI          0.7177
-    SOL          2.5000
-    SOL_5min     2.5000
-    Lat_REM     67.0000
-    WAKE        82.0000
-    N1          69.0000
-    N2         247.0000
-    N3          64.5000
-    REM         37.5000
-    %N1         16.5072
-    %N2         59.0909
-    %N3         15.4306
-    %REM         8.9713
-    dtype: float64
+    For more examples covering 4-stage and 5-stage hypnograms, visualization, slicing,
+    EEG alignment, saving, and scorer comparison, see the :ref:`tutorial_hypnogram` tutorial.
     """
 
     def __init__(
@@ -798,7 +716,7 @@ class Hypnogram:
 
     @property
     def duration(self):
-        """Total duration of the hypnogram, expressed in minutes. AKA Time in Bed."""
+        """Total duration of the hypnogram, expressed in minutes."""
         return self._duration
 
     @property
@@ -1522,7 +1440,7 @@ class Hypnogram:
 
         When ``self.start`` is set **and** ``data`` is a :py:class:`mne.io.BaseRaw` with a
         valid ``meas_date``, alignment uses absolute timestamps rather than sample
-        count. See the :ref:`FAQ <hypno_alignment>` for a full description of all alignment
+        count. See the :ref:`tutorial_hypnogram` tutorial for a full description of all alignment
         scenarios and when to use ``start`` / ``tz``.
 
         Parameters
