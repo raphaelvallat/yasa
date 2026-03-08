@@ -5,6 +5,7 @@ This file contains several helper functions to manipulate 1D and 2D EEG data.
 import logging
 
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 from scipy.interpolate import interp1d
 
 from .numba import _corr, _covar, _rms, _slope_lstsq
@@ -369,8 +370,6 @@ def sliding_window(data, sf, window, step=None, axis=-1):
             [-83,  31, -12, -41, -87, -92, -11, -48,  29, -17],
             [-51,   3,  31, -99,  33, -47,   5, -97, -47,  90]]])
     """
-    from numpy.lib.stride_tricks import as_strided
-
     assert axis <= data.ndim, "Axis value out of range."
     assert isinstance(sf, (int, float)), "sf must be int or float"
     assert isinstance(window, (int, float)), "window must be int or float"

@@ -457,7 +457,7 @@ class SleepStaging:
             returned as a :py:class:`yasa.Hypnogram` instance, which also includes the
             probability of each sleep stage for each epoch.
         """
-        from yasa.hypno import Hypnogram
+        from .hypno import Hypnogram
 
         if not hasattr(self, "_features"):
             self.fit()

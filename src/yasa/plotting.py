@@ -82,7 +82,7 @@ def plot_hypnogram(hyp, sf_hypno=1 / 30, highlight="REM", fill_color=None, ax=No
         >>> hyp_a.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[0])
         >>> hyp_b.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[1])
     """
-    from yasa.hypno import Hypnogram, hypno_int_to_str  # Avoiding circular imports
+    from .hypno import Hypnogram, hypno_int_to_str  # Avoiding circular imports
 
     if not isinstance(hyp, Hypnogram):
         # Convert sampling frequency to pandas timefrequency string (e.g., "30s")
@@ -287,7 +287,7 @@ def plot_spectrogram(
         >>> hyp = yasa.Hypnogram(hypno_30s, freq="30s")
         >>> fig = yasa.plot_spectrogram(data, sf, hyp, cmap="Spectral_r")
     """
-    from yasa.hypno import Hypnogram, hypno_int_to_str  # Avoiding circular imports
+    from .hypno import Hypnogram, hypno_int_to_str  # Avoiding circular imports
 
     # Increase font size while preserving original
     old_fontsize = plt.rcParams["font.size"]

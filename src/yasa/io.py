@@ -39,21 +39,21 @@ def is_tensorpac_installed():
     """Test if tensorpac is installed."""
     try:
         import tensorpac  # noqa
-    except IOError:  # pragma: no cover
-        raise IOError("tensorpac needs to be installed. Please use `pip install tensorpac -U`.")
+    except ImportError:  # pragma: no cover
+        raise ImportError("tensorpac needs to be installed. Please use `pip install yasa[pac]`.")
 
 
 def is_pyriemann_installed():
     """Test if pyRiemann is installed."""
     try:
         import pyriemann  # noqa
-    except IOError:  # pragma: no cover
-        raise IOError("pyRiemann needs to be installed. Please use `pip install pyriemann -U`.")
+    except ImportError:  # pragma: no cover
+        raise ImportError("pyriemann needs to be installed. Please use `pip install yasa[art]`.")
 
 
 def is_sleepecg_installed():
     """Test if sleepecg is installed."""
     try:
         import sleepecg  # noqa
-    except IOError:  # pragma: no cover
-        raise IOError("sleepecg needs to be installed. Please use `pip install sleepecg -U`.")
+    except ImportError:  # pragma: no cover
+        raise ImportError("sleepecg needs to be installed. Please use `pip install yasa[heart]`.")

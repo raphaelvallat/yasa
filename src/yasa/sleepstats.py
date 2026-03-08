@@ -137,7 +137,7 @@ def transition_matrix(hypno):
     """
     # Local import avoids a circular dependency: hypno.py imports transition_matrix from
     # this module at the top level, so we cannot import Hypnogram at module level here.
-    from yasa.hypno import Hypnogram
+    from .hypno import Hypnogram
 
     if isinstance(hypno, Hypnogram):
         return hypno.transition_matrix()

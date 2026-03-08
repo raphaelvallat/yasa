@@ -1,5 +1,8 @@
 """Test the class Hypnogram."""
 
+import json
+import os
+import tempfile
 import unittest
 
 import matplotlib.pyplot as plt
@@ -262,9 +265,6 @@ class TestHypnoClass(unittest.TestCase):
 
     def test_json_roundtrip(self):
         """Test that to_json / from_json preserves all metadata."""
-        import json
-        import os
-        import tempfile
 
         stages = ["W", "W", "N1", "N2", "N3", "REM", "W"]
 
@@ -344,9 +344,6 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp_ts2.start.tzinfo is not None
 
         # to_dict and to_json produce identical serializable content
-        import json
-        import os
-        import tempfile
 
         fd, fname = tempfile.mkstemp(suffix=".json")
         os.close(fd)
