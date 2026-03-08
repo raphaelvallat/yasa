@@ -34,28 +34,69 @@ class Hypnogram:
     """
     Standard class for representing and analyzing a sleep hypnogram.
 
-    Since v0.7, YASA represents hypnograms as a dedicated object rather than a plain array of
-    integers. The main benefits are:
+    A ``Hypnogram`` is a sequence of sleep stage labels sampled at a fixed epoch duration (default
+    30 seconds). Three assumptions underpin every method in the class:
 
-    * **Human-readable stages.** Sleep stages are stored as strings (``"WAKE"``, ``"N2"``,
-      ``"REM"``, ...) instead of integers, reducing the risk of misinterpretation.
-    * **Self-describing.** The object carries its own metadata: epoch duration, optional start
-      datetime with timezone, and scorer name.
-    * **Accurate alignment.** When a start datetime is provided, :py:meth:`upsample_to_data`
-      aligns the hypnogram to the EEG recording using absolute timestamps rather than sample
-      count, correctly handling recordings that start before or after the hypnogram.
-    * **Analysis built in.** Common operations — sleep statistics, stage transitions, period
-      detection, scorer agreement — are available as methods on the object itself.
-    * **Multi-modality.** Supports 2-stage actigraphy (Wake/Sleep), 4-stage wearable
-      (Wake/Light/Deep/REM), and 5-stage PSG (Wake/N1/N2/N3/REM) hypnograms.
+    1. **Uniform epoch duration.** Every epoch has the same length, set once via ``freq``.
+       Variable-length epochs are not supported.
+    2. **Contiguous recording.** Epochs are assumed to be consecutive with no temporal gaps.
+    3. **Closed stage vocabulary.** Valid stage labels are fixed by ``n_stages`` at construction
+       and cannot be customised. Supported sets are: 2-stage (Wake/Sleep), 3-stage
+       (Wake/NREM/REM), 4-stage (Wake/Light/Deep/REM), and 5-stage (Wake/N1/N2/N3/REM).
+       Artefact (ART) and Unscored (UNS) are always part of the vocabulary regardless of
+       ``n_stages``.
+
+    Stages are stored as strings (``"WAKE"``, ``"N2"``, ``"REM"``, ...) rather than integers,
+    reducing the risk of misinterpretation. The object also carries its own metadata: epoch
+    duration, an optional start datetime with timezone, and an optional scorer name.
 
     To create a ``Hypnogram`` from a legacy integer array, use :py:meth:`from_integers`.
 
-    To save a ``Hypnogram`` to disk, use :py:meth:`to_json`. The ``Hypnogram`` object and all
-    its metadata can then be reloaded with :py:meth:`from_json`. To work with an in-memory
-    dictionary instead, use :py:meth:`to_dict` and :py:meth:`from_dict`.
+    To save a ``Hypnogram`` to disk and reload it with all metadata intact, use
+    :py:meth:`to_json` and :py:meth:`from_json`.
 
     .. versionadded:: 0.7.0
+
+    .. rubric:: Main methods
+
+    .. list-table::
+       :widths: 30 70
+       :header-rows: 1
+
+       * - Method
+         - Description
+       * - :py:meth:`as_int`
+         - Return hypnogram values as a :py:class:`~pandas.Series` of integers.
+       * - :py:meth:`as_events`
+         - Return a BIDS-compatible events :py:class:`~pandas.DataFrame` (onset, duration, stage).
+       * - :py:meth:`get_mask`
+         - Return a boolean array marking epochs that match one or more stage labels.
+       * - :py:meth:`to_dict` / :py:meth:`to_json`
+         - Serialize the hypnogram and all metadata to a dictionary or JSON file.
+       * - :py:meth:`crop`
+         - Slice the hypnogram by epoch index or absolute timestamp.
+       * - :py:meth:`pad`
+         - Extend the hypnogram before and/or after with a chosen fill stage.
+       * - :py:meth:`upsample`
+         - Resample the hypnogram to a finer epoch resolution.
+       * - :py:meth:`consolidate_stages`
+         - Merge stages to a coarser hypnogram (e.g. 5-stage to 2-stage).
+       * - :py:meth:`upsample_to_data`
+         - Align and upsample the hypnogram to match an EEG recording sample-by-sample.
+       * - :py:meth:`sleep_statistics`
+         - Compute standard AASM sleep statistics (TIB, TST, SE, WASO, stage durations, ...).
+       * - :py:meth:`transition_matrix`
+         - Compute the stage-transition count matrix and probability matrix.
+       * - :py:meth:`find_periods`
+         - Detect consecutive runs of a single stage exceeding a minimum duration.
+       * - :py:meth:`evaluate`
+         - Compare two hypnograms epoch-by-epoch (kappa, F1, MCC, ...).
+       * - :py:meth:`plot_hypnogram`
+         - Plot the hypnogram as a standard hypnogram figure.
+       * - :py:meth:`simulate_similar`
+         - Simulate a new hypnogram with the same transition probabilities as this one.
+
+    The full list of methods and attributes is available at the bottom of this page.
 
     Parameters
     ----------
@@ -102,36 +143,6 @@ class Hypnogram:
         An optional dataframe with the probability of each sleep stage for each epoch in hypnogram.
         Each row must sum to 1. This is automatically included if the hypnogram is created with
         :py:class:`yasa.SleepStaging`.
-
-    Attributes
-    ----------
-    hypno : :py:class:`pandas.Series`
-        The hypnogram values as a categorical :py:class:`~pandas.Series`.
-    n_epochs : int
-        Number of epochs in the hypnogram.
-    freq : str
-        Frequency resolution of the hypnogram (e.g. ``'30s'``).
-    sampling_frequency : float
-        Sampling frequency of the hypnogram in Hz (e.g. ``1/30`` for 30-second epochs).
-    start : :py:class:`pandas.Timestamp` or None
-        Start datetime of the hypnogram. Tz-aware when ``tz`` was provided or a tz-aware
-        datetime was passed as ``start``, timezone-naive otherwise.
-    timedelta : :py:class:`pandas.TimedeltaIndex`
-        Elapsed time of each epoch relative to the first epoch.
-    duration : float
-        Total duration of the hypnogram in minutes (i.e., Time in Bed).
-    n_stages : int
-        Number of allowed sleep stages (2, 3, 4, or 5). Does not include ART and UNS.
-    labels : list
-        List of allowed stage label strings for this hypnogram.
-    mapping : dict
-        Mapping from stage string labels to integer values. Can be overridden by assignment.
-    mapping_int : dict
-        Reverse mapping from integer values to stage string labels.
-    scorer : str or None
-        Name of the scorer, if provided.
-    proba : :py:class:`pandas.DataFrame` or None
-        Per-epoch stage probabilities, if provided.
 
     Examples
     --------
