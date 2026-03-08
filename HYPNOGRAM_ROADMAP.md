@@ -28,6 +28,7 @@ Goal: make `yasa.Hypnogram` the industry-standard Python object for handling sle
 
 ### Visualization & export
 - `plot_hypnogram()` — standard hypnogram figure
+- `plot_hypnodensity()` — per-epoch stage probabilities as a stacked area chart (requires `proba`); supports 2/3/4/5-stage hypnograms and datetime x-axis when `start` is set
 - `as_int()` — integer-encoded `pandas.Series`
 - `as_events()` — BIDS-compatible events `DataFrame` (onset, duration, stage)
 - `upsample(new_freq)` — change epoch resolution
@@ -41,9 +42,6 @@ Goal: make `yasa.Hypnogram` the industry-standard Python object for handling sle
 
 ### I/O
 - **`from_edf_annotations(raw)`** — load hypnogram from EDF+ annotations.
-
-### Analysis
-- **`plot_hypnodensity()`** — when `proba` is available, plot the per-epoch stage probability as a color-map (signature visualization of modern auto-staging papers).
 
 ### Multi-scorer support
 - **`HypnogramSet`** — new container class for multiple scorers of the same night (alignment, pairwise agreement, consensus scoring). See [HYPNOGRAM_MULTIPLE_SCORERS.md](HYPNOGRAM_MULTIPLE_SCORERS.md) for the full design plan.
