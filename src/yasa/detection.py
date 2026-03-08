@@ -50,7 +50,9 @@ __all__ = [
 #############################################################################
 
 
-def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, check_amp=True):
+def _check_data_hypno(
+    data, sf=None, ch_names=None, hypno=None, include=None, check_amp=True, verbose=False
+):
     """Helper functions for preprocessing of data and hypnogram.
 
     Accepts an upsampled integer hypnogram (array_like) or a :py:class:`yasa.Hypnogram` instance.
@@ -95,7 +97,7 @@ def _check_data_hypno(data, sf=None, ch_names=None, hypno=None, include=None, ch
                 if include_arr.dtype.kind in ("U", "S", "O"):
                     include = np.array([hypno.mapping[s] for s in include_arr], dtype=int)
             # Upsample the Hypnogram to match data
-            hypno = hypno.upsample_to_data(data, sf=sf)
+            hypno = hypno.upsample_to_data(data, sf=sf, verbose=verbose)
         hypno = np.asarray(hypno, dtype=int)
         assert hypno.ndim == 1, "Hypno must be one dimensional."
         assert hypno.size == n_samples, "Hypno must have same size as data."
@@ -496,6 +498,11 @@ class _DetectionResults(object):
             title = "Average SW"
 
         # Start figure
+        # Translate deprecated seaborn ci= kwarg to errorbar= (seaborn >= 0.12)
+        if "ci" in kwargs:
+            ci_val = kwargs.pop("ci")
+            if "errorbar" not in kwargs:
+                kwargs["errorbar"] = None if ci_val is None else ("ci", ci_val)
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         sns.lineplot(data=df_sync, x="Time", y="Amplitude", hue=hue, ax=ax, **kwargs)
         # ax.legend(frameon=False, loc='lower right')
@@ -806,7 +813,7 @@ def spindles_detect(
     set_log_level(verbose)
 
     (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan) = _check_data_hypno(
-        data, sf, ch_names, hypno, include
+        data, sf, ch_names, hypno, include, verbose=verbose
     )
 
     # If all channels are bad
@@ -1684,7 +1691,7 @@ def sw_detect(
     set_log_level(verbose)
 
     (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan) = _check_data_hypno(
-        data, sf, ch_names, hypno, include
+        data, sf, ch_names, hypno, include, verbose=verbose
     )
 
     # If all channels are bad
@@ -2560,7 +2567,7 @@ def rem_detect(
     data = np.vstack((loc, roc))
 
     (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan) = _check_data_hypno(
-        data, sf, ["LOC", "ROC"], hypno, include
+        data, sf, ["LOC", "ROC"], hypno, include, verbose=verbose
     )
 
     # If all channels are bad
@@ -2877,6 +2884,11 @@ class REMResults(_DetectionResults):
         )
 
         # Start figure
+        # Translate deprecated seaborn ci= kwarg to errorbar= (seaborn >= 0.12)
+        if "ci" in kwargs:
+            ci_val = kwargs.pop("ci")
+            if "errorbar" not in kwargs:
+                kwargs["errorbar"] = None if ci_val is None else ("ci", ci_val)
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         sns.lineplot(data=df_sync, x="Time", y="Amplitude", hue="Channel", ax=ax, **kwargs)
         # ax.legend(frameon=False, loc='lower right')
@@ -3099,7 +3111,7 @@ def art_detect(
     set_log_level(verbose)
 
     (data, sf, _, hypno, include, _, n_chan, n_samples, _) = _check_data_hypno(
-        data, sf, ch_names=None, hypno=hypno, include=include, check_amp=False
+        data, sf, ch_names=None, hypno=hypno, include=include, check_amp=False, verbose=verbose
     )
 
     assert isinstance(n_chan_reject, int), "n_chan_reject must be int."

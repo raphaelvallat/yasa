@@ -55,7 +55,7 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp.scorer == "Test"
         assert hyp.sampling_frequency == 1 / 15
         assert hyp.freq == "15s"
-        assert hyp.start == "2022-11-10 13:30:10"
+        assert hyp.start == pd.Timestamp("2022-11-10 13:30:10")
         assert hyp.n_epochs == len(values)
         assert hyp.duration == 60
         assert hyp.timedelta[0] == pd.Timedelta("0 days 00:00:00")
@@ -124,7 +124,7 @@ class TestHypnoClass(unittest.TestCase):
         assert shyp.hypno.index.name == hyp.hypno.index.name
         assert shyp.sampling_frequency == hyp.sampling_frequency
         assert hyp.simulate_similar(tib=2, scorer="YASA").scorer == "YASA"
-        assert hyp.simulate_similar(tib=2, start="2022-11-10").start == "2022-11-10"
+        assert hyp.simulate_similar(tib=2, start="2022-11-10").start == pd.Timestamp("2022-11-10")
         np.testing.assert_array_equal(
             simulate_hypnogram(seed=1).simulate_similar(tib=5, seed=6).as_int(),
             [0, 0, 0, 0, 1, 1, 1, 2, 2, 2],
@@ -240,7 +240,7 @@ class TestHypnoClass(unittest.TestCase):
         assert hyp_kw.hypno.index.name == "Time"
         assert hyp_kw.scorer == "S1"
         assert hyp_kw.hypno.name == "S1"
-        assert hyp_kw.start == "2023-01-01 22:00:00"
+        assert hyp_kw.start == pd.Timestamp("2023-01-01 22:00:00")
 
         # --- custom mapping ---
         custom = {1: "W", 2: "R", 3: "N1", 4: "N2", 5: "N3"}

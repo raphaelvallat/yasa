@@ -57,6 +57,104 @@ Loading and visualizing polysomnography data
 
 .. ############################################################################
 .. ############################################################################
+..                                  HYPNOGRAM
+.. ############################################################################
+.. ############################################################################
+
+Hypnogram
+---------
+
+.. ----------------------------- ALIGNMENT -----------------------------
+.. dropdown:: How do I align a hypnogram with my EEG recording?
+    :animate: fade-in-slide-down
+    :icon: question
+    :name: hypno_alignment
+
+    The :py:meth:`~yasa.Hypnogram.upsample_to_data` method upsamples the hypnogram to the
+    sampling frequency of the EEG data and ensures both have the exact same number of samples.
+    Its behaviour depends on the relative lengths of the two and on whether timestamp
+    information is available.
+
+    **Two alignment modes**
+
+    * **Length-based** (default): YASA assumes the hypnogram and the recording start at the
+      same time. Any length mismatch is resolved by padding or cropping at the *end*.
+      This mode is always used when ``data`` is a NumPy array. It is also used when
+      ``data`` is an :py:class:`mne.io.BaseRaw` but either ``Hypnogram.start`` is not set or
+      ``raw.meas_date`` is ``None``.
+
+    * **Timestamp-aware**: triggered automatically when **both** ``Hypnogram.start`` is set and
+      ``raw.meas_date`` is set on the :py:class:`~mne.io.BaseRaw`. YASA computes the absolute
+      offset between the two timestamps and uses it to select the correct hypnogram epochs. See
+      the ``start`` and ``tz`` parameters in the :py:class:`~yasa.Hypnogram` docstring for how to
+      set a timezone-aware start time.
+
+    The three cases below describe what happens in each mode.
+
+    **Case 1 — Hypnogram and data cover the same window**
+
+    The hypnogram covers exactly the same time span as the EEG (same start, same end,
+    but different sampling frequency).
+
+    In both modes the result is identical: the hypnogram is upsampled and fits the data
+    exactly.
+
+    .. code-block:: python
+
+        hyp = yasa.Hypnogram(stages, freq="30s")
+        hypno = hyp.upsample_to_data(raw)
+
+    **Case 2 — Hypnogram is shorter than the data**
+
+    This can occur for example if the Hypnogram is cropped to the Lights Off to Lights On period,
+    while the PSG spans the entire recording period.
+
+    *Length-based*: YASA assumes both start at the same time, so the hypnogram is padded
+    with **Unscored** (``UNS``) at the end. A :py:exc:`UserWarning` is emitted.
+
+    *Timestamp-aware*: YASA computes the offset. Because the recording typically starts
+    *before* the hypnogram, the appropriate number of **Unscored** (``UNS``) epochs is
+    prepended. Any remaining mismatch at the end is also padded with **Unscored** (``UNS``).
+
+    .. code-block:: python
+
+        hyp = yasa.Hypnogram(stages, freq="30s", start="2024-01-15 23:00:00", tz="Europe/Paris")
+        hypno = hyp.upsample_to_data(raw)
+        # Epochs before Lights Off → UNS; epochs after Lights On → UNS
+
+    **Case 3 — Hypnogram is longer than the data**
+
+    This happens when working with a segment of a longer recording (e.g. a file cropped with
+    :py:meth:`mne.io.Raw.crop`). The full-night hypnogram has more epochs than the data.
+
+    *Length-based*: YASA assumes both start at the same time and **crops** the hypnogram
+    from the end. A :py:exc:`UserWarning` is emitted. This is only correct if the segment
+    starts at the very beginning of the hypnogram.
+
+    *Timestamp-aware*: YASA skips the correct number of leading epochs based on the
+    timestamp differences and selects only the epochs that fall within the recording window.
+    No warning is emitted when the match is exact.
+
+    .. code-block:: python
+
+        # Full-night hypnogram, recording is only the second half of the night
+        hyp = yasa.Hypnogram(stages, freq="30s", start="2024-01-15 23:00:00", tz="Europe/Paris")
+        hypno = hyp.upsample_to_data(raw_cropped)  # correct epochs selected automatically
+
+    **Automatic staging with** :py:class:`~yasa.SleepStaging`
+
+    When using :py:class:`~yasa.SleepStaging`, the ``start`` attribute is populated
+    automatically from ``raw.meas_date`` (when available), so timestamp-aware alignment works
+    out of the box with no extra configuration:
+
+    .. code-block:: python
+
+        sls = yasa.SleepStaging(raw, eeg_name="C4-M1")
+        hyp = sls.predict()  # hyp.start set automatically from raw.meas_date
+        hypno = hyp.upsample_to_data(raw_cropped)
+
+.. ############################################################################
+.. ############################################################################
 ..                                  DETECTION
 .. ############################################################################
 .. ############################################################################
