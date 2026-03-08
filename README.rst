@@ -44,12 +44,17 @@ User installation
 
 YASA can be easily installed using pip, conda, or uv:
 
-
 .. code-block:: shell
 
     uv pip install yasa
     pip install --upgrade yasa
     conda install -c conda-forge yasa
+
+Some features require optional dependencies. Install them with extras:
+
+.. code-block:: shell
+
+    pip install "yasa[full]"    # all optional dependencies
 
 Development
 -----------

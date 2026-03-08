@@ -37,15 +37,18 @@ dependencies = [
     "numba>=0.57.1",
     "antropy",
     "scikit-learn",
-    "tensorpac>=0.6.5",
-    "pyriemann>=0.2.7",
-    "sleepecg>=0.5.0",
     "lspopt>=1.4",
-    "ipywidgets",
     "joblib",
     "lightgbm",
     "pooch>=1.8",
 ]
+
+[project.optional-dependencies]
+heart = ["sleepecg>=0.5.0"]
+pac   = ["tensorpac>=0.6.5"]
+art   = ["pyriemann>=0.2.7"]
+plot  = ["ipywidgets"]
+full  = ["yasa[heart,pac,art,plot]"]
 
 [dependency-groups]
 dev = [

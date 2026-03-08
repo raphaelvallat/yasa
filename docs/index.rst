@@ -56,7 +56,7 @@ YASA is a Python 3 package and is currently tested for Python 3.10+.
 Dependencies
 ------------
 
-The main dependencies of YASA are:
+The core dependencies of YASA are:
 
 * `NumPy <https://numpy.org/>`_ >= 1.22.4
 * `SciPy <https://www.scipy.org/>`_ >= 1.8.1
@@ -68,10 +68,13 @@ The main dependencies of YASA are:
 * `Scikit-learn <https://scikit-learn.org/>`_
 * `LightGBM <https://lightgbm.readthedocs.io/>`_
 * `Antropy <https://github.com/raphaelvallat/antropy>`_
-* `TensorPAC <https://etiennecmb.github.io/tensorpac/>`_ >= 0.6.5
-* `PyRiemann <https://pyriemann.readthedocs.io/>`_ >= 0.2.7
-* `SleepECG <https://sleepecg.readthedocs.io/>`_ >= 0.5.0
 * `lspopt <https://github.com/hbldh/lspopt>`_ >= 1.4
+
+Some features require optional dependencies (`SleepECG <https://sleepecg.readthedocs.io/>`_,
+`TensorPAC <https://etiennecmb.github.io/tensorpac/>`_,
+`PyRiemann <https://pyriemann.readthedocs.io/>`_,
+`ipywidgets <https://ipywidgets.readthedocs.io/>`_).
+Use ``pip install "yasa[full]"`` to install all optional dependencies at once.
 
 User installation
 -----------------
@@ -84,13 +87,15 @@ YASA can be easily installed using pip, conda, or uv:
 
         .. code-block:: shell
 
-            uv pip install yasa
+            uv pip install yasa             # core install
+            uv pip install "yasa[full]"    # with all optional dependencies
 
     .. tab-item:: pip
 
         .. code-block:: shell
 
-            pip install --upgrade yasa
+            pip install --upgrade yasa             # core install
+            pip install --upgrade "yasa[full]"    # with all optional dependencies
 
     .. tab-item:: conda
 
