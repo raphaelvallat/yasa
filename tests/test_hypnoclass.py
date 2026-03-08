@@ -4,6 +4,7 @@ import json
 import os
 import tempfile
 import unittest
+import warnings
 
 import matplotlib.pyplot as plt
 import mne
@@ -558,3 +559,194 @@ def test_find_periods_non_integer_threshold_raises():
     # 45 s × (1/30 Hz) = 1.5 samples → non-integer → ValueError
     with pytest.raises(ValueError, match="whole number"):
         hyp.find_periods(threshold="45s")
+
+
+# ---------------------------------------------------------------------------
+# pad
+# ---------------------------------------------------------------------------
+
+_PAD_STAGES = ["N2", "N2", "REM"]  # 3-epoch base hypnogram
+
+
+def test_pad_basic_uns():
+    """Default fill pads both ends with UNS."""
+    hyp = Hypnogram(_PAD_STAGES)
+    padded = hyp.pad(before=2, after=1)
+    assert padded.n_epochs == 6
+    assert padded.hypno.to_list() == ["UNS", "UNS", "N2", "N2", "REM", "UNS"]
+
+
+def test_pad_scalar_fill_label():
+    """Scalar fill_value applies the same stage to both ends."""
+    hyp = Hypnogram(_PAD_STAGES)
+    padded = hyp.pad(before=1, after=2, fill_value="WAKE")
+    assert padded.hypno.to_list() == ["WAKE", "N2", "N2", "REM", "WAKE", "WAKE"]
+
+
+def test_pad_edge():
+    """fill_value='edge' repeats first/last epoch on the respective end."""
+    hyp = Hypnogram(_PAD_STAGES)
+    padded = hyp.pad(before=2, after=1, fill_value="edge")
+    assert padded.hypno.to_list() == ["N2", "N2", "N2", "N2", "REM", "REM"]
+
+
+def test_pad_tuple_fill_value():
+    """Tuple fill_value sets different fill stages for before and after."""
+    hyp = Hypnogram(_PAD_STAGES)
+    padded = hyp.pad(before=1, after=2, fill_value=("UNS", "WAKE"))
+    assert padded.hypno.to_list() == ["UNS", "N2", "N2", "REM", "WAKE", "WAKE"]
+
+
+def test_pad_tuple_with_edge():
+    """Tuple can mix 'edge' with a concrete stage label."""
+    hyp = Hypnogram(_PAD_STAGES)
+    padded = hyp.pad(before=2, after=2, fill_value=("edge", "UNS"))
+    assert padded.hypno.to_list() == ["N2", "N2", "N2", "N2", "REM", "UNS", "UNS"]
+
+
+def test_pad_zero_is_noop():
+    """Padding with zero epochs returns identical values."""
+    hyp = Hypnogram(_PAD_STAGES)
+    padded = hyp.pad(before=0, after=0)
+    assert padded.hypno.to_list() == _PAD_STAGES
+
+
+def test_pad_only_before():
+    hyp = Hypnogram(_PAD_STAGES)
+    padded = hyp.pad(before=3)
+    assert padded.n_epochs == 6
+    assert padded.hypno.to_list()[:3] == ["UNS", "UNS", "UNS"]
+
+
+def test_pad_only_after():
+    hyp = Hypnogram(_PAD_STAGES)
+    padded = hyp.pad(after=2)
+    assert padded.n_epochs == 5
+    assert padded.hypno.to_list()[-2:] == ["UNS", "UNS"]
+
+
+def test_pad_preserves_metadata():
+    """n_stages, freq, scorer are preserved; proba is dropped."""
+    proba = pd.DataFrame(
+        {
+            "WAKE": [0.1, 0.1, 0.0],
+            "N1": [0.1, 0.1, 0.0],
+            "N2": [0.7, 0.7, 0.1],
+            "N3": [0.0, 0.0, 0.0],
+            "REM": [0.1, 0.1, 0.9],
+        }
+    )
+    hyp = Hypnogram(_PAD_STAGES, freq="30s", scorer="Expert", proba=proba)
+    padded = hyp.pad(before=1, after=1)
+    assert padded.freq == "30s"
+    assert padded.n_stages == hyp.n_stages
+    assert padded.scorer == "Expert"
+    assert padded.proba is None
+
+
+def test_pad_updates_start():
+    """Prepending n epochs shifts start back by n * freq."""
+    hyp = Hypnogram(_PAD_STAGES, start="2023-01-01 22:00:00")
+    padded = hyp.pad(before=2)
+    assert padded.start == pd.Timestamp("2023-01-01 21:59:00")  # 2 × 30 s earlier
+    assert padded.end == hyp.end  # end unchanged
+
+
+def test_pad_start_none_stays_none():
+    """When Hypnogram has no start, padded Hypnogram also has no start."""
+    hyp = Hypnogram(_PAD_STAGES)
+    assert hyp.pad(before=2, after=2).start is None
+
+
+def test_pad_timestamp_before_exact():
+    """Timestamp-based before: exact multiple, no warning."""
+    hyp = Hypnogram(_PAD_STAGES, start="2023-01-01 22:00:00")
+    with pytest.warns(UserWarning) as w:
+        # 75 s = 2.5 epochs → partial → warning
+        padded = hyp.pad(before="2023-01-01 21:58:45")
+    assert "flooring" in str(w[0].message)
+    assert padded.n_epochs == hyp.n_epochs + 2  # floor(2.5) = 2
+
+    # Exact multiple → no warning (21:59:30 to 22:00:00 = 30 s = 1 epoch)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        padded_exact = hyp.pad(before="2023-01-01 21:59:30")
+    assert padded_exact.n_epochs == hyp.n_epochs + 1
+    assert padded_exact.start == pd.Timestamp("2023-01-01 21:59:30")
+
+
+def test_pad_timestamp_after_exact():
+    """Timestamp-based after: exact multiple, no warning."""
+    hyp = Hypnogram(_PAD_STAGES, start="2023-01-01 22:00:00")
+    # end = 22:01:30; after = 22:02:00 → 30 s = 1 epoch (exact)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        padded = hyp.pad(after="2023-01-01 22:02:00")
+    assert padded.n_epochs == hyp.n_epochs + 1
+    assert padded.end == pd.Timestamp("2023-01-01 22:02:00")
+
+
+def test_pad_timestamp_after_partial_warning():
+    """Fractional epoch count for 'after' triggers a UserWarning."""
+    hyp = Hypnogram(_PAD_STAGES, start="2023-01-01 22:00:00")
+    # end = 22:01:30; after = 22:02:15 → 45 s = 1.5 epochs → floor to 1
+    with pytest.warns(UserWarning, match="flooring"):
+        padded = hyp.pad(after="2023-01-01 22:02:15")
+    assert padded.n_epochs == hyp.n_epochs + 1
+
+
+def test_pad_timestamp_requires_start():
+    hyp = Hypnogram(_PAD_STAGES)
+    with pytest.raises(ValueError, match="start"):
+        hyp.pad(before="2023-01-01 21:59:00")
+
+
+def test_pad_timestamp_before_not_before_start():
+    hyp = Hypnogram(_PAD_STAGES, start="2023-01-01 22:00:00")
+    with pytest.raises(ValueError, match="strictly before"):
+        hyp.pad(before="2023-01-01 22:01:00")
+
+
+def test_pad_timestamp_after_not_after_end():
+    hyp = Hypnogram(_PAD_STAGES, start="2023-01-01 22:00:00")
+    with pytest.raises(ValueError, match="strictly after"):
+        hyp.pad(after="2023-01-01 22:00:00")
+
+
+def test_pad_tz_mismatch_raises():
+    hyp = Hypnogram(_PAD_STAGES, start="2023-01-01 22:00:00", tz="UTC")
+    with pytest.raises(ValueError, match="timezone"):
+        hyp.pad(before="2023-01-01 21:59:00")  # tz-naive
+
+
+def test_pad_invalid_fill_value_raises():
+    hyp = Hypnogram(_PAD_STAGES)
+    with pytest.raises(ValueError, match="fill_value"):
+        hyp.pad(before=1, fill_value="DREAM")
+
+
+def test_pad_invalid_tuple_fill_value_raises():
+    hyp = Hypnogram(_PAD_STAGES)
+    with pytest.raises(ValueError, match="fill_value"):
+        hyp.pad(before=1, fill_value=("UNS", "DREAM"))
+
+
+def test_pad_tuple_wrong_length_raises():
+    hyp = Hypnogram(_PAD_STAGES)
+    with pytest.raises(ValueError, match="2 elements"):
+        hyp.pad(before=1, fill_value=("UNS", "WAKE", "N1"))
+
+
+def test_pad_negative_before_raises():
+    with pytest.raises(ValueError, match="non-negative"):
+        Hypnogram(_PAD_STAGES).pad(before=-1)
+
+
+def test_pad_negative_after_raises():
+    with pytest.raises(ValueError, match="non-negative"):
+        Hypnogram(_PAD_STAGES).pad(after=-2)
+
+
+def test_pad_bad_type_raises():
+    with pytest.raises(TypeError):
+        Hypnogram(_PAD_STAGES).pad(before=3.5)

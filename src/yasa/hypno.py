@@ -1204,6 +1204,204 @@ class Hypnogram:
             proba=proba_sliced.reset_index(drop=True) if proba_sliced is not None else None,
         )
 
+    def pad(self, before=None, after=None, fill_value="UNS"):
+        """Extend the hypnogram by padding epochs before and/or after.
+
+        Parameters
+        ----------
+        before : int, str, or :py:class:`pandas.Timestamp`, optional
+            Number of epochs to prepend (int ≥ 0), or a timestamp for the new start (must be
+            strictly before :py:attr:`start`). Requires :py:attr:`start` to be set when a
+            timestamp is given.
+        after : int, str, or :py:class:`pandas.Timestamp`, optional
+            Number of epochs to append (int ≥ 0), or a timestamp for the new end (exclusive;
+            must be strictly after :py:attr:`end`). Requires :py:attr:`start` to be set when a
+            timestamp is given.
+        fill_value : str or tuple of str, optional
+            Stage label(s) for the added epochs. Default is ``"UNS"`` (Unscored).
+
+            * A single string applies the same fill to both ends. Use ``"edge"`` to repeat
+              the first epoch for ``before`` and the last epoch for ``after``, analogous to
+              :func:`numpy.pad` with ``mode="edge"``. Any valid stage label (see
+              :attr:`labels`) is also accepted.
+            * A 2-tuple ``(fill_before, fill_after)`` sets different values for each end,
+              e.g. ``("UNS", "WAKE")`` pads the start with Unscored epochs and the end with
+              Wake epochs. Each element follows the same rules as the scalar form.
+
+        Returns
+        -------
+        hyp : :py:class:`Hypnogram`
+            A new :py:class:`Hypnogram` with the requested padding. ``proba`` is not propagated.
+
+        Warns
+        -----
+        UserWarning
+            When a timestamp-based duration is not a perfect multiple of :py:attr:`freq`,
+            the padding is floored to the nearest complete epoch count.
+
+        Examples
+        --------
+        Epoch-based padding with the default fill value (UNS):
+
+        >>> from yasa import Hypnogram
+        >>> hyp = Hypnogram(["N2", "N2", "REM"], freq="30s")
+        >>> hyp.pad(before=2, after=1).hypno.to_list()
+        ['UNS', 'UNS', 'N2', 'N2', 'REM', 'UNS']
+
+        Edge padding (repeat first/last epoch):
+
+        >>> hyp.pad(before=2, after=1, fill_value="edge").hypno.to_list()
+        ['N2', 'N2', 'N2', 'N2', 'REM', 'REM']
+
+        Different fill values for each end — pad start with UNS and end with WAKE:
+
+        >>> hyp.pad(before=1, after=2, fill_value=("UNS", "WAKE")).hypno.to_list()
+        ['UNS', 'N2', 'N2', 'REM', 'WAKE', 'WAKE']
+
+        Timestamp-based padding — extend to a fixed recording window. Here the hypnogram
+        starts at 22:01:00 and ends at 22:02:30, so two 30-s UNS epochs are prepended to
+        align it to 22:00:00, and one is appended to reach 22:03:00:
+
+        >>> hyp_ts = Hypnogram(["N2", "N2", "REM"], freq="30s", start="2023-01-01 22:01:00")
+        >>> padded = hyp_ts.pad(before="2023-01-01 22:00:00", after="2023-01-01 22:03:00")
+        >>> padded.n_epochs
+        6
+        >>> padded.start
+        Timestamp('2023-01-01 22:00:00')
+        >>> padded.end
+        Timestamp('2023-01-01 22:03:00')
+        >>> padded.hypno.to_list()
+        ['UNS', 'UNS', 'N2', 'N2', 'REM', 'UNS']
+        """
+        time_types = (str, pd.Timestamp, datetime.datetime)
+
+        # -- Normalise and validate fill_value --------------------------------
+        if isinstance(fill_value, (list, tuple)):
+            if len(fill_value) != 2:
+                raise ValueError(
+                    "`fill_value` tuple must have exactly 2 elements: (fill_before, fill_after)."
+                )
+            fill_before_val, fill_after_val = fill_value
+        else:
+            fill_before_val = fill_after_val = fill_value
+
+        for fv in (fill_before_val, fill_after_val):
+            if fv != "edge" and fv not in self.labels:
+                raise ValueError(
+                    f"`fill_value` must be 'edge' or a valid stage label. "
+                    f"Valid labels are: {self.labels}"
+                )
+
+        # -- Compute n_before -----------------------------------------------
+        n_before = 0
+        if before is not None:
+            if isinstance(before, (int, np.integer)):
+                if before < 0:
+                    raise ValueError("`before` must be a non-negative integer.")
+                n_before = int(before)
+            elif isinstance(before, time_types):
+                if self._start is None:
+                    raise ValueError(
+                        "Timestamp-based padding requires the Hypnogram to have a "
+                        "`start` datetime set."
+                    )
+                before_ts = pd.Timestamp(before)
+                if (self._start.tzinfo is not None) != (before_ts.tzinfo is not None):
+                    raise ValueError(
+                        "`before` and the Hypnogram start must have matching timezone "
+                        f"awareness (start: {self._start}, before: {before_ts})."
+                    )
+                if before_ts >= self._start:
+                    raise ValueError(
+                        f"`before` ({before_ts}) must be strictly before the Hypnogram "
+                        f"start ({self._start})."
+                    )
+                freq_td = pd.Timedelta(self._freq)
+                delta = self._start - before_ts
+                n_before_exact = delta / freq_td
+                n_before = int(np.floor(n_before_exact))
+                remainder = delta - freq_td * n_before
+                if remainder.total_seconds() > 1e-6:
+                    warnings.warn(
+                        f"`before` padding duration ({delta}) is not a perfect multiple of "
+                        f"the epoch duration ({self._freq}). Padding with {n_before} complete "
+                        f"epoch(s) (flooring {n_before_exact:.6g}).",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+            else:
+                raise TypeError(
+                    f"`before` must be an int or a timestamp, got {type(before).__name__}."
+                )
+
+        # -- Compute n_after ------------------------------------------------
+        n_after = 0
+        if after is not None:
+            if isinstance(after, (int, np.integer)):
+                if after < 0:
+                    raise ValueError("`after` must be a non-negative integer.")
+                n_after = int(after)
+            elif isinstance(after, time_types):
+                if self._start is None:
+                    raise ValueError(
+                        "Timestamp-based padding requires the Hypnogram to have a "
+                        "`start` datetime set."
+                    )
+                after_ts = pd.Timestamp(after)
+                end = self.end  # exclusive: start of epoch after the last one
+                if (end.tzinfo is not None) != (after_ts.tzinfo is not None):
+                    raise ValueError(
+                        "`after` and the Hypnogram end must have matching timezone "
+                        f"awareness (end: {end}, after: {after_ts})."
+                    )
+                if after_ts <= end:
+                    raise ValueError(
+                        f"`after` ({after_ts}) must be strictly after the Hypnogram end ({end})."
+                    )
+                freq_td = pd.Timedelta(self._freq)
+                delta = after_ts - end
+                n_after_exact = delta / freq_td
+                n_after = int(np.floor(n_after_exact))
+                remainder = delta - freq_td * n_after
+                if remainder.total_seconds() > 1e-6:
+                    warnings.warn(
+                        f"`after` padding duration ({delta}) is not a perfect multiple of "
+                        f"the epoch duration ({self._freq}). Padding with {n_after} complete "
+                        f"epoch(s) (flooring {n_after_exact:.6g}).",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+            else:
+                raise TypeError(
+                    f"`after` must be an int or a timestamp, got {type(after).__name__}."
+                )
+
+        # -- Build padded values --------------------------------------------
+        fill_before = str(self._hypno.iloc[0]) if fill_before_val == "edge" else fill_before_val
+        fill_after = str(self._hypno.iloc[-1]) if fill_after_val == "edge" else fill_after_val
+
+        original = np.asarray(self._hypno, dtype=object)
+        new_values = np.concatenate(
+            [
+                np.full(n_before, fill_before, dtype=object),
+                original,
+                np.full(n_after, fill_after, dtype=object),
+            ]
+        )
+
+        new_start = (
+            self._start - pd.Timedelta(self._freq) * n_before if self._start is not None else None
+        )
+
+        return type(self)(
+            values=new_values,
+            n_stages=self._n_stages,
+            freq=self._freq,
+            start=new_start,
+            scorer=self._scorer,
+            proba=None,
+        )
+
     def evaluate(self, obs_hyp):
         """Evaluate agreement between two hypnograms of the same sleep session.
 
