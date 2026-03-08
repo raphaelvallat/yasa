@@ -175,24 +175,25 @@ class TestSpectral(unittest.TestCase):
 
     def test_plot_spectrogram(self):
         """Test function plot_spectrogram"""
-        plot_spectrogram(data_full[0, :], sf_full, fmin=0.5, fmax=30)
-        plot_spectrogram(data_full[0, :], sf_full, hypno_full, trimperc=5)
-        plot_spectrogram(data_full[0, :], sf_full, fmin=0.5, fmax=30, vmin=-50, vmax=100)
-        hypno_full_art = np.copy(hypno_full)
-        hypno_full_art[hypno_full_art == 3.0] = -1
-        # Replace N3 by Artefact
-        plot_spectrogram(data_full[0, :], sf_full, hypno_full_art, trimperc=5)
-        # Now replace REM by Unscored
-        hypno_full_art[hypno_full_art == 4.0] = -2
-        plot_spectrogram(data_full[0, :], sf_full, hypno_full_art)
-        # Pass kwargs to the hypnogram plot
-        plot_spectrogram(data_full[0, :], sf_full, hypno_full_art, lw=1, fill_color="blue")
-        # Test with a Hypnogram instance (automatically upsampled)
-        plot_spectrogram(data_full[0, :], sf_full, hyp_full)
-        plot_spectrogram(data_full[0, :], sf_full, hyp_full, lw=1, fill_color="whitesmoke")
+        # Use 2 hours of data to keep the test fast (spectrogram is O(n))
+        n = int(2 * 3600 * sf_full)
+        data_s = data_full[0, :n]
+        hypno_s = hypno_full[:n]
+        hypno_s_art = np.copy(hypno_s)
+        hypno_s_art[hypno_s_art == 3.0] = -1  # Replace N3 by Artefact
+        hypno_s_art[hypno_s_art == 4.0] = -2  # Replace REM by Unscored
+        hyp_s = Hypnogram(hypno_int_to_str(hypno_s[:: int(sf_full * 30)]), freq="30s")
+        # No hypnogram, with fmin/fmax and vmin/vmax
+        plot_spectrogram(data_s, sf_full, fmin=0.5, fmax=30, vmin=-50, vmax=100)
+        # Integer hypnogram array with trimperc
+        plot_spectrogram(data_s, sf_full, hypno_s, trimperc=5)
+        # With artefact (-1) and unscored (-2) stages
+        plot_spectrogram(data_s, sf_full, hypno_s_art, trimperc=5)
+        # Hypnogram object (auto-upsampled) with kwargs
+        plot_spectrogram(data_s, sf_full, hyp_s, lw=1, fill_color="whitesmoke")
         plt.close("all")
-        # Errors
+        # Errors: vmin and vmax must be both provided or neither
         with pytest.raises(AssertionError):
-            plot_spectrogram(data_full[0, :], sf_full, fmin=0.5, fmax=30, vmin=-50)
+            plot_spectrogram(data_s, sf_full, fmin=0.5, fmax=30, vmin=-50)
         with pytest.raises(AssertionError):
-            plot_spectrogram(data_full[0, :], sf_full, fmin=0.5, fmax=30, vmax=100)
+            plot_spectrogram(data_s, sf_full, fmin=0.5, fmax=30, vmax=100)

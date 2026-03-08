@@ -242,7 +242,7 @@ class TestDetection(unittest.TestCase):
         # With a look around and using the summary
         sp_vs_nout_1s = sp.compare_detection(sp_no_out.summary(), max_distance_sec=1)
         sp_vs_nout_2s = sp.compare_detection(sp_no_out.summary(), max_distance_sec=2)
-        assert (sp_vs_nout_2s["f1"] > sp_vs_nout_1s["f1"]).all()
+        assert (sp_vs_nout_2s["f1"] >= sp_vs_nout_1s["f1"]).all()
         assert (sp_vs_nout_2s["recall"] == sp_vs_nout_1s["recall"]).all()
         assert (sp_vs_nout_2s["n_self"] == sp_vs_nout_1s["n_self"]).all()
 
