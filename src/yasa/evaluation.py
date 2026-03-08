@@ -182,7 +182,7 @@ class EpochByEpochAgreement:
     """
 
     def __init__(self, ref_hyps, obs_hyps):
-        from yasa.hypno import Hypnogram  # Avoiding circular import, bc hypno imports this class
+        from .hypno import Hypnogram  # Avoiding circular import, bc hypno imports this class
 
         assert hasattr(ref_hyps, "__iter__"), "`ref_hyps` must be a an iterable"
         assert hasattr(obs_hyps, "__iter__"), "`obs_hyps` must be a an iterable"

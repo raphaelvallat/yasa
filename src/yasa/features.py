@@ -26,7 +26,8 @@ import pandas as pd
 import scipy.signal as sp_sig
 import scipy.stats as sp_stats
 
-import yasa
+from .detection import spindles_detect, sw_detect
+from .spectral import bandpower, bandpower_from_psd, irasa
 
 logger = logging.getLogger("yasa")
 
@@ -179,10 +180,10 @@ def compute_features_stage(
 
     # 2.1) 1Hz bins, N2 / N3 / REM
     # win_sec = 4 sec = 0.25 Hz freq resolution
-    df_bp = yasa.bandpower(raw_eeg, hypno=hypno, bands=bands, win_sec=4, include=(2, 3, 4))
+    df_bp = bandpower(raw_eeg, hypno=hypno, bands=bands, win_sec=4, include=(2, 3, 4))
     # Same for NREM / WN
-    df_bp_NREM = yasa.bandpower(raw_eeg, hypno=hypno_NREM, bands=bands, include=6)
-    df_bp_WN = yasa.bandpower(raw_eeg, hypno=hypno_WN, bands=bands, include=7)
+    df_bp_NREM = bandpower(raw_eeg, hypno=hypno_NREM, bands=bands, include=6)
+    df_bp_WN = bandpower(raw_eeg, hypno=hypno_WN, bands=bands, include=7)
     df_bp = pd.concat([df_bp, df_bp_NREM, df_bp_WN], axis=0)
     df_bp.drop(columns=["TotalAbsPow", "FreqRes", "Relative"], inplace=True)
     df_bp = df_bp.add_prefix("bp_").reset_index()
@@ -210,14 +211,14 @@ def compute_features_stage(
             if data_stage.shape[-1] == 0:
                 continue
             # Calculate aperiodic / oscillatory PSD + slope
-            freqs, _, psd_osc, fit_params = yasa.irasa(
+            freqs, _, psd_osc, fit_params = irasa(
                 data_stage, sf, ch_names=chan, band=(l_freq, h_freq), win_sec=4
             )
             # Make sure that we don't have any negative values in PSD
             # See https://github.com/raphaelvallat/yasa/issues/29
             psd_osc = psd_osc - psd_osc.min(axis=-1, keepdims=True)
             # Calculate bandpower
-            bp = yasa.bandpower_from_psd(psd_osc, freqs, ch_names=chan, bands=bands)
+            bp = bandpower_from_psd(psd_osc, freqs, ch_names=chan, bands=bands)
             # Add 1/f slope to dataframe and sleep stage
             bp["1f_slope"] = np.abs(fit_params["Slope"].to_numpy())
             bp.insert(loc=0, column="Stage", value=stage_mapping[stage])
@@ -247,7 +248,7 @@ def compute_features_stage(
     # Detect spindles in N2 and N3
     # Thresholds have to be tuned with visual scoring of a subset of data
     # https://yasa-sleep.org/generated/yasa.spindles_detect.html
-    sp = yasa.spindles_detect(raw_eeg, hypno=hypno, **spindles_params)
+    sp = spindles_detect(raw_eeg, hypno=hypno, **spindles_params)
 
     df_sp = sp.summary(grp_chan=True, grp_stage=True).reset_index()
     df_sp["Stage"] = df_sp["Stage"].map(stage_mapping)
@@ -282,7 +283,7 @@ def compute_features_stage(
     # Detect slow-waves
     # Option 1: Using absolute thresholds
     # IMPORTANT: THRESHOLDS MUST BE ADJUSTED ACCORDING TO AGE!
-    sw = yasa.sw_detect(raw_eeg, hypno=hypno, **sw_params)
+    sw = sw_detect(raw_eeg, hypno=hypno, **sw_params)
 
     # Aggregate using the mean per channel x stage
     df_sw = sw.summary(grp_chan=True, grp_stage=True)
