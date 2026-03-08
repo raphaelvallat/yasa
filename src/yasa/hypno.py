@@ -11,10 +11,10 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
 
-from yasa.evaluation import EpochByEpochAgreement
-from yasa.io import set_log_level
-from yasa.plotting import plot_hypnogram
-from yasa.sleepstats import transition_matrix
+from .evaluation import EpochByEpochAgreement
+from .io import set_log_level
+from .plotting import plot_hypnogram
+from .sleepstats import transition_matrix
 
 __all__ = [
     "Hypnogram",
@@ -954,6 +954,36 @@ class Hypnogram:
         """
         # Return as int16 (-32768 to 32767) to reduce memory usage
         return self.hypno.cat.rename_categories(self.mapping).astype(np.int16)
+
+    def get_mask(self, stages):
+        """Return a boolean NumPy array marking epochs that match the given stages.
+
+        Parameters
+        ----------
+        stages : str or list of str
+            One or more stage labels, e.g. ``"N2"`` or ``["N2", "N3"]``. Must be valid
+            labels for this hypnogram (see :attr:`labels`).
+
+        Returns
+        -------
+        mask : :py:class:`numpy.ndarray` of bool
+            Boolean array of length :attr:`n_epochs`, ``True`` where the
+            hypnogram matches any of the requested stages.
+
+        Examples
+        --------
+        >>> from yasa import Hypnogram
+        >>> hyp = Hypnogram(["W", "N1", "N2", "N2", "N3", "REM"], n_stages=5)
+        >>> hyp.get_mask(["N2", "N3"])
+        array([False, False,  True,  True,  True, False])
+        >>> hyp.get_mask("REM")
+        array([False, False, False, False, False,  True])
+        """
+        stages = np.atleast_1d(stages)
+        invalid = [s for s in stages if s not in self.labels]
+        if invalid:
+            raise ValueError(f"Invalid stage(s): {invalid}. Valid stages are: {self.labels}")
+        return np.isin(self.hypno.to_numpy(), stages)
 
     def consolidate_stages(self, new_n_stages):
         """Reduce the number of stages in a hypnogram to match actigraphy or wearables.

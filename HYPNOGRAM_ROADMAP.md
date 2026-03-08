@@ -33,6 +33,7 @@ Goal: make `yasa.Hypnogram` the industry-standard Python object for handling sle
 - `upsample(new_freq)` — change epoch resolution
 - `to_json(fname)` / `from_json(fname)` — save and load to disk, preserving all metadata
 - `to_dict()` / `from_dict(d)` — JSON-serializable in-memory representation (same format as `to_json`)
+- `get_mask(*stages)` — return a boolean NumPy array for one or more stages (e.g., `hyp.get_mask("N2", "N3")`).
 
 ---
 
@@ -43,7 +44,6 @@ Goal: make `yasa.Hypnogram` the industry-standard Python object for handling sle
 
 ### Analysis
 - **`plot_hypnodensity()`** — when `proba` is available, plot the per-epoch stage probability as a color-map (signature visualization of modern auto-staging papers).
-- **`get_mask(*stages)`** — return a boolean NumPy array for one or more stages (e.g., `hyp.get_mask("N2", "N3")`). Reduces boilerplate when passing stage masks to detection functions.
 
 ### Multi-scorer support
 - **`HypnogramSet`** — new container class for multiple scorers of the same night (alignment, pairwise agreement, consensus scoring). See [HYPNOGRAM_MULTIPLE_SCORERS.md](HYPNOGRAM_MULTIPLE_SCORERS.md) for the full design plan.

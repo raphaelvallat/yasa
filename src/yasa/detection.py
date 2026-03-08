@@ -9,6 +9,7 @@ slow-waves, and rapid eye movements from sleep EEG recordings.
 
 import logging
 from collections import OrderedDict
+from itertools import product
 
 import mne
 import numpy as np
@@ -17,11 +18,13 @@ from mne.filter import filter_data
 from scipy import signal
 from scipy.fftpack import next_fast_len
 from scipy.interpolate import interp1d
+from scipy.stats import circmean
 from sklearn.ensemble import IsolationForest
 
 from .io import is_pyriemann_installed, is_tensorpac_installed, set_log_level
 from .numba import _detrend, _rms
 from .others import (
+    _index_to_events,
     _merge_close,
     _zerocrossings,
     get_centered_indices,
@@ -90,22 +93,17 @@ def _check_data_hypno(
 
     # 3) Check hypnogram
     if hypno is not None:
+        assert include is not None, "include cannot be None if hypno is given"
+        include = np.atleast_1d(np.asarray(include))
+        assert include.size >= 1, "`include` must have at least one element."
         if isinstance(hypno, Hypnogram):
-            # Translate string include labels to integers using the Hypnogram mapping
-            if include is not None:
-                include_arr = np.atleast_1d(np.asarray(include))
-                if include_arr.dtype.kind in ("U", "S", "O"):
-                    include = np.array([hypno.mapping[s] for s in include_arr], dtype=int)
-            # Upsample the Hypnogram to match data
+            if include.dtype.kind in ("U", "S", "O"):
+                include = np.array([hypno.mapping[s] for s in include], dtype=int)
             hypno = hypno.upsample_to_data(data, sf=sf, verbose=verbose)
         hypno = np.asarray(hypno, dtype=int)
         assert hypno.ndim == 1, "Hypno must be one dimensional."
         assert hypno.size == n_samples, "Hypno must have same size as data."
-        unique_hypno = np.unique(hypno)
-        logger.info("Number of unique values in hypno = %i", unique_hypno.size)
-        assert include is not None, "include cannot be None if hypno is given"
-        include = np.atleast_1d(np.asarray(include))
-        assert include.size >= 1, "`include` must have at least one element."
+        logger.info("Number of unique values in hypno = %i", np.unique(hypno).size)
         assert hypno.dtype.kind == include.dtype.kind, "hypno and include must have same dtype"
         assert np.isin(hypno, include).any(), (
             "None of the stages specified in `include` are present in hypno."
@@ -213,8 +211,6 @@ class _DetectionResults(object):
             }
 
             if "PhaseAtSigmaPeak" in self._events:
-                from scipy.stats import circmean
-
                 aggdict["PhaseAtSigmaPeak"] = lambda x: circmean(x, low=-np.pi, high=np.pi)
                 aggdict["ndPAC"] = aggfunc
 
@@ -258,8 +254,6 @@ class _DetectionResults(object):
 
     def get_mask(self):
         """get_mask"""
-        from yasa.others import _index_to_events
-
         mask = np.zeros(self._data.shape, dtype=int)
         for i in self._events["IdxChannel"].unique():
             ev_chan = self._events[self._events["IdxChannel"] == i]
@@ -271,7 +265,6 @@ class _DetectionResults(object):
         self, center, time_before, time_after, filt=(None, None), mask=None, as_dataframe=True
     ):
         """Get_sync_events (not for REM, spindles & SW only)"""
-        from yasa.others import get_centered_indices
 
         assert time_before >= 0
         assert time_after >= 0
@@ -372,7 +365,6 @@ class _DetectionResults(object):
         Compare detected events across channels.
         See full documentation in the methods of SpindlesResults and SWResults.
         """
-        from itertools import product
 
         assert score in ["f1", "precision", "recall"], f"Invalid scoring metric: {score}"
 
@@ -2754,8 +2746,6 @@ class REMResults(_DetectionResults):
         sample is part of a detected event (True) or not (False).
         """
         # We cannot use super() because "Channel" is not present in _events.
-        from yasa.others import _index_to_events
-
         mask = np.zeros(self._data.shape, dtype=int)
         idx_ev = _index_to_events(self._events[["Start", "End"]].to_numpy() * self._sf)
         mask[:, idx_ev] = 1
@@ -2797,8 +2787,6 @@ class REMResults(_DetectionResults):
             'Channel' : Channel
             'IdxChannel' : Index of channel in data
         """
-        from yasa.others import get_centered_indices
-
         assert time_before >= 0
         assert time_after >= 0
         bef = int(self._sf * time_before)
