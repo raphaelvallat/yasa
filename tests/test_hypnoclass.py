@@ -377,3 +377,187 @@ class TestHypnoClass(unittest.TestCase):
                 assert v == round(v, 6)
         hyp_p2 = Hypnogram.from_dict(d_p)
         pd.testing.assert_frame_equal(hyp_p2.proba, hyp_p.proba.round(6), check_like=True)
+
+
+# ---------------------------------------------------------------------------
+# __init__ — invalid stage values
+# ---------------------------------------------------------------------------
+
+
+def test_invalid_stage_raises():
+    with pytest.raises(ValueError, match="do not match"):
+        Hypnogram(["W", "N1", "DREAM"])
+
+
+def test_invalid_stage_wrong_n_stages_hint():
+    # "S" is only accepted for n_stages=2; using it with n_stages=5 triggers
+    # the "specify n_stages=..." hint in the error message.
+    with pytest.raises(ValueError, match="n_stages"):
+        Hypnogram(["W", "S", "S"], n_stages=5)
+
+
+# ---------------------------------------------------------------------------
+# __len__, __eq__, __getitem__
+# ---------------------------------------------------------------------------
+
+_STAGES = ["W", "W", "N1", "N2", "N3", "REM", "W"]  # 7 epochs
+
+
+def test_len():
+    assert len(Hypnogram(_STAGES)) == len(_STAGES)
+
+
+def test_eq_non_hypnogram_returns_not_implemented():
+    assert Hypnogram(_STAGES).__eq__("not a Hypnogram") is NotImplemented
+
+
+def test_eq_different_lengths_raises():
+    with pytest.raises(ValueError, match="different numbers"):
+        Hypnogram(_STAGES) == Hypnogram(_STAGES[:4])
+
+
+def test_eq_returns_boolean_array():
+    hyp1 = Hypnogram(["W", "N2", "REM"])
+    hyp2 = Hypnogram(["W", "N3", "REM"])
+    np.testing.assert_array_equal(hyp1 == hyp2, [True, False, True])
+
+
+def test_getitem_negative_index():
+    assert Hypnogram(_STAGES)[-1].hypno.iloc[0] == "WAKE"
+
+
+def test_getitem_advances_start():
+    hyp = Hypnogram(_STAGES, start="2024-01-01 23:00:00")
+    assert hyp[2].start == pd.Timestamp("2024-01-01 23:01:00")  # 2 × 30 s
+
+
+def test_getitem_step_raises():
+    with pytest.raises(ValueError, match="Step"):
+        Hypnogram(_STAGES)[::2]
+
+
+def test_getitem_empty_slice_raises():
+    with pytest.raises(IndexError, match="empty"):
+        Hypnogram(_STAGES)[5:3]
+
+
+def test_getitem_bad_type_raises():
+    with pytest.raises(TypeError):
+        Hypnogram(_STAGES)["bad"]
+
+
+def test_getitem_preserves_proba():
+    proba = pd.DataFrame(
+        {
+            "WAKE": [1.0, 0.0, 0.0],
+            "N1": [0.0, 1.0, 0.0],
+            "N2": [0.0, 0.0, 1.0],
+            "N3": [0.0, 0.0, 0.0],
+            "REM": [0.0, 0.0, 0.0],
+        }
+    )
+    hyp = Hypnogram(["W", "N1", "N2"], proba=proba)
+    sliced = hyp[0:2]
+    assert sliced.proba is not None
+    assert len(sliced.proba) == 2
+
+
+# ---------------------------------------------------------------------------
+# end property
+# ---------------------------------------------------------------------------
+
+
+def test_end_none_when_no_start():
+    assert Hypnogram(_STAGES).end is None
+
+
+def test_end_computed_when_start_set():
+    hyp = Hypnogram(_STAGES, start="2024-01-01 23:00:00")  # 7 × 30 s = 3.5 min
+    assert hyp.end == pd.Timestamp("2024-01-01 23:03:30")
+
+
+# ---------------------------------------------------------------------------
+# mapping.setter — auto-fills ART / UNS; preserves custom values when present
+# ---------------------------------------------------------------------------
+
+
+def test_mapping_setter_fills_art_uns():
+    hyp = Hypnogram(["W", "N1", "N2", "N3", "REM"])
+    hyp.mapping = {"WAKE": 0, "N1": 1, "N2": 2, "N3": 3, "REM": 4}
+    assert hyp.mapping["ART"] == -1
+    assert hyp.mapping["UNS"] == -2
+
+
+def test_mapping_setter_keeps_existing_art_uns():
+    hyp = Hypnogram(["W", "N1", "N2", "N3", "REM"])
+    hyp.mapping = {"WAKE": 0, "N1": 1, "N2": 2, "N3": 3, "REM": 4, "ART": -9, "UNS": -8}
+    assert hyp.mapping["ART"] == -9
+    assert hyp.mapping["UNS"] == -8
+
+
+# ---------------------------------------------------------------------------
+# consolidate_stages — 5-stage → 4-stage path (N1/N2 → LIGHT, N3 → DEEP)
+# ---------------------------------------------------------------------------
+
+
+def test_consolidate_5_to_4():
+    hyp = simulate_hypnogram(tib=60, n_stages=5, seed=0)
+    hyp4 = hyp.consolidate_stages(4)
+    assert hyp4.n_stages == 4
+    assert "LIGHT" in hyp4.labels
+    assert "N1" not in hyp4.labels
+
+
+# ---------------------------------------------------------------------------
+# crop
+# ---------------------------------------------------------------------------
+
+
+def test_crop_by_index():
+    hyp = Hypnogram(_STAGES)
+    cropped = hyp.crop(start=1, end=4)
+    assert cropped.n_epochs == 4
+    assert cropped.hypno.iloc[0] == "WAKE"
+
+
+def test_crop_by_timestamp():
+    # Epochs: 23:00:00 23:00:30 23:01:00 23:01:30 23:02:00 23:02:30 23:03:00
+    hyp = Hypnogram(_STAGES, start="2024-01-01 23:00:00")
+    cropped = hyp.crop(start="2024-01-01 23:01:00", end="2024-01-01 23:02:00")
+    assert cropped.start == pd.Timestamp("2024-01-01 23:01:00")
+    assert cropped.n_epochs == 3  # loc is inclusive on both ends
+
+
+def test_crop_timestamp_requires_start():
+    with pytest.raises(ValueError, match="start"):
+        Hypnogram(_STAGES).crop(start="2024-01-01 23:00:00")
+
+
+def test_crop_empty_raises():
+    with pytest.raises(ValueError, match="empty"):
+        Hypnogram(_STAGES).crop(start=5, end=3)
+
+
+# ---------------------------------------------------------------------------
+# evaluate
+# ---------------------------------------------------------------------------
+
+
+def test_evaluate_returns_epoch_by_epoch_agreement():
+    from yasa.evaluation import EpochByEpochAgreement
+
+    hyp_ref = Hypnogram(_STAGES, scorer="Expert")
+    hyp_obs = Hypnogram(_STAGES, scorer="YASA")
+    assert isinstance(hyp_ref.evaluate(hyp_obs), EpochByEpochAgreement)
+
+
+# ---------------------------------------------------------------------------
+# find_periods — non-integer threshold raises
+# ---------------------------------------------------------------------------
+
+
+def test_find_periods_non_integer_threshold_raises():
+    hyp = Hypnogram(["W"] * 20, freq="30s")
+    # 45 s × (1/30 Hz) = 1.5 samples → non-integer → ValueError
+    with pytest.raises(ValueError, match="whole number"):
+        hyp.find_periods(threshold="45s")

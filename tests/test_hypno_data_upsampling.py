@@ -13,6 +13,7 @@ Set meas_date_is_local=False only for EDF files that genuinely store UTC in meas
 """
 
 import datetime
+import logging
 
 import mne
 import numpy as np
@@ -334,3 +335,14 @@ def test_ts_hypno_longer_than_data(hyp_utc):
     assert result.size == 4 * SPE
     assert np.all(result[:SPE] == 2)  # epoch 4: N2
     assert np.all(result[-SPE:] == 4)  # epoch 7: REM
+
+
+def test_non_whole_epoch_offset_warns(caplog):
+    # 45 s offset → 1.5 epochs at 30 s/epoch → non-whole → warning emitted
+    hyp = Hypnogram(["W"] * 10, start="2024-01-01 23:00:00")
+    raw = make_raw(
+        10, meas_date=datetime.datetime(2024, 1, 1, 23, 0, 45, tzinfo=datetime.timezone.utc)
+    )
+    with caplog.at_level(logging.WARNING, logger="yasa"):
+        hyp.upsample_to_data(raw)
+    assert "not a whole number" in caplog.text

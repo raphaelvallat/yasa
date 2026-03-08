@@ -4,7 +4,7 @@ Goal: make `yasa.Hypnogram` the industry-standard Python object for handling sle
 
 ---
 
-## Implemented (v0.7)
+## Implemented (v0.7.0)
 
 ### Core class
 - `Hypnogram(values, n_stages, freq, start, tz, scorer, proba)` — string-based, categorical storage
@@ -36,17 +36,13 @@ Goal: make `yasa.Hypnogram` the industry-standard Python object for handling sle
 
 ---
 
-## Planned (future PRs)
+## Planned (future releases)
 
 ### I/O
-- **`to_csv()` / `from_csv()`** — round-trip to disk preserving metadata (freq, start, scorer, proba).
 - **`from_edf_annotations(raw)`** — load hypnogram from EDF+ annotations.
-
 
 ### Analysis
 - **`plot_hypnodensity()`** — when `proba` is available, plot the per-epoch stage probability as a color-map (signature visualization of modern auto-staging papers).
-
-### Convenience
 - **`get_mask(*stages)`** — return a boolean NumPy array for one or more stages (e.g., `hyp.get_mask("N2", "N3")`). Reduces boilerplate when passing stage masks to detection functions.
 
 ### Multi-scorer support

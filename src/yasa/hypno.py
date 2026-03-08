@@ -46,6 +46,8 @@ class Hypnogram:
       count, correctly handling recordings that start before or after the hypnogram.
     * **Analysis built in.** Common operations — sleep statistics, stage transitions, period
       detection, scorer agreement — are available as methods on the object itself.
+    * **Multi-modality.** Supports 2-stage actigraphy (Wake/Sleep), 4-stage wearable
+      (Wake/Light/Deep/REM), and 5-stage PSG (Wake/N1/N2/N3/REM) hypnograms.
 
     To create a ``Hypnogram`` from a legacy integer array, use :py:meth:`from_integers`.
 
