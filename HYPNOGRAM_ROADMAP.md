@@ -4,14 +4,14 @@ Goal: make `yasa.Hypnogram` the industry-standard Python object for handling sle
 
 ---
 
-## Implemented (v0.7)
+## Implemented (v0.7.0)
 
 ### Core class
 - `Hypnogram(values, n_stages, freq, start, tz, scorer, proba)` — string-based, categorical storage
 - `from_integers(values, mapping, ...)` — migrate from legacy integer arrays
 - `from_profusion(fname, ...)` — load Compumedics Profusion XML (NSRR format)
-- `start` / `end` properties — absolute timestamp anchoring with timezone support
-- `upsample_to_data(data, sf)` — align to EEG data by sample count or absolute timestamp timestamps (MNE `meas_date`)
+- `start` / `end` properties — optional absolute timestamp anchoring; a plain timezone-naive string is sufficient for EDF alignment
+- `upsample_to_data(data, sf, meas_date_is_local=True)` — align to EEG data by sample count or absolute timestamps (MNE `meas_date`); default `True` treats `meas_date` as a local absolute timestamp per the EDF+ standard (which defines `starttime` as local time at the patient's location; MNE mislabels it as UTC); set `False` only for files that genuinely store UTC
 
 ### Analysis
 - `sleep_statistics()` — full AASM summary (TIB, TST, SE, SOL, WASO, stage durations, ...)
@@ -36,15 +36,14 @@ Goal: make `yasa.Hypnogram` the industry-standard Python object for handling sle
 
 ---
 
-## Planned (future PRs)
+## Planned (future releases)
 
 ### I/O
-- **`to_csv()` / `from_csv()`** — round-trip to disk preserving metadata (freq, start, scorer, proba).
 - **`from_edf_annotations(raw)`** — load hypnogram from EDF+ annotations.
-
 
 ### Analysis
 - **`plot_hypnodensity()`** — when `proba` is available, plot the per-epoch stage probability as a color-map (signature visualization of modern auto-staging papers).
-
-### Convenience
 - **`get_mask(*stages)`** — return a boolean NumPy array for one or more stages (e.g., `hyp.get_mask("N2", "N3")`). Reduces boilerplate when passing stage masks to detection functions.
+
+### Multi-scorer support
+- **`HypnogramSet`** — new container class for multiple scorers of the same night (alignment, pairwise agreement, consensus scoring). See [HYPNOGRAM_MULTIPLE_SCORERS.md](HYPNOGRAM_MULTIPLE_SCORERS.md) for the full design plan.

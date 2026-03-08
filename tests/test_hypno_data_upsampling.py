@@ -3,9 +3,17 @@
 Covers all combinations of:
   - data type : NumPy array | MNE Raw without meas_date | MNE Raw with meas_date
   - Hypnogram : no start | naive start | tz-aware start (via tz=) | tz-aware datetime
+
+Default behaviour (meas_date_is_local=True): meas_date is treated as a local absolute
+timestamp, consistent with the EDF+ standard, which defines starttime as local time at
+the patient's location. MNE reads this and tags it as UTC; YASA corrects this by default.
+Both meas_date and Hypnogram.start are compared as absolute values, so no tz is required.
+
+Set meas_date_is_local=False only for EDF files that genuinely store UTC in meas_date.
 """
 
 import datetime
+import logging
 
 import mne
 import numpy as np
@@ -231,7 +239,7 @@ def test_start_tz_conflict_raises():
 # Triggered when BOTH self.start is set AND raw.meas_date is set.
 # The hypnogram epochs are selected by absolute timestamp offset, not sample count.
 #
-# Hypnogram : 10 epochs starting at 23:00 UTC
+# Hypnogram : 10 epochs starting at 23:00 (local time)
 #   index:  0   1   2    3    4    5    6     7     8   9
 #   stage:  W   W   N1   N2   N2   N3   N3   REM   REM  W
 #   int:    0   0    1    2    2    3    3     4     4   0
@@ -240,15 +248,32 @@ def test_start_tz_conflict_raises():
 
 @pytest.fixture
 def hyp_utc():
-    """10-epoch Hypnogram starting at 23:00 UTC."""
+    """10-epoch Hypnogram with start=23:00, tz="UTC".
+
+    The UTC label is stripped under the default meas_date_is_local=True, so all
+    arithmetic is performed on the stored value 23:00. Tests that exercise the true-UTC
+    path (meas_date_is_local=False) must pass that flag explicitly.
+    """
     return Hypnogram(STAGES, freq="30s", start=HYP_START, tz="UTC")
 
 
-def test_ts_naive_start_raises(hyp_utc):
-    # Naive start + UTC meas_date → ValueError (cannot align safely)
+def test_ts_naive_start_local_default():
+    # Default (meas_date_is_local=True): naive start works fine — both sides treated
+    # as local absolute timestamps, which is the common EDF case.
+    hyp_naive = Hypnogram(STAGES, freq="30s", start=HYP_START)
+    raw = make_raw(N, meas_date=utc(23, 0))  # "UTC" label, actually local time
+    result = hyp_naive.upsample_to_data(raw)  # meas_date_is_local=True (default)
+    assert result.size == N * SPE
+    assert np.all(result[:SPE] == 0)  # epoch 0: W
+    assert np.all(result[2 * SPE : 3 * SPE] == 1)  # epoch 2: N1
+
+
+def test_ts_naive_start_raises_when_true_utc():
+    # meas_date_is_local=False (true UTC path): naive start + UTC-aware meas_date
+    # → ValueError because YASA cannot convert naive time to UTC.
     hyp_naive = Hypnogram(STAGES, freq="30s", start=HYP_START)
     with pytest.raises(ValueError, match="timezone"):
-        hyp_naive.upsample_to_data(make_raw(N, meas_date=utc(23, 0)))
+        hyp_naive.upsample_to_data(make_raw(N, meas_date=utc(23, 0)), meas_date_is_local=False)
 
 
 def test_ts_zero_offset(hyp_utc):
@@ -281,10 +306,11 @@ def test_ts_negative_offset(hyp_utc):
 
 
 def test_ts_local_timezone():
-    # start = "23:00 CET" = "22:00 UTC" → meas_date 22:00 UTC → zero offset
+    # meas_date_is_local=False (true UTC): start = "23:00 CET" = "22:00 UTC",
+    # meas_date = 22:00 UTC → YASA converts hyp_start to UTC → zero offset.
     hyp = Hypnogram(STAGES, freq="30s", start=HYP_START, tz="Europe/Paris")
-    raw = make_raw(N, meas_date=utc(22, 0))  # 22:00 UTC = 23:00 CET
-    result = hyp.upsample_to_data(raw)
+    raw = make_raw(N, meas_date=utc(22, 0))  # genuinely 22:00 UTC = 23:00 CET
+    result = hyp.upsample_to_data(raw, meas_date_is_local=False)
     assert result.size == N * SPE
     assert np.all(result[:SPE] == 0)  # epoch 0: W
     assert np.all(result[2 * SPE : 3 * SPE] == 1)  # epoch 2: N1
@@ -309,3 +335,14 @@ def test_ts_hypno_longer_than_data(hyp_utc):
     assert result.size == 4 * SPE
     assert np.all(result[:SPE] == 2)  # epoch 4: N2
     assert np.all(result[-SPE:] == 4)  # epoch 7: REM
+
+
+def test_non_whole_epoch_offset_warns(caplog):
+    # 45 s offset → 1.5 epochs at 30 s/epoch → non-whole → warning emitted
+    hyp = Hypnogram(["W"] * 10, start="2024-01-01 23:00:00")
+    raw = make_raw(
+        10, meas_date=datetime.datetime(2024, 1, 1, 23, 0, 45, tzinfo=datetime.timezone.utc)
+    )
+    with caplog.at_level(logging.WARNING, logger="yasa"):
+        hyp.upsample_to_data(raw)
+    assert "not a whole number" in caplog.text
