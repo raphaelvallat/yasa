@@ -85,11 +85,36 @@ Hypnogram
 
     * **Timestamp-aware**: triggered automatically when **both** ``Hypnogram.start`` is set and
       ``raw.meas_date`` is set on the :py:class:`~mne.io.BaseRaw`. YASA computes the absolute
-      offset between the two timestamps and uses it to select the correct hypnogram epochs. See
-      the ``start`` and ``tz`` parameters in the :py:class:`~yasa.Hypnogram` docstring for how to
-      set a timezone-aware start time.
+      offset between the two timestamps and uses it to select the correct hypnogram epochs.
 
-    The three cases below describe what happens in each mode.
+    **EDF files and timezones**
+
+    The EDF+ standard explicitly defines ``starttime`` as local time at the patient's
+    location. :py:func:`mne.io.read_raw_edf` reads this value and tags it as UTC (since it
+    has no other choice). As a result, ``raw.info["meas_date"]`` is labelled UTC but
+    actually contains local time.
+
+    :py:meth:`~yasa.Hypnogram.upsample_to_data` handles this transparently:
+    ``meas_date_is_local=True`` is the default, so both ``meas_date`` and
+    ``Hypnogram.start`` are compared as local absolute timestamp values.
+
+    .. code-block:: python
+
+        # EDF recorded at 22:11:37 local time
+        hyp = yasa.Hypnogram(stages, freq="30s", start="2024-11-08 22:11:37")
+        hypno = hyp.upsample_to_data(raw)
+
+    If your EDF files genuinely store UTC in ``meas_date``, pass
+    ``meas_date_is_local=False`` and ``Hypnogram.tz`` so YASA can compare both timestamps in the
+    same reference frame:
+
+    .. code-block:: python
+
+        hyp = yasa.Hypnogram(stages, freq="30s", start="2024-11-08 22:11:37",
+                             tz="Europe/Paris")
+        hypno = hyp.upsample_to_data(raw, meas_date_is_local=False)
+
+    The three cases below describe what happens in each alignment mode.
 
     **Case 1 — Hypnogram and data cover the same window**
 
@@ -118,7 +143,7 @@ Hypnogram
 
     .. code-block:: python
 
-        hyp = yasa.Hypnogram(stages, freq="30s", start="2024-01-15 23:00:00", tz="Europe/Paris")
+        hyp = yasa.Hypnogram(stages, freq="30s", start="2024-01-15 23:00:00")
         hypno = hyp.upsample_to_data(raw)
         # Epochs before Lights Off → UNS; epochs after Lights On → UNS
 
@@ -138,7 +163,7 @@ Hypnogram
     .. code-block:: python
 
         # Full-night hypnogram, recording is only the second half of the night
-        hyp = yasa.Hypnogram(stages, freq="30s", start="2024-01-15 23:00:00", tz="Europe/Paris")
+        hyp = yasa.Hypnogram(stages, freq="30s", start="2024-01-15 23:00:00")
         hypno = hyp.upsample_to_data(raw_cropped)  # correct epochs selected automatically
 
     **Automatic staging with** :py:class:`~yasa.SleepStaging`

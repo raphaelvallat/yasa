@@ -127,17 +127,15 @@ We can load this file using :py:func:`pandas.read_csv` and then convert the inte
 .. tip::
 
     If available, we recommend passing the hypnogram's start time via the ``start`` argument when
-    creating the :py:class:`~yasa.Hypnogram`:
+    creating the :py:class:`~yasa.Hypnogram`.
 
     .. code-block:: python
 
         >>> hyp = yasa.Hypnogram.from_integers(
         ...     hypno, freq="30s", scorer="Expert",
-        ...     start="2024-01-15 23:59:00", tz="Europe/Paris"
+        ...     start="2024-01-15 23:59:00"
         ... )
 
-    The ``tz`` argument localizes the naive start string to your local timezone. Alternatively,
-    pass a tz-aware :py:class:`datetime.datetime` directly as ``start`` and omit ``tz``.
     When you later call :py:meth:`~yasa.Hypnogram.upsample_to_data`, YASA will automatically
     compute the offset between the hypnogram start and the recording start, and select
     the correct epochs:
@@ -145,10 +143,6 @@ We can load this file using :py:func:`pandas.read_csv` and then convert the inte
     .. code-block:: python
 
         >>> hypno_up = hyp.upsample_to_data(raw_cropped)
-
-    If ``start`` is not set, or if ``data`` is a NumPy array, the hypnogram is upsampled to
-    match the number of samples in ``data``. Any samples beyond the hypnogram end are set to
-    **Unscored** (``UNS``, integer value ``-2``).
 
 It's easy to plot the hypnogram:
 

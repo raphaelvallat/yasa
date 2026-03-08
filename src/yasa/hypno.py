@@ -91,9 +91,8 @@ class Hypnogram:
         :py:class:`~pandas.Timestamp` objects.
     tz : str or :py:class:`datetime.timezone`, optional
         Timezone of the hypnogram ``start`` time, e.g. ``"Europe/Paris"`` or
-        ``"America/New_York"``. Only used when ``start`` is timezone-naive.
-        A full list of valid timezone strings is available via
-        ``import zoneinfo; zoneinfo.available_timezones()``.
+        ``"America/New_York"``. Only used when ``start`` is timezone-naive. A full list of valid
+        timezone strings is available via ``import zoneinfo; zoneinfo.available_timezones()``.
     scorer : str
         An optional string indicating the scorer name. If specified, this will be set as the name
         of the :py:class:`pandas.Series`, otherwise the name will be set to "Stage".
@@ -113,8 +112,8 @@ class Hypnogram:
     sampling_frequency : float
         Sampling frequency of the hypnogram in Hz (e.g. ``1/30`` for 30-second epochs).
     start : :py:class:`pandas.Timestamp` or None
-        Start datetime of the hypnogram. Tz-aware in local time when ``tz`` was provided or a
-        tz-aware datetime was passed as ``start``, timezone-naive otherwise.
+        Start datetime of the hypnogram. Tz-aware when ``tz`` was provided or a tz-aware
+        datetime was passed as ``start``, timezone-naive otherwise.
     timedelta : :py:class:`pandas.TimedeltaIndex`
         Elapsed time of each epoch relative to the first epoch.
     duration : float
@@ -1684,7 +1683,7 @@ class Hypnogram:
             proba=None,  # NOTE: Do not upsample probability
         )
 
-    def upsample_to_data(self, data, sf=None, verbose=True):
+    def upsample_to_data(self, data, sf=None, meas_date_is_local=True, verbose=True):
         """
         Upsample a hypnogram to a given sampling frequency and fit the resulting hypnogram to
         corresponding EEG data, such that the hypnogram and EEG data have the exact same number of
@@ -1703,6 +1702,12 @@ class Hypnogram:
         sf : float
             The sampling frequency of ``data``, in Hz (e.g. 100 Hz, 256 Hz, ...).
             Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
+        meas_date_is_local : bool
+            If ``True`` (default), ``meas_date`` is treated as a local absolute timestamp,
+            consistent with the EDF+ standard, which explicitly defines ``starttime`` as local
+            time at the patient's location. Set to ``False`` only if your EDF files genuinely store
+            UTC in ``meas_date``, in which case pass ``tz`` when constructing the
+            :py:class:`~yasa.Hypnogram` so the two timestamps share a common reference frame.
         verbose : bool or str
             Verbose level. Default (False) will only print warning and error messages. The logging
             levels are 'debug', 'info', 'warning', 'error', and 'critical'. For most users the
@@ -1718,9 +1723,10 @@ class Hypnogram:
         Raises
         ------
         ValueError
-            If timestamp-aware alignment is triggered but ``self.start`` is timezone-naive while
-            ``raw.meas_date`` is timezone-aware (UTC). Fix by passing ``tz`` at construction:
-            ``Hypnogram(..., tz='Europe/Paris')``.
+            Only when ``meas_date_is_local=False``: raised if ``self.start`` is timezone-naive
+            while ``raw.meas_date`` is timezone-aware (UTC). Fix by passing ``tz`` at
+            construction: ``Hypnogram(..., tz='Europe/Paris')``. This error cannot occur with
+            the default ``meas_date_is_local=True``.
 
         Warns
         -----
@@ -1745,13 +1751,15 @@ class Hypnogram:
             and isinstance(data, mne.io.BaseRaw)
             and data.info["meas_date"] is not None
         ):
-            return self._upsample_to_raw_timestamps(data, verbose=verbose)
+            return self._upsample_to_raw_timestamps(
+                data, meas_date_is_local=meas_date_is_local, verbose=verbose
+            )
         hypno_up = hypno_upsample_to_data(
             self.as_int(), self.sampling_frequency, data=data, sf_data=sf, verbose=verbose
         )
         return hypno_up
 
-    def _upsample_to_raw_timestamps(self, raw, verbose=True):
+    def _upsample_to_raw_timestamps(self, raw, meas_date_is_local=True, verbose=True):
         """Timestamp-aware upsampling for MNE Raw objects with a valid meas_date.
 
         Internal method called by :py:meth:`upsample_to_data` when both ``self.start`` and
@@ -1765,21 +1773,36 @@ class Hypnogram:
         # --- resolve and align timestamps ---
         # self.start is a pd.Timestamp (tz-aware when tz was passed at construction, else naive)
         hyp_start = self.start
-        raw_start = pd.Timestamp(raw.info["meas_date"])  # always UTC-aware
+        # The EDF+ standard defines starttime as local time at the patient's location; MNE
+        # reads this value and tags it as UTC. When meas_date_is_local=True (the default),
+        # we strip MNE's UTC label so both timestamps are compared as local absolute values.
+        raw_start = pd.Timestamp(raw.info["meas_date"])
+        if meas_date_is_local and raw_start.tzinfo is not None:
+            raw_start = raw_start.replace(tzinfo=None)
 
         if hyp_start.tzinfo is None and raw_start.tzinfo is not None:
-            # Hypnogram start is naive — tz was not specified at construction
+            # Only reachable when meas_date_is_local=False and meas_date is UTC-aware.
+            # The hypnogram start is naive so YASA cannot safely convert it to UTC.
             raise ValueError(
                 "The hypnogram `start` time is timezone-naive but `raw.meas_date` is "
-                "timezone-aware (UTC). YASA cannot safely align the two without knowing the "
-                "timezone of the hypnogram. Pass `tz` when creating the Hypnogram, e.g.:\n"
-                "    Hypnogram(..., tz='Europe/Paris')\n"
-                "Or pass a tz-aware datetime as `start` directly. Available timezone strings: "
+                "timezone-aware (UTC) and `meas_date_is_local=False`. YASA cannot safely "
+                "align the two without knowing the timezone of the hypnogram. Either:\n"
+                "  • Pass `tz` when creating the Hypnogram, e.g. "
+                "Hypnogram(..., tz='Europe/Paris')\n"
+                "  • Pass a tz-aware datetime as `start` directly.\n"
+                "  • Use `meas_date_is_local=True` (the default) for EDF files, where "
+                "starttime is defined as local time at the patient's location (EDF+ standard).\n"
+                "Available timezone strings: "
                 "import zoneinfo; zoneinfo.available_timezones()"
             )
         elif hyp_start.tzinfo is not None and raw_start.tzinfo is None:
-            # Unusual: hypnogram aware, meas_date naive — strip tz for arithmetic
-            hyp_start = hyp_start.tz_convert("UTC").tz_localize(None)
+            if meas_date_is_local:
+                # Both timestamps are local absolute timestamps — strip tz label without
+                # UTC conversion so the stored values can be compared directly.
+                hyp_start = hyp_start.replace(tzinfo=None)
+            else:
+                # Unusual: hypnogram aware, meas_date naive — convert to UTC for arithmetic
+                hyp_start = hyp_start.tz_convert("UTC").tz_localize(None)
         # else: both naive or both aware — subtraction works directly
 
         # --- compute epoch offset ---
