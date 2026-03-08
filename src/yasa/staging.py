@@ -58,9 +58,6 @@ class SleepStaging:
     Notes
     -----
 
-    If ``raw.info["meas_date"]`` is set, the :py:class:`~yasa.Hypnogram` returned by
-    :py:meth:`predict` will automatically have its ``start`` attribute set to that UTC timestamp.
-
     If you use the SleepStaging module in a publication, please cite the following publication:
 
     * Vallat, R., & Walker, M. P. (2021). An open-source, high-performance tool for automated

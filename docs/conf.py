@@ -711,7 +711,9 @@ notfound_urls_prefix = None
 # -- -> Options for sphinx_reredirects -------------------------------------------------
 # https://documatt.com/sphinx-reredirects/usage.html
 # Defaults to {}
-redirects = {}
+redirects = {
+    "quickstart": "tutorials/quickstart.html",
+}
 
 # -- Linkcode ------------------------------------------------
 
