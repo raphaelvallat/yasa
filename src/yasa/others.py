@@ -7,6 +7,7 @@ import logging
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 from scipy.interpolate import interp1d
+from scipy.special import erfinv
 
 from .numba import _corr, _covar, _rms, _slope_lstsq
 
@@ -482,3 +483,36 @@ def get_centered_indices(data, idx, npts_before, npts_after):
     idx_ep_nomask = np.unique(idx_ep.nonzero()[0])
     idx_ep = np.ma.compress_rows(idx_ep)
     return idx_ep, idx_ep_nomask
+
+
+def _norm_direct_pac(pha, amp, p=0.05):
+    """Normalized direct PAC (ndPAC).
+
+    Re-implementation of tensorpac's ``norm_direct_pac`` (Ozkurt et al. 2012).
+
+    Parameters
+    ----------
+    pha : array_like
+        Phase array of shape (n_pha, ..., n_times).
+    amp : array_like
+        Amplitude array of shape (n_amp, ..., n_times).
+    p : float | .05
+        P-value threshold. Sub-threshold PAC values are set to 0.
+        Use ``p=1`` or ``p=None`` to disable thresholding.
+
+    Returns
+    -------
+    pac : array_like
+        Phase-amplitude coupling array of shape (n_amp, n_pha, ...).
+    """
+    n_times = amp.shape[-1]
+    amp = np.subtract(amp, np.mean(amp, axis=-1, keepdims=True))
+    amp = np.divide(amp, np.std(amp, ddof=1, axis=-1, keepdims=True))
+    pac = np.abs(np.einsum("i...j, k...j->ik...", amp, np.exp(1j * pha)))
+    if p == 1.0 or p is None:
+        return pac / n_times
+    s = pac**2
+    pac /= n_times
+    xlim = n_times * erfinv(1 - p) ** 2
+    pac[s <= 2 * xlim] = 0.0
+    return pac

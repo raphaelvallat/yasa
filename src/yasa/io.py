@@ -35,14 +35,6 @@ def set_log_level(verbose=None):
             raise ValueError("verbose must be in %s" % ", ".join(LOGGING_TYPES))
 
 
-def is_tensorpac_installed():
-    """Test if tensorpac is installed."""
-    try:
-        import tensorpac  # noqa
-    except ImportError:  # pragma: no cover
-        raise ImportError("tensorpac needs to be installed. Please use `pip install yasa[pac]`.")
-
-
 def is_pyriemann_installed():
     """Test if pyRiemann is installed."""
     try:

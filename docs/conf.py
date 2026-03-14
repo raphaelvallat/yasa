@@ -585,7 +585,6 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy", None),
     "seaborn": ("https://seaborn.pydata.org", None),
     "sklearn": ("https://scikit-learn.org/stable", None),
-    "tensorpac": ("https://etiennecmb.github.io/tensorpac", None),
 }
 
 # The maximum number of days to cache remote inventories.

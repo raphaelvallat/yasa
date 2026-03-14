@@ -70,7 +70,6 @@ The core dependencies of YASA are:
 * `lspopt <https://github.com/hbldh/lspopt>`_ >= 1.4
 
 Some features require optional dependencies (`SleepECG <https://sleepecg.readthedocs.io/>`_,
-`TensorPAC <https://etiennecmb.github.io/tensorpac/>`_,
 `PyRiemann <https://pyriemann.readthedocs.io/>`_,
 `ipywidgets <https://ipywidgets.readthedocs.io/>`_).
 
