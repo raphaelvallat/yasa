@@ -21,11 +21,12 @@ from scipy.interpolate import interp1d
 from scipy.stats import circmean
 from sklearn.ensemble import IsolationForest
 
-from .io import is_pyriemann_installed, is_tensorpac_installed, set_log_level
+from .io import is_pyriemann_installed, set_log_level
 from .numba import _detrend, _rms
 from .others import (
     _index_to_events,
     _merge_close,
+    _norm_direct_pac,
     _zerocrossings,
     get_centered_indices,
     moving_transform,
@@ -1576,9 +1577,8 @@ def sw_detect(
           be calculated for each slow-waves using a 2-seconds epoch centered around the negative
           peak of the slow-waves (i.e. 1 second on each side).
 
-        * ``p`` is a parameter passed to the :py:func:`tensorpac.methods.norm_direct_pac``
-          function. It represents the p-value to use for thresholding of unreliable coupling
-          values. Sub-threshold PAC values will be set to 0. To disable this behavior (no masking),
+        * ``p`` is the p-value used for thresholding of unreliable coupling values (ndPAC).
+          Sub-threshold PAC values will be set to 0. To disable this behavior (no masking),
           use ``p=1`` or ``p=None``.
 
         .. versionadded:: 0.6.0
@@ -1710,9 +1710,6 @@ def sw_detect(
 
     # Extract the spindles-related sigma signal for coupling
     if coupling:
-        is_tensorpac_installed()
-        import tensorpac.methods as tpm
-
         # The width of the transition band is set to 1.5 Hz on each side,
         # meaning that for freq_sp = (12, 15 Hz), the -6 dB points are located
         # at 11.25 and 15.75 Hz. The frequency band for the amplitude signal
@@ -1925,9 +1922,7 @@ def sw_detect(
             # 3) Normalized Direct PAC, with thresholding
             # Unreliable values are set to 0
             ndp = np.squeeze(
-                tpm.norm_direct_pac(
-                    sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=coupling_params["p"]
-                )
+                _norm_direct_pac(sw_pha_ev[None, ...], sp_amp_ev[None, ...], p=coupling_params["p"])
             )
             sw_params["ndPAC"] = np.ones(n_peaks) * np.nan
             sw_params["ndPAC"][idx_valid] = ndp

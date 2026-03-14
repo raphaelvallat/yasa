@@ -8,7 +8,6 @@ import pytest
 from yasa.io import (
     is_pyriemann_installed,
     is_sleepecg_installed,
-    is_tensorpac_installed,
     set_log_level,
 )
 
@@ -38,6 +37,5 @@ class TestIO(unittest.TestCase):
 
     def test_dependence(self):
         """Test dependancies."""
-        is_tensorpac_installed()
         is_pyriemann_installed()
         is_sleepecg_installed()
