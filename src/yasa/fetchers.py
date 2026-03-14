@@ -156,7 +156,7 @@ def fetch_sample(fname, version="v1", **kwargs):
         try:
             fetched = pup.fetch(fname, **kwargs)
             break
-        except Exception:
+        except Exception:  # pragma: no cover
             if attempt < 2:
                 time.sleep(2**attempt)
             else:

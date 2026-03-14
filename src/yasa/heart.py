@@ -160,7 +160,7 @@ def hrv_stage(
         # Detect R-peaks
         try:
             pks = detect_heartbeats(data[start:end], fs=sf)
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.info(f"Heartbeat detection failed for epoch {idx[1]} of stage {idx[0]}: {e}")
             continue
 

@@ -127,6 +127,8 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
+    env:
+      NUMBA_DISABLE_JIT: "1"
     steps:
       - uses: actions/checkout@v6
 
