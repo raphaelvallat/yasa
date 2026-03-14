@@ -1,10 +1,12 @@
 """Test the functions in yasa/staging.py."""
 
 import unittest
+from unittest.mock import MagicMock
 
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
+import pandas as pd
 
 from yasa.fetchers import fetch_sample
 from yasa.hypno import Hypnogram
@@ -31,6 +33,7 @@ class TestStaging(unittest.TestCase):
         )
         print(sls)
         print(str(sls))
+        assert repr(sls)
         sls.get_features()
         y_pred = sls.predict()
         assert isinstance(y_pred, Hypnogram)
@@ -56,3 +59,40 @@ class TestStaging(unittest.TestCase):
         SleepStaging(raw, eeg_name="C4", eog_name="EOG1").fit()
         # .. just the EEG
         SleepStaging(raw, eeg_name="C4").fit()
+
+    def test_short_data_warning(self):
+        """Test that a warning is raised for recordings shorter than 5 minutes."""
+        raw_short = raw.copy().crop(tmax=200)
+        with self.assertLogs("yasa", level="WARNING"):
+            SleepStaging(raw_short, eeg_name="C4")
+
+    def test_validate_predict_errors(self):
+        """Test _validate_predict raises ValueError for mismatched features."""
+        sls = SleepStaging(raw, eeg_name="C4")
+        sls.fit()
+
+        # Features in clf not present in current feature set
+        clf_mock = MagicMock()
+        clf_mock.feature_name_ = ["nonexistent_feature"]
+        with self.assertRaises(ValueError):
+            sls._validate_predict(clf_mock)
+
+        # Features in current set not present in clf
+        clf_mock.feature_name_ = sls.feature_name_[:-1]
+        with self.assertRaises(ValueError):
+            sls._validate_predict(clf_mock)
+
+    def test_plot_predict_proba_no_predict(self):
+        """Test that plot_predict_proba raises ValueError before predict is called."""
+        sls = SleepStaging(raw, eeg_name="C4")
+        with self.assertRaises(ValueError):
+            sls.plot_predict_proba()
+
+    def test_predict_proba_without_prior_predict(self):
+        """Test that predict_proba internally calls predict when _proba is not set."""
+        sls = SleepStaging(raw, eeg_name="C4")
+        sls.fit()
+        with self.assertWarns(FutureWarning):
+            proba = sls.predict_proba()
+        assert isinstance(proba, pd.DataFrame)
+        plt.close("all")
