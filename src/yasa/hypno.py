@@ -541,7 +541,8 @@ class Hypnogram:
         https://github.com/nsrr/edf-editor-translator/wiki/Compumedics-Annotation-Format.
 
         The epoch length and sleep stage integers are read directly from the XML file. Profusion
-        integer stages are mapped to YASA conventions: stage 4 (S4/N3) → 3, stage 5 (REM) → 4.
+        integer stages are mapped to YASA conventions: stage 4 (S4/N3) → 3, stage 5 (REM) → 4,
+        stage 9 (Active) → 0 (WAKE).
 
         .. versionadded:: 0.7.0
 
@@ -581,7 +582,7 @@ class Hypnogram:
         freq = f"{int(epoch_length)}s"
         hypno_int = np.array([int(s.text) for s in root[4]])
         # Map Profusion integers to YASA: stage 4 (S4) → 3 (N3), stage 5 (REM) → 4
-        hypno_int = pd.Series(hypno_int).replace({4: 3, 5: 4}).to_numpy()
+        hypno_int = pd.Series(hypno_int).replace({4: 3, 5: 4, 9: 0}).to_numpy()
         return cls.from_integers(hypno_int, freq=freq, start=start, tz=tz, scorer=scorer)
 
     @classmethod
