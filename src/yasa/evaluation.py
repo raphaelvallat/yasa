@@ -245,11 +245,11 @@ class EpochByEpochAgreement:
 
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
-        s = "s" if self.n_sleeps > 1 else ""
+        s = "s" if self.n_sessions > 1 else ""
         return (
             f"<EpochByEpochAgreement | Observed hypnogram{s} scored by {self.obs_scorer} "
             f"evaluated against reference hypnogram{s} scored by {self.ref_scorer}, "
-            f"{self.n_sleeps} sleep session{s}>\n"
+            f"{self.n_sessions} sleep session{s}>\n"
             " - Use `.get_agreement()` to get agreement measures as a pandas DataFrame or Series\n"
             " - Use `.plot_hypnograms()` to plot two overlaid hypnograms\n"
             "See the online documentation for more details."
@@ -264,7 +264,7 @@ class EpochByEpochAgreement:
         return self._data
 
     @property
-    def n_sleeps(self):
+    def n_sessions(self):
         """The number of unique sleep sessions."""
         return len(self._sleep_ids)
 
@@ -340,8 +340,7 @@ class EpochByEpochAgreement:
             If False (default), agreement scores are computed per session and returned as a
             :py:class:`~pandas.DataFrame` with one row per session. If True, all epochs across all
             sessions are pooled before computing a single set of agreement scores, returned as a
-            :py:class:`~pandas.Series`. This corresponds to R's ``metricsType="sum"`` in the
-            Menghini et al. 2021 pipeline.
+            :py:class:`~pandas.Series`.
 
         Returns
         -------
@@ -403,7 +402,7 @@ class EpochByEpochAgreement:
                 df.groupby(level=0).apply(self.multi_scorer, scorers=scorers).apply(pd.Series)
             )
             # Convert to Series if just one session being evaluated
-            if self.n_sleeps == 1:
+            if self.n_sessions == 1:
                 agreement = agreement.squeeze().rename("agreement")
         # Set attribute for later access
         self._agreement = agreement
@@ -423,7 +422,7 @@ class EpochByEpochAgreement:
         -------
         agreement : :py:class:`pandas.DataFrame`
             A :py:class:`~pandas.DataFrame` with agreement metrics as columns
-            (``precision``, ``recall``, ``fbeta``, ``support``, ``specificity``, ``npv``) and a
+            (``fbeta``, ``npv``, ``precision``, ``recall``, ``specificity``, ``support``) and a
             :py:class:`~pandas.MultiIndex` with session and sleep stage as rows.
 
             ``specificity`` (True Negative Rate) and ``npv`` (Negative Predictive Value) are
@@ -431,7 +430,7 @@ class EpochByEpochAgreement:
         """
 
         def scorer(df):
-            true, pred = df.values.T
+            true, pred = df.to_numpy().T
             prfs = skm.precision_recall_fscore_support(
                 true, pred, beta=beta, labels=self._skm_labels, average=None, zero_division=0
             )
@@ -460,7 +459,7 @@ class EpochByEpochAgreement:
             # Add metric labels column and prepend it to index, creating MultiIndex
             .assign(
                 metric=["precision", "recall", "fbeta", "support", "specificity", "npv"]
-                * self.n_sleeps
+                * self.n_sessions
             )
             .set_index("metric", append=True)
             # Convert stage column names to string labels
@@ -483,7 +482,7 @@ class EpochByEpochAgreement:
         # Set attribute for later access
         self._agreement_bystage = agreement
         # Remove the MultiIndex if just one session being evaluated
-        if self.n_sleeps == 1:
+        if self.n_sessions == 1:
             agreement = agreement.reset_index(level=1, drop=True)
         return agreement
 
@@ -561,7 +560,7 @@ class EpochByEpochAgreement:
             "`sleep_id` must be None or a valid sleep ID"
         )
         assert isinstance(agg_func, (type(None), str)), "`agg_func` must be None or a str"
-        assert not ((self.n_sleeps == 1 or sleep_id is not None) and agg_func is not None), (
+        assert not ((self.n_sessions == 1 or sleep_id is not None) and agg_func is not None), (
             "`agg_func` must be None if plotting a single session."
         )
         kwargs = {"labels": self._skm_labels} | kwargs
@@ -577,7 +576,7 @@ class EpochByEpochAgreement:
             .explode()
             .apply(pd.Series)
             # Convert to MultiIndex with reference scorer as new level
-            .assign(**{self.ref_scorer: self._skm_labels * self.n_sleeps})
+            .assign(**{self.ref_scorer: self._skm_labels * self.n_sessions})
             .set_index(self.ref_scorer, append=True)
             .rename_axis(columns=self.obs_scorer)
             # Convert sleep stage columns and indices to strings
@@ -586,7 +585,7 @@ class EpochByEpochAgreement:
             .rename(index=self._skm2yasa_map, level=self.ref_scorer)
             .rename(index=self._yasa2yasa_map, level=self.ref_scorer)
         )
-        if self.n_sleeps == 1:
+        if self.n_sessions == 1:
             # If just one session, use the only session ID as the key, for simplified returned df
             sleep_id = self._sleep_ids[0]
         if sleep_id is None:
@@ -625,7 +624,7 @@ class EpochByEpochAgreement:
         # Concatenate into one DataFrame
         sstats = pd.concat([ref_sstats, obs_sstats])
         # Remove the MultiIndex if just one session being evaluated
-        if self.n_sleeps == 1:
+        if self.n_sessions == 1:
             sstats = sstats.reset_index(level=1, drop=True)
         return sstats
 
@@ -675,12 +674,12 @@ class EpochByEpochAgreement:
         assert "ax" not in ref_kwargs | obs_kwargs, (
             "'ax' can't be supplied to `ref_kwargs` or `obs_kwargs`, use the `ax` keyword instead"
         )
-        assert not (sleep_id is None and self.n_sleeps > 1), (
+        assert not (sleep_id is None and self.n_sessions > 1), (
             "Multi-session plotting is not currently supported. `sleep_id` must not be None when "
             "multiple sessions are present"
         )
         # Select the session hypnograms to plot
-        if sleep_id is None and self.n_sleeps == 1:
+        if sleep_id is None and self.n_sessions == 1:
             ref_hyp = self._ref_hyps[self._sleep_ids[0]]
             obs_hyp = self._obs_hyps[self._sleep_ids[0]]
         else:
@@ -767,7 +766,9 @@ class EpochByEpochAgreement:
         recall          5.0  0.285833  0.028034
         f1              5.0  0.279704  0.030747
         """
-        assert self.n_sleeps > 1, "Summary scores can not be computed with only one hypnogram pair."
+        assert self.n_sessions > 1, (
+            "Summary scores can not be computed with only one hypnogram pair."
+        )
         assert isinstance(by_stage, bool), "`by_stage` must be True or False"
         if by_stage:
             assert hasattr(self, "_agreement_bystage"), (
@@ -1011,7 +1012,7 @@ class SleepStatsAgreement:
         param_vals = grouper["difference"].mean().to_frame("bias_mean")
         # Parametric LoA
         param_vals["loa_lower"], param_vals["loa_upper"] = zip(
-            *grouper["difference"].apply(self._arr_to_loa, agreement=agreement)
+            *grouper["difference"].apply(self._arr_to_loa, agreement=agreement), strict=True
         )
 
         ########################################################################
@@ -1345,7 +1346,9 @@ class SleepStatsAgreement:
         loa_regr_agreement = self._agreement * np.sqrt(np.pi / 2)
         d = decimals
 
-        # Unit lookup: %-based stats, SFI (events/h), everything else in minutes
+        # Unit lookup: covers all sleep statistics that may come from sleep_statistics().
+        # %-based stats include percentage-prefixed names and efficiency measures (SE, SME);
+        # SFI is in events/hour; all remaining stats (time-based) are in minutes.
         _pct_stats = {"SE", "SME"}
 
         def _unit(stat):

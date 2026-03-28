@@ -13,11 +13,11 @@ from yasa.hypno import simulate_hypnogram
 # Shared fixtures
 # ---------------------------------------------------------------------------
 
-N_NIGHTS = 5
+N_SESSIONS = 5
 REF_SCORER = "Human"
 OBS_SCORER = "YASA"
 
-ref_hyps = [simulate_hypnogram(tib=90, scorer=REF_SCORER, seed=i) for i in range(N_NIGHTS)]
+ref_hyps = [simulate_hypnogram(tib=90, scorer=REF_SCORER, seed=i) for i in range(N_SESSIONS)]
 obs_hyps = [h.simulate_similar(scorer=OBS_SCORER, seed=i) for i, h in enumerate(ref_hyps)]
 ebe = EpochByEpochAgreement(ref_hyps, obs_hyps)
 
@@ -37,8 +37,8 @@ class TestEpochByEpochAgreementInit(unittest.TestCase):
         assert ebe.ref_scorer == REF_SCORER
         assert ebe.obs_scorer == OBS_SCORER
 
-    def test_n_sleeps(self):
-        assert ebe.n_sleeps == N_NIGHTS
+    def test_n_sessions(self):
+        assert ebe.n_sessions == N_SESSIONS
 
     def test_data_shape(self):
         # data has two columns (one per scorer) and n_nights * n_epochs rows
@@ -49,10 +49,10 @@ class TestEpochByEpochAgreementInit(unittest.TestCase):
         ref_dict = {f"night{i}": h for i, h in enumerate(ref_hyps)}
         obs_dict = {f"night{i}": h for i, h in enumerate(obs_hyps)}
         ebe_dict = EpochByEpochAgreement(ref_dict, obs_dict)
-        assert ebe_dict.n_sleeps == N_NIGHTS
+        assert ebe_dict.n_sessions == N_SESSIONS
 
     def test_single_night_via_evaluate(self):
-        assert ebe_single.n_sleeps == 1
+        assert ebe_single.n_sessions == 1
         assert ebe_single.ref_scorer == REF_SCORER
         assert ebe_single.obs_scorer == OBS_SCORER
 
@@ -70,7 +70,7 @@ class TestEpochByEpochAgreementInputValidation(unittest.TestCase):
             EpochByEpochAgreement(ref_hyps, same)
 
     def test_missing_scorer_raises(self):
-        no_scorer = [simulate_hypnogram(tib=90, seed=i) for i in range(N_NIGHTS)]
+        no_scorer = [simulate_hypnogram(tib=90, seed=i) for i in range(N_SESSIONS)]
         with pytest.raises(AssertionError):
             EpochByEpochAgreement(ref_hyps, no_scorer)
 
@@ -84,7 +84,7 @@ class TestGetAgreement(unittest.TestCase):
 
     def test_shape(self):
         agr = ebe.get_agreement()
-        assert agr.shape[0] == N_NIGHTS
+        assert agr.shape[0] == N_SESSIONS
         expected_cols = {"accuracy", "balanced_acc", "kappa", "mcc", "precision", "recall", "f1"}
         assert expected_cols == set(agr.columns)
 
@@ -175,8 +175,8 @@ class TestGetSleepStats(unittest.TestCase):
 
     def test_n_rows(self):
         sstats = ebe.get_sleep_stats()
-        # Two scorers × N_NIGHTS sessions
-        assert len(sstats) == 2 * N_NIGHTS
+        # Two scorers × N_SESSIONS sessions
+        assert len(sstats) == 2 * N_SESSIONS
 
     def test_single_night(self):
         sstats = ebe_single.get_sleep_stats()
@@ -187,7 +187,7 @@ class TestGetSleepStats(unittest.TestCase):
 # SleepStatsAgreement shared fixtures
 # ---------------------------------------------------------------------------
 
-# Need more nights for stable statistics; reuse the ebe fixture (N_NIGHTS=5)
+# Need more nights for stable statistics; reuse the ebe fixture (N_SESSIONS=5)
 _sstats = ebe.get_sleep_stats()
 _ref_stats = _sstats.loc[REF_SCORER]
 _obs_stats = _sstats.loc[OBS_SCORER]
@@ -207,7 +207,7 @@ class TestSleepStatsAgreementInit(unittest.TestCase):
         assert ssa.obs_scorer == OBS_SCORER
 
     def test_n_sessions(self):
-        assert ssa.n_sessions == N_NIGHTS
+        assert ssa.n_sessions == N_SESSIONS
 
     def test_sleep_statistics_list(self):
         assert isinstance(ssa.sleep_statistics, list)
@@ -336,7 +336,7 @@ class TestSleepStatsAgreementCalibrate(unittest.TestCase):
 class TestSleepStatsAgreementReport(unittest.TestCase):
     """Test the report method.
 
-    Use ci_method="param" to avoid the bootstrap path with small samples (N_NIGHTS=5).
+    Use ci_method="param" to avoid the bootstrap path with small samples (N_SESSIONS=5).
     """
 
     def test_returns_dataframe(self):
