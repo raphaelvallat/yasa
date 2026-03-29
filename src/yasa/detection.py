@@ -993,14 +993,24 @@ def spindles_detect(
             # indexing a full-resolution interpolated array).
             sp_t_start = sp[j][0] / sf
             sp_t_end = sp[j][-1] / sf
-            stft_in_sp = (t_stft >= sp_t_start) & (t_stft <= sp_t_end)
-            if stft_in_sp.any():
-                sp_rel[j] = np.median(rel_pow_coarse[stft_in_sp])
+            idx_start = np.searchsorted(t_stft, sp_t_start, side="left")
+            idx_end = np.searchsorted(t_stft, sp_t_end, side="right")
+            if idx_start < idx_end:
+                # At least one STFT frame falls within the spindle
+                sp_rel[j] = np.median(rel_pow_coarse[idx_start:idx_end])
             else:
                 # Spindle shorter than one STFT step: use the nearest frame
-                sp_rel[j] = rel_pow_coarse[
-                    np.argmin(np.abs(t_stft - 0.5 * (sp_t_start + sp_t_end)))
-                ]
+                sp_mid = 0.5 * (sp_t_start + sp_t_end)
+                idx = np.searchsorted(t_stft, sp_mid, side="left")
+                if idx == 0:
+                    nearest_idx = 0
+                elif idx >= t_stft.size:
+                    nearest_idx = t_stft.size - 1
+                elif abs(t_stft[idx] - sp_mid) < abs(t_stft[idx - 1] - sp_mid):
+                    nearest_idx = idx
+                else:
+                    nearest_idx = idx - 1
+                sp_rel[j] = rel_pow_coarse[nearest_idx]
 
             # Hilbert-based instantaneous properties
             sp_inst_freq = inst_freq[i, sp[j]]

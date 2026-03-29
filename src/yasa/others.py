@@ -111,7 +111,7 @@ def moving_transform(x, y=None, sf=100, window=0.3, step=0.1, method="corr", int
             'corr' : Correlation between x and y
             'covar' : Covariance between x and y
     interp : boolean
-        If True, a cubic interpolation is performed to ensure that the output
+        If True, a linear interpolation is performed to ensure that the output
         has the same size as the input.
 
     Returns
@@ -169,12 +169,14 @@ def moving_transform(x, y=None, sf=100, window=0.3, step=0.1, method="corr", int
     if method == "mean":
         cx = np.zeros(n + 1)
         cx[1:] = np.cumsum(x)
-        out = (cx[end] - cx[beg]) / win_sz
+        with np.errstate(invalid="ignore", divide="ignore"):
+            out = np.where(win_sz > 0, (cx[end] - cx[beg]) / win_sz, np.nan)
 
     elif method == "rms":
         cx2 = np.zeros(n + 1)
         cx2[1:] = np.cumsum(x**2)
-        out = np.sqrt((cx2[end] - cx2[beg]) / win_sz)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            out = np.where(win_sz > 0, np.sqrt((cx2[end] - cx2[beg]) / win_sz), np.nan)
 
     elif method in ("corr", "covar"):
         # Prefix cumsums let each window's sum be read in O(1): sum(x[a:b]) =
@@ -199,8 +201,10 @@ def moving_transform(x, y=None, sf=100, window=0.3, step=0.1, method="corr", int
         sx = cx[end] - cx[beg]
         sy = cy[end] - cy[beg]
         sxy = cxy[end] - cxy[beg]
+        valid = win_sz >= 2
         if method == "covar":
-            out = (sxy - sx * sy / win_sz) / (win_sz - 1)
+            with np.errstate(invalid="ignore", divide="ignore"):
+                out = np.where(valid, (sxy - sx * sy / win_sz) / (win_sz - 1), np.nan)
         else:  # corr
             cx2 = np.zeros(n + 1)
             cx2[1:] = np.cumsum(x**2)
@@ -208,9 +212,13 @@ def moving_transform(x, y=None, sf=100, window=0.3, step=0.1, method="corr", int
             cy2[1:] = np.cumsum(y**2)
             sx2 = cx2[end] - cx2[beg]
             sy2 = cy2[end] - cy2[beg]
-            num = sxy - sx * sy / win_sz
-            den = np.sqrt((sx2 - sx**2 / win_sz) * (sy2 - sy**2 / win_sz))
-            out = np.where(den == 0.0, np.nan, num / den)
+            with np.errstate(invalid="ignore", divide="ignore"):
+                num = sxy - sx * sy / win_sz
+                # Clip variance terms to 0 to guard against small negative values from floating-point error
+                vx = np.clip(sx2 - sx**2 / win_sz, 0, None)
+                vy = np.clip(sy2 - sy**2 / win_sz, 0, None)
+                den = np.sqrt(vx * vy)
+                out = np.where(valid & (den != 0.0), num / den, np.nan)
 
     elif method in ("min", "max", "ptp", "prop_above_zero"):
         # Group windows by their actual sample count (end - beg).  When
