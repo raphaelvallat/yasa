@@ -90,13 +90,14 @@ class TestOthers(unittest.TestCase):
 
         def _ref(x, y, method, window, step, sf):
             """Brute-force reference: slide a Python loop over exact windows."""
+            n_local = x.size
             halfdur = window / 2
-            total_dur = n / sf
+            total_dur = n_local / sf
             idx_times = np.arange(0, total_dur, step)
             out = []
             for t in idx_times:
                 b = max(0, int((t - halfdur) * sf))
-                e = min(n - 1, int((t + halfdur) * sf))
+                e = min(n_local, int((t + halfdur) * sf))
                 seg_x = x[b:e]
                 seg_y = y[b:e] if y is not None else None
                 m = seg_x.size

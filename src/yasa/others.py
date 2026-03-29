@@ -139,6 +139,8 @@ def moving_transform(x, y=None, sf=100, window=0.3, step=0.1, method="corr", int
         "corr",
     ]
     x = np.asarray(x, dtype=np.float64)
+    if method in ("corr", "covar") and y is None:
+        raise ValueError(f"y must be provided when method='{method}'")
     if y is not None:
         y = np.asarray(y, dtype=np.float64)
         assert x.size == y.size
@@ -153,13 +155,16 @@ def moving_transform(x, y=None, sf=100, window=0.3, step=0.1, method="corr", int
     idx = np.arange(0, total_dur, step)
     out = np.zeros(idx.size)
 
-    # Define beginning, end and time (centered) vector
+    # Define beginning, end and time (centered) vector.
+    # end is an exclusive index (consistent with Python slice semantics and the
+    # prefix-sum formula cx[end] - cx[beg]).  Clip to [0, n] so edge windows
+    # can include the last sample x[n-1] without going out of bounds.
     beg = ((idx - halfdur) * sf).astype(int)
     end = ((idx + halfdur) * sf).astype(int)
     beg[beg < 0] = 0
-    end[end > last] = last
+    end[end > last] = n
     # Alternatively, to cut off incomplete windows (comment the 2 lines above)
-    # mask = ~((beg < 0) | (end > last))
+    # mask = ~((beg < 0) | (end > n))
     # beg, end = beg[mask], end[mask]
     t = np.column_stack((beg, end)).mean(1) / sf
 
@@ -229,7 +234,10 @@ def moving_transform(x, y=None, sf=100, window=0.3, step=0.1, method="corr", int
         # fancy-index to pick the correct rows and reduce along axis=1.
         # This is exact (no ±1 sample approximation) and avoids any Python loop.
         win_sz_int = (end - beg).astype(int)
+        out[:] = np.nan  # default; overwritten for wsz >= 1 below
         for wsz in np.unique(win_sz_int):
+            if wsz == 0:
+                continue  # leave out[mask] = np.nan
             mask = win_sz_int == wsz
             # as_strided view: row i is x[i : i+wsz], shape (n-wsz+1, wsz).
             # beg[mask] + wsz == end[mask] <= n-1, so all row indices are valid.
