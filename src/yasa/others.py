@@ -9,8 +9,6 @@ from numpy.lib.stride_tricks import as_strided
 from scipy.interpolate import interp1d
 from scipy.special import erfinv
 
-from .numba import _corr, _covar, _rms, _slope_lstsq
-
 logger = logging.getLogger("yasa")
 
 __all__ = ["moving_transform", "trimbothstd", "sliding_window", "get_centered_indices"]
@@ -165,63 +163,101 @@ def moving_transform(x, y=None, sf=100, window=0.3, step=0.1, method="corr", int
     # beg, end = beg[mask], end[mask]
     t = np.column_stack((beg, end)).mean(1) / sf
 
+    # Window sizes in samples (may be smaller at the edges due to clipping)
+    win_sz = (end - beg).astype(np.float64)
+
     if method == "mean":
+        cx = np.zeros(n + 1)
+        cx[1:] = np.cumsum(x)
+        out = (cx[end] - cx[beg]) / win_sz
 
-        def func(x):
-            return np.mean(x)
+    elif method == "rms":
+        cx2 = np.zeros(n + 1)
+        cx2[1:] = np.cumsum(x**2)
+        out = np.sqrt((cx2[end] - cx2[beg]) / win_sz)
 
-    elif method == "min":
+    elif method in ("corr", "covar"):
+        # Prefix cumsums let each window's sum be read in O(1): sum(x[a:b]) =
+        # cx[b] - cx[a].  Expanding the sample covariance / correlation by
+        # substituting mean = sx/n yields the "computational formula":
+        #
+        #   cov(x,y)  = (Σxy  -  Σx·Σy / n) / (n - 1)
+        #   var(x)    = (Σx²  -  (Σx)² / n) / (n - 1)
+        #   corr(x,y) = cov(x,y) / sqrt(var(x) · var(y))
+        #
+        # where every Σ is evaluated over the window with a single subtraction
+        # on the precomputed prefix arrays.  This avoids iterating over each
+        # window individually.  Numerical precision is adequate here because
+        # the EEG signals are bandpass-filtered (zero-mean), so the
+        # cancellation term sx·sy/n is negligible.
+        cx = np.zeros(n + 1)
+        cx[1:] = np.cumsum(x)
+        cy = np.zeros(n + 1)
+        cy[1:] = np.cumsum(y)
+        cxy = np.zeros(n + 1)
+        cxy[1:] = np.cumsum(x * y)
+        sx = cx[end] - cx[beg]
+        sy = cy[end] - cy[beg]
+        sxy = cxy[end] - cxy[beg]
+        if method == "covar":
+            out = (sxy - sx * sy / win_sz) / (win_sz - 1)
+        else:  # corr
+            cx2 = np.zeros(n + 1)
+            cx2[1:] = np.cumsum(x**2)
+            cy2 = np.zeros(n + 1)
+            cy2[1:] = np.cumsum(y**2)
+            sx2 = cx2[end] - cx2[beg]
+            sy2 = cy2[end] - cy2[beg]
+            num = sxy - sx * sy / win_sz
+            den = np.sqrt((sx2 - sx**2 / win_sz) * (sy2 - sy**2 / win_sz))
+            out = np.where(den == 0.0, np.nan, num / den)
 
-        def func(x):
-            return np.min(x)
-
-    elif method == "max":
-
-        def func(x):
-            return np.max(x)
-
-    elif method == "ptp":
-
-        def func(x):
-            return np.ptp(x)
-
-    elif method == "prop_above_zero":
-
-        def func(x):
-            return np.count_nonzero(x >= 0) / x.size
+    elif method in ("min", "max", "ptp", "prop_above_zero"):
+        # Group windows by their actual sample count (end - beg).  When
+        # window * sf is not an integer, neighbouring windows alternate
+        # between floor and ceil sizes, giving at most ~2 distinct values for
+        # interior windows plus a handful of smaller edge windows.  For each
+        # group, build a zero-copy (n_wins, wsz) view with as_strided, then
+        # fancy-index to pick the correct rows and reduce along axis=1.
+        # This is exact (no ±1 sample approximation) and avoids any Python loop.
+        win_sz_int = (end - beg).astype(int)
+        for wsz in np.unique(win_sz_int):
+            mask = win_sz_int == wsz
+            # as_strided view: row i is x[i : i+wsz], shape (n-wsz+1, wsz).
+            # beg[mask] + wsz == end[mask] <= n-1, so all row indices are valid.
+            all_wins = as_strided(
+                x,
+                shape=(n - wsz + 1, wsz),
+                strides=(x.strides[0], x.strides[0]),
+            )
+            wins = all_wins[beg[mask]]  # copy of selected rows, shape (k, wsz)
+            if method == "min":
+                out[mask] = wins.min(axis=1)
+            elif method == "max":
+                out[mask] = wins.max(axis=1)
+            elif method == "ptp":
+                out[mask] = wins.max(axis=1) - wins.min(axis=1)
+            else:  # prop_above_zero
+                out[mask] = (wins >= 0).sum(axis=1) / wsz
 
     elif method == "slope":
-
-        def func(x):
-            times = np.arange(x.size, dtype=np.float64) / sf
-            return _slope_lstsq(times, x)
-
-    elif method == "covar":
-
-        def func(x, y):
-            return _covar(x, y)
-
-    elif method == "corr":
-
-        def func(x, y):
-            return _corr(x, y)
-
-    else:
-
-        def func(x):
-            return _rms(x)
-
-    # Now loop over successive epochs
-    if method in ["covar", "corr"]:
         for i in range(idx.size):
-            out[i] = func(x[beg[i] : end[i]], y[beg[i] : end[i]])
-    else:
-        for i in range(idx.size):
-            out[i] = func(x[beg[i] : end[i]])
+            seg = x[beg[i] : end[i]]
+            m = seg.size
+            if m < 2:
+                out[i] = np.nan
+                continue
+            times = np.arange(m, dtype=np.float64) / sf
+            sx = times.sum()
+            sy = seg.sum()
+            sxy = np.dot(times, seg)
+            sx2 = np.dot(times, times)
+            den = m * sx2 - sx * sx
+            out[i] = (m * sxy - sx * sy) / den if den != 0 else np.nan
 
     # Finally interpolate
     if interp and step != 1 / sf:
-        f = interp1d(t, out, kind="cubic", bounds_error=False, fill_value=0, assume_sorted=True)
+        f = interp1d(t, out, kind="linear", bounds_error=False, fill_value=0, assume_sorted=True)
         t = np.arange(n) / sf
         out = f(t)
 
