@@ -388,6 +388,7 @@ def topoplot(
     figsize=(4, 4),
     dpi=80,
     fontsize=14,
+    ax=None,
     **kwargs,
 ):
     """
@@ -431,6 +432,10 @@ def topoplot(
         The resolution of the plot.
     fontsize : int
         Global font size of all the elements of the plot.
+    ax : :py:class:`matplotlib.axes.Axes` or None
+        Axes on which to draw the topoplot. If None (default), a new figure
+        and axes are created. When ``ax`` is provided, the ``figsize`` and
+        ``dpi`` arguments are ignored.
     **kwargs : dict
         Other arguments that are passed to :py:func:`mne.viz.plot_topomap`.
 
@@ -466,6 +471,27 @@ def topoplot(
         ...     index=["F3", "Fz", "F4", "C3", "Cz", "C4", "Pz"],
         ... )
         >>> fig = yasa.topoplot(data, vmin=-1, vmax=1, n_colors=8, cbar_title="Pearson correlation")
+
+    3. Plot two topoplots side-by-side using the ``ax`` parameter
+
+    .. plot::
+
+        >>> import yasa
+        >>> import pandas as pd
+        >>> import matplotlib.pyplot as plt
+        >>> data1 = pd.Series(
+        ...     [4, 8, 7, 1, 2, 3, 5],
+        ...     index=["F4", "F3", "C4", "C3", "P3", "P4", "Oz"],
+        ...     name="NREM",
+        ... )
+        >>> data2 = pd.Series(
+        ...     [2, 5, 4, 3, 6, 7, 4],
+        ...     index=["F4", "F3", "C4", "C3", "P3", "P4", "Oz"],
+        ...     name="REM",
+        ... )
+        >>> fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+        >>> yasa.topoplot(data1, ax=axes[0])
+        >>> yasa.topoplot(data2, ax=axes[1])
     """
     # Increase font size while preserving original
     old_fontsize = plt.rcParams["font.size"]
@@ -527,7 +553,12 @@ def topoplot(
 
     # Start the plot
     with sns.axes_style("white"):
-        fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+            _ax_provided = False
+        else:
+            fig = ax.get_figure()
+            _ax_provided = True
 
         if "show_names" in kwargs:
             kwargs.pop("show_names")
@@ -549,8 +580,11 @@ def topoplot(
         if cbar_title is None:
             cbar_title = data.iloc[:, 0].name
 
-        cax = fig.add_axes([0.95, 0.3, 0.02, 0.5])
-        cbar = fig.colorbar(im, cax=cax, ticks=cbar_ticks, fraction=0.5)
+        if _ax_provided:
+            cbar = fig.colorbar(im, ax=ax, ticks=cbar_ticks, fraction=0.046, pad=0.04)
+        else:
+            cax = fig.add_axes([0.95, 0.3, 0.02, 0.5])
+            cbar = fig.colorbar(im, cax=cax, ticks=cbar_ticks, fraction=0.5)
         cbar.set_label(cbar_title)
 
         # Revert font-size

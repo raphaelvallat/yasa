@@ -10,6 +10,8 @@ companion R functions (`ebe2sleep.R`, `errorMatrix.R`, `indEBE.R`, `groupEBE.R`,
 - ❌ Missing / Not implemented
 - 🐛 Bug
 
+See https://github.com/raphaelvallat/yasa/pull/228
+
 ---
 
 ## EpochByEpochAgreement
@@ -37,8 +39,7 @@ companion R functions (`ebe2sleep.R`, `errorMatrix.R`, `indEBE.R`, `groupEBE.R`,
 |---|-------|--------|-------|
 | 6 | **Log transformation** missing | ⚠️ Deferred | Planned: `log_transform` param + Euser et al. (2008) back-transform. Separate PR. |
 | 7 | **Individual discrepancy heatmap** (`indDiscr.R`) | ❌ | No equivalent; data available via `get_sleep_stats()` |
-| 8 | **Bug in standalone `groupDiscr.R:117`** (reference code, not YASA) | — | `logTransf=FALSE` should be `TRUE`. Bug in the R file, not YASA |
-| 9 | **Calibration direction bug** | ✅ Fixed | See detailed investigation below (Bugs A, B, C) |
+| 8 | **Calibration direction bug** | ✅ Fixed | See detailed investigation below (Bugs A, B, C) |
 
 ---
 
