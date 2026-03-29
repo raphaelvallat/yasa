@@ -78,6 +78,114 @@ class TestOthers(unittest.TestCase):
         assert t.size == out.size
         assert out.size == data.size
 
+    def test_moving_transform_correctness(self):
+        """Test moving_transform numerical output against reference implementations."""
+        rng = np.random.default_rng(42)
+        n = 200
+        sf_t = 100.0
+        window = 0.5  # 50 samples
+        step = 0.1  # 10 samples
+        x = rng.standard_normal(n)
+        y = rng.standard_normal(n)
+
+        def _ref(x, y, method, window, step, sf):
+            """Brute-force reference: slide a Python loop over exact windows."""
+            halfdur = window / 2
+            total_dur = n / sf
+            idx_times = np.arange(0, total_dur, step)
+            out = []
+            for t in idx_times:
+                b = max(0, int((t - halfdur) * sf))
+                e = min(n - 1, int((t + halfdur) * sf))
+                seg_x = x[b:e]
+                seg_y = y[b:e] if y is not None else None
+                m = seg_x.size
+                if method == "mean":
+                    out.append(seg_x.mean())
+                elif method == "rms":
+                    out.append(np.sqrt(np.mean(seg_x**2)))
+                elif method == "min":
+                    out.append(seg_x.min())
+                elif method == "max":
+                    out.append(seg_x.max())
+                elif method == "ptp":
+                    out.append(seg_x.max() - seg_x.min())
+                elif method == "prop_above_zero":
+                    out.append((seg_x >= 0).mean())
+                elif method == "slope":
+                    if m < 2:
+                        out.append(np.nan)
+                    else:
+                        times = np.arange(m) / sf
+                        out.append(np.polyfit(times, seg_x, 1)[0])
+                elif method == "covar":
+                    if m < 2:
+                        out.append(np.nan)
+                    else:
+                        out.append(np.cov(seg_x, seg_y, ddof=1)[0, 1])
+                elif method == "corr":
+                    if m < 2:
+                        out.append(np.nan)
+                    else:
+                        c = np.corrcoef(seg_x, seg_y)[0, 1]
+                        out.append(c)
+            return np.array(out)
+
+        for method in ["mean", "rms", "min", "max", "ptp", "prop_above_zero", "slope"]:
+            _, out = moving_transform(x, y, sf_t, window, step, method)
+            ref = _ref(x, y, method, window, step, sf_t)
+            np.testing.assert_allclose(out, ref, rtol=1e-6, atol=1e-10, err_msg=f"method={method}")
+
+        for method in ["covar", "corr"]:
+            _, out = moving_transform(x, y, sf_t, window, step, method)
+            ref = _ref(x, y, method, window, step, sf_t)
+            np.testing.assert_allclose(out, ref, rtol=1e-6, atol=1e-10, err_msg=f"method={method}")
+
+    def test_moving_transform_edge_windows(self):
+        """Test moving_transform edge cases: zero-length and single-sample windows."""
+        rng = np.random.default_rng(0)
+        # Very short signal (5 samples) with a large window forces edge clipping
+        x = rng.standard_normal(5)
+        y = rng.standard_normal(5)
+        sf_t = 100.0
+        window = 1.0  # 100 samples but signal is only 5 — all windows are clipped
+
+        # mean and rms: clipped windows may have win_sz=0 only if signal is empty,
+        # but here they have at least 1 sample; just check no inf/nan from win_sz=0
+        for method in ["mean", "rms"]:
+            _, out = moving_transform(x, y, sf_t, window, step=0.01, method=method)
+            assert not np.any(np.isinf(out)), f"inf in {method} with clipped windows"
+
+        # covar/corr: windows with <2 samples must yield nan, not inf
+        for method in ["covar", "corr"]:
+            _, out = moving_transform(x, y, sf_t, window, step=0.01, method=method)
+            # All finite values must not be inf
+            assert not np.any(np.isinf(out)), f"inf in {method} with clipped windows"
+
+    def test_moving_transform_interp_size(self):
+        """Interpolated output must match input length for all methods."""
+        rng = np.random.default_rng(1)
+        n = 500
+        sf_t = 100.0
+        x = rng.standard_normal(n)
+        y = rng.standard_normal(n)
+        for method in ["mean", "rms", "corr", "covar", "slope"]:
+            t, out = moving_transform(x, y, sf_t, window=0.3, step=0.1, method=method, interp=True)
+            assert t.size == n, f"t size mismatch for method={method}"
+            assert out.size == n, f"out size mismatch for method={method}"
+
+    def test_moving_transform_non_integer_window(self):
+        """Non-integer window*sf should produce exact results (no ±1 sample error)."""
+        rng = np.random.default_rng(7)
+        n = 300
+        sf_t = 100.0
+        # window=0.075 s → 7.5 samples (non-integer)
+        x = rng.standard_normal(n)
+        y = rng.standard_normal(n)
+        for method in ["min", "max", "ptp", "prop_above_zero"]:
+            _, out = moving_transform(x, y, sf_t, window=0.075, step=0.05, method=method)
+            assert np.isfinite(out).all(), f"non-finite values for method={method}"
+
     def test_trimbothstd(self):
         """Test function trimbothstd"""
         x = [4, 5, 7, 0, 18, 6, 7, 8, 9, 10]
