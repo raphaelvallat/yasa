@@ -13,11 +13,11 @@ from yasa.hypno import simulate_hypnogram
 # Shared fixtures
 # ---------------------------------------------------------------------------
 
-N_NIGHTS = 5
+N_SESSIONS = 5
 REF_SCORER = "Human"
 OBS_SCORER = "YASA"
 
-ref_hyps = [simulate_hypnogram(tib=90, scorer=REF_SCORER, seed=i) for i in range(N_NIGHTS)]
+ref_hyps = [simulate_hypnogram(tib=90, scorer=REF_SCORER, seed=i) for i in range(N_SESSIONS)]
 obs_hyps = [h.simulate_similar(scorer=OBS_SCORER, seed=i) for i, h in enumerate(ref_hyps)]
 ebe = EpochByEpochAgreement(ref_hyps, obs_hyps)
 
@@ -37,8 +37,8 @@ class TestEpochByEpochAgreementInit(unittest.TestCase):
         assert ebe.ref_scorer == REF_SCORER
         assert ebe.obs_scorer == OBS_SCORER
 
-    def test_n_sleeps(self):
-        assert ebe.n_sleeps == N_NIGHTS
+    def test_n_sessions(self):
+        assert ebe.n_sessions == N_SESSIONS
 
     def test_data_shape(self):
         # data has two columns (one per scorer) and n_nights * n_epochs rows
@@ -49,10 +49,10 @@ class TestEpochByEpochAgreementInit(unittest.TestCase):
         ref_dict = {f"night{i}": h for i, h in enumerate(ref_hyps)}
         obs_dict = {f"night{i}": h for i, h in enumerate(obs_hyps)}
         ebe_dict = EpochByEpochAgreement(ref_dict, obs_dict)
-        assert ebe_dict.n_sleeps == N_NIGHTS
+        assert ebe_dict.n_sessions == N_SESSIONS
 
     def test_single_night_via_evaluate(self):
-        assert ebe_single.n_sleeps == 1
+        assert ebe_single.n_sessions == 1
         assert ebe_single.ref_scorer == REF_SCORER
         assert ebe_single.obs_scorer == OBS_SCORER
 
@@ -70,7 +70,7 @@ class TestEpochByEpochAgreementInputValidation(unittest.TestCase):
             EpochByEpochAgreement(ref_hyps, same)
 
     def test_missing_scorer_raises(self):
-        no_scorer = [simulate_hypnogram(tib=90, seed=i) for i in range(N_NIGHTS)]
+        no_scorer = [simulate_hypnogram(tib=90, seed=i) for i in range(N_SESSIONS)]
         with pytest.raises(AssertionError):
             EpochByEpochAgreement(ref_hyps, no_scorer)
 
@@ -84,7 +84,7 @@ class TestGetAgreement(unittest.TestCase):
 
     def test_shape(self):
         agr = ebe.get_agreement()
-        assert agr.shape[0] == N_NIGHTS
+        assert agr.shape[0] == N_SESSIONS
         expected_cols = {"accuracy", "balanced_acc", "kappa", "mcc", "precision", "recall", "f1"}
         assert expected_cols == set(agr.columns)
 
@@ -120,7 +120,7 @@ class TestGetAgreementByStage(unittest.TestCase):
 
     def test_columns(self):
         agr = ebe.get_agreement_bystage()
-        assert set(agr.columns) == {"fbeta", "precision", "recall", "support"}
+        assert set(agr.columns) == {"fbeta", "npv", "precision", "recall", "specificity", "support"}
 
     def test_multiindex(self):
         agr = ebe.get_agreement_bystage()
@@ -175,8 +175,8 @@ class TestGetSleepStats(unittest.TestCase):
 
     def test_n_rows(self):
         sstats = ebe.get_sleep_stats()
-        # Two scorers × N_NIGHTS sessions
-        assert len(sstats) == 2 * N_NIGHTS
+        # Two scorers × N_SESSIONS sessions
+        assert len(sstats) == 2 * N_SESSIONS
 
     def test_single_night(self):
         sstats = ebe_single.get_sleep_stats()
@@ -187,7 +187,7 @@ class TestGetSleepStats(unittest.TestCase):
 # SleepStatsAgreement shared fixtures
 # ---------------------------------------------------------------------------
 
-# Need more nights for stable statistics; reuse the ebe fixture (N_NIGHTS=5)
+# Need more nights for stable statistics; reuse the ebe fixture (N_SESSIONS=5)
 _sstats = ebe.get_sleep_stats()
 _ref_stats = _sstats.loc[REF_SCORER]
 _obs_stats = _sstats.loc[OBS_SCORER]
@@ -207,7 +207,7 @@ class TestSleepStatsAgreementInit(unittest.TestCase):
         assert ssa.obs_scorer == OBS_SCORER
 
     def test_n_sessions(self):
-        assert ssa.n_sessions == N_NIGHTS
+        assert ssa.n_sessions == N_SESSIONS
 
     def test_sleep_statistics_list(self):
         assert isinstance(ssa.sleep_statistics, list)
@@ -275,65 +275,37 @@ class TestSleepStatsAgreementAssumptions(unittest.TestCase):
         assert set(ssa.auto_methods.columns) == {"bias", "loa", "ci"}
 
     def test_auto_methods_valid_values(self):
-        assert ssa.auto_methods["bias"].isin(["parm", "regr"]).all()
-        assert ssa.auto_methods["loa"].isin(["parm", "regr"]).all()
-        assert ssa.auto_methods["ci"].isin(["parm", "boot"]).all()
+        assert ssa.auto_methods["bias"].isin(["param", "regr"]).all()
+        assert ssa.auto_methods["loa"].isin(["param", "regr"]).all()
+        assert ssa.auto_methods["ci"].isin(["param", "boot"]).all()
 
 
 class TestSleepStatsAgreementSummary(unittest.TestCase):
     """Test the summary method."""
 
     def test_returns_dataframe(self):
-        assert isinstance(ssa.summary(ci_method="parm"), pd.DataFrame)
+        assert isinstance(ssa.summary(ci_method="param"), pd.DataFrame)
 
     def test_index_matches_sleep_stats(self):
-        s = ssa.summary(ci_method="parm")
+        s = ssa.summary(ci_method="param")
         assert set(s.index) == set(ssa.sleep_statistics)
 
     def test_has_multiindex_columns(self):
-        s = ssa.summary(ci_method="parm")
+        s = ssa.summary(ci_method="param")
         assert isinstance(s.columns, pd.MultiIndex)
 
-    def test_bias_parm_is_finite(self):
-        s = ssa.summary(ci_method="parm")
-        assert np.isfinite(s["bias_parm"]["center"].to_numpy()).all()
+    def test_bias_mean_is_finite(self):
+        s = ssa.summary(ci_method="param")
+        assert np.isfinite(s["bias_mean"]["center"].to_numpy()).all()
 
     def test_loa_ordering(self):
         # Lower LoA must be < upper LoA for every sleep stat
-        s = ssa.summary(ci_method="parm")
-        assert (s["lloa_parm"]["center"] < s["uloa_parm"]["center"]).all()
+        s = ssa.summary(ci_method="param")
+        assert (s["loa_lower"]["center"] < s["loa_upper"]["center"]).all()
 
     def test_invalid_ci_method_raises(self):
         with pytest.raises(AssertionError):
             ssa.summary(ci_method="invalid")
-
-
-class TestSleepStatsAgreementGetTable(unittest.TestCase):
-    """Test the get_table method.
-
-    Use ci_method="parm" throughout to avoid the bootstrap path, which can fail
-    with small samples (≤5 nights) when bootstrap resamples produce constant x arrays.
-    """
-
-    def test_returns_dataframe(self):
-        tbl = ssa.get_table(bias_method="parm", loa_method="parm", ci_method="parm")
-        assert isinstance(tbl, pd.DataFrame)
-
-    def test_columns(self):
-        tbl = ssa.get_table(bias_method="parm", loa_method="parm", ci_method="parm")
-        assert set(tbl.columns) == {"bias", "bias_ci", "loa", "loa_ci"}
-
-    def test_index_matches_sleep_stats(self):
-        tbl = ssa.get_table(bias_method="parm", loa_method="parm", ci_method="parm")
-        assert set(tbl.index) == set(ssa.sleep_statistics)
-
-    def test_cells_are_strings(self):
-        tbl = ssa.get_table(bias_method="parm", loa_method="parm", ci_method="parm")
-        assert all(pd.api.types.is_string_dtype(tbl[col]) for col in tbl)
-
-    def test_invalid_bias_method_raises(self):
-        with pytest.raises(AssertionError):
-            ssa.get_table(bias_method="invalid")
 
 
 class TestSleepStatsAgreementCalibrate(unittest.TestCase):
@@ -346,12 +318,12 @@ class TestSleepStatsAgreementCalibrate(unittest.TestCase):
 
     def test_returns_dataframe(self):
         obs_subset = _obs_stats[ssa.sleep_statistics]
-        result = ssa.calibrate(obs_subset, bias_method="parm")
+        result = ssa.calibrate(obs_subset, bias_method="param")
         assert isinstance(result, pd.DataFrame)
 
     def test_shape_preserved(self):
         obs_subset = _obs_stats[ssa.sleep_statistics]
-        result = ssa.calibrate(obs_subset, bias_method="parm")
+        result = ssa.calibrate(obs_subset, bias_method="param")
         assert result.shape == obs_subset.shape
 
     def test_invalid_column_raises(self):
@@ -359,3 +331,52 @@ class TestSleepStatsAgreementCalibrate(unittest.TestCase):
         bad = obs_subset.rename(columns={ssa.sleep_statistics[0]: "NOT_A_STAT"})
         with pytest.raises(AssertionError):
             ssa.calibrate(bad)
+
+
+class TestSleepStatsAgreementReport(unittest.TestCase):
+    """Test the report method.
+
+    Use ci_method="param" to avoid the bootstrap path with small samples (N_SESSIONS=5).
+    """
+
+    def test_returns_dataframe(self):
+        rpt = ssa.report(ci_method="param")
+        assert isinstance(rpt, pd.DataFrame)
+
+    def test_index_contains_units(self):
+        rpt = ssa.report(ci_method="param")
+        # Every index label must contain a parenthesised unit
+        assert all("(" in label and ")" in label for label in rpt.index)
+
+    def test_columns(self):
+        rpt = ssa.report(ci_method="param")
+        pct = int(ssa._confidence * 100)
+        assert f"Bias [{pct}% CI]" in rpt.columns
+        assert f"LoA [{pct}% CI]" in rpt.columns
+        assert "Assumptions" in rpt.columns
+        assert f"{REF_SCORER} mean" in rpt.columns
+        assert f"{OBS_SCORER} mean" in rpt.columns
+
+    def test_mean_columns_are_numeric(self):
+        rpt = ssa.report(ci_method="param")
+        assert pd.api.types.is_numeric_dtype(rpt[f"{REF_SCORER} mean"])
+        assert pd.api.types.is_numeric_dtype(rpt[f"{OBS_SCORER} mean"])
+
+    def test_string_columns_are_strings(self):
+        rpt = ssa.report(ci_method="param")
+        pct = int(ssa._confidence * 100)
+        for col in [f"Bias [{pct}% CI]", f"LoA [{pct}% CI]", "Assumptions"]:
+            assert pd.api.types.is_string_dtype(rpt[col])
+
+    def test_assumptions_contains_checkmarks(self):
+        rpt = ssa.report(ci_method="param")
+        # Every assumptions cell must contain at least one ✓ or ✗
+        assert rpt["Assumptions"].str.contains("\u2713|\u2717").all()
+
+    def test_invalid_decimals_raises(self):
+        with pytest.raises(AssertionError):
+            ssa.report(decimals=-1)
+
+    def test_invalid_bias_method_raises(self):
+        with pytest.raises(AssertionError):
+            ssa.report(bias_method="invalid")
