@@ -5,6 +5,7 @@ from itertools import product
 
 import mne
 import numpy as np
+import pytest
 from mne.filter import filter_data
 
 from yasa.fetchers import fetch_sample
@@ -186,6 +187,42 @@ class TestOthers(unittest.TestCase):
         for method in ["min", "max", "ptp", "prop_above_zero"]:
             _, out = moving_transform(x, y, sf_t, window=0.075, step=0.05, method=method)
             assert np.isfinite(out).all(), f"non-finite values for method={method}"
+
+    def test_moving_transform_zero_length_windows(self):
+        """wsz == 0 windows in min/max/ptp/prop_above_zero must yield nan, not crash.
+
+        window=0.001 s with sf=100 Hz gives halfdur*sf=0.05, so int(0.05)=0 and
+        many windows have end - beg == 0.
+        """
+        rng = np.random.default_rng(3)
+        x = rng.standard_normal(50)
+        sf_t = 100.0
+        for method in ["min", "max", "ptp", "prop_above_zero"]:
+            _, out = moving_transform(x, None, sf_t, window=0.001, step=0.01, method=method)
+            assert not np.any(np.isinf(out)), f"inf in {method} with wsz=0 windows"
+            # At least some windows must be nan (those with wsz == 0)
+            assert np.any(np.isnan(out)), f"expected some nan in {method} with wsz=0 windows"
+
+    def test_moving_transform_last_sample_included(self):
+        """Clipping end to n (exclusive) must allow the last sample to be reached.
+
+        Place a distinctive value at x[-1] and verify that edge windows near the
+        end of the signal capture it.
+        """
+        sf_t = 100.0
+        n = 20
+        x = np.zeros(n)
+        x[-1] = 99.0  # sentinel: only visible if x[n-1] is included
+        # A large window centered near the end should include x[n-1]
+        _, out = moving_transform(x, None, sf_t, window=0.5, step=1 / sf_t, method="max")
+        assert out[-1] == 99.0, "last sample not included in edge window (end clipped too early)"
+
+    def test_moving_transform_corr_covar_requires_y(self):
+        """corr and covar must raise ValueError when y is None."""
+        x = np.random.default_rng(5).standard_normal(100)
+        for method in ["corr", "covar"]:
+            with pytest.raises(ValueError, match="y must be provided"):
+                moving_transform(x, None, 100.0, 0.5, 0.1, method)
 
     def test_trimbothstd(self):
         """Test function trimbothstd"""
