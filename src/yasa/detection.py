@@ -1783,10 +1783,7 @@ def sw_detect(
         # For each negative peak, we find the closest following positive peak
         pk_sorted = np.searchsorted(idx_pos_peaks, idx_neg_peaks)
         closest_pos_peaks = idx_pos_peaks[pk_sorted] - idx_neg_peaks
-        # Remove any degenerate case where neg and pos peak share the same index
-        valid_pairs = closest_pos_peaks != 0
-        idx_neg_peaks = idx_neg_peaks[valid_pairs]
-        closest_pos_peaks = closest_pos_peaks[valid_pairs]
+        closest_pos_peaks = closest_pos_peaks[np.nonzero(closest_pos_peaks)]
         idx_pos_peaks = idx_neg_peaks + closest_pos_peaks
 
         # Now we compute the PTP amplitude and keep only the good peaks
