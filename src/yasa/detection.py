@@ -22,7 +22,6 @@ from scipy.stats import circmean
 from sklearn.ensemble import IsolationForest
 
 from .io import is_pyriemann_installed, set_log_level
-from .numba import _detrend, _rms
 from .others import (
     _index_to_events,
     _merge_close,
@@ -873,23 +872,20 @@ def spindles_detect(
         if bad_chan[i]:
             continue
 
-        # Compute the pointwise relative power using interpolated STFT
-        # Here we use a step of 200 ms to speed up the computation.
-        # Note that even if the threshold is None we still need to calculate it
-        # for the individual spindles parameter (RelPow).
-        f, t, Sxx = stft_power(
+        # Compute the relative sigma power using the STFT (step=200 ms, no interp).
+        # rel_pow_coarse holds one value per STFT frame and is used directly for
+        # per-spindle RelPow extraction, avoiding a full-resolution interpolation.
+        f, t_stft, Sxx = stft_power(
             data_broad[i, :], sf, window=2, step=0.2, band=freq_broad, interp=False, norm=True
         )
         idx_sigma = np.logical_and(f >= freq_sp[0], f <= freq_sp[1])
-        rel_pow = Sxx[idx_sigma].sum(0)
+        rel_pow_coarse = Sxx[idx_sigma].sum(0)
 
-        # Let's interpolate `rel_pow` to get one value per sample
-        # Note that we could also have use the `interp=True` in the
-        # `stft_power` function, however 2D interpolation is much slower than
-        # 1D interpolation.
-        func = interp1d(t, rel_pow, kind="cubic", bounds_error=False, fill_value=0)
-        t = np.arange(n_samples) / sf
-        rel_pow = func(t)
+        # Full-resolution interpolation is only needed when rel_pow is used as a
+        # detection threshold.  Linear interpolation is fast and sufficient here.
+        if do_rel_pow:
+            func = interp1d(t_stft, rel_pow_coarse, kind="linear", bounds_error=False, fill_value=0)
+            rel_pow = func(np.arange(n_samples) / sf)
 
         if do_corr:
             _, mcorr = moving_transform(
@@ -989,13 +985,22 @@ def spindles_detect(
 
         for j in np.arange(len(sp))[good_dur]:
             # Important: detrend the signal to avoid wrong PTP amplitude
-            sp_x = np.arange(data_broad[i, sp[j]].size, dtype=np.float64)
-            sp_det = _detrend(sp_x, data_broad[i, sp[j]])
-            # sp_det = signal.detrend(data_broad[i, sp[i]], type='linear')
+            sp_det = signal.detrend(data_broad[i, sp[j]], type="linear")
             sp_amp[j] = np.ptp(sp_det)  # Peak-to-peak amplitude
             sp_amp_filt[j] = np.ptp(data_sigma[i, sp[j]])  # Amplitude on sigma-filtered signal
-            sp_rms[j] = _rms(sp_det)  # Root mean square
-            sp_rel[j] = np.median(rel_pow[sp[j]])  # Median relative power
+            sp_rms[j] = np.sqrt(np.mean(sp_det**2))  # Root mean square
+            # Median relative power from the coarse STFT grid (avoids
+            # indexing a full-resolution interpolated array).
+            sp_t_start = sp[j][0] / sf
+            sp_t_end = sp[j][-1] / sf
+            stft_in_sp = (t_stft >= sp_t_start) & (t_stft <= sp_t_end)
+            if stft_in_sp.any():
+                sp_rel[j] = np.median(rel_pow_coarse[stft_in_sp])
+            else:
+                # Spindle shorter than one STFT step: use the nearest frame
+                sp_rel[j] = rel_pow_coarse[
+                    np.argmin(np.abs(t_stft - 0.5 * (sp_t_start + sp_t_end)))
+                ]
 
             # Hilbert-based instantaneous properties
             sp_inst_freq = inst_freq[i, sp[j]]
