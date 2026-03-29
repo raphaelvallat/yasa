@@ -24,8 +24,12 @@ What is tested
   (%Light/%Deep/%REM) (Section 2.1 of the R pipeline).
 - Per-subject device − reference differences for TST, SE, SOL, WASO, stage durations,
   and stage percentages, via SleepStatsAgreement (Section 2.2 of the R pipeline).
-- WASO per subject for both scorers, computed as TIB − SOL − TST (R pipeline definition
-  that includes post-sleep wake, unlike YASA's built-in SPT-only WASO).
+- WASO per subject for both scorers.  The R pipeline counts all wake epochs from the
+  first sleep epoch to the end of the recording (``ebe2sleep.R`` lines 47–50), which
+  includes post-sleep wake after the final sleep epoch.  YASA's built-in ``WASO`` counts
+  only wake within the Sleep Period Time (first to last sleep epoch).  The two definitions
+  are equivalent to ``TIB − SOL − TST`` and ``SPT − TST`` respectively; the tests use
+  ``TIB − SOL − TST``, which matches the R pipeline for all 14 subjects.
 - Pooled ("sum") group recall and specificity per stage: epochs from all 14 subjects are
   concatenated into a single session and metrics are computed on the full pool
   (``group_ebe_staging["basic_sum"]``).
@@ -348,8 +352,7 @@ class TestSRISleepStats(unittest.TestCase):
     """
 
     # Maps YASA column name → (json_ref_key, json_device_key).
-    # WASO is not a YASA column here; it is computed as TIB − SOL − TST (the R pipeline
-    # definition that includes post-sleep wake) and tested separately below.
+    # WASO is tested separately below using TIB − SOL − TST (see test_waso docstring).
     _COL_MAP = {
         "TIB": ("TIB", "TIB"),
         "TST": ("TST_ref", "TST_device"),
@@ -394,10 +397,16 @@ class TestSRISleepStats(unittest.TestCase):
     def test_waso(self):
         """WASO computed as TIB − SOL − TST matches the R pipeline definition.
 
-        YASA's built-in WASO counts only wake within SPT (first to last sleep epoch).
-        The R pipeline includes post-sleep wake (wake after the final sleep epoch) via
-        WASO = TIB − SOL − TST.  Three subjects (sbj09, sbj11) have post-sleep wake so
-        the two values differ; the derived formula agrees with the R pipeline for all 14.
+        The R pipeline (ebe2sleep.R lines 47–50) counts wake epochs from the first sleep
+        epoch to the END of the recording:
+            WASO = nrow(sleepID[(SOL_epochs+1):end] where stage==0) × epochLength / 60
+        This includes post-sleep wake after the final sleep epoch and is algebraically
+        equal to TIB − SOL − TST.
+
+        YASA's built-in WASO counts only wake within the Sleep Period Time (first to last
+        sleep epoch), which is equivalent to SPT − TST.  For subjects with post-sleep wake
+        (sbj09, sbj11) the two values differ; TIB − SOL − TST agrees with the R pipeline
+        for all 14 subjects and is used here.
         """
         for scorer, json_key in (("Reference", "WASO_ref"), ("Device", "WASO_device")):
             ss = _SLEEP_STATS.xs(scorer, level="scorer")
@@ -418,7 +427,8 @@ class TestSRIDiscrepancies(unittest.TestCase):
 
     Uses SleepStatsAgreement.data to compute per-subject Device − Reference differences
     and compares against per_subject_discrepancies_staging in the reference JSON.
-    WASO is excluded (different definition between YASA and the R pipeline).
+    WASO differences are tested separately in test_waso_differences (see that method
+    for the definition used).
     Tolerance: 0.1 (minutes or percentage points).
     """
 
