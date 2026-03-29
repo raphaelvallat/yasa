@@ -5,6 +5,7 @@ from .evaluation import *
 from .fetchers import *
 from .heart import *
 from .hypno import *
+from .numba import *
 from .others import *
 from .plotting import *
 from .sleepstats import *
