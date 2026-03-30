@@ -1600,3 +1600,63 @@ class SleepStatsAgreement:
                 return (x - intercept) / (1 + slope)
 
         return calibration_func
+
+    def plot_blandaltman(self, sleep_stats=None, facetgrid_kwargs={}, **kwargs):
+        """
+        Parameters
+        ----------
+        sleep_stats : list or None
+            List of sleep statistics to plot. Default (None) is to plot all sleep statistics.
+        facetgrid_kwargs : dict
+            Other keyword arguments are passed through to :py:class:`seaborn.FacetGrid`.
+        **kwargs : dict
+            Other keyword arguments are passed through to :py:func:`yasa.plotting.blandaltman`.
+
+        Returns
+        -------
+        g : :py:class:`seaborn.FacetGrid`
+            Seaborn FacetGrid
+        """
+        import seaborn as sns  # noqa
+        import matplotlib.pyplot as plt
+        from .plotting import blandaltman
+
+        assert isinstance(sleep_stats, (list, type(None))), "`sleep_stats` must be a list or None"
+        assert isinstance(facetgrid_kwargs, dict), "`facetgrid_kwargs` must be a dict"
+        if sleep_stats is None:
+            sleep_stats = self.sleep_statistics
+        # Select scatterplot arguments (passed to blandaltman) and update with optional input
+        default_blandaltman_kwargs = dict(
+            xaxis="x", annotate=False, edgecolor="black", facecolor="none"
+        )
+        blandaltman_kwargs = default_blandaltman_kwargs | kwargs
+        # Select FacetGrid arguments and update with optional input
+        default_facetgrid_kwargs = dict(
+            data=self.data.reset_index(),
+            col="sleep_stat",
+            col_order=sleep_stats,
+            col_wrap=5 if len(sleep_stats) > 5 else None,
+            height=2,
+            aspect=1,
+            sharex=False,
+            sharey=False,
+        )
+        facetgrid_kwargs = default_facetgrid_kwargs | facetgrid_kwargs
+        # Initialize a grid of plots with an Axes for each sleep statistic
+        g = sns.FacetGrid(**facetgrid_kwargs)
+        # Draw Bland-Altman on each axis
+        g.map(blandaltman, self.obs_scorer, self.ref_scorer, **blandaltman_kwargs)
+        # Tidy-up axis limits with symmetric y-axis and minimal ticks
+        for ax in g.axes.flat:
+            bound = max(map(abs, ax.get_ylim()))
+            ax.set_ylim(-bound, bound)
+            ax.yaxis.set_major_locator(plt.MaxNLocator(nbins=2, integer=True, symmetric=True))
+            ax.xaxis.set_major_locator(plt.MaxNLocator(nbins=1, integer=True))
+        # More aesthetics
+        ylabel = " - ".join((self.obs_scorer, self.ref_scorer))
+        g.set_ylabels(ylabel)
+        g.set_titles(col_template="{col_name}")
+        g.fig.align_titles()
+        g.fig.align_labels()
+        g.tight_layout(w_pad=1, h_pad=2)
+        return g
