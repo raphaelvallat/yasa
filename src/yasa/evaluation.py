@@ -1665,6 +1665,21 @@ class SleepStatsAgreement:
         if sleep_stats is None:
             sleep_stats = self.sleep_statistics
 
+        # Validate sleep_stats content
+        assert isinstance(sleep_stats, list), "`sleep_stats` must be a list"
+        assert len(sleep_stats) > 0, "`sleep_stats` must be a non-empty list"
+        assert all(isinstance(stat, str) for stat in sleep_stats), (
+            "`sleep_stats` must be a list of strings"
+        )
+        assert len(sleep_stats) == len(set(sleep_stats)), (
+            "`sleep_stats` must not contain duplicate entries"
+        )
+        valid_stats = set(self.sleep_statistics)
+        invalid_stats = [stat for stat in sleep_stats if stat not in valid_stats]
+        assert not invalid_stats, (
+            "`sleep_stats` contains invalid statistics: "
+            f"{sorted(invalid_stats)}; valid options are {sorted(valid_stats)}"
+        )
         # Resolve per-stat bias and loa methods
         if bias_method == "auto":
             bias_param_idx = self.auto_methods.query("bias == 'param'").index.tolist()
