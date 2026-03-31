@@ -1632,9 +1632,9 @@ class SleepStatsAgreement:
             If True, sleep statistics with a statistically significant bias (i.e., the ``unbiased``
             assumption is violated) are drawn with a red bias line instead of grey.
         scatter_kwargs : dict
-            Other keyword arguments are passed through to :py:class:`seaborn.FacetGrid`.
-        **kwargs : dict
             Other keyword arguments are passed through to :py:func:`matplotlib.pyplot.scatter`.
+        **kwargs : dict
+            Other keyword arguments are passed through to :py:class:`seaborn.FacetGrid`.
 
         Returns
         -------
