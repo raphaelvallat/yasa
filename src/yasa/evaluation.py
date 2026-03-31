@@ -1655,7 +1655,7 @@ class SleepStatsAgreement:
         )
         assert ci_method is None or (
             isinstance(ci_method, str) and ci_method in self._ci_method_opts
-        )
+        ), f"`ci_method` must be one of {self._ci_method_opts} or None"
         assert isinstance(flag_biased, bool), "`flag_biased` must be True or False"
         assert isinstance(scatter_kwargs, (dict, type(None))), "`scatter_kwargs` must be a dict or None"
         if scatter_kwargs is None:
