@@ -1610,7 +1610,7 @@ class SleepStatsAgreement:
         facetgrid_kwargs : dict
             Other keyword arguments are passed through to :py:class:`seaborn.FacetGrid`.
         **kwargs : dict
-            Other keyword arguments are passed through to :py:func:`yasa.plotting.blandaltman`.
+            Other keyword arguments are passed through to :py:func:`matplotlib.pyplot.scatter`.
 
         Returns
         -------
@@ -1619,20 +1619,18 @@ class SleepStatsAgreement:
         """
         import seaborn as sns  # noqa
         import matplotlib.pyplot as plt
-        from .plotting import blandaltman
 
         assert isinstance(sleep_stats, (list, type(None))), "`sleep_stats` must be a list or None"
         assert isinstance(facetgrid_kwargs, dict), "`facetgrid_kwargs` must be a dict"
         if sleep_stats is None:
             sleep_stats = self.sleep_statistics
         # Select scatterplot arguments (passed to blandaltman) and update with optional input
-        default_blandaltman_kwargs = dict(
-            xaxis="x", annotate=False, edgecolor="black", facecolor="none"
-        )
-        blandaltman_kwargs = default_blandaltman_kwargs | kwargs
+        default_scatter_kwargs = dict(facecolor="none", edgecolor="black", alpha=0.8)
+        # Plot the mean diff, limits of agreement and scatter
+        scatter_kwargs = default_scatter_kwargs | kwargs
         # Select FacetGrid arguments and update with optional input
         default_facetgrid_kwargs = dict(
-            data=self.data.reset_index(),
+            data=self._data.reset_index("sleep_stat"),
             col="sleep_stat",
             col_order=sleep_stats,
             col_wrap=5 if len(sleep_stats) > 5 else None,
@@ -1644,8 +1642,8 @@ class SleepStatsAgreement:
         facetgrid_kwargs = default_facetgrid_kwargs | facetgrid_kwargs
         # Initialize a grid of plots with an Axes for each sleep statistic
         g = sns.FacetGrid(**facetgrid_kwargs)
-        # Draw Bland-Altman on each axis
-        g.map(blandaltman, self.obs_scorer, self.ref_scorer, **blandaltman_kwargs)
+        # Draw scatterplot on each axis
+        g.map(plt.scatter, self.obs_scorer, "difference", **scatter_kwargs)
         # Tidy-up axis limits with symmetric y-axis and minimal ticks
         for ax in g.axes.flat:
             bound = max(map(abs, ax.get_ylim()))
@@ -1655,6 +1653,7 @@ class SleepStatsAgreement:
         # More aesthetics
         ylabel = " - ".join((self.obs_scorer, self.ref_scorer))
         g.set_ylabels(ylabel)
+        g.set_xlabels(self.obs_scorer)
         g.set_titles(col_template="{col_name}")
         g.fig.align_titles()
         g.fig.align_labels()
