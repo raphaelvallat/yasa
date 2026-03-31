@@ -1751,8 +1751,10 @@ class SleepStatsAgreement:
                 y_bias_arr = intercept + slope * x_line
                 ax.plot(x_line, y_bias_arr, color=bias_color, zorder=bias_zorder, **line_kwargs)
                 if has_ci:
-                    y_lo = v[("bias_intercept", "lower")] + v[("bias_slope", "lower")] * x_line
-                    y_hi = v[("bias_intercept", "upper")] + v[("bias_slope", "upper")] * x_line
+                    y_ci_a = v[("bias_intercept", "lower")] + v[("bias_slope", "lower")] * x_line
+                    y_ci_b = v[("bias_intercept", "upper")] + v[("bias_slope", "upper")] * x_line
+                    y_lo = np.minimum(y_ci_a, y_ci_b)
+                    y_hi = np.maximum(y_ci_a, y_ci_b)
                     ax.fill_between(
                         x_line,
                         y_lo,
@@ -1790,8 +1792,10 @@ class SleepStatsAgreement:
                     lint_hi = v[("loa_intercept", "upper")]
                     lslp_lo = v[("loa_slope", "lower")]
                     lslp_hi = v[("loa_slope", "upper")]
-                    spread_lo = agreement_adj * (lint_lo + lslp_lo * x_line)
-                    spread_hi = agreement_adj * (lint_hi + lslp_hi * x_line)
+                    spread_a = agreement_adj * (lint_lo + lslp_lo * x_line)
+                    spread_b = agreement_adj * (lint_hi + lslp_hi * x_line)
+                    spread_lo = np.minimum(spread_a, spread_b)
+                    spread_hi = np.maximum(spread_a, spread_b)
                     ax.fill_between(
                         x_line,
                         y_bias_arr + spread_lo,
