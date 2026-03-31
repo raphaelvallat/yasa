@@ -1608,7 +1608,7 @@ class SleepStatsAgreement:
         loa_method="auto",
         ci_method="auto",
         flag_biased=False,
-        scatter_kwargs={},
+        scatter_kwargs=None,
         **kwargs,
     ):
         """
@@ -1657,7 +1657,9 @@ class SleepStatsAgreement:
             isinstance(ci_method, str) and ci_method in self._ci_method_opts
         )
         assert isinstance(flag_biased, bool), "`flag_biased` must be True or False"
-        assert isinstance(scatter_kwargs, dict), "`scatter_kwargs` must be a dict"
+        assert isinstance(scatter_kwargs, (dict, type(None))), "`scatter_kwargs` must be a dict or None"
+        if scatter_kwargs is None:
+            scatter_kwargs = {}
         if sleep_stats is None:
             sleep_stats = self.sleep_statistics
 
