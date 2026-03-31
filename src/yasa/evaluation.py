@@ -1608,7 +1608,7 @@ class SleepStatsAgreement:
         loa_method="auto",
         ci_method="auto",
         flag_biased=False,
-        facetgrid_kwargs={},
+        scatter_kwargs={},
         **kwargs,
     ):
         """
@@ -1631,7 +1631,7 @@ class SleepStatsAgreement:
         flag_biased : bool
             If True, sleep statistics with a statistically significant bias (i.e., the ``unbiased``
             assumption is violated) are drawn with a red bias line instead of grey.
-        facetgrid_kwargs : dict
+        scatter_kwargs : dict
             Other keyword arguments are passed through to :py:class:`seaborn.FacetGrid`.
         **kwargs : dict
             Other keyword arguments are passed through to :py:func:`matplotlib.pyplot.scatter`.
@@ -1653,9 +1653,11 @@ class SleepStatsAgreement:
         assert loa_method in self._loa_method_opts, (
             f"`loa_method` must be one of {self._loa_method_opts}"
         )
-        assert ci_method is None or (isinstance(ci_method, str) and ci_method in self._ci_method_opts)
+        assert ci_method is None or (
+            isinstance(ci_method, str) and ci_method in self._ci_method_opts
+        )
         assert isinstance(flag_biased, bool), "`flag_biased` must be True or False"
-        assert isinstance(facetgrid_kwargs, dict), "`facetgrid_kwargs` must be a dict"
+        assert isinstance(scatter_kwargs, dict), "`scatter_kwargs` must be a dict"
         if sleep_stats is None:
             sleep_stats = self.sleep_statistics
 
@@ -1683,11 +1685,13 @@ class SleepStatsAgreement:
         agreement_adj = self._agreement * np.sqrt(np.pi / 2)
 
         # Identify stats with significant bias for optional flagging
-        biased_stats = self.assumptions.query("unbiased == False").index.tolist() if flag_biased else []
+        biased_stats = (
+            self.assumptions.query("unbiased == False").index.tolist() if flag_biased else []
+        )
 
         # Select scatterplot arguments and update with optional input
         default_scatter_kwargs = dict(facecolor="none", edgecolor="black", alpha=0.8)
-        scatter_kwargs = default_scatter_kwargs | kwargs
+        scatter_kwargs = default_scatter_kwargs | scatter_kwargs
         # Select FacetGrid arguments and update with optional input
         default_facetgrid_kwargs = dict(
             data=self._data.reset_index("sleep_stat"),
@@ -1699,7 +1703,7 @@ class SleepStatsAgreement:
             sharex=False,
             sharey=False,
         )
-        facetgrid_kwargs = default_facetgrid_kwargs | facetgrid_kwargs
+        facetgrid_kwargs = default_facetgrid_kwargs | kwargs
         # Choose display levels with zorder
         data_zorder = 30
         bias_zorder = 20
@@ -1795,7 +1799,8 @@ class SleepStatsAgreement:
                         **band_kwargs,
                     )
                     ax.fill_between(
-                        x_line, y_bias_arr - spread_hi,
+                        x_line,
+                        y_bias_arr - spread_hi,
                         y_bias_arr - spread_lo,
                         facecolor=loa_color,
                         zorder=loa_zorder - 1,

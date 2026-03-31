@@ -491,17 +491,16 @@ class TestSleepStatsAgreementPlotBlandAltman(unittest.TestCase):
         with pytest.raises(AssertionError):
             ssa.plot_blandaltman(flag_biased="yes")
 
-    def test_facetgrid_kwargs_passthrough(self):
-        g = ssa.plot_blandaltman(ci_method="param", facetgrid_kwargs={"col_wrap": 1})
-        # FacetGrid col_wrap should reflect the override
-        assert g._col_wrap == 1
-
     def test_scatter_kwargs_passthrough(self):
-        g = ssa.plot_blandaltman(ci_method="param", edgecolor="red")
+        g = ssa.plot_blandaltman(ci_method="param", scatter_kwargs={"edgecolor": "red"})
         # Scatter points on first axis should have the custom color
         scatter = ax_collections(g.axes.flat[0])
         assert len(scatter) > 0
 
+    def test_facetgrid_kwargs_passthrough(self):
+        g = ssa.plot_blandaltman(ci_method="param", col_wrap=1)
+        # FacetGrid col_wrap should reflect the override
+        assert g._col_wrap == 1
 
 def ax_collections(ax):
     """Return PathCollections (scatter plots) from an Axes."""
