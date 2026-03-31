@@ -1826,7 +1826,8 @@ class SleepStatsAgreement:
         g.set_ylabels(ylabel)
         g.set_xlabels(self.ref_scorer)
         g.set_titles(col_template="{col_name}")
-        g.fig.align_titles()
+        if hasattr(g.fig, "align_titles"):  # introduced in matplotlib v3.9.0
+            g.fig.align_titles()
         g.fig.align_labels()
         g.tight_layout(w_pad=1, h_pad=2)
         return g
