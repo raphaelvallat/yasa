@@ -1704,6 +1704,8 @@ class SleepStatsAgreement:
         g = sns.FacetGrid(**facetgrid_kwargs)
         # Draw scatterplot on each axis
         g.map(plt.scatter, self.ref_scorer, "difference", **scatter_kwargs)
+        # Draw a horizontal line at y=0 on each axis
+        g.refline(y=0, color="black")
 
         # Draw bias lines, LoA lines, and CI bands on each axis
         for stat, ax in zip(sleep_stats, g.axes.flat):
