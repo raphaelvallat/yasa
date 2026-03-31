@@ -1601,12 +1601,36 @@ class SleepStatsAgreement:
 
         return calibration_func
 
-    def plot_blandaltman(self, sleep_stats=None, facetgrid_kwargs={}, **kwargs):
+    def plot_blandaltman(
+        self,
+        sleep_stats=None,
+        bias_method="auto",
+        loa_method="auto",
+        ci_method="auto",
+        flag_biased=False,
+        facetgrid_kwargs={},
+        **kwargs,
+    ):
         """
         Parameters
         ----------
         sleep_stats : list or None
             List of sleep statistics to plot. Default (None) is to plot all sleep statistics.
+        bias_method : str
+            If ``'param'``, bias is always the mean difference (horizontal line). If ``'regr'``,
+            bias is always a regression line. If ``'auto'`` (default), the method is chosen per
+            statistic based on the proportional-bias assumption test.
+        loa_method : str
+            If ``'param'``, limits of agreement are always horizontal lines (bias ± 1.96 SD). If
+            ``'regr'``, they are always regression-modeled lines. If ``'auto'`` (default), the
+            method is chosen per statistic based on the homoscedasticity assumption test.
+        ci_method : str or None
+            If ``'param'``, parametric CIs are drawn. If ``'boot'``, bootstrap CIs are drawn. If
+            ``'auto'`` (default), chosen per statistic based on the normality assumption test.
+            If ``None``, no confidence intervals are drawn.
+        flag_biased : bool
+            If True, sleep statistics with a statistically significant bias (i.e., the ``unbiased``
+            assumption is violated) are drawn with a red bias line instead of grey.
         facetgrid_kwargs : dict
             Other keyword arguments are passed through to :py:class:`seaborn.FacetGrid`.
         **kwargs : dict
@@ -1621,12 +1645,48 @@ class SleepStatsAgreement:
         import matplotlib.pyplot as plt
 
         assert isinstance(sleep_stats, (list, type(None))), "`sleep_stats` must be a list or None"
+        assert isinstance(bias_method, str), "`bias_method` must be a string"
+        assert bias_method in self._bias_method_opts, (
+            f"`bias_method` must be one of {self._bias_method_opts}"
+        )
+        assert isinstance(loa_method, str), "`loa_method` must be a string"
+        assert loa_method in self._loa_method_opts, (
+            f"`loa_method` must be one of {self._loa_method_opts}"
+        )
+        assert ci_method is None or (isinstance(ci_method, str) and ci_method in self._ci_method_opts)
+        assert isinstance(flag_biased, bool), "`flag_biased` must be True or False"
         assert isinstance(facetgrid_kwargs, dict), "`facetgrid_kwargs` must be a dict"
         if sleep_stats is None:
             sleep_stats = self.sleep_statistics
-        # Select scatterplot arguments (passed to blandaltman) and update with optional input
+
+        # Resolve per-stat bias and loa methods
+        if bias_method == "auto":
+            bias_param_idx = self.auto_methods.query("bias == 'param'").index.tolist()
+        elif bias_method == "param":
+            bias_param_idx = sleep_stats
+        else:
+            bias_param_idx = []
+
+        if loa_method == "auto":
+            loa_param_idx = self.auto_methods.query("loa == 'param'").index.tolist()
+        elif loa_method == "param":
+            loa_param_idx = sleep_stats
+        else:
+            loa_param_idx = []
+
+        # Retrieve values and CIs
+        if ci_method is not None:
+            vals = self.summary(ci_method=ci_method)
+        else:
+            vals = pd.concat({"center": self._vals}, names=["interval"], axis=1).swaplevel(axis=1)
+
+        agreement_adj = self._agreement * np.sqrt(np.pi / 2)
+
+        # Identify stats with significant bias for optional flagging
+        biased_stats = self.assumptions.query("unbiased == False").index.tolist() if flag_biased else []
+
+        # Select scatterplot arguments and update with optional input
         default_scatter_kwargs = dict(facecolor="none", edgecolor="black", alpha=0.8)
-        # Plot the mean diff, limits of agreement and scatter
         scatter_kwargs = default_scatter_kwargs | kwargs
         # Select FacetGrid arguments and update with optional input
         default_facetgrid_kwargs = dict(
@@ -1643,7 +1703,72 @@ class SleepStatsAgreement:
         # Initialize a grid of plots with an Axes for each sleep statistic
         g = sns.FacetGrid(**facetgrid_kwargs)
         # Draw scatterplot on each axis
-        g.map(plt.scatter, self.obs_scorer, "difference", **scatter_kwargs)
+        g.map(plt.scatter, self.ref_scorer, "difference", **scatter_kwargs)
+
+        # Draw bias lines, LoA lines, and CI bands on each axis
+        for stat, ax in zip(sleep_stats, g.axes.flat):
+            x_min, x_max = ax.get_xlim()
+            x_line = np.array([x_min, x_max])
+            v = vals.loc[stat]
+            has_ci = ci_method is not None
+            bias_color = "tab:red" if stat in biased_stats else "grey"
+
+            # --- Bias line ---
+            if stat in bias_param_idx:
+                y_bias = v[("bias_mean", "center")]
+                ax.axhline(y_bias, color=bias_color, linewidth=1)
+                if has_ci:
+                    ax.axhspan(
+                        v[("bias_mean", "lower")], v[("bias_mean", "upper")],
+                        color=bias_color, alpha=0.15,
+                    )
+                y_bias_arr = np.full_like(x_line, y_bias, dtype=float)
+            else:
+                intercept = v[("bias_intercept", "center")]
+                slope = v[("bias_slope", "center")]
+                y_bias_arr = intercept + slope * x_line
+                ax.plot(x_line, y_bias_arr, color=bias_color, linewidth=1)
+                if has_ci:
+                    y_lo = v[("bias_intercept", "lower")] + v[("bias_slope", "lower")] * x_line
+                    y_hi = v[("bias_intercept", "upper")] + v[("bias_slope", "upper")] * x_line
+                    ax.fill_between(x_line, y_lo, y_hi, color=bias_color, alpha=0.15)
+
+            # --- LoA lines ---
+            if stat in loa_param_idx:
+                for loa_var in ("loa_lower", "loa_upper"):
+                    y_loa = v[(loa_var, "center")]
+                    ax.axhline(y_loa, color="tab:blue", linewidth=1, linestyle="--")
+                    if has_ci:
+                        ax.axhspan(
+                            v[(loa_var, "lower")], v[(loa_var, "upper")],
+                            color="tab:blue", alpha=0.1,
+                        )
+            else:
+                loa_int = v[("loa_intercept", "center")]
+                loa_slp = v[("loa_slope", "center")]
+                y_spread = agreement_adj * (loa_int + loa_slp * x_line)
+                ax.plot(
+                    x_line, y_bias_arr + y_spread, color="tab:blue", linewidth=1, linestyle="--",
+                )
+                ax.plot(
+                    x_line, y_bias_arr - y_spread, color="tab:blue", linewidth=1, linestyle="--",
+                )
+                if has_ci:
+                    lint_lo = v[("loa_intercept", "lower")]
+                    lint_hi = v[("loa_intercept", "upper")]
+                    lslp_lo = v[("loa_slope", "lower")]
+                    lslp_hi = v[("loa_slope", "upper")]
+                    spread_lo = agreement_adj * (lint_lo + lslp_lo * x_line)
+                    spread_hi = agreement_adj * (lint_hi + lslp_hi * x_line)
+                    ax.fill_between(
+                        x_line, y_bias_arr + spread_lo, y_bias_arr + spread_hi,
+                        color="tab:blue", alpha=0.1,
+                    )
+                    ax.fill_between(
+                        x_line, y_bias_arr - spread_hi, y_bias_arr - spread_lo,
+                        color="tab:blue", alpha=0.1,
+                    )
+
         # Tidy-up axis limits with symmetric y-axis and minimal ticks
         for ax in g.axes.flat:
             bound = max(map(abs, ax.get_ylim()))
@@ -1653,7 +1778,7 @@ class SleepStatsAgreement:
         # More aesthetics
         ylabel = " - ".join((self.obs_scorer, self.ref_scorer))
         g.set_ylabels(ylabel)
-        g.set_xlabels(self.obs_scorer)
+        g.set_xlabels(self.ref_scorer)
         g.set_titles(col_template="{col_name}")
         g.fig.align_titles()
         g.fig.align_labels()
