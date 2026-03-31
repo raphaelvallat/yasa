@@ -1705,55 +1705,65 @@ class SleepStatsAgreement:
         # Draw scatterplot on each axis
         g.map(plt.scatter, self.ref_scorer, "difference", **scatter_kwargs)
         # Draw a horizontal line at y=0 on each axis
-        g.refline(y=0, color="black")
-
+        g.refline(y=0, color="black", linewidth=1, linestyle="solid")
+        # Choose arguments for all calls to axhspan and fill_between for bias and LoA CI bands
+        band_kwargs = dict(edgecolor="none", alpha=0.15)
+        # Choose arguments for all calls to axhline and plot for bias and LoA lines
+        line_kwargs = dict(linewidth=1, linestyle="dashed", alpha=0.8)
+        loa_color = "tab:blue"
+        bias_default_color = "tab:gray"  # when not flagged as biased
+        bias_flagged_color = "tab:red"
         # Draw bias lines, LoA lines, and CI bands on each axis
-        for stat, ax in zip(sleep_stats, g.axes.flat):
+        for stat, ax in zip(sleep_stats, g.axes.flat, strict=True):
             x_min, x_max = ax.get_xlim()
             x_line = np.array([x_min, x_max])
             v = vals.loc[stat]
             has_ci = ci_method is not None
-            bias_color = "tab:red" if stat in biased_stats else "grey"
+            bias_color = bias_flagged_color if stat in biased_stats else bias_default_color
 
             # --- Bias line ---
             if stat in bias_param_idx:
                 y_bias = v[("bias_mean", "center")]
-                ax.axhline(y_bias, color=bias_color, linewidth=1)
+                ax.axhline(y_bias, color=bias_color, **line_kwargs)
                 if has_ci:
                     ax.axhspan(
-                        v[("bias_mean", "lower")], v[("bias_mean", "upper")],
-                        color=bias_color, alpha=0.15,
+                        v[("bias_mean", "lower")],
+                        v[("bias_mean", "upper")],
+                        facecolor=bias_color,
+                        **band_kwargs,
                     )
                 y_bias_arr = np.full_like(x_line, y_bias, dtype=float)
             else:
                 intercept = v[("bias_intercept", "center")]
                 slope = v[("bias_slope", "center")]
                 y_bias_arr = intercept + slope * x_line
-                ax.plot(x_line, y_bias_arr, color=bias_color, linewidth=1)
+                ax.plot(x_line, y_bias_arr, color=bias_color, **line_kwargs)
                 if has_ci:
                     y_lo = v[("bias_intercept", "lower")] + v[("bias_slope", "lower")] * x_line
                     y_hi = v[("bias_intercept", "upper")] + v[("bias_slope", "upper")] * x_line
-                    ax.fill_between(x_line, y_lo, y_hi, color=bias_color, alpha=0.15)
+                    ax.fill_between(x_line, y_lo, y_hi, facecolor=bias_color, **band_kwargs)
 
             # --- LoA lines ---
             if stat in loa_param_idx:
                 for loa_var in ("loa_lower", "loa_upper"):
                     y_loa = v[(loa_var, "center")]
-                    ax.axhline(y_loa, color="tab:blue", linewidth=1, linestyle="--")
+                    ax.axhline(y_loa, color=loa_color, linewidth=1, linestyle="--")
                     if has_ci:
                         ax.axhspan(
-                            v[(loa_var, "lower")], v[(loa_var, "upper")],
-                            color="tab:blue", alpha=0.1,
+                            v[(loa_var, "lower")],
+                            v[(loa_var, "upper")],
+                            facecolor=loa_color,
+                            **band_kwargs,
                         )
             else:
                 loa_int = v[("loa_intercept", "center")]
                 loa_slp = v[("loa_slope", "center")]
                 y_spread = agreement_adj * (loa_int + loa_slp * x_line)
                 ax.plot(
-                    x_line, y_bias_arr + y_spread, color="tab:blue", linewidth=1, linestyle="--",
+                    x_line, y_bias_arr + y_spread, color=loa_color, linewidth=1, linestyle="--",
                 )
                 ax.plot(
-                    x_line, y_bias_arr - y_spread, color="tab:blue", linewidth=1, linestyle="--",
+                    x_line, y_bias_arr - y_spread, color=loa_color, linewidth=1, linestyle="--",
                 )
                 if has_ci:
                     lint_lo = v[("loa_intercept", "lower")]
@@ -1763,12 +1773,17 @@ class SleepStatsAgreement:
                     spread_lo = agreement_adj * (lint_lo + lslp_lo * x_line)
                     spread_hi = agreement_adj * (lint_hi + lslp_hi * x_line)
                     ax.fill_between(
-                        x_line, y_bias_arr + spread_lo, y_bias_arr + spread_hi,
-                        color="tab:blue", alpha=0.1,
+                        x_line,
+                        y_bias_arr + spread_lo,
+                        y_bias_arr + spread_hi,
+                        facecolor=loa_color,
+                        **band_kwargs,
                     )
                     ax.fill_between(
-                        x_line, y_bias_arr - spread_hi, y_bias_arr - spread_lo,
-                        color="tab:blue", alpha=0.1,
+                        x_line, y_bias_arr - spread_hi,
+                        y_bias_arr - spread_lo,
+                        facecolor=loa_color,
+                        **band_kwargs,
                     )
 
         # Tidy-up axis limits with symmetric y-axis and minimal ticks
