@@ -416,10 +416,12 @@ class TestSleepStatsAgreementPlotBlandAltman(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         import matplotlib
+
         matplotlib.use("Agg")
 
     def test_returns_facetgrid(self):
         import seaborn as sns
+
         g = ssa.plot_blandaltman(ci_method="param")
         assert isinstance(g, sns.FacetGrid)
 
@@ -502,7 +504,9 @@ class TestSleepStatsAgreementPlotBlandAltman(unittest.TestCase):
         # FacetGrid col_wrap should reflect the override
         assert g._col_wrap == 1
 
+
 def ax_collections(ax):
     """Return PathCollections (scatter plots) from an Axes."""
     from matplotlib.collections import PathCollection
+
     return [c for c in ax.collections if isinstance(c, PathCollection)]
