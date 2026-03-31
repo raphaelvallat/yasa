@@ -405,3 +405,105 @@ class TestSleepStatsAgreementReport(unittest.TestCase):
     def test_invalid_bias_method_raises(self):
         with pytest.raises(AssertionError):
             ssa.report(bias_method="invalid")
+
+
+class TestSleepStatsAgreementPlotBlandAltman(unittest.TestCase):
+    """Test the plot_blandaltman method.
+
+    Use ci_method="param" to avoid the bootstrap path with small samples (N_SESSIONS=5).
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        import matplotlib
+        matplotlib.use("Agg")
+
+    def test_returns_facetgrid(self):
+        import seaborn as sns
+        g = ssa.plot_blandaltman(ci_method="param")
+        assert isinstance(g, sns.FacetGrid)
+
+    def test_default_auto_methods(self):
+        g = ssa.plot_blandaltman(ci_method="param")
+        assert len(g.axes.flat) == len(ssa.sleep_statistics)
+
+    def test_param_bias_param_loa(self):
+        g = ssa.plot_blandaltman(bias_method="param", loa_method="param", ci_method="param")
+        # Each axis should have lines drawn (axhline creates Line2D objects)
+        for ax in g.axes.flat:
+            assert len(ax.lines) > 0
+
+    def test_regr_bias_regr_loa(self):
+        g = ssa.plot_blandaltman(bias_method="regr", loa_method="regr", ci_method="param")
+        for ax in g.axes.flat:
+            assert len(ax.lines) > 0
+
+    def test_no_ci(self):
+        g = ssa.plot_blandaltman(ci_method=None)
+        # With no CI, axes should have no patches (no fill_between / axhspan)
+        for ax in g.axes.flat:
+            assert len(ax.patches) == 0
+
+    def test_ci_adds_patches(self):
+        g = ssa.plot_blandaltman(ci_method="param")
+        # At least some axes should have patches from CI bands
+        has_patches = any(len(ax.patches) > 0 or len(ax.collections) > 0 for ax in g.axes.flat)
+        assert has_patches
+
+    def test_sleep_stats_subset(self):
+        subset = ssa.sleep_statistics[:3]
+        g = ssa.plot_blandaltman(sleep_stats=subset, ci_method="param")
+        assert len(g.axes.flat) == len(subset)
+
+    def test_flag_biased_false(self):
+        # Should not raise
+        g = ssa.plot_blandaltman(flag_biased=False, ci_method="param")
+        assert g is not None
+
+    def test_flag_biased_true(self):
+        # Should not raise
+        g = ssa.plot_blandaltman(flag_biased=True, ci_method="param")
+        assert g is not None
+
+    def test_xlabel_is_ref_scorer(self):
+        g = ssa.plot_blandaltman(ci_method="param")
+        # x-axis label should be the reference scorer name
+        assert g.axes.flat[-1].get_xlabel() == REF_SCORER
+
+    def test_ylabel_format(self):
+        g = ssa.plot_blandaltman(ci_method="param")
+        expected = f"{OBS_SCORER} - {REF_SCORER}"
+        assert g.axes.flat[0].get_ylabel() == expected
+
+    def test_invalid_bias_method_raises(self):
+        with pytest.raises(AssertionError):
+            ssa.plot_blandaltman(bias_method="invalid")
+
+    def test_invalid_loa_method_raises(self):
+        with pytest.raises(AssertionError):
+            ssa.plot_blandaltman(loa_method="invalid")
+
+    def test_invalid_ci_method_raises(self):
+        with pytest.raises(AssertionError):
+            ssa.plot_blandaltman(ci_method="invalid")
+
+    def test_invalid_flag_biased_raises(self):
+        with pytest.raises(AssertionError):
+            ssa.plot_blandaltman(flag_biased="yes")
+
+    def test_facetgrid_kwargs_passthrough(self):
+        g = ssa.plot_blandaltman(ci_method="param", facetgrid_kwargs={"col_wrap": 1})
+        # FacetGrid col_wrap should reflect the override
+        assert g._col_wrap == 1
+
+    def test_scatter_kwargs_passthrough(self):
+        g = ssa.plot_blandaltman(ci_method="param", edgecolor="red")
+        # Scatter points on first axis should have the custom color
+        scatter = ax_collections(g.axes.flat[0])
+        assert len(scatter) > 0
+
+
+def ax_collections(ax):
+    """Return PathCollections (scatter plots) from an Axes."""
+    from matplotlib.collections import PathCollection
+    return [c for c in ax.collections if isinstance(c, PathCollection)]
