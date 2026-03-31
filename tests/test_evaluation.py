@@ -448,8 +448,8 @@ class TestSleepStatsAgreementPlotBlandAltman(unittest.TestCase):
 
     def test_ci_adds_patches(self):
         g = ssa.plot_blandaltman(ci_method="param")
-        # At least some axes should have patches from CI bands
-        has_patches = any(len(ax.patches) > 0 or len(ax.collections) > 0 for ax in g.axes.flat)
+        # At least some axes should have patches from CI bands (e.g., fill_between / axhspan)
+        has_patches = any(len(ax.patches) > 0 for ax in g.axes.flat)
         assert has_patches
 
     def test_sleep_stats_subset(self):
