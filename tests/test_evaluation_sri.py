@@ -8,7 +8,7 @@ Ground-truth values live in evaluation_sri_full.json.
 
 Dataset notes
 -------------
-- sample_data.csv contains all 14 subjects (sbj01-sbj14) with complete epoch data.
+- sample_data_sri.csv contains all 14 subjects (sbj01-sbj14) with complete epoch data.
 - Integer stage encoding:  0 = Wake,  1 = Light (N1+N2),  2 = Deep (N3),  3 = REM
 - For binary SLEEP/WAKE analyses 1/2/3 are collapsed to "S" (Sleep).
 
