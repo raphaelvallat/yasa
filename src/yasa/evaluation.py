@@ -576,7 +576,11 @@ class EpochByEpochAgreement:
             .explode()
             .apply(pd.Series)
             # Convert to MultiIndex with reference scorer as new level
-            .assign(**{self.ref_scorer: self._skm_labels * self.n_sessions})
+            # Use positional indices [0, 1, ..., n_stages-1] here, not the actual YASA
+            # integer codes in _skm_labels.  _skm2yasa_map expects positional keys
+            # (e.g. {0:0, 1:2, 2:3, 3:4}); passing the YASA codes directly would
+            # cause e.g. code 2 to be looked up as position 2 (→3) instead of LIGHT.
+            .assign(**{self.ref_scorer: list(range(len(self._skm_labels))) * self.n_sessions})
             .set_index(self.ref_scorer, append=True)
             .rename_axis(columns=self.obs_scorer)
             # Convert sleep stage columns and indices to strings

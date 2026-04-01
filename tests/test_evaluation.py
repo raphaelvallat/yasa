@@ -160,6 +160,31 @@ class TestGetConfusionMatrix(unittest.TestCase):
         with pytest.raises(AssertionError):
             ebe.get_confusion_matrix(sleep_id=999)
 
+    def test_row_labels_correct_for_noncontiguous_codes(self):
+        # Regression test: row labels were corrupted when YASA's internal integer codes
+        # are non-contiguous.  A 4-stage mapping {0:"W",1:"Light",2:"Deep",3:"R"} maps
+        # the input integers to YASA codes [0, 2, 3, 4] (skipping 1 = N1).  The old code
+        # passed those codes directly to _skm2yasa_map, which expected positional indices
+        # [0, 1, 2, 3], producing ['WAKE', 'DEEP', 'REM', 'REM'] instead of
+        # ['WAKE', 'LIGHT', 'DEEP', 'REM'].
+        from yasa.hypno import Hypnogram
+
+        rng = np.random.default_rng(0)
+        mapping = {0: "W", 1: "Light", 2: "Deep", 3: "R"}
+        n = 360  # 3-hour recording at 30-s epochs
+        h_ref = Hypnogram.from_integers(
+            rng.integers(0, 4, n), mapping=mapping, n_stages=4, scorer="Ref"
+        )
+        h_obs = Hypnogram.from_integers(
+            rng.integers(0, 4, n), mapping=mapping, n_stages=4, scorer="Obs"
+        )
+        ebe4 = EpochByEpochAgreement({"night1": h_ref}, {"night1": h_obs})
+
+        cm = ebe4.get_confusion_matrix()
+        expected = sorted(["WAKE", "LIGHT", "DEEP", "REM"])
+        assert sorted(cm.index.tolist()) == expected, f"Got: {cm.index.tolist()}"
+        assert len(cm.index.tolist()) == len(set(cm.index.tolist())), "Duplicate row labels"
+
 
 class TestGetSleepStats(unittest.TestCase):
     """Test get_sleep_stats output."""

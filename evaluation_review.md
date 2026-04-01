@@ -43,101 +43,6 @@ See https://github.com/raphaelvallat/yasa/pull/228
 
 ---
 
-## Bug Investigations
-
-### Bug A — Residuals computation (discovered during investigation of #9)
-
-**File:** `evaluation.py`, line ~1023
-**Severity:** High — affects heteroscedasticity test and LoA regression
-
-**Old code:**
-```python
-data["residuals"] = data[obs_scorer].to_numpy() - predicted_values
-```
-
-**Problem:** `predicted_values = b1 * ref + b0` is the *predicted difference* (from regression
-`difference ~ ref`). Subtracting it from `obs` gives `obs − predicted_difference`, which is NOT
-the regression residual. The true residual is `difference − predicted_difference`. The spurious
-`+ref` term in the wrong formula causes `|residuals| ~ ref` to be artificially highly correlated,
-making the heteroscedasticity test almost always significant.
-
-**Fix:**
-```python
-data["residuals"] = data["difference"].to_numpy() - predicted_values
-```
-
-**Status:** ✅ Fixed (line ~1070)
-
----
-
-### Bug B — Calibration `parm` formula (item 9)
-
-**File:** `evaluation.py`, lines ~1471 and ~1534
-**Severity:** High — calibrated values go in the wrong direction
-
-**Analysis:**
-- `bias_parm = mean(obs − ref)` — positive means obs overestimates reference
-- To calibrate new obs to reference scale: `calibrated = obs − bias_parm`
-- YASA used `obs + bias_parm`, which amplifies the bias instead of correcting it
-
-**Evidence from doctest:** `calibrate_rem([50,40,30,20], bias_test=False)` returned
-`[42.825, 32.825, ...]`. With `bias_parm = −7.175` (device underestimates REM by 7.175 min),
-YASA computed `50 + (−7.175) = 42.825` (further below ref), when it should be
-`50 − (−7.175) = 57.175` (above, correcting upward to match ref).
-
-**Fix:**
-```python
-# OLD: parm_adjusted = data + self._vals["bias_parm"]
-parm_adjusted = data - self._vals["bias_parm"]
-# OLD: return x + parm
-return x - parm
-```
-
-**Status:** ✅ Fixed (lines ~1568, ~1631)
-
----
-
-### Bug C — Calibration `regr` formula (item 9)
-
-**File:** `evaluation.py`, lines ~1472 and ~1537
-**Severity:** High — produces nonsensical values (negative sleep times)
-
-**Analysis:**
-- Bias regression model: `(obs − ref) = b0 + b1 * ref`
-  → `obs = ref * (1 + b1) + b0`
-  → inverse: `ref_estimated = (obs − b0) / (1 + b1)`
-- YASA used `obs * b1 + b0`, which is neither the forward model nor its inverse.
-
-**Evidence from doctest:** `calibrate_rem([50,40,30,20], method="regr")` returned
-`[−9.34, −9.87, −10.40, −10.93]` — negative REM minutes, clearly wrong.
-
-**Fix:**
-```python
-# OLD: regr_adjusted = data * self._vals["bias_slope"] + self._vals["bias_intercept"]
-regr_adjusted = (data - self._vals["bias_intercept"]) / (1 + self._vals["bias_slope"])
-# OLD: return x * slope + intercept
-return (x - intercept) / (1 + slope)
-```
-
-**Status:** ✅ Fixed (lines ~1569, ~1633)
-
----
-
-### Item 6 — Log transformation (Euser et al. 2008) — deferred to separate PR
-
-**Planned parameter:** `log_transform=False` (bool or list of str)
-
-**Design notes:**
-- `log_transform=True` applies to all stats; a list applies to named stats only (e.g., `["SOL", "WASO"]`)
-- Log-ratio differences: `d_i = log(obs_i + 1e-4) − log(ref_i + 1e-4)`
-- Euser slope: `2*(exp(agreement * SD(d_i)) − 1) / (exp(agreement * SD(d_i)) + 1)`
-- Parametric CI: `slope_ci = euser_fn(SD ± t * sqrt(SD² * 3 / n))` (Bland & Altman 1999 SE formula)
-- Store in `_vals["loa_log_slope"]` and `_ci["param"]["loa_log_slope"]`
-- `get_table()` to show `"Bias ± slope × ref"` for log-transformed stats (fstring key `"loa_log"`)
-- New property: `log_transform_stats`
-
----
-
 ## Features where YASA goes beyond the R pipeline
 
 | Feature | YASA | R pipeline |
@@ -152,7 +57,7 @@ return (x - intercept) / (1 + slope)
 
 ---
 
-## Bland-Altman Plot (`BAplot.R` vs YASA)
+## Future PR: Bland-Altman Plot (`BAplot.R` vs YASA)
 
 YASA has **no Bland-Altman plot** for `SleepStatsAgreement`. This is a major missing piece.
 
@@ -200,34 +105,52 @@ One scatter plot per sleep statistic (obs − ref differences vs reference), wit
 
 ---
 
-## Naming Convention Changes (implemented)
+## Future PR: Log transformation (Euser et al. 2008)
 
-| Location | Old | New | Rationale |
-|----------|-----|-----|-----------|
-| Method option strings | `"parm"` | `"param"` | Standard abbreviation of "parametric" |
-| Column in `_vals` / `summary()` | `bias_parm` | `bias_mean` | It IS the mean difference — more descriptive |
-| Column in `_vals` / `summary()` | `lloa_parm` | `loa_lower` | Drop redundant method suffix; symmetric naming |
-| Column in `_vals` / `summary()` | `uloa_parm` | `loa_upper` | Symmetric with `loa_lower` |
-| CI MultiIndex key | `"parm"` | `"param"` | Consistent with option strings |
-| Local vars | `parm_vals`, `parm_ci`, `t_parm`, `parm_adjusted`, `parm_idx` | `param_vals`, `param_ci`, `t_param`, `param_adjusted`, `param_idx` | Follow from option rename |
-| `_generate_bootstrap_ci` local vars | `bias_parm`, `lloa_parm`, `uloa_parm` | `bias_mean`, `loa_lower`, `loa_upper` | Match column renames |
-| `_generate_bootstrap_ci` variable_order | `"bias_parm"`, `"lloa_parm"`, `"uloa_parm"` | `"bias_mean"`, `"loa_lower"`, `"loa_upper"` | Must match `_vals` column names |
-| `get_calibration_func()` local var | `parm` | `bias_mean` | Descriptive and matches column |
+**Planned parameter:** `log_transform=False` (bool or list of str)
 
-Unchanged: `"regr"`, `bias_slope`, `bias_intercept`, `loa_slope`, `loa_intercept`.
-
-### `get_table()` removed (0.7.0, pre-release)
-
-`get_table()` was removed from the public API before 0.7.0 was released.
-`report()` supersedes it with a human-readable format (units in index, scorer means, merged CI strings, assumptions column).
+**Design notes:**
+- `log_transform=True` applies to all stats; a list applies to named stats only (e.g., `["SOL", "WASO"]`)
+- Log-ratio differences: `d_i = log(obs_i + 1e-4) − log(ref_i + 1e-4)`
+- Euser slope: `2*(exp(agreement * SD(d_i)) − 1) / (exp(agreement * SD(d_i)) + 1)`
+- Parametric CI: `slope_ci = euser_fn(SD ± t * sqrt(SD² * 3 / n))` (Bland & Altman 1999 SE formula)
+- Store in `_vals["loa_log_slope"]` and `_ci["param"]["loa_log_slope"]`
+- `get_table()` to show `"Bias ± slope × ref"` for log-transformed stats (fstring key `"loa_log"`)
+- New property: `log_transform_stats`
 
 ---
 
-## R-only features still missing in YASA
+## Regression tests against the Menghini et al. (2021) pipeline
 
-- **Bland-Altman plot** (`BAplot.R`) — no `plot_blandaltman()` on `SleepStatsAgreement`
-- PABAK (Prevalence-Adjusted Bias-Adjusted Kappa)
-- Prevalence index and bias index (from `epiR::epi.kappa`)
-- ROC curves for EBE analysis
-- Per-subject discrepancy heatmap (`indDiscr.R` style visualization)
+`tests/test_evaluation_sri.py` loads all 14 subjects (10 766 epochs, 30-s epochs) from
+`tests/data/sample_data_sri.csv` and compares YASA's output to reference values extracted
+from the published HTML report (`AnalyticalPipeline_v1.0.0.html`), stored in
+`tests/data/evaluation_sri_full.json`. 32 test methods are run via `unittest`.
 
+### What is tested (with tolerance)
+
+| Test class | What is checked | Tolerance |
+|---|---|:-:|
+| `TestSRIPerSubject` | Per-subject recall and specificity — 14 subjects × 4 stages (112 checks) | 0.1 pp |
+| `TestSRIPerSubjectSleepWake` | Per-subject binary SLEEP/WAKE accuracy, sensitivity, specificity — 14 subjects (42 checks) | 0.1 pp |
+| `TestSRIGroupMeans` | Group mean recall, specificity, PPV, NPV per stage — 4 metrics × 4 stages | 0.5 pp |
+| `TestSRIGroupMeansSleepWake` | Group mean binary sensitivity and specificity | 0.5 pp |
+| `TestSRISleepStats` | Per-subject TIB, TST, SE, SOL, stage durations, stage % for both scorers — 14 × 10 × 2 (280 checks) | 0.1 |
+| `TestSRISleepStats` | Per-subject WASO as TIB − SOL − TST (R pipeline definition, including post-sleep wake) — 14 × 2 | 0.1 |
+| `TestSRIDiscrepancies` | Per-subject Device − Reference differences for TST, SE, SOL, WASO, stage durations, stage % — 14 × 10 (140 checks) | 0.1 |
+| `TestSRIPooledMetrics` | Pooled (all-epoch) recall and specificity per stage matching R's `metricsType="sum"` | 0.1 pp |
+| `TestSRIConfusionMatrixValues` | All 16 cells of the pooled absolute confusion matrix, accessed by label | exact |
+| `TestSRISanity` | Dataset size, output shapes, index names, stage labels, metrics in [0, 1] | — |
+
+**Tolerance note:** 0.1 pp covers single rounding in the HTML source (±0.005 pp). 0.5 pp at group level covers accumulated rounding across 14 subjects.
+
+**WASO note:** The R pipeline (`ebe2sleep.R` lines 47–50) counts wake epochs from the first sleep epoch to the **end of the recording**, including any post-sleep wake after the final sleep epoch. This is algebraically equivalent to `TIB − SOL − TST`. YASA's built-in `WASO` counts only wake within the Sleep Period Time (first to last sleep epoch), equivalent to `SPT − TST`. For subjects with post-sleep wake (sbj09, sbj11) the two definitions disagree. The tests use `TIB − SOL − TST`, which matches the R pipeline exactly for all 14 subjects.
+
+### What cannot be tested (yet)
+
+| Item | Reason |
+|---|---|
+| Per-subject accuracy (4-stage) | YASA accuracy = fraction correct across all stages; R pipeline reports binary one-vs-rest accuracy per stage. Numerically different. (Binary accuracy is tested.) |
+| Per-subject PPV / NPV | R pipeline reports these at group level only; no per-subject reference. |
+| Per-stage Cohen's κ, PABAK, prevalence index | R pipeline computes one-vs-rest; YASA `kappa` is multiclass. PABAK is not yet in YASA (item 2 above). |
+| Bland-Altman bias, LoA, and CIs | R pipeline uses conditional regression depending on assumption tests, making expected outputs data-dependent and impractical to pin as fixed reference values. |

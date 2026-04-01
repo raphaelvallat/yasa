@@ -1,0 +1,340 @@
+{
+  "_source": "AnalyticalPipeline_v1.0.0.html — https://github.com/SRI-human-sleep/sleep-trackers-performance",
+  "_notes": {
+    "subjects": "sbj01-sbj14 (N=14; all subjects present in the HTML report)",
+    "stage_encoding": "0=Wake, 1=Light (N1+N2 combined), 2=Deep (N3), 3=REM",
+    "binary_encoding": "5=Sleep (any NREM+REM), for SLEEP/WAKE analyses",
+    "units": "percentage points (0-100) for EBE metrics; minutes or % for sleep measures",
+    "section_2": "Sleep measures and Bland-Altman discrepancy analysis",
+    "section_3_1": "Error matrices (confusion matrices), proportional (prop) and absolute count (sum)",
+    "section_3_2_indEBE": "per-subject one-vs-rest accuracy, sensitivity, specificity by stage (line 5505 for staging, line 5523 for sleep/wake)",
+    "section_3_3_groupEBE": "group-level EBE metrics — avg = mean(SD)[CI] across 14 subjects; sum = pooled over all epochs"
+  },
+
+  "per_subject": {
+    "_condition": "SLEEP STAGING (4-class: WAKE, LIGHT, DEEP, REM) — Section 3.2, line 5505",
+    "sbj01": {
+      "WAKE":  {"accuracy": 91.27, "sensitivity": 80.25, "specificity": 92.38},
+      "LIGHT": {"accuracy": 65.08, "sensitivity": 82.07, "specificity": 42.63},
+      "DEEP":  {"accuracy": 85.49, "sensitivity": 31.01, "specificity": 94.82},
+      "REM":   {"accuracy": 80.84, "sensitivity": 14.12, "specificity": 96.77}
+    },
+    "sbj02": {
+      "WAKE":  {"accuracy": 95.06, "sensitivity": 75.95, "specificity": 97.18},
+      "LIGHT": {"accuracy": 62.23, "sensitivity": 93.35, "specificity": 33.90},
+      "DEEP":  {"accuracy": 79.47, "sensitivity": 18.50, "specificity": 96.59},
+      "REM":   {"accuracy": 81.37, "sensitivity": 14.29, "specificity": 98.57}
+    },
+    "sbj03": {
+      "WAKE":  {"accuracy": 88.76, "sensitivity": 77.69, "specificity": 91.21},
+      "LIGHT": {"accuracy": 77.51, "sensitivity": 74.81, "specificity": 81.21},
+      "DEEP":  {"accuracy": 91.90, "sensitivity": 66.67, "specificity": 94.82},
+      "REM":   {"accuracy": 94.15, "sensitivity": 86.96, "specificity": 95.30}
+    },
+    "sbj04": {
+      "WAKE":  {"accuracy": 94.95, "sensitivity": 72.00, "specificity": 97.11},
+      "LIGHT": {"accuracy": 65.56, "sensitivity": 70.21, "specificity": 59.85},
+      "DEEP":  {"accuracy": 89.21, "sensitivity": 77.40, "specificity": 92.22},
+      "REM":   {"accuracy": 75.66, "sensitivity": 12.95, "specificity": 87.57}
+    },
+    "sbj05": {
+      "WAKE":  {"accuracy": 91.82, "sensitivity": 51.35, "specificity": 94.14},
+      "LIGHT": {"accuracy": 67.15, "sensitivity": 90.68, "specificity": 47.59},
+      "DEEP":  {"accuracy": 85.26, "sensitivity": 45.51, "specificity": 98.07},
+      "REM":   {"accuracy": 82.48, "sensitivity": 33.53, "specificity": 98.64}
+    },
+    "sbj06": {
+      "WAKE":  {"accuracy": 91.36, "sensitivity": 49.15, "specificity": 94.20},
+      "LIGHT": {"accuracy": 73.99, "sensitivity": 76.46, "specificity": 70.76},
+      "DEEP":  {"accuracy": 86.35, "sensitivity": 56.88, "specificity": 95.28},
+      "REM":   {"accuracy": 92.43, "sensitivity": 90.00, "specificity": 92.82}
+    },
+    "sbj07": {
+      "WAKE":  {"accuracy": 90.01, "sensitivity": 50.00, "specificity": 94.88},
+      "LIGHT": {"accuracy": 71.64, "sensitivity": 63.42, "specificity": 83.14},
+      "DEEP":  {"accuracy": 92.11, "sensitivity": 80.65, "specificity": 94.82},
+      "REM":   {"accuracy": 79.65, "sensitivity": 75.79, "specificity": 80.17}
+    },
+    "sbj08": {
+      "WAKE":  {"accuracy": 96.79, "sensitivity": 81.03, "specificity": 97.91},
+      "LIGHT": {"accuracy": 62.00, "sensitivity": 71.32, "specificity": 48.45},
+      "DEEP":  {"accuracy": 66.70, "sensitivity":  0.00, "specificity": 83.00},
+      "REM":   {"accuracy": 94.60, "sensitivity": 85.71, "specificity": 96.11}
+    },
+    "sbj09": {
+      "WAKE":  {"accuracy": 85.16, "sensitivity":  40.56, "specificity":  99.33},
+      "LIGHT": {"accuracy": 74.70, "sensitivity":  86.22, "specificity":  67.66},
+      "DEEP":  {"accuracy": 93.09, "sensitivity":  75.15, "specificity": 100.00},
+      "REM":   {"accuracy": 94.10, "sensitivity": 100.00, "specificity":  93.43}
+    },
+    "sbj10": {
+      "WAKE":  {"accuracy": 90.71, "sensitivity":  51.22, "specificity":  97.81},
+      "LIGHT": {"accuracy": 58.74, "sensitivity":  85.71, "specificity":  38.44},
+      "DEEP":  {"accuracy": 72.12, "sensitivity":  24.62, "specificity": 100.00},
+      "REM":   {"accuracy": 95.54, "sensitivity": 100.00, "specificity":  95.31}
+    },
+    "sbj11": {
+      "WAKE":  {"accuracy": 89.10, "sensitivity": 54.42, "specificity": 96.41},
+      "LIGHT": {"accuracy": 60.31, "sensitivity": 66.50, "specificity": 54.48},
+      "DEEP":  {"accuracy": 78.79, "sensitivity": 29.67, "specificity": 92.30},
+      "REM":   {"accuracy": 88.39, "sensitivity": 81.13, "specificity": 89.43}
+    },
+    "sbj12": {
+      "WAKE":  {"accuracy": 81.91, "sensitivity": 35.02, "specificity": 97.54},
+      "LIGHT": {"accuracy": 68.55, "sensitivity": 92.27, "specificity": 48.18},
+      "DEEP":  {"accuracy": 90.67, "sensitivity": 28.26, "specificity": 98.07},
+      "REM":   {"accuracy": 91.82, "sensitivity": 66.46, "specificity": 97.46}
+    },
+    "sbj13": {
+      "WAKE":  {"accuracy": 93.28, "sensitivity": 81.55, "specificity": 96.99},
+      "LIGHT": {"accuracy": 75.39, "sensitivity": 68.52, "specificity": 82.65},
+      "DEEP":  {"accuracy": 86.12, "sensitivity": 43.10, "specificity": 90.02},
+      "REM":   {"accuracy": 92.27, "sensitivity": 92.98, "specificity": 92.14}
+    },
+    "sbj14": {
+      "WAKE":  {"accuracy": 91.27, "sensitivity": 66.67, "specificity": 95.25},
+      "LIGHT": {"accuracy": 75.63, "sensitivity": 88.37, "specificity": 58.82},
+      "DEEP":  {"accuracy": 86.06, "sensitivity": 41.36, "specificity": 99.27},
+      "REM":   {"accuracy": 96.34, "sensitivity": 88.89, "specificity": 96.84}
+    }
+  },
+
+  "per_subject_sleep_wake": {
+    "_condition": "SLEEP/WAKE (binary: SLEEP vs WAKE) — Section 3.2, line 5523",
+    "_note": "sensitivity = correctly identified sleep epochs; specificity = correctly identified wake epochs",
+    "sbj01":  {"accuracy": 91.27, "sensitivity": 92.38, "specificity": 80.25},
+    "sbj02":  {"accuracy": 95.06, "sensitivity": 97.18, "specificity": 75.95},
+    "sbj03":  {"accuracy": 88.76, "sensitivity": 91.21, "specificity": 77.69},
+    "sbj04":  {"accuracy": 94.95, "sensitivity": 97.11, "specificity": 72.00},
+    "sbj05":  {"accuracy": 91.82, "sensitivity": 94.14, "specificity": 51.35},
+    "sbj06":  {"accuracy": 91.36, "sensitivity": 94.20, "specificity": 49.15},
+    "sbj07":  {"accuracy": 90.01, "sensitivity": 94.88, "specificity": 50.00},
+    "sbj08":  {"accuracy": 96.79, "sensitivity": 97.91, "specificity": 81.03},
+    "sbj09":  {"accuracy": 85.16, "sensitivity": 99.33, "specificity": 40.56},
+    "sbj10":  {"accuracy": 90.71, "sensitivity": 97.81, "specificity": 51.22},
+    "sbj11":  {"accuracy": 89.10, "sensitivity": 96.41, "specificity": 54.42},
+    "sbj12":  {"accuracy": 81.91, "sensitivity": 97.54, "specificity": 35.02},
+    "sbj13":  {"accuracy": 93.28, "sensitivity": 96.99, "specificity": 81.55},
+    "sbj14":  {"accuracy": 91.27, "sensitivity": 95.25, "specificity": 66.67}
+  },
+
+  "group_ebe_staging": {
+    "_source_lines": "5845-5894",
+    "_condition": "SLEEP STAGING (4-class) — Section 3.3",
+    "_n_subjects": 14,
+
+    "basic_avg": {
+      "_type": "mean (SD) [95% bootstrap CI] across 14 subjects",
+      "WAKE":  {
+        "accuracy":    {"mean": 90.82, "sd": 3.90,  "CI_low": 88.94, "CI_high": 92.87},
+        "sensitivity": {"mean": 61.92, "sd": 16.23, "CI_low": 53.81, "CI_high": 69.90},
+        "specificity": {"mean": 95.88, "sd": 2.30,  "CI_low": 94.77, "CI_high": 97.07}
+      },
+      "LIGHT": {
+        "accuracy":    {"mean": 68.46, "sd": 6.35,  "CI_low": 65.34, "CI_high": 71.67},
+        "sensitivity": {"mean": 79.28, "sd": 10.31, "CI_low": 74.21, "CI_high": 84.51},
+        "specificity": {"mean": 58.41, "sd": 16.51, "CI_low": 49.96, "CI_high": 66.65}
+      },
+      "DEEP":  {
+        "accuracy":    {"mean": 84.52, "sd": 7.77,  "CI_low": 80.91, "CI_high": 88.66},
+        "sensitivity": {"mean": 44.20, "sd": 24.34, "CI_low": 31.79, "CI_high": 56.22},
+        "specificity": {"mean": 94.95, "sd": 4.59,  "CI_low": 92.84, "CI_high": 97.45}
+      },
+      "REM":   {
+        "accuracy":    {"mean": 88.55, "sd": 7.02,  "CI_low": 85.17, "CI_high": 92.20},
+        "sensitivity": {"mean": 67.34, "sd": 33.40, "CI_low": 51.30, "CI_high": 84.81},
+        "specificity": {"mean": 93.61, "sd": 5.07,  "CI_low": 91.32, "CI_high": 96.43}
+      }
+    },
+
+    "basic_sum": {
+      "_type": "pooled over all epochs (not subject-average)",
+      "WAKE":  {"accuracy": 90.93, "sensitivity": 59.90, "specificity": 95.77},
+      "LIGHT": {"accuracy": 68.32, "sensitivity": 78.19, "specificity": 57.60},
+      "DEEP":  {"accuracy": 84.51, "sensitivity": 43.69, "specificity": 94.50},
+      "REM":   {"accuracy": 88.13, "sensitivity": 57.91, "specificity": 93.37}
+    },
+
+    "advanced_avg": {
+      "_type": "mean (SD) [95% bootstrap CI] across 14 subjects; includes ppv, npv, kappa, pabak, pindex",
+      "WAKE":  {
+        "accuracy":    {"mean": 90.82, "sd": 3.90,  "CI_low": 88.93, "CI_high": 92.89},
+        "sensitivity": {"mean": 61.92, "sd": 16.23, "CI_low": 53.71, "CI_high": 70.21},
+        "specificity": {"mean": 95.88, "sd": 2.30,  "CI_low": 94.81, "CI_high": 97.08},
+        "ppv":         {"mean": 68.13, "sd": 18.39, "CI_low": 59.14, "CI_high": 77.77},
+        "npv":         {"mean": 93.66, "sd": 5.09,  "CI_low": 91.33, "CI_high": 96.43},
+        "kappa":       {"mean": 0.58,  "sd": 0.14,  "CI_low": 0.51,  "CI_high": 0.65},
+        "pabak":       {"mean": 0.82,  "sd": 0.08,  "CI_low": 0.78,  "CI_high": 0.86},
+        "pindex":      {"mean": -0.74, "sd": 0.10,  "CI_low": -0.80, "CI_high": -0.69}
+      },
+      "LIGHT": {
+        "accuracy":    {"mean": 68.46, "sd": 6.35,  "CI_low": 65.27, "CI_high": 71.62},
+        "sensitivity": {"mean": 79.28, "sd": 10.31, "CI_low": 74.10, "CI_high": 84.51},
+        "specificity": {"mean": 58.41, "sd": 16.51, "CI_low": 49.88, "CI_high": 66.39},
+        "ppv":         {"mean": 67.68, "sd": 10.80, "CI_low": 62.22, "CI_high": 72.94},
+        "npv":         {"mean": 72.98, "sd": 11.28, "CI_low": 67.31, "CI_high": 78.70},
+        "kappa":       {"mean": 0.37,  "sd": 0.13,  "CI_low": 0.31,  "CI_high": 0.43},
+        "pabak":       {"mean": 0.37,  "sd": 0.13,  "CI_low": 0.30,  "CI_high": 0.43},
+        "pindex":      {"mean": 0.13,  "sd": 0.11,  "CI_low": 0.07,  "CI_high": 0.18}
+      },
+      "DEEP":  {
+        "accuracy":    {"mean": 84.52, "sd": 7.77,  "CI_low": 80.87, "CI_high": 88.74},
+        "sensitivity": {"mean": 44.20, "sd": 24.34, "CI_low": 31.85, "CI_high": 56.48},
+        "specificity": {"mean": 94.95, "sd": 4.59,  "CI_low": 92.87, "CI_high": 97.45},
+        "ppv":         {"mean": 66.10, "sd": 28.12, "CI_low": 52.61, "CI_high": 80.82},
+        "npv":         {"mean": 87.17, "sd": 7.75,  "CI_low": 83.58, "CI_high": 91.32},
+        "kappa":       {"mean": 0.42,  "sd": 0.26,  "CI_low": 0.29,  "CI_high": 0.56},
+        "pabak":       {"mean": 0.69,  "sd": 0.16,  "CI_low": 0.62,  "CI_high": 0.77},
+        "pindex":      {"mean": -0.67, "sd": 0.10,  "CI_low": -0.72, "CI_high": -0.62}
+      },
+      "REM":   {
+        "accuracy":    {"mean": 88.55, "sd": 7.02,  "CI_low": 85.11, "CI_high": 92.23},
+        "sensitivity": {"mean": 67.34, "sd": 33.40, "CI_low": 51.58, "CI_high": 84.91},
+        "specificity": {"mean": 93.61, "sd": 5.07,  "CI_low": 91.30, "CI_high": 96.31},
+        "ppv":         {"mean": 62.20, "sd": 19.81, "CI_low": 52.66, "CI_high": 72.72},
+        "npv":         {"mean": 93.41, "sd": 7.36,  "CI_low": 89.94, "CI_high": 97.27},
+        "kappa":       {"mean": 0.54,  "sd": 0.27,  "CI_low": 0.41,  "CI_high": 0.68},
+        "pabak":       {"mean": 0.77,  "sd": 0.14,  "CI_low": 0.70,  "CI_high": 0.85},
+        "pindex":      {"mean": -0.72, "sd": 0.07,  "CI_low": -0.75, "CI_high": -0.68}
+      }
+    },
+
+    "advanced_sum": {
+      "_type": "pooled over all epochs",
+      "WAKE":  {"accuracy": 90.93, "sensitivity": 59.90, "specificity": 95.77, "ppv": 68.87, "npv": 93.86, "kappa": 0.59, "pabak": 0.82, "pindex": -0.75},
+      "LIGHT": {"accuracy": 68.32, "sensitivity": 78.19, "specificity": 57.60, "ppv": 66.68, "npv": 70.88, "kappa": 0.36, "pabak": 0.37, "pindex": 0.13},
+      "DEEP":  {"accuracy": 84.51, "sensitivity": 43.69, "specificity": 94.50, "ppv": 66.03, "npv": 87.27, "kappa": 0.44, "pabak": 0.69, "pindex": -0.67},
+      "REM":   {"accuracy": 88.13, "sensitivity": 57.91, "specificity": 93.37, "ppv": 60.26, "npv": 92.74, "kappa": 0.52, "pabak": 0.76, "pindex": -0.71}
+    }
+  },
+
+  "group_ebe_sleep_wake": {
+    "_source_lines": "5921-5966",
+    "_condition": "SLEEP/WAKE (binary) — Section 3.3",
+    "_n_subjects": 14,
+
+    "basic_avg": {
+      "_type": "mean (SD) [95% bootstrap CI] across 14 subjects",
+      "SLEEP": {
+        "accuracy":    {"mean": 90.82, "sd": 3.90,  "CI_low": 88.94, "CI_high": 92.91},
+        "sensitivity": {"mean": 95.88, "sd": 2.30,  "CI_low": 94.77, "CI_high": 97.07},
+        "specificity": {"mean": 61.92, "sd": 16.23, "CI_low": 53.76, "CI_high": 70.02}
+      }
+    },
+    "basic_sum": {
+      "_type": "pooled over all epochs",
+      "SLEEP": {"accuracy": 90.93, "sensitivity": 95.77, "specificity": 59.90}
+    },
+    "advanced_avg": {
+      "_type": "mean (SD) [95% bootstrap CI] across 14 subjects",
+      "SLEEP": {
+        "accuracy":    {"mean": 90.82, "sd": 3.90,  "CI_low": 88.95, "CI_high": 92.89},
+        "sensitivity": {"mean": 95.88, "sd": 2.30,  "CI_low": 94.78, "CI_high": 97.07},
+        "specificity": {"mean": 61.92, "sd": 16.23, "CI_low": 54.06, "CI_high": 70.22},
+        "ppv":         {"mean": 93.66, "sd": 5.09,  "CI_low": 91.37, "CI_high": 96.44},
+        "npv":         {"mean": 68.13, "sd": 18.39, "CI_low": 59.28, "CI_high": 77.89},
+        "kappa":       {"mean": 0.58,  "sd": 0.14,  "CI_low": 0.51,  "CI_high": 0.65},
+        "pabak":       {"mean": 0.82,  "sd": 0.08,  "CI_low": 0.78,  "CI_high": 0.86},
+        "pindex":      {"mean": 0.74,  "sd": 0.10,  "CI_low": 0.69,  "CI_high": 0.79}
+      }
+    },
+    "advanced_sum": {
+      "_type": "pooled over all epochs",
+      "SLEEP": {"accuracy": 90.93, "sensitivity": 95.77, "specificity": 59.90, "ppv": 93.86, "npv": 68.87, "kappa": 0.59, "pabak": 0.82, "pindex": 0.75}
+    }
+  },
+
+  "error_matrices": {
+    "_source_lines": "5320-5362",
+    "_condition_staging": {
+      "proportional_avg": {
+        "_type": "mean (SD) [95% bootstrap CI] proportion of reference-stage epochs classified into each device stage",
+        "wake_ref":  {"device_wake": "0.62 (0.16) [0.54, 0.70]",  "device_light": "0.31 (0.18) [0.21, 0.39]", "device_deep": "0.02 (0.02) [0.01, 0.03]", "device_REM": "0.06 (0.10) [0.00, 0.10]"},
+        "light_ref": {"device_wake": "0.05 (0.03) [0.04, 0.07]",  "device_light": "0.79 (0.10) [0.74, 0.85]", "device_deep": "0.06 (0.06) [0.03, 0.09]", "device_REM": "0.09 (0.07) [0.06, 0.12]"},
+        "deep_ref":  {"device_wake": "0.02 (0.02) [0.00, 0.03]",  "device_light": "0.53 (0.24) [0.41, 0.65]", "device_deep": "0.44 (0.24) [0.32, 0.56]", "device_REM": "0.01 (0.02) [0.00, 0.02]"},
+        "REM_ref":   {"device_wake": "0.03 (0.04) [0.00, 0.05]",  "device_light": "0.27 (0.29) [0.12, 0.42]", "device_deep": "0.02 (0.04) [0.00, 0.04]", "device_REM": "0.67 (0.33) [0.51, 0.85]"}
+      },
+      "absolute_sum": {
+        "_type": "epoch counts pooled across all 14 subjects",
+        "wake_ref":       {"device_wake": 871,  "device_light": 483,  "device_deep": 29,   "device_REM": 71,  "reference_total": 1454},
+        "light_ref":      {"device_wake": 303,  "device_light": 4381, "device_deep": 398,  "device_REM": 521, "reference_total": 5603},
+        "deep_ref":       {"device_wake": 34,   "device_light": 1142, "device_deep": 925,  "device_REM": 16,  "reference_total": 2117},
+        "REM_ref":        {"device_wake": 57,   "device_light": 564,  "device_deep": 49,   "device_REM": 922, "reference_total": 1592},
+        "device_totals":  {"device_wake": 1265, "device_light": 6570, "device_deep": 1401, "device_REM": 1530, "grand_total": 10766}
+      }
+    },
+    "_condition_sleep_wake": {
+      "proportional_avg": {
+        "_type": "mean (SD) [95% bootstrap CI]",
+        "wake_ref":  {"device_wake": "0.62 (0.16) [0.53, 0.71]", "device_sleep": "0.38 (0.16) [0.29, 0.47]"},
+        "sleep_ref": {"device_wake": "0.04 (0.02) [0.03, 0.05]", "device_sleep": "0.96 (0.02) [0.95, 0.97]"}
+      },
+      "absolute_sum": {
+        "_type": "epoch counts pooled across all 14 subjects",
+        "wake_ref":      {"device_wake": 871,  "device_sleep": 583,  "reference_total": 1454},
+        "sleep_ref":     {"device_wake": 394,  "device_sleep": 8918, "reference_total": 9312},
+        "device_totals": {"device_wake": 1265, "device_sleep": 9501, "grand_total": 10766}
+      }
+    }
+  },
+
+  "per_subject_sleep_measures": {
+    "_source_lines": "3057-3072",
+    "_condition": "SLEEP STAGING — Section 2.1; computed via ebe2sleep(raw.data)",
+    "_units": "TIB/TST/SOL/WASO/Light/Deep/REM in minutes; SE/LightPerc/DeepPerc/REMPerc in %",
+    "sbj01":  {"TIB": 441.0, "TST_ref": 400.5, "TST_device": 378.0, "SE_ref": 90.82, "SE_device": 85.71, "SOL_ref": 21.5, "SOL_device": 22.0, "WASO_ref": 19.0, "WASO_device": 41.0, "Light_ref": 251.0, "Light_device": 315.0, "Deep_ref": 64.5, "Deep_device": 39.5, "REM_ref": 85.0, "REM_device": 23.5, "LightPerc_ref": 62.67, "LightPerc_device": 83.33, "DeepPerc_ref": 16.10, "DeepPerc_device": 10.45, "REMPerc_ref": 21.22, "REMPerc_device": 6.22},
+    "sbj02":  {"TIB": 394.5, "TST_ref": 355.0, "TST_device": 354.5, "SE_ref": 89.99, "SE_device": 89.86, "SOL_ref": 5.5,  "SOL_device": 7.5,  "WASO_ref": 34.0, "WASO_device": 32.5, "Light_ref": 188.0, "Light_device": 312.0, "Deep_ref": 86.5, "Deep_device": 26.5, "REM_ref": 80.5, "REM_device": 16.0, "LightPerc_ref": 52.96, "LightPerc_device": 88.01, "DeepPerc_ref": 24.37, "DeepPerc_device": 7.48,  "REMPerc_ref": 22.68, "REMPerc_device": 4.51},
+    "sbj03":  {"TIB": 333.5, "TST_ref": 273.0, "TST_device": 262.5, "SE_ref": 81.86, "SE_device": 78.71, "SOL_ref": 8.5,  "SOL_device": 8.5,  "WASO_ref": 52.0, "WASO_device": 62.5, "Light_ref": 192.5, "Light_device": 170.5, "Deep_ref": 34.5, "Deep_device": 38.5, "REM_ref": 46.0, "REM_device": 53.5, "LightPerc_ref": 70.51, "LightPerc_device": 64.95, "DeepPerc_ref": 12.64, "DeepPerc_device": 14.67, "REMPerc_ref": 16.85, "REMPerc_device": 20.38},
+    "sbj04":  {"TIB": 435.5, "TST_ref": 398.0, "TST_device": 397.0, "SE_ref": 91.39, "SE_device": 91.16, "SOL_ref": 4.0,  "SOL_device": 5.0,  "WASO_ref": 33.5, "WASO_device": 33.5, "Light_ref": 240.0, "Light_device": 247.0, "Deep_ref": 88.5, "Deep_device": 95.5, "REM_ref": 69.5, "REM_device": 54.5, "LightPerc_ref": 60.30, "LightPerc_device": 62.22, "DeepPerc_ref": 22.24, "DeepPerc_device": 24.06, "REMPerc_ref": 17.46, "REMPerc_device": 13.73},
+    "sbj05":  {"TIB": 342.5, "TST_ref": 324.0, "TST_device": 314.0, "SE_ref": 94.60, "SE_device": 91.68, "SOL_ref": 3.0,  "SOL_device": 9.5,  "WASO_ref": 15.5, "WASO_device": 19.0, "Light_ref": 155.5, "Light_device": 239.0, "Deep_ref": 83.5, "Deep_device": 43.0, "REM_ref": 85.0, "REM_device": 32.0, "LightPerc_ref": 47.99, "LightPerc_device": 76.11, "DeepPerc_ref": 25.77, "DeepPerc_device": 13.69, "REMPerc_ref": 26.23, "REMPerc_device": 10.19},
+    "sbj06":  {"TIB": 469.0, "TST_ref": 439.5, "TST_device": 429.0, "SE_ref": 93.71, "SE_device": 91.47, "SOL_ref": 7.5,  "SOL_device": 7.5,  "WASO_ref": 22.0, "WASO_device": 32.5, "Light_ref": 265.5, "Light_device": 262.5, "Deep_ref": 109.0, "Deep_device": 79.0, "REM_ref": 65.0, "REM_device": 87.5, "LightPerc_ref": 60.41, "LightPerc_device": 61.19, "DeepPerc_ref": 24.80, "DeepPerc_device": 18.41, "REMPerc_ref": 14.79, "REMPerc_device": 20.40},
+    "sbj07":  {"TIB": 405.5, "TST_ref": 361.5, "TST_device": 365.0, "SE_ref": 89.15, "SE_device": 90.01, "SOL_ref": 5.5,  "SOL_device": 10.0, "WASO_ref": 38.5, "WASO_device": 30.5, "Light_ref": 236.5, "Light_device": 178.5, "Deep_ref": 77.5, "Deep_device": 79.5, "REM_ref": 47.5, "REM_device": 107.0, "LightPerc_ref": 65.42, "LightPerc_device": 48.90, "DeepPerc_ref": 21.44, "DeepPerc_device": 21.78, "REMPerc_ref": 13.14, "REMPerc_device": 29.32},
+    "sbj08":  {"TIB": 435.5, "TST_ref": 406.5, "TST_device": 403.5, "SE_ref": 93.34, "SE_device": 92.65, "SOL_ref": 2.5,  "SOL_device": 4.0,  "WASO_ref": 26.5, "WASO_device": 28.0, "Light_ref": 258.0, "Light_device": 275.5, "Deep_ref": 85.5, "Deep_device": 59.5, "REM_ref": 63.0, "REM_device": 68.5, "LightPerc_ref": 63.47, "LightPerc_device": 68.28, "DeepPerc_ref": 21.03, "DeepPerc_device": 14.75, "REMPerc_ref": 15.50, "REMPerc_device": 16.98},
+    "sbj09":  {"TIB": 296.5, "TST_ref": 225.0, "TST_device": 266.0, "SE_ref": 75.89, "SE_device": 89.71, "SOL_ref": 35.5, "SOL_device": 6.0,  "WASO_ref": 36.0, "WASO_device": 24.5, "Light_ref": 112.5, "Light_device": 156.5, "Deep_ref": 82.5, "Deep_device": 62.0, "REM_ref": 30.0, "REM_device": 47.5, "LightPerc_ref": 50.00, "LightPerc_device": 58.83, "DeepPerc_ref": 36.67, "DeepPerc_device": 23.31, "REMPerc_ref": 13.33, "REMPerc_device": 17.86},
+    "sbj10":  {"TIB": 269.0, "TST_ref": 228.0, "TST_device": 243.0, "SE_ref": 84.76, "SE_device": 90.33, "SOL_ref": 9.0,  "SOL_device": 7.0,  "WASO_ref": 32.0, "WASO_device": 19.0, "Light_ref": 115.5, "Light_device": 193.5, "Deep_ref": 99.5, "Deep_device": 24.5, "REM_ref": 13.0, "REM_device": 25.0, "LightPerc_ref": 50.66, "LightPerc_device": 79.63, "DeepPerc_ref": 43.64, "DeepPerc_device": 10.08, "REMPerc_ref": 5.70,  "REMPerc_device": 10.29},
+    "sbj11":  {"TIB": 422.0, "TST_ref": 348.5, "TST_device": 369.5, "SE_ref": 82.58, "SE_device": 87.56, "SOL_ref": 37.5, "SOL_device": 6.0,  "WASO_ref": 36.0, "WASO_device": 46.5, "Light_ref": 204.5, "Light_device": 235.0, "Deep_ref": 91.0, "Deep_device": 52.5, "REM_ref": 53.0, "REM_device": 82.0, "LightPerc_ref": 58.68, "LightPerc_device": 63.60, "DeepPerc_ref": 26.11, "DeepPerc_device": 14.21, "REMPerc_ref": 15.21, "REMPerc_device": 22.19},
+    "sbj12":  {"TIB": 434.0, "TST_ref": 325.5, "TST_device": 388.0, "SE_ref": 75.00, "SE_device": 89.40, "SOL_ref": 15.5, "SOL_device": 0.0,  "WASO_ref": 93.0, "WASO_device": 46.0, "Light_ref": 200.5, "Light_device": 306.0, "Deep_ref": 46.0, "Deep_device": 20.5, "REM_ref": 79.0, "REM_device": 61.5, "LightPerc_ref": 61.60, "LightPerc_device": 78.87, "DeepPerc_ref": 14.13, "DeepPerc_device": 5.28,  "REMPerc_ref": 24.27, "REMPerc_device": 15.85},
+    "sbj13":  {"TIB": 349.5, "TST_ref": 265.5, "TST_device": 273.0, "SE_ref": 75.97, "SE_device": 78.11, "SOL_ref": 23.0, "SOL_device": 60.0, "WASO_ref": 61.0, "WASO_device": 16.5, "Light_ref": 179.5, "Light_device": 152.5, "Deep_ref": 29.0, "Deep_device": 44.5, "REM_ref": 57.0, "REM_device": 76.0, "LightPerc_ref": 67.61, "LightPerc_device": 55.86, "DeepPerc_ref": 10.92, "DeepPerc_device": 16.30, "REMPerc_ref": 21.47, "REMPerc_device": 27.84},
+    "sbj14":  {"TIB": 355.0, "TST_ref": 305.5, "TST_device": 307.5, "SE_ref": 86.06, "SE_device": 86.62, "SOL_ref": 14.0, "SOL_device": 6.0,  "WASO_ref": 35.5, "WASO_device": 41.5, "Light_ref": 202.0, "Light_device": 241.5, "Deep_ref": 81.0, "Deep_device": 35.5, "REM_ref": 22.5, "REM_device": 30.5, "LightPerc_ref": 66.12, "LightPerc_device": 78.54, "DeepPerc_ref": 26.51, "DeepPerc_device": 11.54, "REMPerc_ref": 7.36,  "REMPerc_device": 9.92}
+  },
+
+  "per_subject_discrepancies_staging": {
+    "_source_lines": "3187",
+    "_condition": "SLEEP STAGING — Section 2.2; diff = device - reference",
+    "_units": "minutes for TST/SOL/WASO/Light/Deep/REM; percentage points for SE/LightPerc/DeepPerc/REMPerc",
+    "sbj01":  {"TST_diff": -22.5, "SE_diff": -5.11, "SOL_diff":  0.5,  "WASO_diff":  22.0, "Light_diff":  64.0, "Deep_diff": -25.0, "REM_diff": -61.5, "LightPerc_diff":  20.66, "DeepPerc_diff":  -5.65, "REMPerc_diff": -15.00},
+    "sbj02":  {"TST_diff":  -0.5, "SE_diff": -0.13, "SOL_diff":  2.0,  "WASO_diff":  -1.5, "Light_diff": 124.0, "Deep_diff": -60.0, "REM_diff": -64.5, "LightPerc_diff":  35.05, "DeepPerc_diff": -16.89, "REMPerc_diff": -18.17},
+    "sbj03":  {"TST_diff": -10.5, "SE_diff": -3.15, "SOL_diff":  0.0,  "WASO_diff":  10.5, "Light_diff": -22.0, "Deep_diff":   4.0, "REM_diff":   7.5, "LightPerc_diff":  -5.56, "DeepPerc_diff":   2.03, "REMPerc_diff":   3.53},
+    "sbj04":  {"TST_diff":  -1.0, "SE_diff": -0.23, "SOL_diff":  1.0,  "WASO_diff":   0.0, "Light_diff":   7.0, "Deep_diff":   7.0, "REM_diff": -15.0, "LightPerc_diff":   1.92, "DeepPerc_diff":   1.82, "REMPerc_diff":  -3.73},
+    "sbj05":  {"TST_diff": -10.0, "SE_diff": -2.92, "SOL_diff":  6.5,  "WASO_diff":   3.5, "Light_diff":  83.5, "Deep_diff": -40.5, "REM_diff": -53.0, "LightPerc_diff":  28.12, "DeepPerc_diff": -12.08, "REMPerc_diff": -16.04},
+    "sbj06":  {"TST_diff": -10.5, "SE_diff": -2.24, "SOL_diff":  0.0,  "WASO_diff":  10.5, "Light_diff":  -3.0, "Deep_diff": -30.0, "REM_diff":  22.5, "LightPerc_diff":   0.78, "DeepPerc_diff":  -6.39, "REMPerc_diff":   5.61},
+    "sbj07":  {"TST_diff":   3.5, "SE_diff":  0.86, "SOL_diff":  4.5,  "WASO_diff":  -8.0, "Light_diff": -58.0, "Deep_diff":   2.0, "REM_diff":  59.5, "LightPerc_diff": -16.52, "DeepPerc_diff":   0.34, "REMPerc_diff":  16.18},
+    "sbj08":  {"TST_diff":  -3.0, "SE_diff": -0.69, "SOL_diff":  1.5,  "WASO_diff":   1.5, "Light_diff":  17.5, "Deep_diff": -26.0, "REM_diff":   5.5, "LightPerc_diff":   4.81, "DeepPerc_diff":  -6.28, "REMPerc_diff":   1.48},
+    "sbj09":  {"TST_diff":  41.0, "SE_diff": 13.82, "SOL_diff": -29.5, "WASO_diff": -11.5, "Light_diff":  44.0, "Deep_diff": -20.5, "REM_diff":  17.5, "LightPerc_diff":   8.83, "DeepPerc_diff": -13.36, "REMPerc_diff":   4.53},
+    "sbj10":  {"TST_diff":  15.0, "SE_diff":  5.57, "SOL_diff": -2.0,  "WASO_diff": -13.0, "Light_diff":  78.0, "Deep_diff": -75.0, "REM_diff":  12.0, "LightPerc_diff":  28.97, "DeepPerc_diff": -33.56, "REMPerc_diff":   4.59},
+    "sbj11":  {"TST_diff":  21.0, "SE_diff":  4.98, "SOL_diff": -31.5, "WASO_diff":  10.5, "Light_diff":  30.5, "Deep_diff": -38.5, "REM_diff":  29.0, "LightPerc_diff":   4.92, "DeepPerc_diff": -11.90, "REMPerc_diff":   6.98},
+    "sbj12":  {"TST_diff":  62.5, "SE_diff": 14.40, "SOL_diff": -15.5, "WASO_diff": -47.0, "Light_diff": 105.5, "Deep_diff": -25.5, "REM_diff": -17.5, "LightPerc_diff":  17.27, "DeepPerc_diff":  -8.85, "REMPerc_diff":  -8.42},
+    "sbj13":  {"TST_diff":   7.5, "SE_diff":  2.14, "SOL_diff": 37.0,  "WASO_diff": -44.5, "Light_diff": -27.0, "Deep_diff":  15.5, "REM_diff":  19.0, "LightPerc_diff": -11.75, "DeepPerc_diff":   5.38, "REMPerc_diff":   6.37},
+    "sbj14":  {"TST_diff":   2.0, "SE_diff":  0.56, "SOL_diff": -8.0,  "WASO_diff":   6.0, "Light_diff":  39.5, "Deep_diff": -45.5, "REM_diff":   8.0, "LightPerc_diff":  12.42, "DeepPerc_diff": -14.97, "REMPerc_diff":   2.56}
+  },
+
+  "per_subject_discrepancies_sleep_wake": {
+    "_source_lines": "3201",
+    "_condition": "SLEEP/WAKE (binary) — Section 2.2; diff = device - reference",
+    "_units": "minutes for TST/SOL/WASO; percentage points for SE",
+    "sbj01":  {"TST_diff": -22.5, "SE_diff": -5.11, "SOL_diff":  0.5,  "WASO_diff":  22.0},
+    "sbj02":  {"TST_diff":  -0.5, "SE_diff": -0.13, "SOL_diff":  2.0,  "WASO_diff":  -1.5},
+    "sbj03":  {"TST_diff": -10.5, "SE_diff": -3.15, "SOL_diff":  0.0,  "WASO_diff":  10.5},
+    "sbj04":  {"TST_diff":  -1.0, "SE_diff": -0.23, "SOL_diff":  1.0,  "WASO_diff":   0.0},
+    "sbj05":  {"TST_diff": -10.0, "SE_diff": -2.92, "SOL_diff":  6.5,  "WASO_diff":   3.5},
+    "sbj06":  {"TST_diff": -10.5, "SE_diff": -2.24, "SOL_diff":  0.0,  "WASO_diff":  10.5},
+    "sbj07":  {"TST_diff":   3.5, "SE_diff":  0.86, "SOL_diff":  4.5,  "WASO_diff":  -8.0},
+    "sbj08":  {"TST_diff":  -3.0, "SE_diff": -0.69, "SOL_diff":  1.5,  "WASO_diff":   1.5},
+    "sbj09":  {"TST_diff":  41.0, "SE_diff": 13.82, "SOL_diff": -29.5, "WASO_diff": -11.5},
+    "sbj10":  {"TST_diff":  15.0, "SE_diff":  5.57, "SOL_diff": -2.0,  "WASO_diff": -13.0},
+    "sbj11":  {"TST_diff":  21.0, "SE_diff":  4.98, "SOL_diff": -31.5, "WASO_diff":  10.5},
+    "sbj12":  {"TST_diff":  62.5, "SE_diff": 14.40, "SOL_diff": -15.5, "WASO_diff": -47.0},
+    "sbj13":  {"TST_diff":   7.5, "SE_diff":  2.14, "SOL_diff": 37.0,  "WASO_diff": -44.5},
+    "sbj14":  {"TST_diff":   2.0, "SE_diff":  0.56, "SOL_diff": -8.0,  "WASO_diff":   6.0}
+  }
+}
