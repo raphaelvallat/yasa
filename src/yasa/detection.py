@@ -1707,11 +1707,10 @@ def sw_detect(
         return None
 
     # Define time vector
-    times = np.arange(data.size) / sf
+    times = np.arange(n_samples) / sf
     idx_mask = np.where(mask)[0]
 
     # Bandpass filter
-    nfast = next_fast_len(n_samples)
     data_filt = filter_data(
         data,
         sf,
@@ -1747,11 +1746,12 @@ def sw_detect(
             verbose=0,
         )
         # Now extract the instantaneous phase/amplitude using Hilbert transform
+        nfast = next_fast_len(n_samples)
         sw_pha = np.angle(signal.hilbert(data_filt, N=nfast)[:, :n_samples])
         sp_amp = np.abs(signal.hilbert(data_sp, N=nfast)[:, :n_samples])
 
-    # Initialize empty output dataframe
-    df = pd.DataFrame()
+    # Collect per-channel DataFrames, then concat once at the end
+    dfs = []
 
     for i in range(n_chan):
         # ####################################################################
@@ -1792,7 +1792,7 @@ def sw_detect(
         good_ptp = np.logical_and(sw_ptp > amp_ptp[0], sw_ptp < amp_ptp[1])
 
         # If good_ptp is all False
-        if all(~good_ptp):
+        if not good_ptp.any():
             logger.warning("No SW were found in channel %s.", ch_names[i])
             continue
 
@@ -1861,11 +1861,12 @@ def sw_detect(
                 # Sanity checks
                 sw_midcrossing > sw_start,
                 sw_midcrossing < sw_end,
+                np.isfinite(sw_slope),
                 sw_slope > 0,
             )
         )
 
-        if all(~good_sw):
+        if not good_sw.any():
             logger.warning("No SW were found in channel %s.", ch_names[i])
             continue
 
@@ -1972,9 +1973,14 @@ def sw_detect(
 
         df_chan["Channel"] = ch_names[i]
         df_chan["IdxChannel"] = i
-        df = pd.concat([df, df_chan], axis=0, ignore_index=True)
+        dfs.append(df_chan)
 
     # If no SW were detected, return None
+    if not dfs:
+        df = pd.DataFrame()
+    else:
+        df = pd.concat(dfs, axis=0, ignore_index=True)
+
     if df.empty:
         logger.warning("No SW were found in data. Returning None.")
         return None
