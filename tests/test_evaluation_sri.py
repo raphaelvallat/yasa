@@ -66,7 +66,7 @@ from yasa import EpochByEpochAgreement, Hypnogram, SleepStatsAgreement
 # ---------------------------------------------------------------------------
 
 DATA_DIR = Path(__file__).parent / "data"
-CSV_PATH = DATA_DIR / "sample_data_sri.csv"
+CSV_PATH = DATA_DIR / "sample_data_sri.csv.xz"
 REF_PATH = DATA_DIR / "evaluation_sri_full.json"
 
 # Integer → YASA stage-label mapping for 4-stage and binary datasets
