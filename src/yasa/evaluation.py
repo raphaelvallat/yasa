@@ -1811,7 +1811,7 @@ class SleepStatsAgreement:
             else:
                 loa_int = v[("loa_intercept", "center")]
                 loa_slp = v[("loa_slope", "center")]
-                y_spread = agreement_adj * (loa_int + loa_slp * x_line)
+                y_spread = agreement_adj * np.maximum(0.0, loa_int + loa_slp * x_line)
                 ax.plot(
                     x_line, y_bias_arr + y_spread, color=loa_color, zorder=loa_zorder, **line_kwargs
                 )
