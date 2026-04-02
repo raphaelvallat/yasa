@@ -1640,6 +1640,20 @@ class SleepStatsAgreement:
         -------
         g : :py:class:`seaborn.FacetGrid`
             Seaborn FacetGrid
+
+        Examples
+        --------
+        .. plot::
+
+            >>> import yasa
+            >>> n = 20
+            >>> ref_hyps = [yasa.simulate_hypnogram(scorer="PSG", seed=i) for i in range(n)]
+            >>> obs_hyps = [ref_hyps[i].simulate_similar(scorer="Device", seed=i) for i in range(n)]
+            >>> eea = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
+            >>> sstats = eea.get_sleep_stats()
+            >>> ssa = yasa.SleepStatsAgreement(sstats.loc["PSG"], sstats.loc["Device"])
+            >>> stats = ["TST", "WASO", "N1", "REM"]
+            >>> g = ssa.plot_blandaltman(sleep_stats=stats, ci_method="param")
         """
         import seaborn as sns  # noqa
         import matplotlib.pyplot as plt
