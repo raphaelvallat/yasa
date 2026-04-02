@@ -1611,7 +1611,17 @@ class SleepStatsAgreement:
         scatter_kwargs=None,
         **kwargs,
     ):
-        """
+        """Plot Bland-Altman agreement plots for one or more sleep statistics.
+
+        Each panel shows observed-minus-reference differences (y-axis) against reference values
+        (x-axis) for one sleep statistic. Bias and limits of agreement are drawn as lines, with
+        optional confidence-interval bands. Methods (parametric, regression, or bootstrap) are
+        chosen automatically per statistic based on the assumption tests stored in
+        :py:attr:`~yasa.SleepStatsAgreement.assumptions`, or can be set explicitly.
+
+        .. seealso:: :py:meth:`~yasa.SleepStatsAgreement.report`,
+            :py:meth:`~yasa.SleepStatsAgreement.summary`
+
         Parameters
         ----------
         sleep_stats : list or None
