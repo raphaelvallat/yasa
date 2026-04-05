@@ -510,3 +510,105 @@ def ax_collections(ax):
     from matplotlib.collections import PathCollection
 
     return [c for c in ax.collections if isinstance(c, PathCollection)]
+
+
+# ---------------------------------------------------------------------------
+# SleepStatsAgreement — log_transform=True fixtures
+# ---------------------------------------------------------------------------
+
+ssa_log = SleepStatsAgreement(
+    _ref_stats, _obs_stats, ref_scorer=REF_SCORER, obs_scorer=OBS_SCORER, log_transform=True
+)
+
+
+class TestSleepStatsAgreementLogTransform(unittest.TestCase):
+    """Tests for the log_transform=True path (Euser et al. 2008)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import matplotlib
+
+        matplotlib.use("Agg")
+
+    # --- Construction and properties ---
+
+    def test_log_transform_false_by_default(self):
+        assert ssa._log_transform is False
+
+    def test_log_transform_true_when_set(self):
+        assert ssa_log._log_transform is True
+
+    def test_invalid_log_transform_raises(self):
+        with pytest.raises(AssertionError):
+            SleepStatsAgreement(_ref_stats, _obs_stats, log_transform="TST")
+
+    # --- Euser slope values ---
+
+    def test_loa_log_slope_finite_for_all_stats(self):
+        assert np.isfinite(ssa_log._loa_log_slope.dropna().to_numpy()).all()
+
+    def test_loa_log_slope_positive(self):
+        # Euser slope is always positive (it's a proportion of measurement size)
+        assert (ssa_log._loa_log_slope.dropna() > 0).all()
+
+    def test_loa_log_slope_nan_when_no_log_transform(self):
+        # Without log_transform, slope is NaN for all stats
+        assert ssa._loa_log_slope.isna().all()
+
+    # --- Parametric CI ---
+
+    def test_loa_log_ci_param_lower_lt_upper(self):
+        assert (ssa_log._loa_log_ci["param_lower"] < ssa_log._loa_log_ci["param_upper"]).all()
+
+    def test_loa_log_ci_param_lower_lt_center(self):
+        assert (ssa_log._loa_log_ci["param_lower"] < ssa_log._loa_log_slope).all()
+
+    def test_loa_log_ci_param_center_lt_upper(self):
+        assert (ssa_log._loa_log_slope < ssa_log._loa_log_ci["param_upper"]).all()
+
+    # --- auto_methods ---
+
+    def test_auto_methods_loa_is_log_when_log_transform(self):
+        assert (ssa_log.auto_methods["loa"] == "log").all()
+
+    def test_auto_methods_loa_unchanged_without_log_transform(self):
+        assert ssa.auto_methods["loa"].isin(["param", "regr"]).all()
+
+    # --- report ---
+
+    def test_report_log_loa_contains_times_symbol(self):
+        rpt = ssa_log.report(loa_method="log", ci_method="param")
+        pct = int(ssa_log._confidence * 100)
+        # LoA string should contain the × symbol (Euser format: "bias ± slope × ref")
+        assert rpt[f"LoA [{pct}% CI]"].str.contains("\u00d7").all()
+
+    def test_report_log_auto_contains_times_symbol(self):
+        rpt = ssa_log.report(ci_method="param")
+        pct = int(ssa_log._confidence * 100)
+        assert rpt[f"LoA [{pct}% CI]"].str.contains("\u00d7").all()
+
+    def test_report_loa_log_without_log_transform_raises(self):
+        with pytest.raises(ValueError):
+            ssa.report(loa_method="log")
+
+    # --- plot_blandaltman ---
+
+    def test_plot_blandaltman_log_returns_facetgrid(self):
+        import seaborn as sns
+
+        g = ssa_log.plot_blandaltman(loa_method="log", ci_method="param")
+        assert isinstance(g, sns.FacetGrid)
+
+    def test_plot_blandaltman_log_has_lines(self):
+        g = ssa_log.plot_blandaltman(loa_method="log", ci_method="param")
+        for ax in g.axes.flat:
+            assert len(ax.lines) > 0
+
+    def test_plot_blandaltman_log_ci_adds_patches(self):
+        g = ssa_log.plot_blandaltman(loa_method="log", ci_method="param")
+        has_patches = any(len(ax.patches) > 0 or len(ax.collections) > 0 for ax in g.axes.flat)
+        assert has_patches
+
+    def test_plot_blandaltman_loa_log_without_log_transform_raises(self):
+        with pytest.raises(ValueError):
+            ssa.plot_blandaltman(loa_method="log")
