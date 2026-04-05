@@ -1107,6 +1107,16 @@ class SleepStatsAgreement:
             columns=["param_lower", "param_upper", "boot_lower", "boot_upper"],
         )
         if log_transform:
+            # Validate that all values are non-negative. Negative sleep statistics (e.g. TST = -5)
+            # are physically impossible and would silently produce NaN log-differences.
+            neg_mask = (data[[ref_scorer, obs_scorer]] < 0).any(axis=1)
+            if neg_mask.any():
+                bad = data.index.get_level_values("sleep_stat")[neg_mask].unique().tolist()
+                raise ValueError(
+                    f"`log_transform=True` requires all sleep-statistic values to be "
+                    f"non-negative, but negative values were found for: {bad}. "
+                    "Pass `log_transform=False` or remove these statistics."
+                )
             # eps prevents log(0) for statistics that can be exactly zero
             # (e.g. SOL for a subject who falls asleep in the first epoch).
             eps = 1e-4
@@ -1222,8 +1232,8 @@ class SleepStatsAgreement:
         Has three columns:
 
         * ``bias`` — method used for bias (``'param'`` if bias is constant, ``'regr'`` otherwise).
-        * ``loa`` — method used for limits of agreement (``'param'`` if homoscedastic, ``'regr'``
-          otherwise).
+        * ``loa`` — method used for limits of agreement (``'log'`` for all stats when
+          ``log_transform=True``; otherwise ``'param'`` if homoscedastic, ``'regr'`` if not).
         * ``ci`` — method used for confidence intervals (``'param'`` if differences are normally
           distributed, ``'boot'`` otherwise).
         """
