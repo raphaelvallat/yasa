@@ -854,14 +854,21 @@ class SleepStatsAgreement:
         bootstrapped confidence intervals.
     alpha : float
         Alpha cutoff used for all assumption tests.
-    verbose : bool or str
-        Verbose level. Default (False) will only print warning and error messages. The logging
-        levels are 'debug', 'info', 'warning', 'error', and 'critical'. For most users the choice is
-        between 'info' (or ``verbose=True``) and warning (``verbose=False``).
     bootstrap_kwargs : dict
         Optional keyword arguments passed to :py:func:`scipy.stats.bootstrap`. Defaults use
         ``n_resamples=1000`` and ``method='BCa'``. The keys ``'confidence_level'``,
         ``'vectorized'``, and ``'paired'`` cannot be overridden.
+    log_transform : bool
+        If ``True``, apply the Euser et al. (2008) log-transformation method to all sleep
+        statistics. Limits of agreement are then expressed as ``bias ± slope × ref``, where
+        ``slope`` is derived from the standard deviation of log-ratio differences. This is
+        appropriate when measurement variability is proportional to the measurement magnitude
+        (heteroscedasticity), which is common for duration statistics such as TST, SOL, and WASO.
+        When ``True``, ``loa_method='auto'`` in :py:meth:`report` and
+        :py:meth:`plot_blandaltman` will automatically select the Euser method for all
+        statistics, bypassing the homoscedasticity assumption test. Passing ``loa_method='log'``
+        to those methods when ``log_transform=False`` raises a ``ValueError``.
+        Default is ``False``.
 
     Notes
     -----
@@ -951,8 +958,8 @@ class SleepStatsAgreement:
         agreement=1.96,
         confidence=0.95,
         alpha=0.05,
-        verbose=True,
         bootstrap_kwargs={},
+        log_transform=False,
     ):
         restricted_bootstrap_kwargs = ["confidence_level", "vectorized", "paired"]
 
@@ -983,6 +990,7 @@ class SleepStatsAgreement:
         assert all(k not in restricted_bootstrap_kwargs for k in bootstrap_kwargs), (
             f"None of {restricted_bootstrap_kwargs} can be set by the user"
         )
+        assert isinstance(log_transform, bool), "`log_transform` must be a bool"
         # If `ref_data` and `obs_data` indices are unnamed, name them
         session_key = "session_id" if ref_data.index.name is None else ref_data.index.name
         ref_data.index.name = obs_data.index.name = session_key
@@ -1086,6 +1094,58 @@ class SleepStatsAgreement:
         )
 
         ########################################################################
+        # Log-transform analysis (Euser et al. 2008)
+        ########################################################################
+        # Pre-allocate containers. They remain NaN/empty when log_transform=False
+        # so that the attribute-setting block below is unconditional.
+        data["log_difference"] = np.nan
+        log_transform_stats = []
+        loa_log_slope = pd.Series(np.nan, index=param_vals.index, name="loa_log_slope")
+        loa_log_ci = pd.DataFrame(
+            np.nan,
+            index=param_vals.index,
+            columns=["param_lower", "param_upper", "boot_lower", "boot_upper"],
+        )
+        if log_transform:
+            # Validate that all values are non-negative. Negative sleep statistics (e.g. TST = -5)
+            # are physically impossible and would silently produce NaN log-differences.
+            neg_mask = (data[[ref_scorer, obs_scorer]] < 0).any(axis=1)
+            if neg_mask.any():
+                bad = data.index.get_level_values("sleep_stat")[neg_mask].unique().tolist()
+                raise ValueError(
+                    f"`log_transform=True` requires all sleep-statistic values to be "
+                    f"non-negative, but negative values were found for: {bad}. "
+                    "Pass `log_transform=False` or remove these statistics."
+                )
+            # eps prevents log(0) for statistics that can be exactly zero
+            # (e.g. SOL for a subject who falls asleep in the first epoch).
+            eps = 1e-4
+            log_transform_stats = data.index.get_level_values("sleep_stat").unique().tolist()
+            # log_difference = log(obs) - log(ref) is the per-session log-ratio.
+            # Its SD quantifies proportional variability between the two scorers.
+            data["log_difference"] = np.log(data[obs_scorer] + eps) - np.log(data[ref_scorer] + eps)
+            # t critical value for the parametric slope CI (Bland & Altman 1999).
+            t_log = sps.t.ppf((1 + confidence) / 2, n_sessions - 1)
+            for stat in log_transform_stats:
+                log_d = data.loc[
+                    data.index.get_level_values("sleep_stat") == stat, "log_difference"
+                ].to_numpy()
+                sd = np.std(log_d, ddof=1)
+                # SE of the SD of log-ratios: sqrt(SD^2 * 3 / n)  (Bland & Altman 1999).
+                # Used to propagate uncertainty in SD into the slope CI.
+                se = np.sqrt(sd**2 * 3 / n_sessions)
+                # Point estimate: back-transform SD of log-ratios to a proportional slope.
+                loa_log_slope[stat] = self._euser_slope_scalar(sd, agreement)
+                # Parametric CI: apply _euser_slope_scalar to the CI bounds of SD.
+                # Clamp the lower SD bound at 0 so the slope stays non-negative.
+                loa_log_ci.at[stat, "param_lower"] = self._euser_slope_scalar(
+                    max(sd - t_log * se, 0.0), agreement
+                )
+                loa_log_ci.at[stat, "param_upper"] = self._euser_slope_scalar(
+                    sd + t_log * se, agreement
+                )
+
+        ########################################################################
         # Setting attributes
         ########################################################################
 
@@ -1118,8 +1178,12 @@ class SleepStatsAgreement:
         self._regr = regr
         self._vals = vals
         self._ci = ci
+        self._log_transform = log_transform
+        self._log_transform_stats = log_transform_stats
+        self._loa_log_slope = loa_log_slope
+        self._loa_log_ci = loa_log_ci
         self._bias_method_opts = ["param", "regr", "auto"]
-        self._loa_method_opts = ["param", "regr", "auto"]
+        self._loa_method_opts = ["param", "regr", "log", "auto"]
         self._ci_method_opts = ["param", "boot", "auto"]
 
     @property
@@ -1144,7 +1208,9 @@ class SleepStatsAgreement:
         ``sleep_stat`` and ``session_id`` (or the original index name from the input data).
         Columns are the reference and observed scorer names.
         """
-        return self._data.drop(columns=["difference", "residuals", "residuals_abs"])
+        return self._data.drop(
+            columns=["difference", "residuals", "residuals_abs", "log_difference"]
+        )
 
     @property
     def sleep_statistics(self):
@@ -1166,17 +1232,20 @@ class SleepStatsAgreement:
         Has three columns:
 
         * ``bias`` — method used for bias (``'param'`` if bias is constant, ``'regr'`` otherwise).
-        * ``loa`` — method used for limits of agreement (``'param'`` if homoscedastic, ``'regr'``
-          otherwise).
+        * ``loa`` — method used for limits of agreement (``'log'`` for all stats when
+          ``log_transform=True``; otherwise ``'param'`` if homoscedastic, ``'regr'`` if not).
         * ``ci`` — method used for confidence intervals (``'param'`` if differences are normally
           distributed, ``'boot'`` otherwise).
         """
+        loa_col = self.assumptions["homoscedastic"].map({True: "param", False: "regr"})
+        if self._log_transform:
+            loa_col.loc[self._log_transform_stats] = "log"
         return pd.concat(
             [
                 self.assumptions["constant_bias"]
                 .map({True: "param", False: "regr"})
                 .rename("bias"),
-                self.assumptions["homoscedastic"].map({True: "param", False: "regr"}).rename("loa"),
+                loa_col.rename("loa"),
                 self.assumptions["normal"].map({True: "param", False: "boot"}).rename("ci"),
             ],
             axis=1,
@@ -1206,6 +1275,17 @@ class SleepStatsAgreement:
         mean = np.mean(x)
         bound = agreement * np.std(x, ddof=1)
         return mean - bound, mean + bound
+
+    @staticmethod
+    def _euser_slope_scalar(sd, agreement):
+        """Euser et al. (2008) antilog LoA slope: 2*(exp(z)-1)/(exp(z)+1), z = agreement * sd.
+
+        Converts the SD of log-ratio differences back to a proportional LoA slope in the original
+        scale. The limits of agreement are then ``bias ± slope × ref``, where ``slope`` grows with
+        the variability of the log-ratios. When SD is 0, ``z = 0`` and the slope is 0 (no spread).
+        """
+        z = agreement * sd
+        return 2.0 * (np.exp(z) - 1.0) / (np.exp(z) + 1.0)
 
     @staticmethod
     def _linregr_dict(df):
@@ -1296,6 +1376,28 @@ class SleepStatsAgreement:
         # Merge with existing CI dataframe
         self._ci["boot"] = self._ci["boot"].fillna(boot_ci)
 
+        # Bootstrap CI for Euser LoA slope (log-transformed stats only).
+        # Only compute for stats not already covered (boot_lower is NaN on first call).
+        log_stats_to_boot = [
+            s
+            for s in sleep_stats
+            if s in self._log_transform_stats and pd.isna(self._loa_log_ci.at[s, "boot_lower"])
+        ]
+        if log_stats_to_boot:
+            agreement = self._agreement
+
+            # Resample function: apply _euser_slope_scalar to each bootstrap replicate's SD.
+            def _euser_resample(d):
+                return self._euser_slope_scalar(np.std(d, ddof=1), agreement)
+
+            for stat in log_stats_to_boot:
+                log_d = self._data.loc[
+                    self._data.index.get_level_values("sleep_stat") == stat, "log_difference"
+                ].to_numpy()
+                result = sps.bootstrap((log_d,), _euser_resample, **bs_kwargs)
+                self._loa_log_ci.at[stat, "boot_lower"] = result.confidence_interval.low
+                self._loa_log_ci.at[stat, "boot_upper"] = result.confidence_interval.high
+
     def report(self, bias_method="auto", loa_method="auto", ci_method="auto", decimals=2):
         """
         Return a human-readable :py:class:`~pandas.DataFrame` for reporting bias, limits of
@@ -1314,9 +1416,17 @@ class SleepStatsAgreement:
             (regression), bias is always a regression equation. If ``'auto'`` (default), the method
             is chosen per statistic based on the proportional-bias assumption test.
         loa_method : str
-            If ``'param'``, limits of agreement are always bias ± 1.96 SD. If ``'regr'``, they
-            are always a regression equation. If ``'auto'`` (default), the method is chosen per
-            statistic based on the homoscedasticity assumption test.
+            Method used to compute limits of agreement. Options:
+
+            * ``'param'`` — constant LoA: ``bias ± 1.96 SD``. Always uses this form regardless
+              of assumptions or ``log_transform``.
+            * ``'regr'`` — regression LoA: ``b0 + b1 × ref``. Always uses this form regardless
+              of assumptions or ``log_transform``.
+            * ``'log'`` — Euser LoA: ``bias ± slope × ref``. Requires ``log_transform=True``;
+              raises ``ValueError`` otherwise.
+            * ``'auto'`` (default) — if ``log_transform=True``, always uses ``'log'``. Otherwise,
+              uses ``'param'`` when the homoscedasticity assumption passes and ``'regr'`` when it
+              fails.
         ci_method : str
             If ``'param'``, parametric t-distribution CIs are used. If ``'boot'``, BCa bootstrap
             CIs are used. If ``'auto'`` (default), the method is chosen per statistic based on
@@ -1343,6 +1453,10 @@ class SleepStatsAgreement:
         assert loa_method in self._loa_method_opts, (
             f"`loa_method` must be one of {self._loa_method_opts}"
         )
+        if loa_method == "log" and not self._log_transform:
+            raise ValueError(
+                "`loa_method='log'` requires `log_transform=True` when creating SleepStatsAgreement"
+            )
         assert isinstance(decimals, int) and decimals >= 0, (
             "`decimals` must be a non-negative integer"
         )
@@ -1379,10 +1493,16 @@ class SleepStatsAgreement:
 
         if loa_method == "auto":
             loa_param_idx = self.auto_methods.query("loa == 'param'").index.tolist()
+            loa_log_idx = self._log_transform_stats
         elif loa_method == "param":
             loa_param_idx = self.sleep_statistics
+            loa_log_idx = []
+        elif loa_method == "log":
+            loa_param_idx = []
+            loa_log_idx = self.sleep_statistics
         else:
             loa_param_idx = []
+            loa_log_idx = []
 
         def _check(b):
             return "\u2713" if b else "\u2717"  # ✓ or ✗
@@ -1405,7 +1525,18 @@ class SleepStatsAgreement:
                     f"b1: {v['bias_slope_lower']:.{d}f}, {v['bias_slope_upper']:.{d}f}]"
                 )
 
-            if stat in loa_param_idx:
+            if stat in loa_log_idx:
+                slope_c = self._loa_log_slope[stat]
+                use_param_ci = ci_method == "param" or (
+                    ci_method == "auto" and self.assumptions.at[stat, "normal"]
+                )
+                ci_col = "param" if use_param_ci else "boot"
+                slope_lo = self._loa_log_ci.at[stat, f"{ci_col}_lower"]
+                slope_hi = self._loa_log_ci.at[stat, f"{ci_col}_upper"]
+                loa_str = (
+                    f"bias \u00b1 {slope_c:.{d}f} \u00d7 ref [{slope_lo:.{d}f}, {slope_hi:.{d}f}]"
+                )
+            elif stat in loa_param_idx:
                 loa_str = (
                     f"{v['loa_lower_center']:.{d}f} to {v['loa_upper_center']:.{d}f} "
                     f"[{v['loa_lower_lower']:.{d}f}, {v['loa_lower_upper']:.{d}f}; "
@@ -1631,9 +1762,17 @@ class SleepStatsAgreement:
             bias is always a regression line. If ``'auto'`` (default), the method is chosen per
             statistic based on the proportional-bias assumption test.
         loa_method : str
-            If ``'param'``, limits of agreement are always horizontal lines (bias ± 1.96 SD). If
-            ``'regr'``, they are always regression-modeled lines. If ``'auto'`` (default), the
-            method is chosen per statistic based on the homoscedasticity assumption test.
+            Method used to draw limits of agreement. Options:
+
+            * ``'param'`` — constant LoA: horizontal lines at ``bias ± 1.96 SD``. Always uses
+              this form regardless of assumptions or ``log_transform``.
+            * ``'regr'`` — regression LoA: lines following ``b0 + b1 × ref``. Always uses this
+              form regardless of assumptions or ``log_transform``.
+            * ``'log'`` — Euser LoA: lines following ``bias ± slope × ref``. Requires
+              ``log_transform=True``; raises ``ValueError`` otherwise.
+            * ``'auto'`` (default) — if ``log_transform=True``, always uses ``'log'``. Otherwise,
+              uses ``'param'`` when the homoscedasticity assumption passes and ``'regr'`` when it
+              fails.
         ci_method : str or None
             If ``'param'``, parametric CIs are drawn. If ``'boot'``, bootstrap CIs are drawn. If
             ``'auto'`` (default), chosen per statistic based on the normality assumption test.
@@ -1704,6 +1843,10 @@ class SleepStatsAgreement:
             "`sleep_stats` contains invalid statistics: "
             f"{sorted(invalid_stats)}; valid options are {sorted(valid_stats)}"
         )
+        if loa_method == "log" and not self._log_transform:
+            raise ValueError(
+                "`loa_method='log'` requires `log_transform=True` when creating SleepStatsAgreement"
+            )
         # Resolve per-stat bias and loa methods
         if bias_method == "auto":
             bias_param_idx = self.auto_methods.query("bias == 'param'").index.tolist()
@@ -1714,10 +1857,16 @@ class SleepStatsAgreement:
 
         if loa_method == "auto":
             loa_param_idx = self.auto_methods.query("loa == 'param'").index.tolist()
+            loa_log_idx = [s for s in sleep_stats if s in self._log_transform_stats]
         elif loa_method == "param":
             loa_param_idx = sleep_stats
+            loa_log_idx = []
+        elif loa_method == "log":
+            loa_param_idx = []
+            loa_log_idx = sleep_stats
         else:
             loa_param_idx = []
+            loa_log_idx = []
 
         # Retrieve values and CIs
         if ci_method is not None:
@@ -1806,7 +1955,50 @@ class SleepStatsAgreement:
                     )
 
             # --- LoA lines ---
-            if stat in loa_param_idx:
+            if stat in loa_log_idx:
+                # Euser LoA: proportional lines at bias ± slope * ref.
+                # Unlike constant LoA (axhline), these fan out with the reference value.
+                slope_c = self._loa_log_slope[stat]
+                ax.plot(
+                    x_line,
+                    y_bias_arr + slope_c * x_line,
+                    color=loa_color,
+                    zorder=loa_zorder,
+                    **line_kwargs,
+                )
+                ax.plot(
+                    x_line,
+                    y_bias_arr - slope_c * x_line,
+                    color=loa_color,
+                    zorder=loa_zorder,
+                    **line_kwargs,
+                )
+                if has_ci:
+                    use_param_ci = ci_method == "param" or (
+                        ci_method == "auto" and self.assumptions.at[stat, "normal"]
+                    )
+                    ci_col = "param" if use_param_ci else "boot"
+                    slope_lo = self._loa_log_ci.at[stat, f"{ci_col}_lower"]
+                    slope_hi = self._loa_log_ci.at[stat, f"{ci_col}_upper"]
+                    # Upper LoA CI band: between bias + slope_lo*ref and bias + slope_hi*ref.
+                    ax.fill_between(
+                        x_line,
+                        y_bias_arr + slope_lo * x_line,
+                        y_bias_arr + slope_hi * x_line,
+                        facecolor=loa_color,
+                        zorder=loa_zorder - 1,
+                        **band_kwargs,
+                    )
+                    # Lower LoA CI band: mirror of the upper band (slope signs flipped).
+                    ax.fill_between(
+                        x_line,
+                        y_bias_arr - slope_hi * x_line,
+                        y_bias_arr - slope_lo * x_line,
+                        facecolor=loa_color,
+                        zorder=loa_zorder - 1,
+                        **band_kwargs,
+                    )
+            elif stat in loa_param_idx:
                 for loa_var in ("loa_lower", "loa_upper"):
                     y_loa = v[(loa_var, "center")]
                     ax.axhline(y_loa, color=loa_color, zorder=loa_zorder, **line_kwargs)

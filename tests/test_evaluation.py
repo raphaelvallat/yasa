@@ -510,3 +510,244 @@ def ax_collections(ax):
     from matplotlib.collections import PathCollection
 
     return [c for c in ax.collections if isinstance(c, PathCollection)]
+
+
+# ---------------------------------------------------------------------------
+# SleepStatsAgreement — log_transform=True fixtures
+# ---------------------------------------------------------------------------
+
+ssa_log = SleepStatsAgreement(
+    _ref_stats, _obs_stats, ref_scorer=REF_SCORER, obs_scorer=OBS_SCORER, log_transform=True
+)
+
+# Separate fixture with basic bootstrap for testing the boot CI path.
+# BCa bootstrap requires n >= 10 to build jackknife estimates reliably; use "basic" here.
+ssa_log_boot = SleepStatsAgreement(
+    _ref_stats,
+    _obs_stats,
+    ref_scorer=REF_SCORER,
+    obs_scorer=OBS_SCORER,
+    log_transform=True,
+    bootstrap_kwargs={"n_resamples": 100, "method": "basic"},
+)
+
+# Larger fixture (15 sessions) to avoid degenerate all-zero stats that make BCa fail with N=5.
+# Used for ci_method="auto" and ci_method="boot" tests.
+_N_LARGE = 15
+_ref_hyps_large = [
+    simulate_hypnogram(tib=90, scorer=REF_SCORER, seed=i + 100) for i in range(_N_LARGE)
+]
+_obs_hyps_large = [
+    h.simulate_similar(scorer=OBS_SCORER, seed=i + 100) for i, h in enumerate(_ref_hyps_large)
+]
+_ebe_large = EpochByEpochAgreement(_ref_hyps_large, _obs_hyps_large)
+_sstats_large = _ebe_large.get_sleep_stats()
+_ref_stats_large = _sstats_large.loc[REF_SCORER]
+_obs_stats_large = _sstats_large.loc[OBS_SCORER]
+ssa_log_large = SleepStatsAgreement(
+    _ref_stats_large,
+    _obs_stats_large,
+    ref_scorer=REF_SCORER,
+    obs_scorer=OBS_SCORER,
+    log_transform=True,
+    bootstrap_kwargs={"n_resamples": 200},
+)
+
+
+class TestSleepStatsAgreementLogTransform(unittest.TestCase):
+    """Tests for the log_transform=True path (Euser et al. 2008)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import matplotlib
+
+        matplotlib.use("Agg")
+
+    # --- Construction and properties ---
+
+    def test_log_transform_false_by_default(self):
+        assert ssa._log_transform is False
+
+    def test_log_transform_true_when_set(self):
+        assert ssa_log._log_transform is True
+
+    def test_invalid_log_transform_raises(self):
+        with pytest.raises(AssertionError):
+            SleepStatsAgreement(_ref_stats, _obs_stats, log_transform="TST")
+
+    def test_negative_values_with_log_transform_raises(self):
+        # Inject a negative value into ref_stats to trigger the early validation.
+        bad_ref = _ref_stats.copy()
+        bad_ref.iloc[0, 0] = -1.0
+        with pytest.raises(ValueError, match="non-negative"):
+            SleepStatsAgreement(bad_ref, _obs_stats, log_transform=True)
+
+    # --- Euser slope values ---
+
+    def test_loa_log_slope_finite_for_all_stats(self):
+        assert np.isfinite(ssa_log._loa_log_slope.dropna().to_numpy()).all()
+
+    def test_loa_log_slope_positive(self):
+        # Euser slope is always positive (it's a proportion of measurement size)
+        assert (ssa_log._loa_log_slope.dropna() > 0).all()
+
+    def test_loa_log_slope_nan_when_no_log_transform(self):
+        # Without log_transform, slope is NaN for all stats
+        assert ssa._loa_log_slope.isna().all()
+
+    # --- Parametric CI ---
+
+    def test_loa_log_ci_param_lower_lt_upper(self):
+        assert (ssa_log._loa_log_ci["param_lower"] < ssa_log._loa_log_ci["param_upper"]).all()
+
+    def test_loa_log_ci_param_lower_lt_center(self):
+        assert (ssa_log._loa_log_ci["param_lower"] < ssa_log._loa_log_slope).all()
+
+    def test_loa_log_ci_param_center_lt_upper(self):
+        assert (ssa_log._loa_log_slope < ssa_log._loa_log_ci["param_upper"]).all()
+
+    # --- auto_methods ---
+
+    def test_auto_methods_loa_is_log_when_log_transform(self):
+        assert (ssa_log.auto_methods["loa"] == "log").all()
+
+    def test_auto_methods_loa_unchanged_without_log_transform(self):
+        assert ssa.auto_methods["loa"].isin(["param", "regr"]).all()
+
+    # --- report ---
+
+    def test_report_log_loa_contains_times_symbol(self):
+        rpt = ssa_log.report(loa_method="log", ci_method="param")
+        pct = int(ssa_log._confidence * 100)
+        # LoA string should contain the × symbol (Euser format: "bias ± slope × ref")
+        assert rpt[f"LoA [{pct}% CI]"].str.contains("\u00d7").all()
+
+    def test_report_log_auto_contains_times_symbol(self):
+        rpt = ssa_log.report(ci_method="param")
+        pct = int(ssa_log._confidence * 100)
+        assert rpt[f"LoA [{pct}% CI]"].str.contains("\u00d7").all()
+
+    def test_report_loa_log_without_log_transform_raises(self):
+        with pytest.raises(ValueError):
+            ssa.report(loa_method="log")
+
+    # --- plot_blandaltman ---
+
+    def test_plot_blandaltman_log_returns_facetgrid(self):
+        import seaborn as sns
+
+        g = ssa_log.plot_blandaltman(loa_method="log", ci_method="param")
+        assert isinstance(g, sns.FacetGrid)
+
+    def test_plot_blandaltman_log_has_lines(self):
+        g = ssa_log.plot_blandaltman(loa_method="log", ci_method="param")
+        for ax in g.axes.flat:
+            assert len(ax.lines) > 0
+
+    def test_plot_blandaltman_log_ci_adds_patches(self):
+        g = ssa_log.plot_blandaltman(loa_method="log", ci_method="param")
+        has_patches = any(len(ax.patches) > 0 or len(ax.collections) > 0 for ax in g.axes.flat)
+        assert has_patches
+
+    def test_plot_blandaltman_loa_log_without_log_transform_raises(self):
+        with pytest.raises(ValueError):
+            ssa.plot_blandaltman(loa_method="log")
+
+    # --- _euser_slope_scalar edge case ---
+
+    def test_euser_slope_scalar_zero_sd(self):
+        # When SD of log-ratios is 0 (scorers agree perfectly in log space),
+        # z = agreement * 0 = 0, exp(0)-1 = 0, so slope = 0.
+        slope = SleepStatsAgreement._euser_slope_scalar(0.0, 1.96)
+        assert slope == 0.0
+
+    # --- loa_method override with log_transform=True ---
+
+    def test_report_loa_param_override_with_log_transform(self):
+        # loa_method="param" forces constant LoA even when log_transform=True.
+        rpt = ssa_log.report(loa_method="param", ci_method="param")
+        pct = int(ssa_log._confidence * 100)
+        # Constant LoA uses "to" (e.g. "−5.00 to 3.00"), not the × symbol.
+        assert not rpt[f"LoA [{pct}% CI]"].str.contains("\u00d7").any()
+
+    def test_report_loa_regr_override_with_log_transform(self):
+        # loa_method="regr" forces regression LoA even when log_transform=True.
+        rpt = ssa_log.report(loa_method="regr", ci_method="param")
+        pct = int(ssa_log._confidence * 100)
+        # Regression LoA uses ± and x notation, not the × symbol.
+        assert not rpt[f"LoA [{pct}% CI]"].str.contains("\u00d7").any()
+
+    # --- ci_method="auto" for log stats ---
+
+    def test_report_log_ci_auto(self):
+        # ci_method="auto" picks "param" when normality holds, "boot" otherwise.
+        # Use ssa_log_large (15 sessions, BCa) to avoid the degenerate all-zero stat
+        # problem that makes the BCa jackknife call linregress on zero-valued data with N=5.
+        rpt = ssa_log_large.report(loa_method="log", ci_method="auto")
+        pct = int(ssa_log_large._confidence * 100)
+        assert rpt[f"LoA [{pct}% CI]"].str.contains("\u00d7").all()
+
+    def test_plot_blandaltman_log_ci_auto(self):
+        import seaborn as sns
+
+        g = ssa_log_large.plot_blandaltman(loa_method="log", ci_method="auto")
+        assert isinstance(g, sns.FacetGrid)
+
+    # --- ci_method="boot" for log stats ---
+
+    def test_report_log_ci_boot(self):
+        # Exercise the _generate_bootstrap_ci Euser path.
+        # Use a fresh object with method="basic" to avoid BCa degenerate-data warnings/NaNs
+        # that occur when a stat (e.g. Lat_REM) has identical values across all sessions.
+        fresh = SleepStatsAgreement(
+            _ref_stats_large,
+            _obs_stats_large,
+            ref_scorer=REF_SCORER,
+            obs_scorer=OBS_SCORER,
+            log_transform=True,
+            bootstrap_kwargs={"n_resamples": 200, "method": "basic"},
+        )
+        rpt = fresh.report(loa_method="log", ci_method="boot")
+        pct = int(fresh._confidence * 100)
+        assert rpt[f"LoA [{pct}% CI]"].str.contains("\u00d7").all()
+        # Stats with a valid Euser slope must also have valid bootstrap CIs.
+        # (Stats like Lat_REM may be NaN when some sessions have no REM sleep.)
+        valid = fresh._loa_log_slope.dropna().index
+        assert fresh._loa_log_ci.loc[valid, "boot_lower"].notna().all()
+        assert fresh._loa_log_ci.loc[valid, "boot_upper"].notna().all()
+
+    def test_plot_blandaltman_log_ci_boot(self):
+        import seaborn as sns
+
+        # Use a fresh object with method="basic" for the same reason as test_report_log_ci_boot.
+        fresh = SleepStatsAgreement(
+            _ref_stats_large,
+            _obs_stats_large,
+            ref_scorer=REF_SCORER,
+            obs_scorer=OBS_SCORER,
+            log_transform=True,
+            bootstrap_kwargs={"n_resamples": 200, "method": "basic"},
+        )
+        g = fresh.plot_blandaltman(loa_method="log", ci_method="boot")
+        assert isinstance(g, sns.FacetGrid)
+        has_patches = any(len(ax.patches) > 0 or len(ax.collections) > 0 for ax in g.axes.flat)
+        assert has_patches
+
+    # --- loa_method="auto" in plot_blandaltman with log_transform=True ---
+
+    def test_plot_blandaltman_log_auto_loa_method(self):
+        # loa_method="auto" with log_transform=True should route to the Euser path.
+        import seaborn as sns
+
+        g = ssa_log.plot_blandaltman(loa_method="auto", ci_method="param")
+        assert isinstance(g, sns.FacetGrid)
+        for ax in g.axes.flat:
+            assert len(ax.lines) > 0
+
+    # --- ci_method=None for log LoA (no CI bands) ---
+
+    def test_plot_blandaltman_log_no_ci(self):
+        g = ssa_log.plot_blandaltman(loa_method="log", ci_method=None)
+        # With no CI, fill_between patches and PolyCollection should be absent.
+        for ax in g.axes.flat:
+            assert len(ax.patches) == 0

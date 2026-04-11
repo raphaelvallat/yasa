@@ -37,7 +37,7 @@ See https://github.com/raphaelvallat/yasa/pull/228
 
 | # | Issue | Status | Notes |
 |---|-------|--------|-------|
-| 6 | **Log transformation** missing | ⚠️ Deferred | Planned: `log_transform` param + Euser et al. (2008) back-transform. Separate PR. |
+| 6 | **Log transformation** missing | ✅ Implemented | `log_transform=True` param + Euser et al. (2008) back-transform; `"log"` loa_method. |
 | 7 | **Individual discrepancy heatmap** (`indDiscr.R`) | ❌ | No equivalent; data available via `get_sleep_stats()` |
 | 8 | **Calibration direction bug** | ✅ Fixed | See detailed investigation below (Bugs A, B, C) |
 
@@ -54,69 +54,66 @@ See https://github.com/raphaelvallat/yasa/pull/228
 | Overlaid hypnogram plots | ✅ `plot_hypnograms()` | ❌ |
 | MAD / median in group summary | ✅ `summary()` | ❌ |
 | Human-readable report table | ✅ `report()` | ❌ |
+| Bland-Altman plot | ✅ `plot_blandaltman()` | ✅ `BAplot.R` |
 
 ---
 
-## Future PR: Bland-Altman Plot (`BAplot.R` vs YASA)
+## Bland-Altman Plot (`BAplot.R` vs YASA)
 
-YASA has **no Bland-Altman plot** for `SleepStatsAgreement`. This is a major missing piece.
+✅ **`plot_blandaltman()` implemented** in `SleepStatsAgreement` (`evaluation.py:1604`).
 
-### What `BAplot.R` produces
+### What `BAplot.R` produces vs YASA
 
-One scatter plot per sleep statistic (obs − ref differences vs reference), with:
+| Element | R (`BAplot.R`) | YASA (`plot_blandaltman`) |
+|---------|---------------|--------------------------|
+| Scatter points | One dot per session | ✅ One dot per session |
+| Bias line | Horizontal `mean(diff)` or regression `b0 + b1*ref` | ✅ Same; auto-selected from `assumptions` |
+| Bias CI | t-CI or bootstrap band | ✅ Shaded band; method via `ci_method` |
+| LoA lines | Constant `bias ± 1.96 SD` or `bias ± 2.46*(c0 + c1*ref)` | ✅ Same; auto-selected from `assumptions` |
+| LoA CI | Dashed CI bands | ✅ Shaded bands |
+| Flag biased | Red bias line if significant | ✅ `flag_biased=True` |
+| Euser LoA | `bias ± ref × euser_slope` | ✅ `log_transform=True` |
+| Marginal density | `ggExtra::ggMarginal` | ❌ Not implemented |
+| `xaxis="mean"` | (obs+ref)/2 on x-axis | ❌ Only reference on x-axis |
 
-| Element | Description |
-|---------|-------------|
-| Scatter points | One dot per session |
-| Marginal density | Y-axis marginal distribution via `ggExtra::ggMarginal` |
-| Bias line (red) | Horizontal constant `mean(diff)` — or regression line `b0 + b1*ref` if proportional bias |
-| Bias CI (red dashed) | Classic t-CI or bootstrap CI band around bias line |
-| Upper LoA (gray) | `bias + 1.96*SD` — or `bias + 2.46*(c0 + c1*ref)` if heteroscedastic |
-| Lower LoA (gray) | `bias − 1.96*SD` — or `bias − 2.46*(c0 + c1*ref)` if heteroscedastic |
-| LoA CI (gray dashed) | CI bands around each LoA |
-| Log-transform mode | LoA drawn as `bias ± ref × euser_slope` (Euser 2008) |
+### `BAplot.R` parameters not yet in YASA
 
-### `BAplot.R` parameters
-
-| Parameter | Purpose |
-|-----------|---------|
-| `xaxis = "reference"` or `"mean"` | X-axis: reference value or (obs+ref)/2 |
-| `logTransf = TRUE/FALSE` | Use Euser back-transform for LoA |
-| `CI.type = "classic"/"boot"` | Parametric t-CI or bootstrap CI |
-| `xlim`, `ylim` | Axis limits |
-
-### YASA current state
-
-- `SleepStatsAgreement` has **no `plot_blandaltman()` method** (confirmed by grep)
-- All statistical values needed for the plot are already stored: `_vals`, `_ci`, `_regr`, `_data`
-- YASA already detects proportional bias and heteroscedasticity and chooses parm/regr methods accordingly — these would drive which line style to draw
-- Log-transform Euser slopes are deferred (item 6, separate PR)
-
-### What a `plot_blandaltman()` method would need to implement
-
-1. Scatter of `difference` vs `ref` per sleep stat (one subplot per stat, or single stat via argument)
-2. Bias line: constant if `constant_bias`, regression line `b0 + b1*x` otherwise
-3. Bias CI: shaded band or dashed lines; use boot CI if `normal == False`
-4. LoA lines: constant if `homoscedastic`, regression `bias ± 2.46*(c0 + c1*x)` otherwise
-5. Euser LoA: `bias ± euser_slope * x` for log-transformed stats
-6. LoA CI bands (dashed)
-7. Optional: marginal distribution on y-axis (via `seaborn` or `matplotlib` inset)
-8. Optional: `xaxis="reference"` vs `xaxis="mean"` toggle
+| Parameter | Purpose | Status |
+|-----------|---------|--------|
+| `logTransf = TRUE/FALSE` | Use Euser back-transform for LoA | ✅ `log_transform=True` |
+| `xaxis = "mean"` | X-axis: (obs+ref)/2 instead of ref | ❌ Not planned |
+| `xlim`, `ylim` | Axis limits | ❌ Can be set via matplotlib post-call |
 
 ---
 
-## Future PR: Log transformation (Euser et al. 2008)
+## Log transformation (Euser et al. 2008)
 
-**Planned parameter:** `log_transform=False` (bool or list of str)
+**Reference:** `groupDiscr.R` lines 208–264, `BAplot.R` log section, Euser et al. (2008) and Bland & Altman (1999).
 
-**Design notes:**
-- `log_transform=True` applies to all stats; a list applies to named stats only (e.g., `["SOL", "WASO"]`)
-- Log-ratio differences: `d_i = log(obs_i + 1e-4) − log(ref_i + 1e-4)`
-- Euser slope: `2*(exp(agreement * SD(d_i)) − 1) / (exp(agreement * SD(d_i)) + 1)`
-- Parametric CI: `slope_ci = euser_fn(SD ± t * sqrt(SD² * 3 / n))` (Bland & Altman 1999 SE formula)
-- Store in `_vals["loa_log_slope"]` and `_ci["param"]["loa_log_slope"]`
-- `get_table()` to show `"Bias ± slope × ref"` for log-transformed stats (fstring key `"loa_log"`)
-- New property: `log_transform_stats`
+### Design principles (simplified vs R)
+
+- `log_transform` is **bool only** — no per-stat list. Mixed cases use two `SleepStatsAgreement` objects.
+- Euser slope is **internal** — not exposed in `summary()`, only rendered in `plot_blandaltman` and `report`.
+- `"log"` is a first-class **`loa_method` value**, alongside `"param"` and `"regr"`.
+- `auto_methods["loa"]` returns `"log"` for all stats when `log_transform=True`.
+- No `log_normal` in `assumptions` — normality of original diffs drives CI selection as before.
+- Bootstrap CI for Euser slope handled inside existing `_generate_bootstrap_ci`, no new methods.
+
+---
+
+### Background and motivation
+
+When differences between devices and reference scale proportionally with the measurement size (heteroscedasticity), a log transformation stabilises the variance. The Euser et al. (2008) method computes limits of agreement in log space and back-transforms them to a slope that multiplies the reference value:
+
+```
+LoA_upper = bias + slope × ref
+LoA_lower = bias − slope × ref
+slope = 2 * (exp(agreement × SD(log_diffs)) − 1) / (exp(agreement × SD(log_diffs)) + 1)
+```
+
+where `log_diffs = log(obs + ε) − log(ref + ε)` and `ε = 1e-4` to avoid `log(0)`.
+
+This is the **only** LoA representation that applies for log-transformed stats. The standard `loa_lower`/`loa_upper` (constant) and `loa_intercept`/`loa_slope` (regression) representations do not apply to these stats.
 
 ---
 
