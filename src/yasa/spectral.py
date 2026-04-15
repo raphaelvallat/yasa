@@ -170,12 +170,15 @@ def bandpower(
         # Per each sleep stage defined in ``include``.
         from .hypno import Hypnogram  # Avoid circular import
 
+        int_to_str = None
         if isinstance(hypno, Hypnogram):
             # Translate string include labels to integers using the Hypnogram mapping
             if include is not None:
                 include_arr = np.atleast_1d(np.asarray(include))
                 if include_arr.dtype.kind in ("U", "S", "O"):
-                    include = np.array([hypno.mapping[s] for s in include_arr], dtype=int)
+                    include_int = np.array([hypno.mapping[s] for s in include_arr], dtype=int)
+                    int_to_str = dict(zip(include_int, include_arr))
+                    include = include_int
             # Upsample the Hypnogram to match data
             hypno = hypno.upsample_to_data(data, sf=sf)
         hypno = np.asarray(hypno)
@@ -196,7 +199,7 @@ def bandpower(
             data_stage = data[:, hypno == stage]
             freqs, psd = signal.welch(data_stage, sf, nperseg=win, **kwargs_welch)
             bp_stage = bandpower_from_psd(psd, freqs, ch_names, bands=bands, relative=relative)
-            bp_stage["Stage"] = stage
+            bp_stage["Stage"] = int_to_str[stage] if int_to_str and stage in int_to_str else stage
             df_bp = pd.concat([df_bp, bp_stage], axis=0)
         return df_bp.set_index(["Stage", "Chan"])
 
