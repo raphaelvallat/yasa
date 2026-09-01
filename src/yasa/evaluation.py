@@ -791,7 +791,7 @@ class EpochByEpochAgreement:
         agg_kwargs = {"func": [mad, "mean", "std", "min", "median", "max"]} | kwargs
         if by_stage:
             summary = (
-                self.agreement_bystage.groupby("stage")
+                self._agreement_bystage.groupby("stage")
                 .agg(**agg_kwargs)
                 .stack(level=0)
                 .rename_axis(["stage", "metric"])
