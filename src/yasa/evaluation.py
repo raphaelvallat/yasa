@@ -358,11 +358,6 @@ class EpochByEpochAgreement:
             ``balanced_acc``, ``precision``, ``f1``) are expressed as percentages (0-100).
             ``kappa`` and ``mcc`` are correlation-like coefficients ranging from -1 to 1.
             Custom ``scorers`` are returned as is.
-
-            .. versionchanged:: 0.7.1
-                Proportion-based default metrics are returned as percentages instead of
-                proportions (0-1). The weighted ``recall`` metric was removed because it is
-                mathematically identical to ``accuracy``.
         """
         assert isinstance(sample_weight, (type(None), pd.Series)), (
             "`sample_weight` must be None or pandas Series"
@@ -445,12 +440,12 @@ class EpochByEpochAgreement:
             for a stage that the observed scorer never assigned in a session. Default is
             ``np.nan``, meaning that undefined scores are left missing and therefore ignored when
             averaging across sessions (e.g. in :py:meth:`summary`). Set to ``0`` to count such
-            sessions as a score of 0% instead (this was the behavior before v0.7.1), or to ``1``
+            sessions as a score of 0% instead, or to ``1``
             for a score of 100%. ``"warn"`` behaves like ``0`` but also emits a
             :py:class:`sklearn.exceptions.UndefinedMetricWarning`. Applied to all metrics,
             including ``specificity`` and ``npv``.
 
-            .. versionadded:: 0.7.1
+            .. versionadded:: 0.8.0
 
         Returns
         -------
@@ -465,9 +460,6 @@ class EpochByEpochAgreement:
             All metrics are expressed as percentages (0-100), except ``support``, which is the
             number of epochs of each stage in the reference hypnogram. A ``support`` of 0 flags
             the sessions where ``recall`` and ``fbeta`` are undefined.
-
-            .. versionchanged:: 0.7.1
-                Metrics are returned as percentages instead of proportions (0-1).
         """
         assert isinstance(beta, (int, float)) and beta > 0, "`beta` must be a positive number"
         zd_is_warn = isinstance(zero_division, str) and zero_division == "warn"
@@ -782,7 +774,7 @@ class EpochByEpochAgreement:
         than being counted as zeros. The number of contributing sessions is returned in the
         ``n_sessions`` column.
 
-        .. versionadded:: 0.7.1
+        .. versionadded:: 0.8.0
 
         Parameters
         ----------
@@ -1171,7 +1163,6 @@ class SleepStatsAgreement:
     * Test statistical assumptions of bias, limits of agreement, and their confidence intervals, and apply corrective procedures when the assumptions are not met.
     * Get bias and limits of agreement in a string-formatted table.
     * Calibrate new data to correct for biases in observed data.
-    * Return individual calibration functions.
     * Visualize Bland-Altman plots.
 
     .. warning:: **Experimental** — the API of this class may change before the full release
@@ -1186,31 +1177,25 @@ class SleepStatsAgreement:
     ref_data : :py:class:`pandas.DataFrame`
         A :py:class:`pandas.DataFrame` with sleep statistics from the reference scorer.
         Rows are unique observations and columns are unique sleep statistics.
-    obs_data : :py:class:`pandas.DataFrame`
+
+        Alternatively, the output of :py:meth:`yasa.EpochByEpochAgreement.get_sleep_stats`, i.e.
+        a single :py:class:`pandas.DataFrame` whose first index level is the scorer. In that
+        case ``obs_data`` must be ``None`` and the two scorers are taken from the index in order of
+        appearance (reference first).
+    obs_data : :py:class:`pandas.DataFrame` or None
         A :py:class:`pandas.DataFrame` with sleep statistics from the observed scorer.
         Rows are unique observations and columns are unique sleep statistics.
         Shape, index, and columns must be identical to ``ref_data``.
     ref_scorer : str
-        Name of the reference scorer.
+        Name of the reference scorer. Ignored when ``obs_data`` is ``None``.
     obs_scorer : str
-        Name of the observed scorer.
-    agreement : float
-        Multiple of the standard deviation to plot agreement limits. The default is 1.96, which
-        corresponds to a 95% confidence interval if the differences are normally distributed.
-
-        .. note:: ``agreement`` gets adjusted for regression-modeled limits of agreement.
+        Name of the observed scorer. Ignored when ``obs_data`` is ``None``.
     confidence : float
         Confidence level (between 0 and 1) for the confidence intervals applied to bias and limits
         of agreement. Default is 0.95 (i.e., 95%). The same level is used for both parametric and
         bootstrapped confidence intervals.
     alpha : float
-        Alpha cutoff used for the ``unbiased``, ``constant_bias`` and ``homoscedastic``
-        assumption tests. Default is 0.05.
-    alpha_normal : float
-        Alpha cutoff used for the Shapiro-Wilk ``normal`` assumption test. Default is 0.01, i.e.
-        stricter than ``alpha``, because the Shapiro-Wilk test is sensitive to small departures
-        from normality that have little effect on the limits of agreement, and a violation only
-        switches the confidence intervals from parametric to bootstrap.
+        Alpha cutoff used for all assumption tests. Default is 0.05.
     bootstrap_kwargs : dict
         Optional keyword arguments passed to :py:func:`scipy.stats.bootstrap`. Defaults use
         ``n_resamples=1000`` and ``method='BCa'``. The keys ``'confidence_level'``,
@@ -1256,10 +1241,8 @@ class SleepStatsAgreement:
     >>> # Generate sleep statistics from hypnograms using EpochByEpochAgreement
     >>> eea = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
     >>> sstats = eea.get_sleep_stats()
-    >>> ref_sstats = sstats.loc[ref_scorer]
-    >>> obs_sstats = sstats.loc[obs_scorer]
     >>> # Create SleepStatsAgreement instance
-    >>> ssa = yasa.SleepStatsAgreement(ref_sstats, obs_sstats)
+    >>> ssa = yasa.SleepStatsAgreement(sstats)
     >>> ssa.summary(ci_method="param").round(1).head(3)  # doctest: +NORMALIZE_WHITESPACE
     variable   bias_intercept             bias_mean  ... loa_slope loa_upper
     interval           center lower upper    center  ...     upper    center lower upper
@@ -1272,19 +1255,19 @@ class SleepStatsAgreement:
 
     >>> ssa.report(ci_method="param").head(3)[["Bias [95% CI]", "LoA [95% CI]"]]  # doctest: +SKIP
 
-    >>> ssa.assumptions.head(3)
-                unbiased  normal  constant_bias  homoscedastic
+    >>> ssa.assumptions["constant_bias"].head(3).round(3)
+    metric      slope  pvalue     r2  passed method
     sleep_stat
-    %N1             True    True           True           True
-    %N2             True    True          False           True
-    %N3             True    True           True           True
+    %N1         0.370   0.181  0.097    True  param
+    %N2         0.553   0.017  0.279   False   regr
+    %N3         0.613   0.131  0.122    True  param
 
-    >>> ssa.auto_methods.head(3)
-                 bias    loa     ci
+    >>> ssa.assumptions.xs("method", level="metric", axis=1).head(3)
+    assumption normal constant_bias homoscedastic
     sleep_stat
-    %N1         param  param  param
-    %N2          regr  param  param
-    %N3         param  param  param
+    %N1         param         param         param
+    %N2         param          regr         param
+    %N3         param         param         param
 
     >>> new_hyps = [h.simulate_similar(scorer="Kelly", seed=i) for i, h in enumerate(obs_hyps)]
     >>> new_sstats = pd.Series(new_hyps).map(lambda h: h.sleep_statistics()).apply(pd.Series)
@@ -1299,11 +1282,11 @@ class SleepStatsAgreement:
     >>> new_stats_calibrated = ssa.calibrate(new_sstats[ssa.sleep_statistics], bias_method="auto")
     >>> new_stats_calibrated[["N1", "TST", "WASO"]].round(1).head(5)
          N1    TST   WASO
-    0  42.5  439.5  147.5
-    1  84.0  550.0   38.5
-    2  53.5  489.0  103.0
-    3  57.0  469.5  120.0
-    4  71.0  531.0   69.0
+    0  53.0  448.4  143.0
+    1  79.8  549.7   40.2
+    2  60.1  493.7  101.0
+    3  62.4  475.9  117.1
+    4  71.4  532.2   69.0
 
     """
 
@@ -1311,24 +1294,35 @@ class SleepStatsAgreement:
     _loa_method_opts = ("param", "regr", "log", "auto")
     _ci_method_opts = ("param", "boot", "auto")
 
+    # Multiple of the SD of the differences defining the limits of agreement (95% coverage)
+    _agreement = 1.96
+
     def __init__(
         self,
         ref_data,
-        obs_data,
+        obs_data=None,
         *,
         ref_scorer="Reference",
         obs_scorer="Observed",
-        agreement=1.96,
         confidence=0.95,
         alpha=0.05,
-        alpha_normal=0.01,
         bootstrap_kwargs=None,
         log_transform=False,
     ):
         restricted_bootstrap_kwargs = ["confidence_level", "vectorized", "paired"]
         bootstrap_kwargs = {} if bootstrap_kwargs is None else bootstrap_kwargs
+        agreement = self._agreement
 
         assert isinstance(ref_data, pd.DataFrame), "`ref_data` must be a pandas DataFrame"
+        if obs_data is None:
+            # Output of EpochByEpochAgreement.get_sleep_stats(): (scorer, session) MultiIndex
+            assert ref_data.index.nlevels == 2, (
+                "`ref_data` must have a (scorer, session) MultiIndex when `obs_data` is None"
+            )
+            scorers = ref_data.index.get_level_values(0).unique().tolist()
+            assert len(scorers) == 2, f"`ref_data` must contain exactly two scorers, got {scorers}"
+            ref_scorer, obs_scorer = scorers
+            ref_data, obs_data = ref_data.loc[ref_scorer], ref_data.loc[obs_scorer]
         assert isinstance(obs_data, pd.DataFrame), "`obs_data` must be a pandas DataFrame"
         assert np.array_equal(ref_data.index, obs_data.index), (
             "`ref_data` and `obs_data` index values must be identical"
@@ -1342,17 +1336,11 @@ class SleepStatsAgreement:
         assert isinstance(ref_scorer, str), "`ref_scorer` must be a string"
         assert isinstance(obs_scorer, str), "`obs_scorer` must be a string"
         assert ref_scorer != obs_scorer, "`ref_scorer` and `obs_scorer` must be unique"
-        assert isinstance(agreement, (float, int)) and agreement > 0, (
-            "`agreement` must be a number greater than 0"
-        )
         assert isinstance(confidence, (float, int)) and 0 < confidence < 1, (
             "`confidence` must be a number between 0 and 1"
         )
         assert isinstance(alpha, (float, int)) and 0 <= alpha <= 1, (
             "`alpha` must be a number between 0 and 1 inclusive"
-        )
-        assert isinstance(alpha_normal, (float, int)) and 0 <= alpha_normal <= 1, (
-            "`alpha_normal` must be a number between 0 and 1 inclusive"
         )
         assert isinstance(bootstrap_kwargs, dict), "`bootstrap_kwargs` must be a dictionary"
         assert all(k not in restricted_bootstrap_kwargs for k in bootstrap_kwargs), (
@@ -1464,47 +1452,6 @@ class SleepStatsAgreement:
         param_ci["loa_halfwidth-upper"] = param_vals["loa_halfwidth"] + halfwidth_se * t_regr
 
         ########################################################################
-        # Test all statistical assumptions
-        ########################################################################
-        # Diagnostics keep the test statistics, p-values and effect sizes behind each pass/fail
-        # flag, so that the materiality of a violation can be judged (p-values scale with n).
-        def _test_series(res):
-            return pd.Series({"statistic": res.statistic, "pvalue": res.pvalue})
-
-        ttest = grouper["difference"].apply(lambda a: _test_series(sps.ttest_1samp(a, 0))).unstack()
-        shapiro = grouper["difference"].apply(
-            lambda a: (
-                _test_series(sps.shapiro(a))
-                if len(a) >= 3
-                else pd.Series({"statistic": np.nan, "pvalue": 1.0})
-            )
-        )
-        shapiro = shapiro.unstack()
-        diagnostics = pd.DataFrame(
-            {
-                ("unbiased", "t"): ttest["statistic"],
-                ("unbiased", "pvalue"): ttest["pvalue"],
-                ("unbiased", "cohen_d"): param_vals["bias_mean"]
-                / grouper["difference"].std(ddof=1),
-                ("normal", "W"): shapiro["statistic"],
-                ("normal", "pvalue"): shapiro["pvalue"],
-                ("normal", "skew"): grouper["difference"].skew(),
-                ("normal", "kurtosis"): grouper["difference"].apply(pd.Series.kurt),
-                ("constant_bias", "slope"): bias_regr["slope"],
-                ("constant_bias", "pvalue"): bias_regr["pvalue"],
-                ("constant_bias", "r2"): bias_regr["rvalue"] ** 2,
-                ("homoscedastic", "slope"): loa_regr["slope"],
-                ("homoscedastic", "pvalue"): loa_regr["pvalue"],
-                ("homoscedastic", "r2"): loa_regr["rvalue"] ** 2,
-            }
-        ).rename_axis(columns=["assumption", "metric"])
-        pvalues = diagnostics.xs("pvalue", level="metric", axis=1)
-        alphas = pd.Series(alpha, index=pvalues.columns)
-        alphas["normal"] = alpha_normal
-        assumptions = pvalues.ge(alphas, axis=1)
-        assumptions = assumptions.rename_axis(columns=None)
-
-        ########################################################################
         # Log-transform analysis (Euser et al. 2008)
         ########################################################################
         # Pre-allocate containers. They remain NaN/empty when log_transform=False
@@ -1563,6 +1510,56 @@ class SleepStatsAgreement:
                 )
 
         ########################################################################
+        # Test all statistical assumptions
+        ########################################################################
+        # For each assumption: test statistic, p-value, effect size, pass/fail flag (p >= alpha)
+        # and the method selected when "auto" is requested. The effect sizes let users judge the
+        # materiality of a violation, since p-values scale with n.
+        def _test_series(res):
+            return pd.Series({"statistic": res.statistic, "pvalue": res.pvalue})
+
+        ttest = grouper["difference"].apply(lambda a: _test_series(sps.ttest_1samp(a, 0))).unstack()
+        shapiro = grouper["difference"].apply(
+            lambda a: (
+                _test_series(sps.shapiro(a))
+                if len(a) >= 3
+                else pd.Series({"statistic": np.nan, "pvalue": 1.0})
+            )
+        )
+        shapiro = shapiro.unstack()
+        unbiased = ttest["pvalue"].ge(alpha)
+        normal = shapiro["pvalue"].ge(alpha)
+        constant_bias = bias_regr["pvalue"].ge(alpha)
+        homoscedastic = loa_regr["pvalue"].ge(alpha)
+        loa_method = homoscedastic.map({True: "param", False: "regr"})
+        loa_method[log_transform_stats] = "log"
+        assumptions = pd.DataFrame(
+            {
+                ("unbiased", "t"): ttest["statistic"],
+                ("unbiased", "pvalue"): ttest["pvalue"],
+                ("unbiased", "cohen_d"): param_vals["bias_mean"]
+                / grouper["difference"].std(ddof=1),
+                ("unbiased", "passed"): unbiased,
+                ("normal", "W"): shapiro["statistic"],
+                ("normal", "pvalue"): shapiro["pvalue"],
+                ("normal", "skew"): grouper["difference"].skew(),
+                ("normal", "kurtosis"): grouper["difference"].apply(pd.Series.kurt),
+                ("normal", "passed"): normal,
+                ("normal", "method"): normal.map({True: "param", False: "boot"}),
+                ("constant_bias", "slope"): bias_regr["slope"],
+                ("constant_bias", "pvalue"): bias_regr["pvalue"],
+                ("constant_bias", "r2"): bias_regr["rvalue"] ** 2,
+                ("constant_bias", "passed"): constant_bias,
+                ("constant_bias", "method"): constant_bias.map({True: "param", False: "regr"}),
+                ("homoscedastic", "slope"): loa_regr["slope"],
+                ("homoscedastic", "pvalue"): loa_regr["pvalue"],
+                ("homoscedastic", "r2"): loa_regr["rvalue"] ** 2,
+                ("homoscedastic", "passed"): homoscedastic,
+                ("homoscedastic", "method"): loa_method,
+            }
+        ).rename_axis(columns=["assumption", "metric"])
+
+        ########################################################################
         # Setting attributes
         ########################################################################
 
@@ -1584,7 +1581,6 @@ class SleepStatsAgreement:
         ci = ci.sort_index(axis=1)  # Sort MultiIndex columns for cleanliness
 
         # Set attributes
-        self._agreement = agreement
         self._confidence = confidence
         self._bootstrap_kwargs = bootstrap_kwargs
         self._n_sessions = n_sessions
@@ -1592,7 +1588,6 @@ class SleepStatsAgreement:
         self._obs_scorer = obs_scorer
         self._data = data
         self._assumptions = assumptions
-        self._diagnostics = diagnostics
         self._regr = regr
         self._vals = vals
         self._ci = ci
@@ -1634,79 +1629,35 @@ class SleepStatsAgreement:
 
     @property
     def assumptions(self):
-        """A :py:class:`pandas.DataFrame` containing boolean values indicating the pass/fail status
-        of all statistical tests performed to test assumptions.
-
-        .. seealso:: :py:attr:`diagnostics` for the statistics behind each flag.
-        """
-        return self._assumptions
-
-    @property
-    def diagnostics(self):
-        """A :py:class:`pandas.DataFrame` with the test statistics, p-values and effect sizes
-        behind each :py:attr:`assumptions` flag. Columns form a MultiIndex with levels
-        ``assumption`` and ``metric``:
+        """A :py:class:`pandas.DataFrame` with the results of the statistical assumption tests
+        for each sleep statistic. Columns form a MultiIndex with levels ``assumption`` and
+        ``metric``:
 
         * ``unbiased`` — one-sample t-test of the differences against zero: ``t``, ``pvalue``,
-          and ``cohen_d`` (mean difference divided by its SD).
-        * ``normal`` — Shapiro-Wilk test of the differences: ``W``, ``pvalue``, plus sample
-          ``skew`` and excess ``kurtosis``.
+          ``cohen_d`` (mean difference divided by its SD) and ``passed``.
+        * ``normal`` — Shapiro-Wilk test of the differences: ``W``, ``pvalue``, sample ``skew``,
+          excess ``kurtosis``, ``passed`` and the confidence-interval ``method`` (``'param'`` if
+          passed, ``'boot'`` otherwise).
         * ``constant_bias`` — regression of the differences on the reference values: ``slope``,
-          ``pvalue``, ``r2``.
+          ``pvalue``, ``r2``, ``passed`` and the bias ``method`` (``'param'`` if passed,
+          ``'regr'`` otherwise).
         * ``homoscedastic`` — regression of the absolute residuals of the bias regression on the
-          reference values: ``slope``, ``pvalue``, ``r2``.
+          reference values: ``slope``, ``pvalue``, ``r2``, ``passed`` and the limits-of-agreement
+          ``method`` (``'param'`` if passed, ``'regr'`` otherwise, ``'log'`` for log-transformed
+          statistics when ``log_transform=True``).
 
-        A flag in :py:attr:`assumptions` is ``True`` when ``pvalue >= alpha`` (``alpha_normal``
-        for the ``normal`` test). Because the power
-        of these tests grows with the number of sessions, small and practically irrelevant
-        deviations become "significant" in large samples. Use the effect sizes (``cohen_d``,
-        ``skew``, ``r2``) and the Bland-Altman plots to judge whether a violation matters.
+        ``passed`` is ``True`` when ``pvalue >= alpha``, and
+        ``method`` is what :py:meth:`report`, :py:meth:`summary`, :py:meth:`calibrate` and
+        :py:meth:`plot_blandaltman` apply when ``'auto'`` is requested. Because the power of
+        these tests grows with the number of sessions, small and practically irrelevant deviations
+        become "significant" in large samples. Use the effect sizes (``cohen_d``, ``skew``, ``r2``)
+        and the Bland-Altman plots to judge whether a violation matters.
 
-        .. versionadded:: 0.7.1
+        .. versionchanged:: 0.8.0
+            Includes the test statistics, effect sizes and selected methods (previously only the
+            pass/fail flags).
         """
-        return self._diagnostics
-
-    @property
-    def auto_methods(self):
-        """
-        A :py:class:`pandas.DataFrame` containing the methods applied when ``'auto'`` is selected.
-
-        Has three columns:
-
-        * ``bias`` — method used for bias (``'param'`` if bias is constant, ``'regr'`` otherwise).
-        * ``loa`` — method used for limits of agreement (``'log'`` for log-transformed stats
-          when ``log_transform=True``; otherwise ``'param'`` if homoscedastic, ``'regr'`` if not).
-        * ``ci`` — method used for confidence intervals (``'param'`` if differences are normally
-          distributed, ``'boot'`` otherwise).
-        """
-        loa_col = self.assumptions["homoscedastic"].map({True: "param", False: "regr"})
-        if self._log_transform:
-            loa_col.loc[self._log_transform_stats] = "log"
-        return pd.concat(
-            [
-                self.assumptions["constant_bias"]
-                .map({True: "param", False: "regr"})
-                .rename("bias"),
-                loa_col.rename("loa"),
-                self.assumptions["normal"].map({True: "param", False: "boot"}).rename("ci"),
-            ],
-            axis=1,
-        )
-
-    @property
-    def loa_log_slope(self):
-        """
-        A :py:class:`pandas.Series` with the Euser et al. (2008) limits-of-agreement slope for
-        each sleep statistic, indexed by ``sleep_stat``.
-
-        The limits of agreement are ``bias ± loa_log_slope × ref``, where the slope is derived
-        from the standard deviation of the log-ratio differences (see the ``log_transform``
-        parameter). All values are NaN when ``log_transform=False``. Confidence intervals for the
-        slope are available in the ``loa_log_slope`` column of :py:meth:`summary`.
-
-        .. versionadded:: 0.7.1
-        """
-        return self._loa_log_slope.copy()
+        return self._assumptions
 
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
@@ -1792,14 +1743,14 @@ class SleepStatsAgreement:
         assert loa_method in self._loa_method_opts, (
             f"`loa_method` must be one of {self._loa_method_opts}"
         )
-        auto = self.auto_methods.loc[sleep_stats]
+        methods = self._assumptions.xs("method", level="metric", axis=1).loc[sleep_stats]
         if bias_method == "auto":
-            bias_param_idx = auto.index[auto["bias"] == "param"].tolist()
+            bias_param_idx = methods.index[methods["constant_bias"] == "param"].tolist()
         else:
             bias_param_idx = sleep_stats if bias_method == "param" else []
         if loa_method == "auto":
-            loa_param_idx = auto.index[auto["loa"] == "param"].tolist()
-            loa_log_idx = auto.index[auto["loa"] == "log"].tolist()
+            loa_param_idx = methods.index[methods["homoscedastic"] == "param"].tolist()
+            loa_log_idx = methods.index[methods["homoscedastic"] == "log"].tolist()
         elif loa_method == "log":
             not_log = [s for s in sleep_stats if s not in self._log_transform_stats]
             if not_log:
@@ -1924,8 +1875,6 @@ class SleepStatsAgreement:
         ci_method="auto",
         decimals=2,
         sleep_stats=None,
-        bias_ci=True,
-        loa_ci=True,
     ):
         """
         Return a human-readable :py:class:`~pandas.DataFrame` for reporting bias, limits of
@@ -1959,28 +1908,18 @@ class SleepStatsAgreement:
             * ``'auto'`` (default) — if ``log_transform=True``, always uses ``'log'``. Otherwise,
               uses ``'param'`` when the homoscedasticity assumption passes and ``'regr'`` when it
               fails.
-        ci_method : str
+        ci_method : str or None
             If ``'param'``, parametric t-distribution CIs are used. If ``'boot'``, BCa bootstrap
             CIs are used. If ``'auto'`` (default), the method is chosen per statistic based on
-            the normality assumption test. Ignored when both ``bias_ci`` and ``loa_ci`` are
-            ``False`` (no bootstrap is run in that case).
+            the normality assumption test. If ``None``, no confidence intervals are computed or
+            shown (the columns are then named ``"Bias"`` and ``"LoA"``).
         decimals : int
             Number of decimal places. Default is 2.
         sleep_stats : list or None
             List of sleep statistics to include, in the desired row order. Default (None) is to
             include all sleep statistics.
 
-            .. versionadded:: 0.7.1
-        bias_ci : bool
-            If ``True`` (default), the bias column includes its confidence interval in brackets.
-            If ``False``, only the point estimate is shown and the column is named ``"Bias"``.
-
-            .. versionadded:: 0.7.1
-        loa_ci : bool
-            If ``True`` (default), the LoA column includes confidence interval(s) in brackets.
-            If ``False``, only the point estimates are shown and the column is named ``"LoA"``.
-
-            .. versionadded:: 0.7.1
+            .. versionadded:: 0.8.0
 
         Returns
         -------
@@ -2001,26 +1940,21 @@ class SleepStatsAgreement:
         >>> ref_hyps = [yasa.simulate_hypnogram(tib=480, scorer="PSG", seed=i) for i in range(20)]
         >>> obs_hyps = [h.simulate_similar(scorer="Device", seed=i) for i, h in enumerate(ref_hyps)]
         >>> sstats = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps).get_sleep_stats()
-        >>> ssa = yasa.SleepStatsAgreement(
-        ...     sstats.loc["PSG"], sstats.loc["Device"], ref_scorer="PSG", obs_scorer="Device"
-        ... )
+        >>> ssa = yasa.SleepStatsAgreement(sstats)
         >>> ssa.report(
         ...     sleep_stats=["TST", "WASO", "SE"],
         ...     bias_method="param",
         ...     loa_method="param",
-        ...     ci_method="param",
-        ...     loa_ci=False,
+        ...     ci_method=None,
         ...     decimals=1,
         ... ).drop(columns="Assumptions")  # doctest: +SKIP
         """
-        assert isinstance(ci_method, str) and ci_method in self._ci_method_opts, (
-            f"`ci_method` must be one of {self._ci_method_opts}"
+        assert ci_method is None or ci_method in self._ci_method_opts, (
+            f"`ci_method` must be one of {self._ci_method_opts} or None"
         )
         assert isinstance(decimals, int) and decimals >= 0, (
             "`decimals` must be a non-negative integer"
         )
-        assert isinstance(bias_ci, bool), "`bias_ci` must be True or False"
-        assert isinstance(loa_ci, bool), "`loa_ci` must be True or False"
         sleep_stats = self._check_sleep_stats(sleep_stats)
         bias_param_idx, loa_param_idx, loa_log_idx = self._resolve_methods(
             sleep_stats, bias_method, loa_method
@@ -2041,16 +1975,16 @@ class SleepStatsAgreement:
                 return "events/h"
             return "min"
 
-        # Skip the CI computation (incl. bootstrap) entirely when no CI is displayed
-        values = self.summary(
-            ci_method=ci_method if (bias_ci or loa_ci) else None, sleep_stats=sleep_stats
-        )
+        # No CI computation (incl. bootstrap) when ci_method is None
+        show_ci = ci_method is not None
+        values = self.summary(ci_method=ci_method, sleep_stats=sleep_stats)
         values.columns = values.columns.map("_".join)
 
         # Reference and observed mean (SD) per sleep stat
         grouper = self._data.groupby("sleep_stat")
         ref_desc = grouper[self.ref_scorer].agg(["mean", "std"])
         obs_desc = grouper[self.obs_scorer].agg(["mean", "std"])
+        passed = self._assumptions.xs("passed", level="metric", axis=1)
 
         def _check(b):
             return "✓" if b else "✗"  # ✓ or ✗
@@ -2070,11 +2004,11 @@ class SleepStatsAgreement:
 
             if stat in bias_param_idx:
                 bias_str = f"{v['bias_mean_center']:.{d}f}"
-                if bias_ci:
+                if show_ci:
                     bias_str += _ci((v["bias_mean_lower"], v["bias_mean_upper"]))
             else:
                 bias_str = f"{v['bias_intercept_center']:.{d}f} + {v['bias_slope_center']:.{d}f}x"
-                if bias_ci:
+                if show_ci:
                     bias_str += _ci(
                         (v["bias_intercept_lower"], v["bias_intercept_upper"]),
                         (v["bias_slope_lower"], v["bias_slope_upper"]),
@@ -2083,11 +2017,11 @@ class SleepStatsAgreement:
 
             if stat in loa_log_idx:
                 loa_str = f"bias ± {v['loa_log_slope_center']:.{d}f} × ref"
-                if loa_ci:
+                if show_ci:
                     loa_str += _ci((v["loa_log_slope_lower"], v["loa_log_slope_upper"]))
             elif stat in loa_param_idx and stat in bias_param_idx:
                 loa_str = f"{v['loa_lower_center']:.{d}f} to {v['loa_upper_center']:.{d}f}"
-                if loa_ci:
+                if show_ci:
                     loa_str += _ci(
                         (v["loa_lower_lower"], v["loa_lower_upper"]),
                         (v["loa_upper_lower"], v["loa_upper_upper"]),
@@ -2095,21 +2029,21 @@ class SleepStatsAgreement:
             elif stat in loa_param_idx:
                 # Constant LoA parallel to the regression bias line (eq. 2)
                 loa_str = f"bias ± {v['loa_halfwidth_center']:.{d}f}"
-                if loa_ci:
+                if show_ci:
                     loa_str += _ci((v["loa_halfwidth_lower"], v["loa_halfwidth_upper"]))
             else:
                 loa_str = (
                     f"±{loa_regr_agreement:.{d}f} "
                     f"({v['loa_intercept_center']:.{d}f} + {v['loa_slope_center']:.{d}f}x)"
                 )
-                if loa_ci:
+                if show_ci:
                     loa_str += _ci(
                         (v["loa_intercept_lower"], v["loa_intercept_upper"]),
                         (v["loa_slope_lower"], v["loa_slope_upper"]),
                         prefixes=("c0", "c1"),
                     )
 
-            asmp = self.assumptions.loc[stat]
+            asmp = passed.loc[stat]
             assumptions_str = (
                 f"{_check(asmp['normal'])} normal  "
                 f"{_check(asmp['constant_bias'])} constant bias  "
@@ -2123,8 +2057,8 @@ class SleepStatsAgreement:
                 f"{self.obs_scorer} mean (SD)": (
                     f"{obs_desc.at[stat, 'mean']:.{d}f} ({obs_desc.at[stat, 'std']:.{d}f})"
                 ),
-                f"Bias [{pct}% CI]" if bias_ci else "Bias": bias_str,
-                f"LoA [{pct}% CI]" if loa_ci else "LoA": loa_str,
+                f"Bias [{pct}% CI]" if show_ci else "Bias": bias_str,
+                f"LoA [{pct}% CI]" if show_ci else "LoA": loa_str,
                 "Assumptions": assumptions_str,
             }
 
@@ -2163,7 +2097,7 @@ class SleepStatsAgreement:
             include all sleep statistics. Bootstrapped confidence intervals are only computed for
             the requested statistics.
 
-            .. versionadded:: 0.7.1
+            .. versionadded:: 0.8.0
 
         Returns
         -------
@@ -2173,18 +2107,19 @@ class SleepStatsAgreement:
             ``variable`` and ``interval`` (``'center'``, ``'lower'``, ``'upper'``).
 
             When ``log_transform=True``, an additional ``loa_log_slope`` variable holds the Euser
-            slope (see :py:attr:`loa_log_slope`) and its confidence interval.
+            (2008) LoA slope (``LoA = bias ± slope × ref``) and its confidence interval.
         """
         assert ci_method is None or (
             isinstance(ci_method, str) and ci_method in self._ci_method_opts
         ), f"`ci_method` must be one of {self._ci_method_opts} or None"
         sleep_stats = self._check_sleep_stats(sleep_stats)
+        ci_methods = self._assumptions[("normal", "method")]  # per-stat CI method for "auto"
         # Make sure relevant sleep statistics have bootstrapped CIs, and generate them if not
         if ci_method in ["boot", "auto"]:
             if ci_method == "boot":
                 sleep_stats_to_boot = sleep_stats
             elif ci_method == "auto":
-                boot_idx_all = self.auto_methods.query("ci == 'boot'").index
+                boot_idx_all = ci_methods.index[ci_methods == "boot"]
                 sleep_stats_to_boot = [s for s in sleep_stats if s in boot_idx_all]
             # Remove any sleep stats already bootstrapped CIs (eg if "boot" is callaed after "auto")
             sleep_stats_booted = self._ci["boot"].dropna().index
@@ -2195,7 +2130,7 @@ class SleepStatsAgreement:
         summary = pd.concat({"center": self._vals}, names=["interval"], axis=1).swaplevel(axis=1)
         if ci_method is not None:
             if ci_method == "auto":
-                param_idx = self.auto_methods.query("ci == 'param'").index.to_list()
+                param_idx = ci_methods.index[ci_methods == "param"].to_list()
                 boot_idx = [ss for ss in self.sleep_statistics if ss not in param_idx]
                 ci_param = self._ci.loc[param_idx, "param"]
                 ci_boot = self._ci.loc[boot_idx, "boot"]
@@ -2209,7 +2144,7 @@ class SleepStatsAgreement:
             if ci_method is not None:
                 # Per-stat CI method: "param" or "boot" (chosen by the normality test for "auto")
                 if ci_method == "auto":
-                    methods = self.auto_methods["ci"]
+                    methods = ci_methods
                 else:
                     methods = pd.Series(ci_method, index=self._loa_log_ci.index)
                 for interval in ["lower", "upper"]:
@@ -2228,7 +2163,7 @@ class SleepStatsAgreement:
         summary = summary.astype(float).sort_index(axis=1)
         return summary.loc[sleep_stats]
 
-    def calibrate(self, data, bias_method="auto", adjust_all=False):
+    def calibrate(self, data, bias_method="auto"):
         """
         Calibrate a :py:class:`~pandas.DataFrame` of sleep statistics from a new scorer based on
         observed biases in ``obs_data``/``obs_scorer``.
@@ -2246,16 +2181,11 @@ class SleepStatsAgreement:
 
             .. seealso:: :py:meth:`~yasa.SleepStatsAgreement.summary`
 
-        adjust_all: bool
-            If False (default), only adjust values for sleep statistics that showed a statistically
-            significant bias in the ``obs_data``. If True, adjust values for all sleep statistics.
-
         Returns
         -------
         calibrated_data : :py:class:`pandas.DataFrame`
-            A :py:class:`~pandas.DataFrame` with calibrated sleep statistics.
-
-        .. seealso:: :py:meth:`~yasa.SleepStatsAgreement.get_calibration_func`
+            A :py:class:`~pandas.DataFrame` with calibrated sleep statistics: ``x - bias_mean``
+            for the parametric bias and ``(x - b0) / (1 + b1)`` for the regression bias.
         """
         assert isinstance(data, pd.DataFrame), "`data` must be a pandas DataFrame"
         assert all(col in self.sleep_statistics for col in data), (
@@ -2265,7 +2195,6 @@ class SleepStatsAgreement:
         assert bias_method in self._bias_method_opts, (
             f"`bias_method` must be one of {self._bias_method_opts}"
         )
-        assert isinstance(adjust_all, bool), "`adjust_all` must be True or False"
         param_adjusted = data - self._vals["bias_mean"]
         regr_adjusted = (data - self._vals["bias_intercept"]) / (1 + self._vals["bias_slope"])
         if bias_method == "param":
@@ -2273,67 +2202,9 @@ class SleepStatsAgreement:
         elif bias_method == "regr":
             calibrated_data = regr_adjusted
         elif bias_method == "auto":
-            use_param = self.auto_methods.loc[data.columns, "bias"].eq("param")
+            use_param = self._assumptions.loc[data.columns, ("constant_bias", "method")].eq("param")
             calibrated_data = param_adjusted.where(use_param, regr_adjusted, axis=1)
-        if not adjust_all:
-            # Put the raw values back for sleep stats that don't show statistical bias
-            unbiased_sstats = self.assumptions.query("unbiased == True").index.to_list()
-            calibrated_data[unbiased_sstats] = data[unbiased_sstats]
         return calibrated_data
-
-    def get_calibration_func(self, sleep_stat):
-        """
-        Return a function for calibrating a specific sleep statistic, based on observed biases in
-        ``obs_data``/``obs_scorer``.
-
-        .. seealso:: :py:meth:`~yasa.SleepStatsAgreement.calibrate`
-
-        Examples
-        --------
-        >>> ssa = yasa.SleepStatsAgreement(...)  # doctest: +SKIP
-        >>> calibrate_rem = ssa.get_calibration_func("REM")  # doctest: +SKIP
-        >>> new_obs_rem_vals = np.array([50, 40, 30, 20])  # doctest: +SKIP
-        >>> calibrate_rem(new_obs_rem_vals)  # doctest: +SKIP
-        array([50, 40, 30, 20])
-        >>> calibrate_rem(new_obs_rem_vals, adjust_all=True)  # doctest: +SKIP
-        array([57.175, 47.175, 37.175, 27.175])
-        >>> calibrate_rem(new_obs_rem_vals, adjust_all=True, method="regr")  # doctest: +SKIP
-        array([...])  # regression-based calibration
-        """
-        assert isinstance(sleep_stat, str), "`sleep_stat` must be a string"
-        assert sleep_stat in self.sleep_statistics, "`sleep_stat` must be a valid sleep statistic"
-        columns = ["bias_mean", "bias_slope", "bias_intercept"]
-        bias_mean, slope, intercept = self._vals.loc[sleep_stat, columns]
-        auto_method = self.auto_methods.at[sleep_stat, "bias"]
-        not_biased = self.assumptions.at[sleep_stat, "unbiased"]
-
-        def calibration_func(x, method="auto", adjust_all=False):
-            """Calibrate values for sleep statistic.
-
-            Parameters
-            ----------
-            x : array
-                Values to be calibrated
-            method: str
-                Method of bias calculation for calibration (``'param'``, ``'regr'``, or ``'auto'``).
-            adjust_all : bool
-                If False, only adjust sleep stat if observed bias was statistically significant.
-
-            Returns
-            -------
-            x_calibrated : :py:class:`numpy.array`
-                An array of calibrated x values.
-            """
-            x = np.asarray(x)
-            method = auto_method if method == "auto" else method
-            if not_biased and not adjust_all:  # Return input if sleep stat is not statstclly biased
-                return x
-            elif method == "param":
-                return x - bias_mean
-            elif method == "regr":
-                return (x - intercept) / (1 + slope)
-
-        return calibration_func
 
     def plot_blandaltman(
         self,
@@ -2341,7 +2212,6 @@ class SleepStatsAgreement:
         bias_method="auto",
         loa_method="auto",
         ci_method="auto",
-        flag_biased=False,
         scatter_kwargs=None,
         **kwargs,
     ):
@@ -2383,9 +2253,6 @@ class SleepStatsAgreement:
             If ``'param'``, parametric CIs are drawn. If ``'boot'``, bootstrap CIs are drawn. If
             ``'auto'`` (default), chosen per statistic based on the normality assumption test.
             If ``None``, no confidence intervals are drawn.
-        flag_biased : bool
-            If True, sleep statistics with a statistically significant bias (i.e., the ``unbiased``
-            assumption is violated) are drawn with a red bias line instead of grey.
         scatter_kwargs : dict
             Other keyword arguments are passed through to :py:func:`matplotlib.pyplot.scatter`.
         **kwargs : dict
@@ -2406,7 +2273,7 @@ class SleepStatsAgreement:
             >>> obs_hyps = [ref_hyps[i].simulate_similar(scorer="Device", seed=i) for i in range(n)]
             >>> eea = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps)
             >>> sstats = eea.get_sleep_stats()
-            >>> ssa = yasa.SleepStatsAgreement(sstats.loc["PSG"], sstats.loc["Device"])
+            >>> ssa = yasa.SleepStatsAgreement(sstats)
             >>> stats = ["TST", "WASO", "N1", "REM"]
             >>> g = ssa.plot_blandaltman(sleep_stats=stats, ci_method="param")
         """
@@ -2416,7 +2283,6 @@ class SleepStatsAgreement:
         assert ci_method is None or (
             isinstance(ci_method, str) and ci_method in self._ci_method_opts
         ), f"`ci_method` must be one of {self._ci_method_opts} or None"
-        assert isinstance(flag_biased, bool), "`flag_biased` must be True or False"
         assert isinstance(scatter_kwargs, (dict, type(None))), (
             "`scatter_kwargs` must be a dict or None"
         )
@@ -2431,11 +2297,6 @@ class SleepStatsAgreement:
         vals = self.summary(ci_method=ci_method, sleep_stats=sleep_stats)
 
         agreement_adj = self._agreement * np.sqrt(np.pi / 2)
-
-        # Identify stats with significant bias for optional flagging
-        biased_stats = (
-            self.assumptions.query("unbiased == False").index.tolist() if flag_biased else []
-        )
 
         # Select scatterplot arguments and update with optional input
         default_scatter_kwargs = dict(s=12, facecolor="none", edgecolor="black", alpha=0.8)
@@ -2479,15 +2340,13 @@ class SleepStatsAgreement:
         line_kwargs = dict(linewidth=1, linestyle="dashed", alpha=0.9)
         bias_line_kwargs = line_kwargs | dict(linestyle="solid")
         loa_color = "tab:blue"
-        bias_default_color = "tab:gray"  # when not flagged as biased
-        bias_flagged_color = "tab:red"
+        bias_color = "tab:gray"
         # Draw bias lines, LoA lines, and CI bands on each axis
         for stat, ax in zip(sleep_stats, g.axes.flat, strict=True):
             x_min, x_max = ax.get_xlim()
             x_line = np.array([x_min, x_max])
             v = vals.loc[stat]
             has_ci = ci_method is not None
-            bias_color = bias_flagged_color if stat in biased_stats else bias_default_color
 
             # --- Bias line ---
             if stat in bias_param_idx:

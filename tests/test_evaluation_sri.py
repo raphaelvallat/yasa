@@ -154,7 +154,7 @@ _BYSTAGE_POOLED = _EBE_POOLED.get_agreement_bystage()  # MultiIndex: (stage, "al
 # Discrepancy analysis (Device − Reference differences per subject)
 _REF_SS = _SLEEP_STATS.xs("Reference", level="scorer")
 _OBS_SS = _SLEEP_STATS.xs("Device", level="scorer")
-_SSA = SleepStatsAgreement(_REF_SS, _OBS_SS, ref_scorer="Reference", obs_scorer="Device")
+_SSA = SleepStatsAgreement(_SLEEP_STATS)  # scorers taken from the index (Reference, Device)
 # Precompute per-subject differences: rows=sleep_id, cols=sleep_stat
 _DIFFS = (_SSA.data["Device"] - _SSA.data["Reference"]).unstack("sleep_stat")
 

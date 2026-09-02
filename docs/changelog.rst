@@ -7,71 +7,57 @@ What's new
 v0.8.0 (unreleased)
 -------------------
 
-**Evaluation module** (:py:class:`yasa.EpochByEpochAgreement`, :py:class:`yasa.SleepStatsAgreement`)
+**Evaluation module**
 
-* **Breaking:** all proportion-based epoch-by-epoch metrics are now expressed as percentages
-  (0-100) instead of proportions (0-1), in line with the reporting conventions of Menghini et
-  al. (2021). This affects ``accuracy``, ``balanced_acc``, ``precision``, and ``f1``
-  in :py:meth:`yasa.EpochByEpochAgreement.get_agreement` (``kappa`` and ``mcc`` are unchanged),
-  and all metrics except ``support`` in
-  :py:meth:`yasa.EpochByEpochAgreement.get_agreement_bystage`.
-* **Breaking:** the weighted ``recall`` metric was removed from the default scorers of
-  :py:meth:`yasa.EpochByEpochAgreement.get_agreement` because it is mathematically identical to
-  ``accuracy`` for multiclass data. Per-stage (one-vs-rest) recall is still available in
-  :py:meth:`yasa.EpochByEpochAgreement.get_agreement_bystage`.
-* Fixed :py:meth:`yasa.EpochByEpochAgreement.get_agreement` raising an error when ``scorers`` is
-  a list of metric names or when ``sample_weight`` is passed. Metric names now map to the
-  corresponding ``sklearn.metrics.<name>_score`` functions.
-* :py:meth:`yasa.EpochByEpochAgreement.summary` now computes the agreement scores itself when
-  :py:meth:`~yasa.EpochByEpochAgreement.get_agreement` has not been called before.
-* :py:meth:`yasa.EpochByEpochAgreement.get_agreement_bystage` gained a ``zero_division``
-  parameter, which now defaults to ``np.nan`` (requires scikit-learn >= 1.3). Metrics that are
-  undefined for a session (e.g. recall for a stage absent from the reference hypnogram) are now
-  left missing and excluded from group averages, instead of being counted as 0. Pass
-  ``zero_division=0`` to restore the previous behavior.
-* New :py:meth:`yasa.EpochByEpochAgreement.get_confusion_matrix_proportional` method returning
-  the group-level proportional error matrix (mean, SD, and confidence interval across sessions of
-  the row-normalized per-session confusion matrices, in percent), as reported in Menghini et al.
-  (2021). Confidence intervals default to a BCa participant bootstrap (the reference pipeline uses
-  the basic bootstrap, available via ``bootstrap_kwargs={"method": "basic"}``). Use
-  ``formatted=True`` for a ``"mean (SD) [lower, upper]"`` table.
-* :py:meth:`yasa.SleepStatsAgreement.report` now follows the reporting format of Menghini et al.
-  (2021): the scorer columns show ``mean (SD)`` strings (previously numeric means), and the new
-  ``sleep_stats``, ``bias_ci``, and ``loa_ci`` parameters select the statistics to report and
-  whether confidence intervals are displayed.
-* :py:meth:`yasa.SleepStatsAgreement.summary` gained a ``sleep_stats`` parameter, accepts
-  ``ci_method=None`` to skip confidence intervals (and the bootstrap), and includes the Euser
-  (2008) ``loa_log_slope`` variable when ``log_transform=True``.
-* New :py:attr:`yasa.SleepStatsAgreement.loa_log_slope` property exposing the Euser
-  limits-of-agreement slope.
-* **Bugfix:** when the bias is modeled by regression but the differences are homoscedastic,
-  limits of agreement now run parallel to the regression bias line at ``± 1.96 SD`` of its
-  residuals (eq. 2 in Menghini et al., 2021), in :py:meth:`yasa.SleepStatsAgreement.report`
-  and :py:meth:`yasa.SleepStatsAgreement.plot_blandaltman`. They were previously drawn as
-  horizontal lines around the mean difference. The half-width is available as the new
-  ``loa_halfwidth`` variable in :py:meth:`yasa.SleepStatsAgreement.summary`.
-* New :py:attr:`yasa.SleepStatsAgreement.diagnostics` property with the test statistics,
-  p-values, and effect sizes (Cohen's d, skew, kurtosis, R²) behind each
-  :py:attr:`yasa.SleepStatsAgreement.assumptions` flag.
-* :py:class:`yasa.SleepStatsAgreement` now drops sessions with a missing value separately for
-  each sleep statistic (e.g. REM latency for a night without REM sleep) and uses the resulting
-  per-statistic number of sessions for all confidence intervals. Previously, a single missing
-  value produced NaN regression coefficients for that statistic. The input DataFrames are no
-  longer modified in place.
-* With ``log_transform=True``, :py:class:`yasa.SleepStatsAgreement` no longer log-transforms
-  statistics that contain a zero value in either scorer (e.g. SOL for a subject who fell asleep
-  in the first epoch). The previous small offset added before taking the logarithm made the Euser
-  slope depend on the offset rather than on the data. These statistics are excluded with a
-  warning and keep the regular limits of agreement.
-* Fixed :py:meth:`yasa.SleepStatsAgreement.calibrate` with ``bias_method="auto"`` reordering the
-  columns and silently dropping any column containing a missing value.
-* :py:class:`yasa.SleepStatsAgreement` gained an ``alpha_normal`` parameter (default 0.01) used
-  for the Shapiro-Wilk normality test, separate from ``alpha`` (default 0.05) used for the other
-  assumption tests. The Shapiro-Wilk test is sensitive to small departures from normality that
-  have little effect on the limits of agreement, so the stricter default reduces unnecessary
-  switches to bootstrap confidence intervals.
-* :py:meth:`yasa.SleepStatsAgreement.plot_blandaltman`: larger panels arranged in at most 4
-  columns, solid bias lines, dotted zero line, and no confidence band for regression bias lines.
+The evaluation module (:py:class:`yasa.EpochByEpochAgreement` and
+:py:class:`yasa.SleepStatsAgreement`), previously experimental, now follows the standardized
+framework for testing the performance of sleep-tracking technology of Menghini et al. (2021), and
+is validated against the published sample dataset of that paper.
+
+*Epoch-by-epoch agreement*
+
+* All proportion-based metrics (accuracy, precision, F1, specificity, NPV, ...) are expressed as
+  percentages (0-100), as in the reference framework. ``kappa`` and ``mcc`` keep their -1 to 1
+  scale.
+* :py:meth:`yasa.EpochByEpochAgreement.get_confusion_matrix_proportional` returns the group-level
+  proportional error matrix: the mean, SD, and confidence interval across sessions of the
+  row-normalized per-session confusion matrices (Table 5 of the paper). Confidence intervals use a
+  participant bootstrap (BCa by default; ``basic`` and ``percentile`` available) or a parametric
+  t-interval. Use ``formatted=True`` for a ``"mean (SD) [lower, upper]"`` table.
+* :py:meth:`yasa.EpochByEpochAgreement.get_agreement_bystage` reports specificity and NPV per
+  stage, and leaves metrics that are undefined for a session (e.g. recall for a stage absent from
+  the reference hypnogram) missing rather than counting them as 0, so that they do not bias group
+  averages. The ``zero_division`` parameter controls this behavior.
+* :py:meth:`yasa.EpochByEpochAgreement.get_agreement` can pool all epochs across sessions
+  (``pooled=True``), accept a list of ``sklearn.metrics`` names as ``scorers``, and weight epochs
+  with ``sample_weight``. :py:meth:`~yasa.EpochByEpochAgreement.summary` computes the scores
+  itself if needed.
+
+*Sleep statistics agreement*
+
+* :py:class:`yasa.SleepStatsAgreement` can be built directly from the output of
+  :py:meth:`yasa.EpochByEpochAgreement.get_sleep_stats`.
+* :py:meth:`yasa.SleepStatsAgreement.report` produces the publication-ready table of the paper:
+  ``mean (SD)`` of both scorers, bias and limits of agreement with confidence intervals, and the
+  assumption checks that drove the method selection. Select statistics with ``sleep_stats`` and
+  omit confidence intervals (and the bootstrap) with ``ci_method=None``.
+* Limits of agreement follow the paper for every combination of assumptions: constant, parallel
+  to a regression bias line at ``± 1.96 SD`` of its residuals (eq. 2), modeled as a function of
+  the reference value (heteroscedasticity), or proportional after a log transformation
+  (``log_transform=True``, Euser et al. 2008). All quantities, including the new
+  ``loa_halfwidth`` and ``loa_log_slope`` variables, are available with confidence intervals in
+  :py:meth:`yasa.SleepStatsAgreement.summary`.
+* :py:attr:`yasa.SleepStatsAgreement.assumptions` gathers, for each assumption test, the test
+  statistic, p-value, effect size (Cohen's d, skew, kurtosis, R²), pass/fail flag, and the method
+  selected when ``'auto'`` is requested, so that the practical relevance of a violation can be
+  judged.
+* :py:meth:`yasa.SleepStatsAgreement.calibrate` corrects new data for the observed bias, using
+  either the mean bias or the inverted bias regression per statistic.
+* :py:meth:`yasa.SleepStatsAgreement.plot_blandaltman` draws a grid of Bland-Altman plots (at
+  most 4 columns) with the bias line, limits of agreement, and their confidence bands.
+* Robust handling of edge cases: sessions with a missing value are dropped per statistic (e.g. REM
+  latency for a night without REM sleep), and statistics containing a zero are excluded from the
+  log transformation with a warning instead of depending on an arbitrary offset.
 
 **Bugfixes**
 

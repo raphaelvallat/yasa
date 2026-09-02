@@ -358,7 +358,14 @@ ssa_log_large = SleepStatsAgreement(
 
 PCT = int(ssa._confidence * 100)
 # Stats that can be log-transformed (no zero value in either scorer)
-LOG_STATS = ssa_log.loa_log_slope.dropna().index.tolist()
+
+
+def _log_slope(obj):
+    """Euser LoA slope per statistic (NaN for statistics that are not log-transformed)."""
+    return obj.summary(ci_method=None)["loa_log_slope"]["center"]
+
+
+LOG_STATS = _log_slope(ssa_log).dropna().index.tolist()
 
 
 def _valid_arrays(stat):
@@ -386,6 +393,12 @@ class TestSleepStatsAgreementInit(unittest.TestCase):
         assert ssa.data.shape[1] == 2
         ssa_default = SleepStatsAgreement(_ref_stats, _obs_stats)
         assert (ssa_default.ref_scorer, ssa_default.obs_scorer) == ("Reference", "Observed")
+        # Built directly from EpochByEpochAgreement.get_sleep_stats(): scorers taken from the index
+        ssa_multi = SleepStatsAgreement(_sstats)
+        assert (ssa_multi.ref_scorer, ssa_multi.obs_scorer) == (REF_SCORER, OBS_SCORER)
+        pd.testing.assert_frame_equal(
+            ssa_multi.summary(ci_method=None), ssa.summary(ci_method=None)
+        )
 
     def test_invalid_inputs_raise(self):
         bad_index = _obs_stats.copy()
@@ -398,7 +411,7 @@ class TestSleepStatsAgreementInit(unittest.TestCase):
             dict(ref_data=_ref_stats, obs_data=bad_columns),
             dict(ref_data=_ref_stats, obs_data=_obs_stats, ref_scorer="X", obs_scorer="X"),
             dict(ref_data=_ref_stats, obs_data=_obs_stats, log_transform="TST"),
-            dict(ref_data=_ref_stats, obs_data=_obs_stats, alpha_normal=1.5),
+            dict(ref_data=_ref_stats, obs_data=_obs_stats, alpha=1.5),
             dict(ref_data=_ref_stats, obs_data=_obs_stats, confidence=95),
         ]
         for kwargs in bad_args:
@@ -407,63 +420,53 @@ class TestSleepStatsAgreementInit(unittest.TestCase):
 
 
 class TestSleepStatsAgreementAssumptions(unittest.TestCase):
-    """Test the assumptions, diagnostics and auto_methods properties."""
-
-    def test_diagnostics_structure(self):
-        diag = ssa.diagnostics
-        assert diag.columns.names == ["assumption", "metric"]
-        assert diag.index.tolist() == ssa.assumptions.index.tolist()
+    def test_structure(self):
+        asmp = ssa.assumptions
+        assert asmp.columns.names == ["assumption", "metric"]
+        assert set(asmp.index) == set(ssa.sleep_statistics)
         expected = {
-            "unbiased": {"t", "pvalue", "cohen_d"},
-            "normal": {"W", "pvalue", "skew", "kurtosis"},
-            "constant_bias": {"slope", "pvalue", "r2"},
-            "homoscedastic": {"slope", "pvalue", "r2"},
+            "unbiased": {"t", "pvalue", "cohen_d", "passed"},
+            "normal": {"W", "pvalue", "skew", "kurtosis", "passed", "method"},
+            "constant_bias": {"slope", "pvalue", "r2", "passed", "method"},
+            "homoscedastic": {"slope", "pvalue", "r2", "passed", "method"},
         }
         for assumption, metrics in expected.items():
-            assert set(diag[assumption].columns) == metrics
+            assert set(asmp[assumption].columns) == metrics
 
-    def test_diagnostics_values(self):
-        diag = ssa.diagnostics
+    def test_values_flags_and_methods(self):
+        asmp = ssa.assumptions
         diff = _obs_stats["TST"] - _ref_stats["TST"]
         ttest = sps.ttest_1samp(diff, 0)
-        assert np.isclose(diag.at["TST", ("unbiased", "t")], ttest.statistic)
-        assert np.isclose(diag.at["TST", ("unbiased", "pvalue")], ttest.pvalue)
-        assert np.isclose(diag.at["TST", ("unbiased", "cohen_d")], diff.mean() / diff.std(ddof=1))
-        assert np.isclose(diag.at["TST", ("normal", "skew")], diff.skew())
+        assert np.isclose(asmp.at["TST", ("unbiased", "t")], ttest.statistic)
+        assert np.isclose(asmp.at["TST", ("unbiased", "pvalue")], ttest.pvalue)
+        assert np.isclose(asmp.at["TST", ("unbiased", "cohen_d")], diff.mean() / diff.std(ddof=1))
+        assert np.isclose(asmp.at["TST", ("normal", "skew")], diff.skew())
         regr = sps.linregress(_ref_stats["TST"], diff)
-        assert np.isclose(diag.at["TST", ("constant_bias", "slope")], regr.slope)
-        assert np.isclose(diag.at["TST", ("constant_bias", "r2")], regr.rvalue**2)
-
-    def test_assumptions_derived_from_diagnostics(self):
-        pvals = ssa.diagnostics.xs("pvalue", level="metric", axis=1)
-        alphas = pd.Series(
-            {"unbiased": 0.05, "normal": 0.01, "constant_bias": 0.05, "homoscedastic": 0.05}
-        )
-        expected = pvals.ge(alphas, axis=1).rename_axis(columns=None)
-        pd.testing.assert_frame_equal(ssa.assumptions, expected, check_names=False)
-        assert (ssa.assumptions.dtypes == bool).all()  # noqa: E721
-
-    def test_alpha_normal(self):
-        # alpha_normal only affects the normality flag; alpha_normal=1 fails every stat with p < 1
-        ssa_strict = SleepStatsAgreement(
-            _ref_stats, _obs_stats, ref_scorer=REF_SCORER, obs_scorer=OBS_SCORER, alpha_normal=1.0
-        )
-        pvals = ssa_strict.diagnostics[("normal", "pvalue")]
-        assert (ssa_strict.assumptions["normal"] == pvals.ge(1.0)).all()
-        others = ["unbiased", "constant_bias", "homoscedastic"]
-        pd.testing.assert_frame_equal(ssa_strict.assumptions[others], ssa.assumptions[others])
-
-    def test_auto_methods_mapping(self):
-        asmp = ssa.assumptions
-        auto = ssa.auto_methods
-        assert list(auto.columns) == ["bias", "loa", "ci"]
-        assert (auto["bias"] == asmp["constant_bias"].map({True: "param", False: "regr"})).all()
-        assert (auto["loa"] == asmp["homoscedastic"].map({True: "param", False: "regr"})).all()
-        assert (auto["ci"] == asmp["normal"].map({True: "param", False: "boot"})).all()
+        assert np.isclose(asmp.at["TST", ("constant_bias", "slope")], regr.slope)
+        assert np.isclose(asmp.at["TST", ("constant_bias", "r2")], regr.rvalue**2)
+        # Flags: pvalue >= alpha (0.05)
+        for name in ["unbiased", "normal", "constant_bias", "homoscedastic"]:
+            assert (asmp[(name, "passed")] == asmp[(name, "pvalue")].ge(0.05)).all()
+        # Methods applied for "auto"
+        mapping = {"normal": "boot", "constant_bias": "regr", "homoscedastic": "regr"}
+        for name, failed in mapping.items():
+            expected = asmp[(name, "passed")].map({True: "param", False: failed})
+            assert (asmp[(name, "method")] == expected).all()
         # With log_transform=True, the LoA method is "log" for every log-transformed stat
-        is_log = ssa_log.loa_log_slope.notna()
-        assert (ssa_log.auto_methods.loc[is_log, "loa"] == "log").all()
-        assert ssa_log.auto_methods.loc[~is_log, "loa"].isin(["param", "regr"]).all()
+        is_log = _log_slope(ssa_log).notna()
+        loa = ssa_log.assumptions[("homoscedastic", "method")]
+        assert (loa[is_log] == "log").all() and loa[~is_log].isin(["param", "regr"]).all()
+
+    def test_alpha(self):
+        # alpha=1 fails every test with p < 1; the statistics themselves are unchanged
+        ssa_strict = SleepStatsAgreement(
+            _ref_stats, _obs_stats, ref_scorer=REF_SCORER, obs_scorer=OBS_SCORER, alpha=1.0
+        )
+        strict = ssa_strict.assumptions
+        passed = strict.xs("passed", level="metric", axis=1)
+        pvalues = strict.xs("pvalue", level="metric", axis=1)
+        assert (passed == pvalues.ge(1.0)).all().all()
+        pd.testing.assert_frame_equal(pvalues, ssa.assumptions.xs("pvalue", level="metric", axis=1))
 
 
 class TestSleepStatsAgreementSummary(unittest.TestCase):
@@ -535,20 +538,16 @@ class TestSleepStatsAgreementCalibrate(unittest.TestCase):
     def test_calibrated_values(self):
         obs = _obs_stats[ssa.sleep_statistics]
         vals = ssa.summary(ci_method=None).xs("center", level="interval", axis=1)
-        param = ssa.calibrate(obs, bias_method="param", adjust_all=True)
+        param = ssa.calibrate(obs, bias_method="param")
         assert isinstance(param, pd.DataFrame) and param.shape == obs.shape
         pd.testing.assert_frame_equal(param, obs - vals["bias_mean"], check_names=False)
-        regr = ssa.calibrate(obs, bias_method="regr", adjust_all=True)
+        regr = ssa.calibrate(obs, bias_method="regr")
         expected = (obs - vals["bias_intercept"]) / (1 + vals["bias_slope"])
         pd.testing.assert_frame_equal(regr, expected, check_names=False)
-        # By default, statistics without a significant bias are returned unchanged
-        default = ssa.calibrate(obs, bias_method="param")
-        unbiased = ssa.assumptions.query("unbiased == True").index.tolist()
-        pd.testing.assert_frame_equal(default[unbiased], obs[unbiased])
         # "auto" keeps the column order and missing values of the input
         obs_nan = obs.copy()
         obs_nan.iloc[0, 0] = np.nan
-        auto = ssa.calibrate(obs_nan, bias_method="auto", adjust_all=True)
+        auto = ssa.calibrate(obs_nan, bias_method="auto")
         assert auto.columns.tolist() == obs.columns.tolist()
         assert np.isnan(auto.iloc[0, 0]) and auto.notna().sum().sum() == obs.notna().sum().sum() - 1
 
@@ -597,7 +596,7 @@ class TestSleepStatsAgreementReport(unittest.TestCase):
         )
 
     def test_no_ci(self):
-        rpt = ssa.report(bias_method="param", loa_method="param", bias_ci=False, loa_ci=False)
+        rpt = ssa.report(bias_method="param", loa_method="param", ci_method=None)
         assert "Bias" in rpt.columns and "LoA" in rpt.columns
         assert not any("CI" in c for c in rpt.columns)
         assert rpt["LoA"].str.fullmatch(r"-?\d+\.\d+ to -?\d+\.\d+").all()
@@ -605,15 +604,9 @@ class TestSleepStatsAgreementReport(unittest.TestCase):
         for stat in ssa.sleep_statistics:
             bias = center.at[stat, ("bias_mean", "center")]
             assert rpt.at[_label(rpt, stat), "Bias"] == f"{bias:.2f}"
-        # Omitting only the LoA CI
-        rpt = ssa.report(ci_method="param", loa_ci=False)
-        assert rpt[f"Bias [{PCT}% CI]"].str.contains(r"\[").all()
-        assert not rpt["LoA"].str.contains(r"\[").any()
 
     def test_regr_format(self):
-        rpt = ssa.report(
-            bias_method="regr", loa_method="regr", ci_method="param", bias_ci=False, loa_ci=False
-        )
+        rpt = ssa.report(bias_method="regr", loa_method="regr", ci_method=None)
         assert rpt["Bias"].str.fullmatch(r"-?\d+\.\d+ \+ -?\d+\.\d+x").all()
         assert rpt["LoA"].str.fullmatch(r"±\d+\.\d+ \(-?\d+\.\d+ \+ -?\d+\.\d+x\)").all()
 
@@ -634,8 +627,6 @@ class TestSleepStatsAgreementReport(unittest.TestCase):
     def test_invalid_args_raise(self):
         for kwargs in [
             dict(ci_method="param", sleep_stats=["NOT_A_STAT"]),
-            dict(ci_method="param", bias_ci="no"),
-            dict(ci_method="param", loa_ci=0),
             dict(decimals=-1),
             dict(bias_method="invalid"),
             dict(ci_method="invalid"),
@@ -707,14 +698,6 @@ class TestSleepStatsAgreementPlotBlandAltman(unittest.TestCase):
         for ax in g.axes.flat:
             assert len(ax.patches) == 3  # axhspan for bias and both LoA
 
-    def test_flag_biased(self):
-        from matplotlib.colors import to_rgba
-
-        g = ssa.plot_blandaltman(flag_biased=True, ci_method="param")
-        for stat, ax in zip(ssa.sleep_statistics, g.axes.flat, strict=True):
-            expected = "tab:gray" if ssa.assumptions.at[stat, "unbiased"] else "tab:red"
-            assert to_rgba(ax.lines[1].get_color()) == to_rgba(expected)
-
     def test_axis_labels(self):
         g = ssa.plot_blandaltman(ci_method="param")
         assert g.axes.flat[-1].get_xlabel() == REF_SCORER
@@ -733,7 +716,6 @@ class TestSleepStatsAgreementPlotBlandAltman(unittest.TestCase):
             dict(bias_method="invalid"),
             dict(loa_method="invalid"),
             dict(ci_method="invalid"),
-            dict(flag_biased="yes"),
         ]:
             with pytest.raises(AssertionError):
                 ssa.plot_blandaltman(**kwargs)
@@ -755,8 +737,7 @@ class TestSleepStatsAgreementLogTransform(unittest.TestCase):
             SleepStatsAgreement(bad_ref, _obs_stats, log_transform=True)
 
     def test_loa_log_slope_values(self):
-        slope = ssa_log.loa_log_slope
-        assert isinstance(slope, pd.Series) and slope.name == "loa_log_slope"
+        slope = _log_slope(ssa_log)
         assert set(slope.index) == set(ssa_log.sleep_statistics)
         for stat in ssa_log.sleep_statistics:
             valid = _ref_stats[stat].notna() & _obs_stats[stat].notna()
@@ -769,17 +750,10 @@ class TestSleepStatsAgreementLogTransform(unittest.TestCase):
             expected = 2 * (np.exp(z) - 1) / (np.exp(z) + 1)
             assert np.isclose(slope[stat], expected) and slope[stat] >= 0
         assert SleepStatsAgreement._euser_slope_scalar(0.0, 1.96) == 0.0
-        # NaN without log_transform, and the property returns a copy
-        assert ssa.loa_log_slope.isna().all()
-        slope[:] = -1
-        assert (ssa_log.loa_log_slope.dropna() >= 0).all()
 
     def test_summary_log_slope_column(self):
         s = ssa_log.summary(ci_method="param")["loa_log_slope"].dropna()
         assert list(s.columns) == ["center", "lower", "upper"]
-        pd.testing.assert_series_equal(
-            s["center"], ssa_log.loa_log_slope.dropna(), check_names=False
-        )
         assert (s["lower"] < s["center"]).all() and (s["center"] < s["upper"]).all()
         assert list(ssa_log.summary(ci_method=None)["loa_log_slope"].columns) == ["center"]
 
@@ -793,9 +767,7 @@ class TestSleepStatsAgreementLogTransform(unittest.TestCase):
                 hw = s.loc[stat]
                 expected = f"bias ± {hw['center']:.2f} × ref [{hw['lower']:.2f}, {hw['upper']:.2f}]"
                 assert rpt.at[_label(rpt, stat), f"LoA [{PCT}% CI]"] == expected
-        rpt = ssa_log.report(
-            loa_method="log", ci_method="param", loa_ci=False, sleep_stats=LOG_STATS
-        )
+        rpt = ssa_log.report(loa_method="log", ci_method=None, sleep_stats=LOG_STATS)
         assert rpt["LoA"].str.fullmatch(r"bias ± \d+\.\d+ × ref").all()
 
     def test_stats_with_zeros_are_not_log_transformed(self):
@@ -825,7 +797,7 @@ class TestSleepStatsAgreementLogTransform(unittest.TestCase):
             assert len(ax.lines) == 4
             x = np.asarray(ax.lines[2].get_xdata())
             bias, upper, lower = (np.asarray(line.get_ydata()) for line in ax.lines[1:4])
-            spread = ssa_log.loa_log_slope[stat] * x
+            spread = _log_slope(ssa_log)[stat] * x
             np.testing.assert_allclose(upper - bias, spread)
             np.testing.assert_allclose(bias - lower, spread)
             assert len(ax.collections) == 3  # scatter + two CI bands
@@ -836,7 +808,7 @@ class TestSleepStatsAgreementLogTransform(unittest.TestCase):
     def test_ci_auto(self):
         # ci_method="auto" picks "param" when normality holds, "boot" otherwise. Use ssa_log_large
         # (15 sessions, BCa) to avoid degenerate all-zero stats with N=5.
-        stats = ssa_log_large.loa_log_slope.dropna().index.tolist()
+        stats = _log_slope(ssa_log_large).dropna().index.tolist()
         rpt = ssa_log_large.report(loa_method="log", ci_method="auto", sleep_stats=stats)
         assert rpt[f"LoA [{PCT}% CI]"].str.contains("×").all()
         g = ssa_log_large.plot_blandaltman(loa_method="log", ci_method="auto", sleep_stats=stats)
@@ -853,7 +825,7 @@ class TestSleepStatsAgreementLogTransform(unittest.TestCase):
             log_transform=True,
             bootstrap_kwargs={"n_resamples": 200, "method": "basic"},
         )
-        stats = fresh.loa_log_slope.dropna().index.tolist()
+        stats = _log_slope(fresh).dropna().index.tolist()
         rpt = fresh.report(loa_method="log", ci_method="boot", sleep_stats=stats)
         assert rpt[f"LoA [{PCT}% CI]"].str.contains("×").all()
         s = fresh.summary(ci_method="boot")["loa_log_slope"]
