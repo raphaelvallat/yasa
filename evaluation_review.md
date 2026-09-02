@@ -40,14 +40,13 @@ percentiles for degenerate (constant) cells where BCa is undefined.
 | 10 | Report table (`groupDiscr.R`: scorer means (SD), bias [CI], LoA) | ✅ | `report()` with `mean (SD)` per scorer, `sleep_stats` subset/order, `bias_ci` / `loa_ci` flags (no bootstrap when both are off). |
 | 11 | Log transformation (Euser et al. 2008) | ✅ | `log_transform=True`; `"log"` is a first-class `loa_method`; public `loa_log_slope` property and `summary()` variable with CI. See design notes below. |
 | 12 | 🐛 Paper eq. 2 not implemented (proportional bias + homoscedastic differences) | ✅ | LoA were horizontal at `mean ± 1.96 SD(differences)`: mis-centred and too wide by `1/sqrt(1 − R²)`. Now `bias_i ± 1.96 SD(residuals)` parallel to the regression bias line, exposed as `loa_halfwidth` in `summary()` (ddof=1 as R's `sd(resid(lm))`; parametric CI from `SE(SD) ≈ SD/sqrt(2n)`, Bland & Altman 1999; bootstrap CI). |
-| 13 | Minimal detectable change (half the LoA width; Menghini 2021, Haghayegh 2020) | ✅ | `MDC` column in `report()`. Constant LoA only; `"n/a"` when LoA vary with the reference value. |
-| 14 | Assumption tests are booleans only; paper asks for results "accompanied by visual inspection" | ✅ | `diagnostics` property (MultiIndex `assumption` × `metric`): `unbiased` (t, pvalue, cohen_d), `normal` (W, pvalue, skew, kurtosis), `constant_bias` and `homoscedastic` (slope, pvalue, r2). `assumptions` is derived from it. |
-| 15 | Shapiro-Wilk over-rejects at alpha 0.05 (e.g. n = 57, skew 0.07, p = 0.008 from one heavy-tail point) | ✅ | `alpha_normal` (default 0.01) for the `normal` flag only; `alpha` (0.05) for the other tests. Justified because a normality violation only switches CIs to bootstrap. R uses 0.05 throughout. |
-| 16 | 🐛 Missing values (e.g. `Lat_REM` on a night without REM) produced NaN regressions and `nan + nanx` in the report | ✅ | Sessions with a missing value are dropped per statistic (with a warning); all t critical values and SEs use the per-statistic n. Inputs are no longer modified in place. |
-| 17 | 🐛 `log_transform=True` with zeros: the 1e-4 offset dominated the Euser slope | ✅ | Statistics with a zero in either scorer are excluded from the log transform (warning) and keep regular LoA; `loa_method="log"` raises for them. |
-| 18 | 🐛 Calibration: direction of the correction, and `bias_method="auto"` reordering columns / dropping NaN columns | ✅ | `calibrate()` subtracts the mean bias or inverts the bias regression `(x − b0) / (1 + b1)`; auto mode uses `DataFrame.where`, preserving columns and NaNs. R has no calibration. |
-| 19 | `summary()` always bootstrapped all statistics | ✅ | `summary(ci_method=None)` returns point estimates; `sleep_stats` restricts (and orders) rows and limits bootstrapping. |
-| 20 | Individual discrepancy heatmap (`indDiscr.R`) | ❌ | Data available via `get_sleep_stats()`. |
+| 13 | Assumption tests are booleans only; paper asks for results "accompanied by visual inspection" | ✅ | `diagnostics` property (MultiIndex `assumption` × `metric`): `unbiased` (t, pvalue, cohen_d), `normal` (W, pvalue, skew, kurtosis), `constant_bias` and `homoscedastic` (slope, pvalue, r2). `assumptions` is derived from it. The `Assumptions` column of `report()` shows only the three modeling assumptions (`unbiased` is a finding). |
+| 14 | Shapiro-Wilk over-rejects at alpha 0.05 (e.g. n = 57, skew 0.07, p = 0.008 from one heavy-tail point) | ✅ | `alpha_normal` (default 0.01) for the `normal` flag only; `alpha` (0.05) for the other tests. Justified because a normality violation only switches CIs to bootstrap. R uses 0.05 throughout. |
+| 15 | 🐛 Missing values (e.g. `Lat_REM` on a night without REM) produced NaN regressions and `nan + nanx` in the report | ✅ | Sessions with a missing value are dropped per statistic (with a warning); all t critical values and SEs use the per-statistic n. Inputs are no longer modified in place. |
+| 16 | 🐛 `log_transform=True` with zeros: the 1e-4 offset dominated the Euser slope | ✅ | Statistics with a zero in either scorer are excluded from the log transform (warning) and keep regular LoA; `loa_method="log"` raises for them. |
+| 17 | 🐛 Calibration: direction of the correction, and `bias_method="auto"` reordering columns / dropping NaN columns | ✅ | `calibrate()` subtracts the mean bias or inverts the bias regression `(x − b0) / (1 + b1)`; auto mode uses `DataFrame.where`, preserving columns and NaNs. R has no calibration. |
+| 18 | `summary()` always bootstrapped all statistics | ✅ | `summary(ci_method=None)` returns point estimates; `sleep_stats` restricts (and orders) rows and limits bootstrapping. |
+| 19 | Individual discrepancy heatmap (`indDiscr.R`) | ❌ | Data available via `get_sleep_stats()`. |
 
 ### Log transformation design
 
@@ -55,7 +54,7 @@ percentiles for degenerate (constant) cells where BCa is undefined.
 This is the only LoA representation for log-transformed statistics.
 
 - `log_transform` is a bool applied to all statistics, except those with a zero value in either
-  scorer (item 17). Mixed cases use two `SleepStatsAgreement` objects.
+  scorer (item 16). Mixed cases use two `SleepStatsAgreement` objects.
 - `auto_methods["loa"]` is `"log"` for log-transformed statistics; `loa_method="param"` / `"regr"`
   still override it.
 - Normality of the raw differences drives CI selection as before (no `log_normal` flag).
@@ -91,7 +90,7 @@ Open items:
 | Dual-criterion gates (significance and magnitude) | e.g. `constant_bias` only if `p < alpha` and R² > ~0.1; `homoscedastic` only if the modelled SD ratio across the reference range exceeds ~1.5. Thresholds as constructor parameters. |
 | Per-statistic method override | Accept an `auto_methods`-like table instead of global `bias_method` / `loa_method`. |
 | Log-first remedy order | Paper: log-transform when heteroscedastic, regression LoA only if heteroscedasticity persists. YASA's `log_transform` is a global switch. |
-| `unbiased` is a result, not an assumption | Equivalent to the bias CI excluding zero; belongs in the report. |
+| `unbiased` is a result, not an assumption | Equivalent to the bias CI excluding zero. No longer shown in the `Assumptions` column of `report()`; still in `assumptions` / `diagnostics` because `flag_biased` and `calibrate()` use it. |
 
 ---
 
@@ -99,7 +98,9 @@ Open items:
 
 Calibration of new data (`calibrate()`, `get_calibration_func()`), MCC, balanced accuracy, BCa
 bootstrap, overlaid hypnogram plots (`plot_hypnograms()`), MAD/median in group summaries, the
-human-readable `report()` table, the `MDC` column, and the `diagnostics` table.
+human-readable `report()` table, and the `diagnostics` table. The minimal detectable change
+(half the LoA width) was added and then removed; it is directly available as
+`loa_halfwidth` or `(loa_upper − loa_lower) / 2` in `summary()`.
 
 ---
 
@@ -129,6 +130,6 @@ definition.
 
 Not testable against the report: per-subject 4-stage accuracy (R reports one-vs-rest per stage),
 per-subject PPV/NPV (group level only in R), per-stage kappa/PABAK (YASA's kappa is multiclass),
-and Bland-Altman bias/LoA/CIs (conditional on data-dependent assumption tests). Eq. 2, MDC,
+and Bland-Altman bias/LoA/CIs (conditional on data-dependent assumption tests). Eq. 2,
 `diagnostics`, `summary`, `calibrate`, and the Euser slope are unit-tested against direct
 `numpy`/`scipy.stats` computations in `tests/test_evaluation.py` instead.

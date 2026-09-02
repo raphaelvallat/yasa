@@ -50,8 +50,6 @@ v0.8.0 (unreleased)
   and :py:meth:`yasa.SleepStatsAgreement.plot_blandaltman`. They were previously drawn as
   horizontal lines around the mean difference. The half-width is available as the new
   ``loa_halfwidth`` variable in :py:meth:`yasa.SleepStatsAgreement.summary`.
-* :py:meth:`yasa.SleepStatsAgreement.report` gained an ``MDC`` column with the minimal
-  detectable change (half the width of constant limits of agreement).
 * New :py:attr:`yasa.SleepStatsAgreement.diagnostics` property with the test statistics,
   p-values, and effect sizes (Cohen's d, skew, kurtosis, R²) behind each
   :py:attr:`yasa.SleepStatsAgreement.assumptions` flag.

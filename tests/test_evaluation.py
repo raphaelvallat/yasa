@@ -568,11 +568,15 @@ class TestSleepStatsAgreementReport(unittest.TestCase):
             f"{OBS_SCORER} mean (SD)",
             f"Bias [{PCT}% CI]",
             f"LoA [{PCT}% CI]",
-            "MDC",
             "Assumptions",
         ]
         assert rpt.columns.tolist() == expected
-        assert rpt["Assumptions"].str.contains("✓|✗").all()
+        # The unbiased flag is a finding, not a modeling assumption, and is not reported
+        assert (
+            rpt["Assumptions"]
+            .str.fullmatch(r"[✓✗] normal  [✓✗] constant bias  [✓✗] homoscedastic")
+            .all()
+        )
 
     def test_mean_sd_columns(self):
         rpt = ssa.report(ci_method="param", decimals=2)
@@ -612,15 +616,6 @@ class TestSleepStatsAgreementReport(unittest.TestCase):
         )
         assert rpt["Bias"].str.fullmatch(r"-?\d+\.\d+ \+ -?\d+\.\d+x").all()
         assert rpt["LoA"].str.fullmatch(r"±\d+\.\d+ \(-?\d+\.\d+ \+ -?\d+\.\d+x\)").all()
-        # MDC varies with the reference value for regression LoA
-        assert (rpt["MDC"] == "n/a").all()
-
-    def test_mdc_is_half_loa_width_for_constant_loa(self):
-        rpt = ssa.report(bias_method="param", loa_method="param", ci_method="param", decimals=2)
-        s = ssa.summary(ci_method=None)
-        for stat in ssa.sleep_statistics:
-            hw = (s.at[stat, ("loa_upper", "center")] - s.at[stat, ("loa_lower", "center")]) / 2
-            assert rpt.at[_label(rpt, stat), "MDC"] == f"{hw:.2f}"
 
     def test_regr_bias_param_loa_uses_residual_halfwidth(self):
         # Menghini et al. (2021) eq. 2: LoA parallel to the regression bias line
@@ -630,7 +625,6 @@ class TestSleepStatsAgreementReport(unittest.TestCase):
             hw = s.loc[stat, "loa_halfwidth"]
             expected = f"bias ± {hw['center']:.2f} [{hw['lower']:.2f}, {hw['upper']:.2f}]"
             assert rpt.at[_label(rpt, stat), f"LoA [{PCT}% CI]"] == expected
-            assert rpt.at[_label(rpt, stat), "MDC"] == f"{hw['center']:.2f}"
 
     def test_sleep_stats_subset_and_order(self):
         rpt = ssa.report(ci_method="param", sleep_stats=["WASO", "TST", "SE"])

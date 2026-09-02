@@ -1992,11 +1992,8 @@ class SleepStatsAgreement:
             * ``f"Bias [{pct}% CI]"`` (or ``"Bias"``) — mean bias or regression equation.
             * ``f"LoA [{pct}% CI]"`` (or ``"LoA"``) — lower–upper LoA, regression equation, or
               Euser proportional LoA.
-            * ``"MDC"`` — minimal detectable change, i.e. half the width of the LoA (Menghini et
-              al. 2021; Haghayegh et al. 2020): the smallest change that exceeds measurement
-              error. Only defined for constant LoA; ``"n/a"`` when the LoA vary with the
-              reference value (regression or Euser LoA).
-            * ``"Assumptions"`` — pass/fail for unbiased, normal, constant bias, homoscedastic.
+            * ``"Assumptions"`` — pass/fail for the normal, constant bias and homoscedastic
+              assumptions that drive the automatic method selection.
 
         Examples
         --------
@@ -2112,17 +2109,8 @@ class SleepStatsAgreement:
                         prefixes=("c0", "c1"),
                     )
 
-            # Minimal detectable change = half the LoA width, only defined for constant LoA
-            if stat not in loa_param_idx:
-                mdc_str = "n/a"
-            elif stat in bias_param_idx:
-                mdc_str = f"{(v['loa_upper_center'] - v['loa_lower_center']) / 2:.{d}f}"
-            else:
-                mdc_str = f"{v['loa_halfwidth_center']:.{d}f}"
-
             asmp = self.assumptions.loc[stat]
             assumptions_str = (
-                f"{_check(asmp['unbiased'])} unbiased  "
                 f"{_check(asmp['normal'])} normal  "
                 f"{_check(asmp['constant_bias'])} constant bias  "
                 f"{_check(asmp['homoscedastic'])} homoscedastic"
@@ -2137,7 +2125,6 @@ class SleepStatsAgreement:
                 ),
                 f"Bias [{pct}% CI]" if bias_ci else "Bias": bias_str,
                 f"LoA [{pct}% CI]" if loa_ci else "LoA": loa_str,
-                "MDC": mdc_str,
                 "Assumptions": assumptions_str,
             }
 
