@@ -1856,7 +1856,6 @@ class Hypnogram:
         kappa            0.227
         mcc              0.231
         precision       51.484
-        recall          55.000
         f1              52.380
         Name: agreement, dtype: float64
         """

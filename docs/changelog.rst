@@ -11,10 +11,19 @@ v0.8.0 (unreleased)
 
 * **Breaking:** all proportion-based epoch-by-epoch metrics are now expressed as percentages
   (0-100) instead of proportions (0-1), in line with the reporting conventions of Menghini et
-  al. (2021). This affects ``accuracy``, ``balanced_acc``, ``precision``, ``recall``, and ``f1``
+  al. (2021). This affects ``accuracy``, ``balanced_acc``, ``precision``, and ``f1``
   in :py:meth:`yasa.EpochByEpochAgreement.get_agreement` (``kappa`` and ``mcc`` are unchanged),
   and all metrics except ``support`` in
   :py:meth:`yasa.EpochByEpochAgreement.get_agreement_bystage`.
+* **Breaking:** the weighted ``recall`` metric was removed from the default scorers of
+  :py:meth:`yasa.EpochByEpochAgreement.get_agreement` because it is mathematically identical to
+  ``accuracy`` for multiclass data. Per-stage (one-vs-rest) recall is still available in
+  :py:meth:`yasa.EpochByEpochAgreement.get_agreement_bystage`.
+* Fixed :py:meth:`yasa.EpochByEpochAgreement.get_agreement` raising an error when ``scorers`` is
+  a list of metric names or when ``sample_weight`` is passed. Metric names now map to the
+  corresponding ``sklearn.metrics.<name>_score`` functions.
+* :py:meth:`yasa.EpochByEpochAgreement.summary` now computes the agreement scores itself when
+  :py:meth:`~yasa.EpochByEpochAgreement.get_agreement` has not been called before.
 * :py:meth:`yasa.EpochByEpochAgreement.get_agreement_bystage` gained a ``zero_division``
   parameter, which now defaults to ``np.nan`` (requires scikit-learn >= 1.3). Metrics that are
   undefined for a session (e.g. recall for a stage absent from the reference hypnogram) are now
@@ -46,6 +55,18 @@ v0.8.0 (unreleased)
 * New :py:attr:`yasa.SleepStatsAgreement.diagnostics` property with the test statistics,
   p-values, and effect sizes (Cohen's d, skew, kurtosis, R²) behind each
   :py:attr:`yasa.SleepStatsAgreement.assumptions` flag.
+* :py:class:`yasa.SleepStatsAgreement` now drops sessions with a missing value separately for
+  each sleep statistic (e.g. REM latency for a night without REM sleep) and uses the resulting
+  per-statistic number of sessions for all confidence intervals. Previously, a single missing
+  value produced NaN regression coefficients for that statistic. The input DataFrames are no
+  longer modified in place.
+* With ``log_transform=True``, :py:class:`yasa.SleepStatsAgreement` no longer log-transforms
+  statistics that contain a zero value in either scorer (e.g. SOL for a subject who fell asleep
+  in the first epoch). The previous small offset added before taking the logarithm made the Euser
+  slope depend on the offset rather than on the data. These statistics are excluded with a
+  warning and keep the regular limits of agreement.
+* Fixed :py:meth:`yasa.SleepStatsAgreement.calibrate` with ``bias_method="auto"`` reordering the
+  columns and silently dropping any column containing a missing value.
 * :py:class:`yasa.SleepStatsAgreement` gained an ``alpha_normal`` parameter (default 0.01) used
   for the Shapiro-Wilk normality test, separate from ``alpha`` (default 0.05) used for the other
   assumption tests. The Shapiro-Wilk test is sensitive to small departures from normality that

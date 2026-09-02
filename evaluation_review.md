@@ -158,7 +158,9 @@ LoA_lower = bias − slope × ref
 slope = 2 * (exp(agreement × SD(log_diffs)) − 1) / (exp(agreement × SD(log_diffs)) + 1)
 ```
 
-where `log_diffs = log(obs + ε) − log(ref + ε)` and `ε = 1e-4` to avoid `log(0)`.
+where `log_diffs = log(obs) − log(ref)`. Statistics with a zero value in either scorer are not
+log-transformed (any offset would dominate the slope); they are excluded with a warning and keep
+the regular LoA, and `loa_method="log"` raises for them.
 
 This is the **only** LoA representation that applies for log-transformed stats. The standard `loa_lower`/`loa_upper` (constant) and `loa_intercept`/`loa_slope` (regression) representations do not apply to these stats.
 

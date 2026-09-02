@@ -67,11 +67,21 @@ class TestGetAgreement(unittest.TestCase):
     def test_shape_and_columns(self):
         agr = ebe.get_agreement()
         assert isinstance(agr, pd.DataFrame) and agr.shape[0] == N_SESSIONS
-        expected_cols = {"accuracy", "balanced_acc", "kappa", "mcc", "precision", "recall", "f1"}
+        expected_cols = {"accuracy", "balanced_acc", "kappa", "mcc", "precision", "f1"}
         assert set(agr.columns) == expected_cols
 
     def test_single_night_returns_series(self):
         assert isinstance(ebe_single.get_agreement(), pd.Series)
+
+    def test_scorers_list_and_sample_weight(self):
+        default = ebe.get_agreement()
+        # Metric names map to sklearn.metrics.<name>_score (returned as is, i.e. not in percent)
+        agr = ebe.get_agreement(scorers=["accuracy", "cohen_kappa"])
+        np.testing.assert_allclose(100 * agr["accuracy"], default["accuracy"])
+        np.testing.assert_allclose(agr["cohen_kappa"], default["kappa"])
+        # Uniform sample weights leave the scores unchanged
+        weighted = ebe.get_agreement(sample_weight=pd.Series(2.0, index=ebe.data.index))
+        pd.testing.assert_frame_equal(weighted, default)
 
 
 class TestGetAgreementByStage(unittest.TestCase):
@@ -347,6 +357,8 @@ ssa_log_large = SleepStatsAgreement(
 )
 
 PCT = int(ssa._confidence * 100)
+# Stats that can be log-transformed (no zero value in either scorer)
+LOG_STATS = ssa_log.loa_log_slope.dropna().index.tolist()
 
 
 def _valid_arrays(stat):
@@ -448,8 +460,10 @@ class TestSleepStatsAgreementAssumptions(unittest.TestCase):
         assert (auto["bias"] == asmp["constant_bias"].map({True: "param", False: "regr"})).all()
         assert (auto["loa"] == asmp["homoscedastic"].map({True: "param", False: "regr"})).all()
         assert (auto["ci"] == asmp["normal"].map({True: "param", False: "boot"})).all()
-        # With log_transform=True, the LoA method is always "log"
-        assert (ssa_log.auto_methods["loa"] == "log").all()
+        # With log_transform=True, the LoA method is "log" for every log-transformed stat
+        is_log = ssa_log.loa_log_slope.notna()
+        assert (ssa_log.auto_methods.loc[is_log, "loa"] == "log").all()
+        assert ssa_log.auto_methods.loc[~is_log, "loa"].isin(["param", "regr"]).all()
 
 
 class TestSleepStatsAgreementSummary(unittest.TestCase):
@@ -472,11 +486,22 @@ class TestSleepStatsAgreementSummary(unittest.TestCase):
             assert np.isclose(c["loa_intercept"], loa_regr.intercept)
             # Menghini et al. (2021) eq. 2 half-width: agreement × SD of the bias residuals
             assert np.isclose(c["loa_halfwidth"], 1.96 * np.std(resid, ddof=1))
-        # Parametric CIs bracket the point estimates
+        # Parametric CIs bracket the point estimates (NaN for stats with too few sessions)
         lower, center, upper = (
             s.xs(i, level="interval", axis=1) for i in ("lower", "center", "upper")
         )
-        assert (lower <= center + 1e-12).all().all() and (center <= upper + 1e-12).all().all()
+        assert ((lower <= center + 1e-12) | lower.isna()).all().all()
+        assert ((center <= upper + 1e-12) | upper.isna()).all().all()
+
+    def test_missing_values_dropped_per_stat(self):
+        # A NaN in one session of one stat only affects that stat, and inputs are not modified
+        ref, obs = _ref_stats.rename_axis(None), _obs_stats.rename_axis(None)
+        ref.loc[ref.index[0], "TST"] = np.nan
+        ssa_nan = SleepStatsAgreement(ref, obs, ref_scorer=REF_SCORER, obs_scorer=OBS_SCORER)
+        assert ref.index.name is None and obs.index.name is None
+        assert len(ssa_nan.data.loc["TST"]) == N_SESSIONS - 1
+        assert len(ssa_nan.data.loc["WASO"]) == N_SESSIONS
+        assert np.isfinite(ssa_nan.summary(ci_method="param").loc["TST"]).all()
 
     def test_ci_method_none_returns_center_only(self):
         s = ssa.summary(ci_method=None)
@@ -520,6 +545,12 @@ class TestSleepStatsAgreementCalibrate(unittest.TestCase):
         default = ssa.calibrate(obs, bias_method="param")
         unbiased = ssa.assumptions.query("unbiased == True").index.tolist()
         pd.testing.assert_frame_equal(default[unbiased], obs[unbiased])
+        # "auto" keeps the column order and missing values of the input
+        obs_nan = obs.copy()
+        obs_nan.iloc[0, 0] = np.nan
+        auto = ssa.calibrate(obs_nan, bias_method="auto", adjust_all=True)
+        assert auto.columns.tolist() == obs.columns.tolist()
+        assert np.isnan(auto.iloc[0, 0]) and auto.notna().sum().sum() == obs.notna().sum().sum() - 1
 
     def test_invalid_column_raises(self):
         bad = _obs_stats[ssa.sleep_statistics].rename(columns={"TST": "NOT_A_STAT"})
@@ -735,10 +766,12 @@ class TestSleepStatsAgreementLogTransform(unittest.TestCase):
         assert set(slope.index) == set(ssa_log.sleep_statistics)
         for stat in ssa_log.sleep_statistics:
             valid = _ref_stats[stat].notna() & _obs_stats[stat].notna()
-            log_d = np.log(_obs_stats.loc[valid, stat] + 1e-4) - np.log(
-                _ref_stats.loc[valid, stat] + 1e-4
-            )
-            z = 1.96 * np.std(log_d, ddof=1)
+            ref, obs = _ref_stats.loc[valid, stat], _obs_stats.loc[valid, stat]
+            if (ref == 0).any() or (obs == 0).any():
+                # Stats with zeros are not log-transformed
+                assert np.isnan(slope[stat])
+                continue
+            z = 1.96 * np.std(np.log(obs) - np.log(ref), ddof=1)
             expected = 2 * (np.exp(z) - 1) / (np.exp(z) + 1)
             assert np.isclose(slope[stat], expected) and slope[stat] >= 0
         assert SleepStatsAgreement._euser_slope_scalar(0.0, 1.96) == 0.0
@@ -748,22 +781,37 @@ class TestSleepStatsAgreementLogTransform(unittest.TestCase):
         assert (ssa_log.loa_log_slope.dropna() >= 0).all()
 
     def test_summary_log_slope_column(self):
-        s = ssa_log.summary(ci_method="param")["loa_log_slope"]
+        s = ssa_log.summary(ci_method="param")["loa_log_slope"].dropna()
         assert list(s.columns) == ["center", "lower", "upper"]
-        pd.testing.assert_series_equal(s["center"], ssa_log.loa_log_slope, check_names=False)
+        pd.testing.assert_series_equal(
+            s["center"], ssa_log.loa_log_slope.dropna(), check_names=False
+        )
         assert (s["lower"] < s["center"]).all() and (s["center"] < s["upper"]).all()
         assert list(ssa_log.summary(ci_method=None)["loa_log_slope"].columns) == ["center"]
 
     def test_report_log_format(self):
         s = ssa_log.summary(ci_method="param")["loa_log_slope"]
         for loa_method in ["log", "auto"]:
-            rpt = ssa_log.report(loa_method=loa_method, ci_method="param", decimals=2)
-            for stat in ssa_log.sleep_statistics:
+            rpt = ssa_log.report(
+                loa_method=loa_method, ci_method="param", decimals=2, sleep_stats=LOG_STATS
+            )
+            for stat in LOG_STATS:
                 hw = s.loc[stat]
                 expected = f"bias ± {hw['center']:.2f} × ref [{hw['lower']:.2f}, {hw['upper']:.2f}]"
                 assert rpt.at[_label(rpt, stat), f"LoA [{PCT}% CI]"] == expected
-        rpt = ssa_log.report(loa_method="log", ci_method="param", loa_ci=False)
+        rpt = ssa_log.report(
+            loa_method="log", ci_method="param", loa_ci=False, sleep_stats=LOG_STATS
+        )
         assert rpt["LoA"].str.fullmatch(r"bias ± \d+\.\d+ × ref").all()
+
+    def test_stats_with_zeros_are_not_log_transformed(self):
+        zero_stats = [s for s in ssa_log.sleep_statistics if s not in LOG_STATS]
+        assert zero_stats, "the fixture needs at least one stat with a zero value"
+        # Regular LoA are used and reported for these stats, and loa_method="log" refuses them
+        rpt = ssa_log.report(ci_method="param", sleep_stats=zero_stats)
+        assert not rpt[f"LoA [{PCT}% CI]"].str.contains("×").any()
+        with pytest.raises(ValueError, match="zero values"):
+            ssa_log.report(loa_method="log", ci_method="param", sleep_stats=zero_stats[:1])
 
     def test_loa_method_override_with_log_transform(self):
         # loa_method="param"/"regr" force constant/regression LoA even when log_transform=True
@@ -778,8 +826,8 @@ class TestSleepStatsAgreementLogTransform(unittest.TestCase):
             ssa.plot_blandaltman(loa_method="log")
 
     def test_plot_log_lines(self):
-        g = ssa_log.plot_blandaltman(loa_method="log", ci_method="param")
-        for stat, ax in zip(ssa_log.sleep_statistics, g.axes.flat, strict=True):
+        g = ssa_log.plot_blandaltman(loa_method="log", ci_method="param", sleep_stats=LOG_STATS)
+        for stat, ax in zip(LOG_STATS, g.axes.flat, strict=True):
             assert len(ax.lines) == 4
             x = np.asarray(ax.lines[2].get_xdata())
             bias, upper, lower = (np.asarray(line.get_ydata()) for line in ax.lines[1:4])
@@ -787,17 +835,18 @@ class TestSleepStatsAgreementLogTransform(unittest.TestCase):
             np.testing.assert_allclose(upper - bias, spread)
             np.testing.assert_allclose(bias - lower, spread)
             assert len(ax.collections) == 3  # scatter + two CI bands
-        g = ssa_log.plot_blandaltman(loa_method="log", ci_method=None)
+        g = ssa_log.plot_blandaltman(loa_method="log", ci_method=None, sleep_stats=LOG_STATS)
         for ax in g.axes.flat:
             assert len(ax.patches) == 0 and len(ax.collections) == 1
 
     def test_ci_auto(self):
         # ci_method="auto" picks "param" when normality holds, "boot" otherwise. Use ssa_log_large
         # (15 sessions, BCa) to avoid degenerate all-zero stats with N=5.
-        rpt = ssa_log_large.report(loa_method="log", ci_method="auto")
+        stats = ssa_log_large.loa_log_slope.dropna().index.tolist()
+        rpt = ssa_log_large.report(loa_method="log", ci_method="auto", sleep_stats=stats)
         assert rpt[f"LoA [{PCT}% CI]"].str.contains("×").all()
-        g = ssa_log_large.plot_blandaltman(loa_method="log", ci_method="auto")
-        assert len(g.axes.flat) == len(ssa_log_large.sleep_statistics)
+        g = ssa_log_large.plot_blandaltman(loa_method="log", ci_method="auto", sleep_stats=stats)
+        assert len(g.axes.flat) == len(stats)
 
     def test_ci_boot(self):
         # Exercise the _generate_bootstrap_ci Euser path with method="basic" to avoid BCa
@@ -810,12 +859,10 @@ class TestSleepStatsAgreementLogTransform(unittest.TestCase):
             log_transform=True,
             bootstrap_kwargs={"n_resamples": 200, "method": "basic"},
         )
-        rpt = fresh.report(loa_method="log", ci_method="boot")
+        stats = fresh.loa_log_slope.dropna().index.tolist()
+        rpt = fresh.report(loa_method="log", ci_method="boot", sleep_stats=stats)
         assert rpt[f"LoA [{PCT}% CI]"].str.contains("×").all()
-        # Stats with a valid Euser slope must also have valid bootstrap CIs
-        # (stats like Lat_REM may be NaN when some sessions have no REM sleep).
-        valid = fresh.loa_log_slope.dropna().index
         s = fresh.summary(ci_method="boot")["loa_log_slope"]
-        assert s.loc[valid, ["lower", "upper"]].notna().all().all()
-        g = fresh.plot_blandaltman(loa_method="log", ci_method="boot")
+        assert s.loc[stats, ["lower", "upper"]].notna().all().all()
+        g = fresh.plot_blandaltman(loa_method="log", ci_method="boot", sleep_stats=stats)
         assert all(len(ax.collections) == 3 for ax in g.axes.flat)
