@@ -1758,9 +1758,10 @@ class SleepStatsAgreement:
         sleep_stats : list or None
             List of sleep statistics to plot. Default (None) is to plot all sleep statistics.
         bias_method : str
-            If ``'param'``, bias is always the mean difference (horizontal line). If ``'regr'``,
-            bias is always a regression line. If ``'auto'`` (default), the method is chosen per
-            statistic based on the proportional-bias assumption test.
+            If ``'param'``, bias is always the mean difference (horizontal line with an optional
+            CI band). If ``'regr'``, bias is always a regression line (no CI band). If ``'auto'``
+            (default), the method is chosen per statistic based on the proportional-bias
+            assumption test.
         loa_method : str
             Method used to draw limits of agreement. Options:
 
@@ -1914,11 +1915,14 @@ class SleepStatsAgreement:
         # Draw scatterplot on each axis
         g.map(plt.scatter, self.ref_scorer, "difference", zorder=data_zorder, **scatter_kwargs)
         # Draw a horizontal line at y=0 on each axis
-        g.refline(y=0, color="black", linewidth=1, linestyle="solid", zorder=refline_zorder)
+        g.refline(
+            y=0, color="black", linewidth=0.75, linestyle=":", alpha=0.6, zorder=refline_zorder
+        )
         # Choose arguments for all calls to axhspan and fill_between for bias and LoA CI bands
         band_kwargs = dict(edgecolor="none", alpha=0.15)
         # Choose arguments for all calls to axhline and plot for bias and LoA lines
         line_kwargs = dict(linewidth=1, linestyle="dashed", alpha=0.9)
+        bias_line_kwargs = line_kwargs | dict(linestyle="solid")
         loa_color = "tab:blue"
         bias_default_color = "tab:gray"  # when not flagged as biased
         bias_flagged_color = "tab:red"
@@ -1933,7 +1937,7 @@ class SleepStatsAgreement:
             # --- Bias line ---
             if stat in bias_param_idx:
                 y_bias = v[("bias_mean", "center")]
-                ax.axhline(y_bias, color=bias_color, zorder=bias_zorder, **line_kwargs)
+                ax.axhline(y_bias, color=bias_color, zorder=bias_zorder, **bias_line_kwargs)
                 if has_ci:
                     ax.axhspan(
                         v[("bias_mean", "lower")],
@@ -1944,23 +1948,15 @@ class SleepStatsAgreement:
                     )
                 y_bias_arr = np.full_like(x_line, y_bias, dtype=float)
             else:
+                # Regression bias: no CI band. The intercept and slope CIs are reported separately
+                # in `summary()` and `report()`; combining them into a single band would not be a
+                # valid confidence region for the fitted line.
                 intercept = v[("bias_intercept", "center")]
                 slope = v[("bias_slope", "center")]
                 y_bias_arr = intercept + slope * x_line
-                ax.plot(x_line, y_bias_arr, color=bias_color, zorder=bias_zorder, **line_kwargs)
-                if has_ci:
-                    y_ci_a = v[("bias_intercept", "lower")] + v[("bias_slope", "lower")] * x_line
-                    y_ci_b = v[("bias_intercept", "upper")] + v[("bias_slope", "upper")] * x_line
-                    y_lo = np.minimum(y_ci_a, y_ci_b)
-                    y_hi = np.maximum(y_ci_a, y_ci_b)
-                    ax.fill_between(
-                        x_line,
-                        y_lo,
-                        y_hi,
-                        facecolor=bias_color,
-                        zorder=bias_zorder - 1,
-                        **band_kwargs,
-                    )
+                ax.plot(
+                    x_line, y_bias_arr, color=bias_color, zorder=bias_zorder, **bias_line_kwargs
+                )
 
             # --- LoA lines ---
             if stat in loa_log_idx:
