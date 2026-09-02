@@ -1,5 +1,6 @@
 """Tests for yasa/evaluation.py — EpochByEpochAgreement and SleepStatsAgreement."""
 
+import re
 import unittest
 
 import numpy as np
@@ -7,7 +8,7 @@ import pandas as pd
 import pytest
 
 from yasa.evaluation import EpochByEpochAgreement, SleepStatsAgreement
-from yasa.hypno import simulate_hypnogram
+from yasa.hypno import Hypnogram, simulate_hypnogram
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -90,7 +91,7 @@ class TestGetAgreement(unittest.TestCase):
 
     def test_accuracy_bounds(self):
         agr = ebe.get_agreement()
-        assert (agr["accuracy"] >= 0).all() and (agr["accuracy"] <= 1).all()
+        assert (agr["accuracy"] >= 0).all() and (agr["accuracy"] <= 100).all()
 
     def test_single_night_returns_series(self):
         agr = ebe_single.get_agreement()
@@ -106,9 +107,9 @@ class TestGetAgreement(unittest.TestCase):
         # (different scorer names required, so we rename)
         ref0 = ref_hyps[0]
         _ = simulate_hypnogram(tib=ref0.duration, scorer=OBS_SCORER, seed=0)
-        # Confirm accuracy is in [0, 1] — just sanity-check bounds
+        # Confirm accuracy is in [0, 100] — just sanity-check bounds
         agr = ebe.get_agreement()
-        assert agr["accuracy"].between(0, 1).all()
+        assert agr["accuracy"].between(0, 100).all()
 
 
 class TestGetAgreementByStage(unittest.TestCase):
@@ -129,6 +130,226 @@ class TestGetAgreementByStage(unittest.TestCase):
     def test_single_night_no_sleep_id_level(self):
         agr = ebe_single.get_agreement_bystage()
         assert agr.index.name == "stage"
+
+    def test_invalid_zero_division_raises(self):
+        with pytest.raises(AssertionError):
+            ebe.get_agreement_bystage(zero_division=0.5)
+        with pytest.raises(AssertionError):
+            ebe.get_agreement_bystage(zero_division="nan")
+
+
+# Two-session fixture where session 1 has no N1 and no N3 in the reference hypnogram, but the
+# observed scorer assigns a few epochs of each -> recall (and fbeta) undefined for those stages.
+_ref_missing = Hypnogram(["WAKE"] * 10 + ["N2"] * 20 + ["REM"] * 10, scorer=REF_SCORER)
+_obs_missing = Hypnogram(
+    ["WAKE"] * 8 + ["N1"] * 2 + ["N2"] * 18 + ["N3"] * 2 + ["REM"] * 10, scorer=OBS_SCORER
+)
+ebe_missing = EpochByEpochAgreement([_ref_missing, ref_hyps[0]], [_obs_missing, obs_hyps[0]])
+
+
+class TestGetAgreementByStageZeroDivision(unittest.TestCase):
+    """Test the zero_division parameter of get_agreement_bystage."""
+
+    def test_default_is_nan_for_absent_reference_stage(self):
+        agr = ebe_missing.get_agreement_bystage()
+        for stage in ["N1", "N3"]:
+            assert agr.at[(stage, 1), "support"] == 0
+            assert np.isnan(agr.at[(stage, 1), "recall"])
+        # recall is NaN exactly where the stage is absent from the reference (support == 0), and
+        # precision is NaN exactly where the observed scorer never assigned the stage.
+        cm = ebe_missing.get_confusion_matrix()
+        for (stage, sid), row in agr.iterrows():
+            assert np.isnan(row["recall"]) == (row["support"] == 0)
+            assert np.isnan(row["precision"]) == (cm.loc[sid][stage].sum() == 0)
+
+    def test_zero_division_zero_restores_old_behavior(self):
+        agr = ebe_missing.get_agreement_bystage(zero_division=0)
+        assert not agr.isna().any().any()
+        assert agr.at[("N1", 1), "recall"] == 0
+        assert agr.at[("N3", 1), "recall"] == 0
+
+    def test_zero_division_one(self):
+        agr = ebe_missing.get_agreement_bystage(zero_division=1)
+        assert agr.at[("N1", 1), "recall"] == 100
+
+    def test_zero_division_warn(self):
+        from sklearn.exceptions import UndefinedMetricWarning
+
+        with pytest.warns(UndefinedMetricWarning):
+            agr = ebe_missing.get_agreement_bystage(zero_division="warn")
+        assert agr.at[("N1", 1), "recall"] == 0
+
+    def test_nan_excluded_from_summary(self):
+        # Group mean recall for N1 must equal the recall of the only session with N1 in the
+        # reference (session 2), not be dragged down by a spurious 0 from session 1.
+        agr = ebe_missing.get_agreement_bystage()
+        summ = ebe_missing.summary(by_stage=True, func=["count", "mean"])
+        assert summ.at[("N1", "recall"), "count"] == 1
+        assert summ.at[("N1", "recall"), "mean"] == agr.at[("N1", 2), "recall"]
+        assert summ.at[("N1", "support"), "count"] == 2
+
+    def test_specificity_zero_division(self):
+        # If the reference is entirely one stage, specificity (tn / (tn + fp)) is undefined for
+        # that stage since there are no negative epochs.
+        ref = Hypnogram(["N2"] * 20, scorer=REF_SCORER)
+        obs = Hypnogram(["N2"] * 15 + ["WAKE"] * 5, scorer=OBS_SCORER)
+        agr = ref.evaluate(obs).get_agreement_bystage()
+        assert np.isnan(agr.at["N2", "specificity"])
+        agr0 = ref.evaluate(obs).get_agreement_bystage(zero_division=0)
+        assert agr0.at["N2", "specificity"] == 0
+
+
+class TestGetConfusionMatrixProportional(unittest.TestCase):
+    """Test get_confusion_matrix_proportional output."""
+
+    def test_returns_long_dataframe(self):
+        out = ebe.get_confusion_matrix_proportional(ci_method="param")
+        assert isinstance(out, pd.DataFrame)
+        assert out.index.names == [REF_SCORER, OBS_SCORER]
+        assert list(out.columns) == ["mean", "std", "ci_lower", "ci_upper", "n_sessions"]
+        n_stages = ebe.get_confusion_matrix(sleep_id=1).shape[0]
+        assert len(out) == n_stages**2
+
+    def test_no_ci(self):
+        out = ebe.get_confusion_matrix_proportional(ci_method=None)
+        assert list(out.columns) == ["mean", "std", "n_sessions"]
+
+    def test_rows_sum_to_100(self):
+        out = ebe.get_confusion_matrix_proportional(ci_method=None)
+        row_sums = out["mean"].unstack().sum(axis=1)
+        np.testing.assert_allclose(row_sums, 100.0)
+
+    def test_matches_manual_computation(self):
+        out = ebe.get_confusion_matrix_proportional(ci_method="param")
+        cms = ebe.get_confusion_matrix()
+        props = 100 * cms.div(cms.sum(axis=1), axis=0)
+        manual_mean = props.groupby(level=REF_SCORER, sort=False).mean()
+        manual_std = props.groupby(level=REF_SCORER, sort=False).std(ddof=1)
+        for (r, c), row in out.iterrows():
+            np.testing.assert_allclose(row["mean"], manual_mean.at[r, c])
+            np.testing.assert_allclose(row["std"], manual_std.at[r, c])
+            assert row["n_sessions"] == props.xs(r, level=REF_SCORER)[c].notna().sum()
+        # Parametric CI is centered on the mean and clipped to [0, 100]
+        assert (out["ci_lower"] <= out["mean"]).all()
+        assert (out["ci_upper"] >= out["mean"]).all()
+        assert (out["ci_lower"] >= 0).all() and (out["ci_upper"] <= 100).all()
+
+    def test_boot_ci(self):
+        for method in ["BCa", "basic", "percentile"]:
+            kwargs = {"n_resamples": 200, "rng": 0, "method": method}
+            out = ebe.get_confusion_matrix_proportional(ci_method="boot", bootstrap_kwargs=kwargs)
+            # Rows with at least one contributing session must have a finite CI around the mean
+            valid = out[out["n_sessions"] > 0]
+            assert valid[["ci_lower", "ci_upper"]].notna().all().all(), method
+            assert (valid["ci_lower"] <= valid["mean"] + 1e-9).all(), method
+            assert (valid["ci_upper"] >= valid["mean"] - 1e-9).all(), method
+            assert (valid["ci_lower"] >= 0).all() and (valid["ci_upper"] <= 100).all(), method
+            # Reproducible with a fixed rng
+            out2 = ebe.get_confusion_matrix_proportional(ci_method="boot", bootstrap_kwargs=kwargs)
+            pd.testing.assert_frame_equal(out, out2)
+
+    def test_boot_default_is_bca(self):
+        out = ebe.get_confusion_matrix_proportional(bootstrap_kwargs={"n_resamples": 200, "rng": 0})
+        bca = ebe.get_confusion_matrix_proportional(
+            bootstrap_kwargs={"n_resamples": 200, "rng": 0, "method": "BCa"}
+        )
+        pd.testing.assert_frame_equal(out, bca)
+
+    def test_bca_degenerate_cells(self):
+        # Two identical session pairs -> every cell is constant across resamples, so the BCa
+        # interval must collapse onto the mean (percentile fallback) rather than being NaN.
+        ebe_const = EpochByEpochAgreement([ref_hyps[0], ref_hyps[0]], [obs_hyps[0], obs_hyps[0]])
+        out = ebe_const.get_confusion_matrix_proportional(bootstrap_kwargs={"n_resamples": 50})
+        valid = out[out["n_sessions"] > 0]
+        np.testing.assert_allclose(valid["ci_lower"], valid["mean"])
+        np.testing.assert_allclose(valid["ci_upper"], valid["mean"])
+
+    def test_boot_ci_matches_manual_basic_bootstrap(self):
+        # Re-implement the basic participant bootstrap by hand with the same rng
+        n_resamples = 100
+        out = ebe.get_confusion_matrix_proportional(
+            ci_method="boot",
+            bootstrap_kwargs={"n_resamples": n_resamples, "rng": 42, "method": "basic"},
+        )
+        cms = ebe.get_confusion_matrix()
+        stages = cms.columns.tolist()
+        props = 100 * cms.div(cms.sum(axis=1), axis=0)
+        arr = np.stack(
+            [
+                g.droplevel("sleep_id").loc[stages, stages].to_numpy()
+                for _, g in props.groupby(level=0)
+            ]
+        )
+        rng = np.random.default_rng(42)
+        idx = rng.integers(0, N_SESSIONS, size=(n_resamples, N_SESSIONS))
+        with np.errstate(all="ignore"):
+            import warnings
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                boot = np.nanmean(arr[idx], axis=1)  # (n_resamples, n_ref, n_obs)
+                mean = np.nanmean(arr, axis=0)
+                lo, hi = np.nanpercentile(boot, [2.5, 97.5], axis=0)
+        exp_lower = np.clip(2 * mean - hi, 0, 100).ravel()
+        exp_upper = np.clip(2 * mean - lo, 0, 100).ravel()
+        np.testing.assert_allclose(out["ci_lower"].to_numpy(), exp_lower, equal_nan=True)
+        np.testing.assert_allclose(out["ci_upper"].to_numpy(), exp_upper, equal_nan=True)
+
+    def test_formatted(self):
+        fmt = ebe.get_confusion_matrix_proportional(ci_method="param", formatted=True)
+        assert fmt.index.name == REF_SCORER and fmt.columns.name == OBS_SCORER
+        assert fmt.shape[0] == fmt.shape[1]
+        assert fmt.map(lambda s: bool(re.fullmatch(_FMT_CI, s))).all().all()
+        fmt_noci = ebe.get_confusion_matrix_proportional(ci_method=None, formatted=True)
+        assert fmt_noci.map(lambda s: bool(re.fullmatch(_FMT_NOCI, s))).all().all()
+
+    def test_absent_stage_is_nan_not_zero(self):
+        out = ebe_missing.get_confusion_matrix_proportional(ci_method="param")
+        cm = ebe_missing.get_confusion_matrix()
+        # Number of sessions in which each reference stage is present
+        n_present = cm.sum(axis=1).gt(0).groupby(level=REF_SCORER).sum()
+        # Session 1 has no N1 and no N3 in the reference, so at most one session contributes
+        assert n_present["N1"] <= 1 and n_present["N3"] <= 1
+        for stage in cm.columns:
+            sub = out.xs(stage, level=REF_SCORER)
+            assert (sub["n_sessions"] == n_present[stage]).all()
+            if n_present[stage] == 0:
+                # Stage never present in the reference: everything is undefined
+                assert sub[["mean", "std", "ci_lower", "ci_upper"]].isna().all().all()
+            elif n_present[stage] == 1:
+                # Single contributing session: mean is defined, SD and CI are not
+                np.testing.assert_allclose(sub["mean"].sum(), 100.0)
+                assert sub[["std", "ci_lower", "ci_upper"]].isna().all().all()
+            else:
+                assert sub[["mean", "std", "ci_lower", "ci_upper"]].notna().all().all()
+        # WAKE is present in both sessions
+        assert (out.xs("WAKE", level=REF_SCORER)["n_sessions"] == 2).all()
+
+    def test_invalid_bootstrap_kwargs_raise(self):
+        with pytest.raises(AssertionError):
+            ebe.get_confusion_matrix_proportional(bootstrap_kwargs={"confidence_level": 0.9})
+        with pytest.raises(AssertionError):
+            ebe.get_confusion_matrix_proportional(bootstrap_kwargs={"method": "bca"})
+        with pytest.raises(AssertionError):
+            ebe.get_confusion_matrix_proportional(bootstrap_kwargs={"n_resamples": 0})
+
+    def test_single_session_raises(self):
+        with pytest.raises(AssertionError):
+            ebe_single.get_confusion_matrix_proportional()
+
+    def test_invalid_args_raise(self):
+        with pytest.raises(AssertionError):
+            ebe.get_confusion_matrix_proportional(ci_method="invalid")
+        with pytest.raises(AssertionError):
+            ebe.get_confusion_matrix_proportional(confidence=95)
+        with pytest.raises(AssertionError):
+            ebe.get_confusion_matrix_proportional(bootstrap_kwargs={"confidence_level": 0.9})
+        with pytest.raises(AssertionError):
+            ebe.get_confusion_matrix_proportional(decimals=-1)
+
+
+_FMT_CI = r"\d+\.\d \(\d+\.\d\) \[\d+\.\d, \d+\.\d\]"
+_FMT_NOCI = r"\d+\.\d \(\d+\.\d\)"
 
 
 class TestGetConfusionMatrix(unittest.TestCase):
@@ -332,6 +553,33 @@ class TestSleepStatsAgreementSummary(unittest.TestCase):
         with pytest.raises(AssertionError):
             ssa.summary(ci_method="invalid")
 
+    def test_ci_method_none_returns_center_only(self):
+        s = ssa.summary(ci_method=None)
+        assert set(s.columns.get_level_values("interval")) == {"center"}
+        full = ssa.summary(ci_method="param")
+        pd.testing.assert_frame_equal(
+            s, full.xs("center", axis=1, level="interval", drop_level=False)
+        )
+
+    def test_sleep_stats_subset_and_order(self):
+        subset = ["WASO", "TST", "SE"]
+        s = ssa.summary(ci_method="param", sleep_stats=subset)
+        assert s.index.tolist() == subset
+        full = ssa.summary(ci_method="param")
+        pd.testing.assert_frame_equal(s, full.loc[subset])
+
+    def test_invalid_sleep_stats_raises(self):
+        with pytest.raises(AssertionError):
+            ssa.summary(ci_method="param", sleep_stats=["NOT_A_STAT"])
+        with pytest.raises(AssertionError):
+            ssa.summary(ci_method="param", sleep_stats="TST")
+        with pytest.raises(AssertionError):
+            ssa.summary(ci_method="param", sleep_stats=["TST", "TST"])
+
+    def test_no_log_slope_column_without_log_transform(self):
+        s = ssa.summary(ci_method="param")
+        assert "loa_log_slope" not in s.columns.get_level_values("variable")
+
 
 class TestSleepStatsAgreementCalibrate(unittest.TestCase):
     """Test the calibrate method.
@@ -376,27 +624,93 @@ class TestSleepStatsAgreementReport(unittest.TestCase):
     def test_columns(self):
         rpt = ssa.report(ci_method="param")
         pct = int(ssa._confidence * 100)
-        assert f"Bias [{pct}% CI]" in rpt.columns
-        assert f"LoA [{pct}% CI]" in rpt.columns
-        assert "Assumptions" in rpt.columns
-        assert f"{REF_SCORER} mean" in rpt.columns
-        assert f"{OBS_SCORER} mean" in rpt.columns
+        expected = [
+            f"{REF_SCORER} mean (SD)",
+            f"{OBS_SCORER} mean (SD)",
+            f"Bias [{pct}% CI]",
+            f"LoA [{pct}% CI]",
+            "Assumptions",
+        ]
+        assert rpt.columns.tolist() == expected
 
-    def test_mean_columns_are_numeric(self):
-        rpt = ssa.report(ci_method="param")
-        assert pd.api.types.is_numeric_dtype(rpt[f"{REF_SCORER} mean"])
-        assert pd.api.types.is_numeric_dtype(rpt[f"{OBS_SCORER} mean"])
+    def test_mean_sd_columns(self):
+        rpt = ssa.report(ci_method="param", decimals=2)
+        pattern = r"-?\d+\.\d{2} \(\d+\.\d{2}\)"
+        for scorer, data in [(REF_SCORER, _ref_stats), (OBS_SCORER, _obs_stats)]:
+            col = rpt[f"{scorer} mean (SD)"]
+            assert col.str.fullmatch(pattern).all()
+            # Check one value against the raw data
+            expected = f"{data['TST'].mean():.2f} ({data['TST'].std(ddof=1):.2f})"
+            assert col["TST (min)"] == expected
 
     def test_string_columns_are_strings(self):
         rpt = ssa.report(ci_method="param")
-        pct = int(ssa._confidence * 100)
-        for col in [f"Bias [{pct}% CI]", f"LoA [{pct}% CI]", "Assumptions"]:
+        for col in rpt.columns:
             assert pd.api.types.is_string_dtype(rpt[col])
 
     def test_assumptions_contains_checkmarks(self):
         rpt = ssa.report(ci_method="param")
         # Every assumptions cell must contain at least one ✓ or ✗
-        assert rpt["Assumptions"].str.contains("\u2713|\u2717").all()
+        assert rpt["Assumptions"].str.contains("✓|✗").all()
+
+    def test_ci_columns_contain_brackets(self):
+        rpt = ssa.report(bias_method="param", loa_method="param", ci_method="param")
+        pct = int(ssa._confidence * 100)
+        num = r"-?\d+\.\d+"
+        assert rpt[f"Bias [{pct}% CI]"].str.fullmatch(rf"{num} \[{num}, {num}\]").all()
+        assert (
+            rpt[f"LoA [{pct}% CI]"]
+            .str.fullmatch(rf"{num} to {num} \[{num}, {num}; {num}, {num}\]")
+            .all()
+        )
+
+    def test_no_ci(self):
+        rpt = ssa.report(
+            bias_method="param", loa_method="param", ci_method="param", bias_ci=False, loa_ci=False
+        )
+        assert "Bias" in rpt.columns and "LoA" in rpt.columns
+        assert not any("CI" in c for c in rpt.columns)
+        assert rpt["Bias"].str.fullmatch(r"-?\d+\.\d+").all()
+        assert rpt["LoA"].str.fullmatch(r"-?\d+\.\d+ to -?\d+\.\d+").all()
+
+    def test_no_ci_matches_summary_center(self):
+        rpt = ssa.report(bias_method="param", loa_method="param", bias_ci=False, loa_ci=False)
+        center = ssa.summary(ci_method=None)
+        for stat in ssa.sleep_statistics:
+            label = [i for i in rpt.index if i.startswith(f"{stat} (")][0]
+            assert rpt.at[label, "Bias"] == f"{center.at[stat, ('bias_mean', 'center')]:.2f}"
+
+    def test_loa_ci_only_omitted(self):
+        rpt = ssa.report(ci_method="param", loa_ci=False)
+        pct = int(ssa._confidence * 100)
+        assert f"Bias [{pct}% CI]" in rpt.columns
+        assert "LoA" in rpt.columns
+        assert rpt[f"Bias [{pct}% CI]"].str.contains(r"\[").all()
+        assert not rpt["LoA"].str.contains(r"\[").any()
+
+    def test_regr_no_ci_format(self):
+        rpt = ssa.report(
+            bias_method="regr", loa_method="regr", ci_method="param", bias_ci=False, loa_ci=False
+        )
+        assert rpt["Bias"].str.fullmatch(r"-?\d+\.\d+ \+ -?\d+\.\d+x").all()
+        assert rpt["LoA"].str.fullmatch(r"±\d+\.\d+ \(-?\d+\.\d+ \+ -?\d+\.\d+x\)").all()
+
+    def test_sleep_stats_subset_and_order(self):
+        subset = ["WASO", "TST", "SE"]
+        rpt = ssa.report(ci_method="param", sleep_stats=subset)
+        assert rpt.index.tolist() == ["WASO (min)", "TST (min)", "SE (%)"]
+        full = ssa.report(ci_method="param")
+        pd.testing.assert_frame_equal(rpt, full.loc[rpt.index])
+
+    def test_invalid_sleep_stats_raises(self):
+        with pytest.raises(AssertionError):
+            ssa.report(ci_method="param", sleep_stats=["NOT_A_STAT"])
+
+    def test_invalid_ci_flags_raise(self):
+        with pytest.raises(AssertionError):
+            ssa.report(ci_method="param", bias_ci="no")
+        with pytest.raises(AssertionError):
+            ssa.report(ci_method="param", loa_ci=0)
 
     def test_invalid_decimals_raises(self):
         with pytest.raises(AssertionError):
@@ -405,6 +719,10 @@ class TestSleepStatsAgreementReport(unittest.TestCase):
     def test_invalid_bias_method_raises(self):
         with pytest.raises(AssertionError):
             ssa.report(bias_method="invalid")
+
+    def test_invalid_ci_method_raises(self):
+        with pytest.raises(AssertionError):
+            ssa.report(ci_method="invalid")
 
 
 class TestSleepStatsAgreementPlotBlandAltman(unittest.TestCase):
@@ -582,29 +900,59 @@ class TestSleepStatsAgreementLogTransform(unittest.TestCase):
         with pytest.raises(ValueError, match="non-negative"):
             SleepStatsAgreement(bad_ref, _obs_stats, log_transform=True)
 
-    # --- Euser slope values ---
+    # --- Euser slope values (public `loa_log_slope` property) ---
+
+    def test_loa_log_slope_is_series(self):
+        slope = ssa_log.loa_log_slope
+        assert isinstance(slope, pd.Series)
+        assert slope.name == "loa_log_slope"
+        assert set(slope.index) == set(ssa_log.sleep_statistics)
 
     def test_loa_log_slope_finite_for_all_stats(self):
-        assert np.isfinite(ssa_log._loa_log_slope.dropna().to_numpy()).all()
+        assert np.isfinite(ssa_log.loa_log_slope.dropna().to_numpy()).all()
 
     def test_loa_log_slope_positive(self):
         # Euser slope is always positive (it's a proportion of measurement size)
-        assert (ssa_log._loa_log_slope.dropna() > 0).all()
+        assert (ssa_log.loa_log_slope.dropna() > 0).all()
 
     def test_loa_log_slope_nan_when_no_log_transform(self):
         # Without log_transform, slope is NaN for all stats
-        assert ssa._loa_log_slope.isna().all()
+        assert ssa.loa_log_slope.isna().all()
 
-    # --- Parametric CI ---
+    def test_loa_log_slope_is_copy(self):
+        slope = ssa_log.loa_log_slope
+        slope[:] = -1
+        assert (ssa_log.loa_log_slope.dropna() > 0).all()
+
+    # --- Parametric CI (via summary) ---
+
+    def test_summary_has_log_slope_column(self):
+        s = ssa_log.summary(ci_method="param")
+        assert "loa_log_slope" in s.columns.get_level_values("variable")
+        assert set(s["loa_log_slope"].columns) == {"center", "lower", "upper"}
+        pd.testing.assert_series_equal(
+            s[("loa_log_slope", "center")], ssa_log.loa_log_slope, check_names=False
+        )
+
+    def test_summary_ci_none_has_log_slope_center_only(self):
+        s = ssa_log.summary(ci_method=None)
+        assert list(s["loa_log_slope"].columns) == ["center"]
 
     def test_loa_log_ci_param_lower_lt_upper(self):
-        assert (ssa_log._loa_log_ci["param_lower"] < ssa_log._loa_log_ci["param_upper"]).all()
+        s = ssa_log.summary(ci_method="param")["loa_log_slope"]
+        assert (s["lower"] < s["upper"]).all()
 
     def test_loa_log_ci_param_lower_lt_center(self):
-        assert (ssa_log._loa_log_ci["param_lower"] < ssa_log._loa_log_slope).all()
+        s = ssa_log.summary(ci_method="param")["loa_log_slope"]
+        assert (s["lower"] < s["center"]).all()
 
     def test_loa_log_ci_param_center_lt_upper(self):
-        assert (ssa_log._loa_log_slope < ssa_log._loa_log_ci["param_upper"]).all()
+        s = ssa_log.summary(ci_method="param")["loa_log_slope"]
+        assert (s["center"] < s["upper"]).all()
+
+    def test_report_log_no_loa_ci(self):
+        rpt = ssa_log.report(loa_method="log", ci_method="param", loa_ci=False)
+        assert rpt["LoA"].str.fullmatch(r"bias ± \d+\.\d+ × ref").all()
 
     # --- auto_methods ---
 
@@ -712,9 +1060,10 @@ class TestSleepStatsAgreementLogTransform(unittest.TestCase):
         assert rpt[f"LoA [{pct}% CI]"].str.contains("\u00d7").all()
         # Stats with a valid Euser slope must also have valid bootstrap CIs.
         # (Stats like Lat_REM may be NaN when some sessions have no REM sleep.)
-        valid = fresh._loa_log_slope.dropna().index
-        assert fresh._loa_log_ci.loc[valid, "boot_lower"].notna().all()
-        assert fresh._loa_log_ci.loc[valid, "boot_upper"].notna().all()
+        valid = fresh.loa_log_slope.dropna().index
+        s = fresh.summary(ci_method="boot")["loa_log_slope"]
+        assert s.loc[valid, "lower"].notna().all()
+        assert s.loc[valid, "upper"].notna().all()
 
     def test_plot_blandaltman_log_ci_boot(self):
         import seaborn as sns

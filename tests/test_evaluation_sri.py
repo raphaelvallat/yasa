@@ -53,6 +53,7 @@ What is NOT tested
 """
 
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -177,7 +178,7 @@ class TestSRIPerSubject(unittest.TestCase):
             for stage in self._STAGES:
                 with self.subTest(subj=subj, stage=stage):
                     expected = _REF["per_subject"][subj][stage]["sensitivity"]
-                    actual = _BYSTAGE.loc[(stage, subj), "recall"] * 100
+                    actual = _BYSTAGE.loc[(stage, subj), "recall"]
                     np.testing.assert_allclose(
                         actual,
                         expected,
@@ -190,7 +191,7 @@ class TestSRIPerSubject(unittest.TestCase):
             for stage in self._STAGES:
                 with self.subTest(subj=subj, stage=stage):
                     expected = _REF["per_subject"][subj][stage]["specificity"]
-                    actual = _BYSTAGE.loc[(stage, subj), "specificity"] * 100
+                    actual = _BYSTAGE.loc[(stage, subj), "specificity"]
                     np.testing.assert_allclose(
                         actual,
                         expected,
@@ -214,7 +215,7 @@ class TestSRIPerSubjectSleepWake(unittest.TestCase):
         for subj in _COMPLETE_SUBJECTS:
             with self.subTest(subj=subj):
                 expected = _REF["per_subject_sleep_wake"][subj]["accuracy"]
-                actual = _AGREEMENT_SW.loc[subj, "accuracy"] * 100
+                actual = _AGREEMENT_SW.loc[subj, "accuracy"]
                 np.testing.assert_allclose(
                     actual,
                     expected,
@@ -226,7 +227,7 @@ class TestSRIPerSubjectSleepWake(unittest.TestCase):
         for subj in _COMPLETE_SUBJECTS:
             with self.subTest(subj=subj):
                 expected = _REF["per_subject_sleep_wake"][subj]["sensitivity"]
-                actual = _BYSTAGE_SW.loc[("SLEEP", subj), "recall"] * 100
+                actual = _BYSTAGE_SW.loc[("SLEEP", subj), "recall"]
                 np.testing.assert_allclose(
                     actual,
                     expected,
@@ -238,7 +239,7 @@ class TestSRIPerSubjectSleepWake(unittest.TestCase):
         for subj in _COMPLETE_SUBJECTS:
             with self.subTest(subj=subj):
                 expected = _REF["per_subject_sleep_wake"][subj]["specificity"]
-                actual = _BYSTAGE_SW.loc[("SLEEP", subj), "specificity"] * 100
+                actual = _BYSTAGE_SW.loc[("SLEEP", subj), "specificity"]
                 np.testing.assert_allclose(
                     actual,
                     expected,
@@ -263,7 +264,6 @@ class TestSRIGroupMeans(unittest.TestCase):
             .loc[(slice(None), _COMPLETE_SUBJECTS)]
             .groupby(level="stage")
             .mean()
-            * 100
         )
 
     def test_mean_recall_by_stage(self):
@@ -320,7 +320,7 @@ class TestSRIGroupMeansSleepWake(unittest.TestCase):
     """
 
     def _group_mean_sw(self, metric):
-        return _BYSTAGE_SW.loc[:, metric].loc[("SLEEP", _COMPLETE_SUBJECTS)].mean() * 100
+        return _BYSTAGE_SW.loc[:, metric].loc[("SLEEP", _COMPLETE_SUBJECTS)].mean()
 
     def test_mean_sensitivity(self):
         expected = _REF["group_ebe_sleep_wake"]["basic_avg"]["SLEEP"]["sensitivity"]["mean"]
@@ -495,7 +495,7 @@ class TestSRIPooledMetrics(unittest.TestCase):
             with self.subTest(stage=stage):
                 expected = _REF["group_ebe_staging"]["basic_sum"][stage]["sensitivity"]
                 # Single-session EBE: _BYSTAGE_POOLED has only the "stage" index level.
-                actual = _BYSTAGE_POOLED.loc[stage, "recall"] * 100
+                actual = _BYSTAGE_POOLED.loc[stage, "recall"]
                 np.testing.assert_allclose(
                     actual,
                     expected,
@@ -507,7 +507,7 @@ class TestSRIPooledMetrics(unittest.TestCase):
         for stage in self._STAGES:
             with self.subTest(stage=stage):
                 expected = _REF["group_ebe_staging"]["basic_sum"][stage]["specificity"]
-                actual = _BYSTAGE_POOLED.loc[stage, "specificity"] * 100
+                actual = _BYSTAGE_POOLED.loc[stage, "specificity"]
                 np.testing.assert_allclose(
                     actual,
                     expected,
@@ -558,6 +558,101 @@ class TestSRIConfusionMatrixValues(unittest.TestCase):
                 )
 
 
+class TestSRIProportionalConfusionMatrix(unittest.TestCase):
+    """Group-level proportional error matrix (Section 3.1, ``error_matrices[...]["proportional_avg"]``).
+
+    The reference reports, for each cell, the mean (SD) [95% bootstrap CI] across the 14 subjects
+    of the proportion of reference-stage epochs classified into each device stage (YASA reports
+    percentages). Means and SDs are deterministic (tolerance 1 pp = 2 x rounding of the reference
+    proportions). The reference CIs come from R's "basic" bootstrap with its own random draws, so
+    they are compared against YASA's ``method="basic"`` with a looser tolerance. YASA's default
+    is the BCa method, which is validated separately against :py:func:`scipy.stats.bootstrap`.
+    """
+
+    _ROWS = {"WAKE": "wake_ref", "LIGHT": "light_ref", "DEEP": "deep_ref", "REM": "REM_ref"}
+    _COLS = {
+        "WAKE": "device_wake",
+        "LIGHT": "device_light",
+        "DEEP": "device_deep",
+        "REM": "device_REM",
+    }
+    _PATTERN = re.compile(r"([\d.]+) \(([\d.]+)\) \[([\d.]+), ([\d.]+)\]")
+
+    @classmethod
+    def setUpClass(cls):
+        cls.expected = {}  # in percent
+        ref = _REF["error_matrices"]["_condition_staging"]["proportional_avg"]
+        for ref_stage, ref_key in cls._ROWS.items():
+            for dev_stage, dev_key in cls._COLS.items():
+                m = cls._PATTERN.fullmatch(ref[ref_key][dev_key])
+                cls.expected[(ref_stage, dev_stage)] = tuple(100 * float(x) for x in m.groups())
+        cls.basic = _EBE.get_confusion_matrix_proportional(
+            ci_method="boot", bootstrap_kwargs={"n_resamples": 5000, "method": "basic", "rng": 0}
+        )
+        # Many resamples so that Monte Carlo noise stays well below the comparison tolerance
+        cls.bca = _EBE.get_confusion_matrix_proportional(
+            ci_method="boot", bootstrap_kwargs={"n_resamples": 20000, "rng": 0}
+        )
+
+    def test_all_sessions_contribute(self):
+        self.assertTrue((self.basic["n_sessions"] == 14).all())
+
+    def test_mean_and_sd(self):
+        for cell, (mean, sd, _, _) in self.expected.items():
+            with self.subTest(cell=cell):
+                np.testing.assert_allclose(self.basic.at[cell, "mean"], mean, atol=1.0)
+                np.testing.assert_allclose(self.basic.at[cell, "std"], sd, atol=1.0)
+
+    def test_basic_bootstrap_ci_matches_reference(self):
+        for cell, (_, _, lo, hi) in self.expected.items():
+            with self.subTest(cell=cell):
+                np.testing.assert_allclose(self.basic.at[cell, "ci_lower"], lo, atol=2.0)
+                np.testing.assert_allclose(self.basic.at[cell, "ci_upper"], hi, atol=2.0)
+
+    def test_bca_ci_matches_scipy(self):
+        """YASA's BCa implementation agrees with scipy.stats.bootstrap(method="BCa")."""
+        from scipy.stats import bootstrap
+
+        cms = _EBE.get_confusion_matrix()
+        props = 100 * cms.div(cms.sum(axis=1), axis=0)
+        stages = cms.columns.tolist()
+        arr = np.stack(
+            [
+                g.droplevel("sleep_id").loc[stages, stages].to_numpy()
+                for _, g in props.groupby(level=0)
+            ]
+        )  # (n_subjects, n_ref, n_obs), no NaN in this dataset
+        res = bootstrap(
+            (arr.reshape(14, -1),),
+            statistic=lambda x, axis: np.mean(x, axis=axis),
+            axis=0,
+            vectorized=True,
+            method="BCa",
+            n_resamples=20000,
+            rng=np.random.default_rng(1),
+        )
+        # Constant cells (e.g. a confusion that never happens) are degenerate for scipy (NaN)
+        ok = np.isfinite(res.confidence_interval.low)
+        self.assertGreater(ok.sum(), 10)
+        np.testing.assert_allclose(
+            self.bca["ci_lower"].to_numpy()[ok], res.confidence_interval.low[ok], atol=1.0
+        )
+        np.testing.assert_allclose(
+            self.bca["ci_upper"].to_numpy()[ok], res.confidence_interval.high[ok], atol=1.0
+        )
+
+    def test_formatted_matches_reference_values(self):
+        # Means and SDs (deterministic) must reproduce the published values (in percent)
+        fmt = _EBE.get_confusion_matrix_proportional(ci_method=None, formatted=True)
+        pattern = re.compile(r"([\d.]+) \(([\d.]+)\)")
+        for (ref_stage, dev_stage), (mean, sd, _, _) in self.expected.items():
+            with self.subTest(ref=ref_stage, device=dev_stage):
+                m = pattern.fullmatch(fmt.at[ref_stage, dev_stage])
+                self.assertIsNotNone(m)
+                np.testing.assert_allclose(float(m.group(1)), mean, atol=0.6)
+                np.testing.assert_allclose(float(m.group(2)), sd, atol=0.6)
+
+
 class TestSRISanity(unittest.TestCase):
     """Sanity checks on dataset size and output shapes."""
 
@@ -584,19 +679,19 @@ class TestSRISanity(unittest.TestCase):
 
     def test_precision_in_bounds(self):
         self.assertTrue((_BYSTAGE["precision"] >= 0).all())
-        self.assertTrue((_BYSTAGE["precision"] <= 1).all())
+        self.assertTrue((_BYSTAGE["precision"] <= 100).all())
 
     def test_recall_in_bounds(self):
         self.assertTrue((_BYSTAGE["recall"] >= 0).all())
-        self.assertTrue((_BYSTAGE["recall"] <= 1).all())
+        self.assertTrue((_BYSTAGE["recall"] <= 100).all())
 
     def test_specificity_in_bounds(self):
         self.assertTrue((_BYSTAGE["specificity"] >= 0).all())
-        self.assertTrue((_BYSTAGE["specificity"] <= 1).all())
+        self.assertTrue((_BYSTAGE["specificity"] <= 100).all())
 
     def test_npv_in_bounds(self):
         self.assertTrue((_BYSTAGE["npv"] >= 0).all())
-        self.assertTrue((_BYSTAGE["npv"] <= 1).all())
+        self.assertTrue((_BYSTAGE["npv"] <= 100).all())
 
     def test_kappa_in_bounds(self):
         self.assertTrue((_AGREEMENT["kappa"] >= -1).all())

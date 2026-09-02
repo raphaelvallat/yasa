@@ -24,12 +24,20 @@ See https://github.com/raphaelvallat/yasa/pull/228
 | 4 | **Prevalence index / bias index** not computed | ❌ | R: `epi.kappa()$pindex`, `$bindex` |
 | 5 | **ROC curves** missing | ❌ | R: `groupEBE(doROC=TRUE)` via `ROCR`. Could add with sklearn |
 | 10 | **`pooled` mode** for `get_agreement()` not surfaced | ✅ Implemented | Added `pooled=False` parameter; `True` = R's `metricsType="sum"` |
+| 11 | **Undefined metrics counted as 0** (`zero_division=0` hard-coded in `get_agreement_bystage()`) | ✅ Fixed | New `zero_division` param, default `np.nan` (sklearn ≥ 1.3). Nights whose reference lacks a stage no longer drag down group means; `support == 0` flags them. Also applied to specificity/NPV. `0`, `1`, `"warn"` accepted. |
+| 12 | **Proportional error matrix** (`errorMatrix.R`, `prop` condition: mean (SD) [95% CI] of row-normalized per-subject matrices) | ✅ Implemented | `get_confusion_matrix_proportional()`. Subject-then-group averaging, absent stages kept as NaN (not zero-filled as sklearn's `normalize="true"` does), `n_sessions` column. Participant bootstrap CI (same resampled sessions for all cells), `formatted=True` gives the `"mean (SD) [lo, hi]"` table. |
+| 13 | **Metrics on 0–1 scale** vs R's 0–100 % | ✅ Fixed | All proportion-based EBE metrics (accuracy, balanced_acc, precision, recall, f1/fbeta, specificity, npv, proportional matrix) are now percentages. `kappa`, `mcc` unchanged (−1 to 1). |
 
 ### Notes
-- Accuracy is reported 0–1 in YASA vs 0–100% in R (convention only, not a bug).
+- All proportion-based EBE metrics are reported in percent (0–100), matching R. `kappa` and `mcc` stay on their natural −1 to 1 scale.
 - R's `metricsType="avg"` (per-subject average) = YASA's default `get_agreement()` behavior.
 - R's `metricsType="sum"` (pooled epochs) = YASA's new `get_agreement(pooled=True)`.
 - `get_agreement_bystage()` now returns 6 metrics: `fbeta, npv, precision, recall, specificity, support`.
+- Group summaries (`summary(by_stage=True)`) skip NaN (undefined) sessions; the per-metric `count` differs from `n_sessions` where a stage is absent.
+
+### Justified deviations from the R pipeline
+- **Bootstrap CI method.** `errorMatrix.R` uses the "basic" (reverse-percentile) bootstrap. YASA defaults to **BCa** (bias-corrected and accelerated, Efron 1987) for the proportional error matrix, as for `SleepStatsAgreement`, because it corrects for skew and bias of the bootstrap distribution of bounded proportions. `"basic"` and `"percentile"` remain available via `bootstrap_kwargs={"method": ...}`; the regression test validates `"basic"` against the published CIs and BCa against `scipy.stats.bootstrap`.
+- **Undefined cells.** The R pipeline has no subjects with missing stages in the sample data, so its behavior there is untested. YASA keeps 0/0 cells as NaN, excludes them from mean/SD/CI, drops bootstrap replicates in which a stage is absent from every resampled subject, and falls back to plain percentiles for degenerate (constant) cells where BCa is undefined.
 
 ---
 
@@ -40,6 +48,9 @@ See https://github.com/raphaelvallat/yasa/pull/228
 | 6 | **Log transformation** missing | ✅ Implemented | `log_transform=True` param + Euser et al. (2008) back-transform; `"log"` loa_method. |
 | 7 | **Individual discrepancy heatmap** (`indDiscr.R`) | ❌ | No equivalent; data available via `get_sleep_stats()` |
 | 8 | **Calibration direction bug** | ✅ Fixed | See detailed investigation below (Bugs A, B, C) |
+| 9 | **Report table** (`groupDiscr.R` output: reference mean (SD), device mean (SD), bias [CI], LoA) | ✅ Implemented | `report()` now shows `mean (SD)` strings for both scorers, takes a `sleep_stats` subset (in the requested order), and `bias_ci` / `loa_ci` flags to omit CIs (no bootstrap is run when both are off). |
+| 14 | **Euser LoA slope only reachable via private attribute** | ✅ Fixed | Public `loa_log_slope` property; `summary()` includes a `loa_log_slope` variable (center/lower/upper) when `log_transform=True`. `report()` and `plot_blandaltman()` read it through `summary()`. |
+| 15 | `summary()` always bootstrapped all stats | ✅ Improved | `summary(ci_method=None)` returns point estimates only; `sleep_stats` restricts (and orders) rows and limits bootstrapping to the requested stats. |
 
 ---
 
@@ -93,7 +104,7 @@ See https://github.com/raphaelvallat/yasa/pull/228
 ### Design principles (simplified vs R)
 
 - `log_transform` is **bool only** — no per-stat list. Mixed cases use two `SleepStatsAgreement` objects.
-- Euser slope is **internal** — not exposed in `summary()`, only rendered in `plot_blandaltman` and `report`.
+- Euser slope is **public**: `loa_log_slope` property, and a `loa_log_slope` variable (with CI) in `summary()` when `log_transform=True`. `plot_blandaltman` and `report` consume it via `summary()`.
 - `"log"` is a first-class **`loa_method` value**, alongside `"param"` and `"regr"`.
 - `auto_methods["loa"]` returns `"log"` for all stats when `log_transform=True`.
 - No `log_normal` in `assumptions` — normality of original diffs drives CI selection as before.
@@ -122,7 +133,7 @@ This is the **only** LoA representation that applies for log-transformed stats. 
 `tests/test_evaluation_sri.py` loads all 14 subjects (10 766 epochs, 30-s epochs) from
 `tests/data/sample_data_sri.csv` and compares YASA's output to reference values extracted
 from the published HTML report (`AnalyticalPipeline_v1.0.0.html`), stored in
-`tests/data/evaluation_sri_full.json`. 32 test methods are run via `unittest`.
+`tests/data/evaluation_sri_full.json`. 37 test methods are run via `unittest`.
 
 ### What is tested (with tolerance)
 
@@ -137,7 +148,8 @@ from the published HTML report (`AnalyticalPipeline_v1.0.0.html`), stored in
 | `TestSRIDiscrepancies` | Per-subject Device − Reference differences for TST, SE, SOL, WASO, stage durations, stage % — 14 × 10 (140 checks) | 0.1 |
 | `TestSRIPooledMetrics` | Pooled (all-epoch) recall and specificity per stage matching R's `metricsType="sum"` | 0.1 pp |
 | `TestSRIConfusionMatrixValues` | All 16 cells of the pooled absolute confusion matrix, accessed by label | exact |
-| `TestSRISanity` | Dataset size, output shapes, index names, stage labels, metrics in [0, 1] | — |
+| `TestSRIProportionalConfusionMatrix` | Proportional error matrix: mean and SD of all 16 cells (`proportional_avg`), basic-bootstrap CIs vs the published CIs, BCa CIs vs `scipy.stats.bootstrap`, formatted `mean (SD)` values | 1 pp (mean/SD), 2 pp (basic CI), 1 pp (BCa vs scipy) |
+| `TestSRISanity` | Dataset size, output shapes, index names, stage labels, metrics in [0, 100] | — |
 
 **Tolerance note:** 0.1 pp covers single rounding in the HTML source (±0.005 pp). 0.5 pp at group level covers accumulated rounding across 14 subjects.
 

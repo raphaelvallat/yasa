@@ -7,6 +7,35 @@ What's new
 v0.8.0 (unreleased)
 -------------------
 
+**Evaluation module** (:py:class:`yasa.EpochByEpochAgreement`, :py:class:`yasa.SleepStatsAgreement`)
+
+* **Breaking:** all proportion-based epoch-by-epoch metrics are now expressed as percentages
+  (0-100) instead of proportions (0-1), in line with the reporting conventions of Menghini et
+  al. (2021). This affects ``accuracy``, ``balanced_acc``, ``precision``, ``recall``, and ``f1``
+  in :py:meth:`yasa.EpochByEpochAgreement.get_agreement` (``kappa`` and ``mcc`` are unchanged),
+  and all metrics except ``support`` in
+  :py:meth:`yasa.EpochByEpochAgreement.get_agreement_bystage`.
+* :py:meth:`yasa.EpochByEpochAgreement.get_agreement_bystage` gained a ``zero_division``
+  parameter, which now defaults to ``np.nan`` (requires scikit-learn >= 1.3). Metrics that are
+  undefined for a session (e.g. recall for a stage absent from the reference hypnogram) are now
+  left missing and excluded from group averages, instead of being counted as 0. Pass
+  ``zero_division=0`` to restore the previous behavior.
+* New :py:meth:`yasa.EpochByEpochAgreement.get_confusion_matrix_proportional` method returning
+  the group-level proportional error matrix (mean, SD, and confidence interval across sessions of
+  the row-normalized per-session confusion matrices, in percent), as reported in Menghini et al.
+  (2021). Confidence intervals default to a BCa participant bootstrap (the reference pipeline uses
+  the basic bootstrap, available via ``bootstrap_kwargs={"method": "basic"}``). Use
+  ``formatted=True`` for a ``"mean (SD) [lower, upper]"`` table.
+* :py:meth:`yasa.SleepStatsAgreement.report` now follows the reporting format of Menghini et al.
+  (2021): the scorer columns show ``mean (SD)`` strings (previously numeric means), and the new
+  ``sleep_stats``, ``bias_ci``, and ``loa_ci`` parameters select the statistics to report and
+  whether confidence intervals are displayed.
+* :py:meth:`yasa.SleepStatsAgreement.summary` gained a ``sleep_stats`` parameter, accepts
+  ``ci_method=None`` to skip confidence intervals (and the bootstrap), and includes the Euser
+  (2008) ``loa_log_slope`` variable when ``log_transform=True``.
+* New :py:attr:`yasa.SleepStatsAgreement.loa_log_slope` property exposing the Euser
+  limits-of-agreement slope.
+
 **Bugfixes**
 
 * Fixed a units bug in :py:meth:`yasa.Hypnogram.sleep_statistics`: the Sleep Fragmentation Index
@@ -21,6 +50,10 @@ v0.8.0 (unreleased)
    SFI was scaled by ``epoch_length / 60``, so it was only correct for 60-second epochs. If you
    have published or stored SFI values computed with an earlier version of YASA, recompute them,
    or multiply the old values by ``60 / epoch_length`` to recover the corrected rate.
+
+**Dependencies**
+
+* Bumped minimum ``scikit-learn`` version to 1.3.
 
 ----------------------------------------------------------------------------------------
 
