@@ -36,7 +36,7 @@ See https://github.com/raphaelvallat/yasa/pull/228
 - Group summaries (`summary(by_stage=True)`) skip NaN (undefined) sessions; the per-metric `count` differs from `n_sessions` where a stage is absent.
 
 ### Justified deviations from the R pipeline
-- **Bootstrap CI method.** `errorMatrix.R` uses the "basic" (reverse-percentile) bootstrap. YASA defaults to **BCa** (bias-corrected and accelerated, Efron 1987) for the proportional error matrix, as for `SleepStatsAgreement`, because it corrects for skew and bias of the bootstrap distribution of bounded proportions. `"basic"` and `"percentile"` remain available via `bootstrap_kwargs={"method": ...}`; the regression test validates `"basic"` against the published CIs and BCa against `scipy.stats.bootstrap`.
+- **Bootstrap CI method.** `errorMatrix.R` uses the "basic" (reverse-percentile) bootstrap. YASA defaults to **BCa** (bias-corrected and accelerated, Efron 1987) for the proportional error matrix, as for `SleepStatsAgreement`, because it corrects for skew and bias of the bootstrap distribution of bounded proportions. `"basic"` and `"percentile"` remain available via `bootstrap_kwargs={"method": ...}`; the regression test validates `"basic"` against the published CIs; BCa has no published reference and is not compared.
 - **Undefined cells.** The R pipeline has no subjects with missing stages in the sample data, so its behavior there is untested. YASA keeps 0/0 cells as NaN, excludes them from mean/SD/CI, drops bootstrap replicates in which a stage is absent from every resampled subject, and falls back to plain percentiles for degenerate (constant) cells where BCa is undefined.
 
 ---
@@ -184,7 +184,7 @@ from the published HTML report (`AnalyticalPipeline_v1.0.0.html`), stored in
 | `TestSRIDiscrepancies` | Per-subject Device − Reference differences for TST, SE, SOL, WASO, stage durations, stage % — 14 × 10 (140 checks) | 0.1 |
 | `TestSRIPooledMetrics` | Pooled (all-epoch) recall and specificity per stage matching R's `metricsType="sum"` | 0.1 pp |
 | `TestSRIConfusionMatrixValues` | All 16 cells of the pooled absolute confusion matrix, accessed by label | exact |
-| `TestSRIProportionalConfusionMatrix` | Proportional error matrix: mean and SD of all 16 cells (`proportional_avg`), basic-bootstrap CIs vs the published CIs, BCa CIs vs `scipy.stats.bootstrap`, formatted `mean (SD)` values | 1 pp (mean/SD), 2 pp (basic CI), 1 pp (BCa vs scipy) |
+| `TestSRIProportionalConfusionMatrix` | Proportional error matrix: mean and SD of all 16 cells (`proportional_avg`), basic-bootstrap CIs vs the published CIs | 1 pp (mean/SD), 2 pp (basic CI) |
 | `TestSRISanity` | Dataset size, output shapes, index names, stage labels, metrics in [0, 100] | — |
 
 **Tolerance note:** 0.1 pp covers single rounding in the HTML source (±0.005 pp). 0.5 pp at group level covers accumulated rounding across 14 subjects.

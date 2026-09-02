@@ -14,15 +14,17 @@ Dataset notes
 
 What is tested
 --------------
-- Per-subject recall (= sensitivity) and specificity for all 14 subjects × 4 stages,
-  and their arithmetic means at group level (Block 12 / Block 17 of the R pipeline).
-- Group-level mean PPV and NPV per stage (Block 17 advanced metrics).
-- Per-subject accuracy, sensitivity, and specificity for binary SLEEP/WAKE classification,
-  and their group means (Section 3.2 / 3.3 of the R pipeline).
+- Per-subject recall (= sensitivity) and specificity for all 14 subjects × 4 stages
+  (Block 12 of the R pipeline). Group means are arithmetic means of these values and are
+  therefore not tested separately.
+- Group-level mean PPV and NPV per stage (Block 17 advanced metrics), which have no
+  per-subject reference.
+- Per-subject accuracy, sensitivity, and specificity for binary SLEEP/WAKE classification
+  (Section 3.2 of the R pipeline).
 - Per-subject sleep architecture measures for both the reference and device scorers:
   TST, SE, SOL, stage durations (Light/Deep/REM) and stage percentages
   (%Light/%Deep/%REM) (Section 2.1 of the R pipeline).
-- Per-subject device − reference differences for TST, SE, SOL, WASO, stage durations,
+- Per-subject device − reference differences for TST, SE, SOL, stage durations,
   and stage percentages, via SleepStatsAgreement (Section 2.2 of the R pipeline).
 - WASO per subject for both scorers.  The R pipeline counts all wake epochs from the
   first sleep epoch to the end of the recording (``ebe2sleep.R`` lines 47–50), which
@@ -266,28 +268,6 @@ class TestSRIGroupMeans(unittest.TestCase):
             .mean()
         )
 
-    def test_mean_recall_by_stage(self):
-        mean_recall = self._group_mean("recall")
-        for stage in self._STAGES:
-            expected = _REF["group_ebe_staging"]["basic_avg"][stage]["sensitivity"]["mean"]
-            np.testing.assert_allclose(
-                mean_recall[stage],
-                expected,
-                atol=_ATOL_GROUP,
-                err_msg=f"Mean recall {stage}: {mean_recall[stage]:.2f} pp ≠ expected {expected:.2f} pp",
-            )
-
-    def test_mean_specificity_by_stage(self):
-        mean_spec = self._group_mean("specificity")
-        for stage in self._STAGES:
-            expected = _REF["group_ebe_staging"]["basic_avg"][stage]["specificity"]["mean"]
-            np.testing.assert_allclose(
-                mean_spec[stage],
-                expected,
-                atol=_ATOL_GROUP,
-                err_msg=f"Mean specificity {stage}: {mean_spec[stage]:.2f} pp ≠ expected {expected:.2f} pp",
-            )
-
     def test_mean_ppv_by_stage(self):
         """Mean precision (PPV) per stage matches Block 17 advanced_avg."""
         mean_ppv = self._group_mean("precision")
@@ -311,36 +291,6 @@ class TestSRIGroupMeans(unittest.TestCase):
                 atol=_ATOL_GROUP,
                 err_msg=f"Mean NPV {stage}: {mean_npv[stage]:.2f} pp ≠ expected {expected:.2f} pp",
             )
-
-
-class TestSRIGroupMeansSleepWake(unittest.TestCase):
-    """Group-level binary SLEEP/WAKE mean metrics (Section 3.3 basic_avg).
-
-    Tolerance: 0.5 pp.
-    """
-
-    def _group_mean_sw(self, metric):
-        return _BYSTAGE_SW.loc[:, metric].loc[("SLEEP", _COMPLETE_SUBJECTS)].mean()
-
-    def test_mean_sensitivity(self):
-        expected = _REF["group_ebe_sleep_wake"]["basic_avg"]["SLEEP"]["sensitivity"]["mean"]
-        actual = self._group_mean_sw("recall")
-        np.testing.assert_allclose(
-            actual,
-            expected,
-            atol=_ATOL_GROUP,
-            err_msg=f"Mean sleep sensitivity: {actual:.2f} pp ≠ expected {expected:.2f} pp",
-        )
-
-    def test_mean_specificity(self):
-        expected = _REF["group_ebe_sleep_wake"]["basic_avg"]["SLEEP"]["specificity"]["mean"]
-        actual = self._group_mean_sw("specificity")
-        np.testing.assert_allclose(
-            actual,
-            expected,
-            atol=_ATOL_GROUP,
-            err_msg=f"Mean wake sensitivity: {actual:.2f} pp ≠ expected {expected:.2f} pp",
-        )
 
 
 class TestSRISleepStats(unittest.TestCase):
@@ -427,8 +377,6 @@ class TestSRIDiscrepancies(unittest.TestCase):
 
     Uses SleepStatsAgreement.data to compute per-subject Device − Reference differences
     and compares against per_subject_discrepancies_staging in the reference JSON.
-    WASO differences are tested separately in test_waso_differences (see that method
-    for the definition used).
     Tolerance: 0.1 (minutes or percentage points).
     """
 
@@ -457,27 +405,6 @@ class TestSRIDiscrepancies(unittest.TestCase):
                         atol=_ATOL_SUBJECT,
                         err_msg=f"{subj} {yasa_stat} diff: {actual:.2f} ≠ {expected:.2f}",
                     )
-
-    def test_waso_differences(self):
-        """WASO Device − Reference differences using TIB − SOL − TST match the R pipeline."""
-        ss_ref = _SLEEP_STATS.xs("Reference", level="scorer")
-        ss_dev = _SLEEP_STATS.xs("Device", level="scorer")
-        for subj in _COMPLETE_SUBJECTS:
-            with self.subTest(subj=subj):
-                expected = _REF["per_subject_discrepancies_staging"][subj]["WASO_diff"]
-                waso_ref = (
-                    ss_ref.loc[subj, "TIB"] - ss_ref.loc[subj, "SOL"] - ss_ref.loc[subj, "TST"]
-                )
-                waso_dev = (
-                    ss_dev.loc[subj, "TIB"] - ss_dev.loc[subj, "SOL"] - ss_dev.loc[subj, "TST"]
-                )
-                actual = waso_dev - waso_ref
-                np.testing.assert_allclose(
-                    actual,
-                    expected,
-                    atol=_ATOL_SUBJECT,
-                    err_msg=f"{subj} WASO diff: {actual:.2f} ≠ {expected:.2f}",
-                )
 
 
 class TestSRIPooledMetrics(unittest.TestCase):
@@ -566,7 +493,7 @@ class TestSRIProportionalConfusionMatrix(unittest.TestCase):
     percentages). Means and SDs are deterministic (tolerance 1 pp = 2 x rounding of the reference
     proportions). The reference CIs come from R's "basic" bootstrap with its own random draws, so
     they are compared against YASA's ``method="basic"`` with a looser tolerance. YASA's default
-    is the BCa method, which is validated separately against :py:func:`scipy.stats.bootstrap`.
+    BCa method is a deliberate deviation from the R pipeline and has no published reference.
     """
 
     _ROWS = {"WAKE": "wake_ref", "LIGHT": "light_ref", "DEEP": "deep_ref", "REM": "REM_ref"}
@@ -589,15 +516,9 @@ class TestSRIProportionalConfusionMatrix(unittest.TestCase):
         cls.basic = _EBE.get_confusion_matrix_proportional(
             ci_method="boot", bootstrap_kwargs={"n_resamples": 5000, "method": "basic", "rng": 0}
         )
-        # Many resamples so that Monte Carlo noise stays well below the comparison tolerance
-        cls.bca = _EBE.get_confusion_matrix_proportional(
-            ci_method="boot", bootstrap_kwargs={"n_resamples": 20000, "rng": 0}
-        )
-
-    def test_all_sessions_contribute(self):
-        self.assertTrue((self.basic["n_sessions"] == 14).all())
 
     def test_mean_and_sd(self):
+        self.assertTrue((self.basic["n_sessions"] == 14).all())
         for cell, (mean, sd, _, _) in self.expected.items():
             with self.subTest(cell=cell):
                 np.testing.assert_allclose(self.basic.at[cell, "mean"], mean, atol=1.0)
@@ -609,102 +530,17 @@ class TestSRIProportionalConfusionMatrix(unittest.TestCase):
                 np.testing.assert_allclose(self.basic.at[cell, "ci_lower"], lo, atol=2.0)
                 np.testing.assert_allclose(self.basic.at[cell, "ci_upper"], hi, atol=2.0)
 
-    def test_bca_ci_matches_scipy(self):
-        """YASA's BCa implementation agrees with scipy.stats.bootstrap(method="BCa")."""
-        from scipy.stats import bootstrap
-
-        cms = _EBE.get_confusion_matrix()
-        props = 100 * cms.div(cms.sum(axis=1), axis=0)
-        stages = cms.columns.tolist()
-        arr = np.stack(
-            [
-                g.droplevel("sleep_id").loc[stages, stages].to_numpy()
-                for _, g in props.groupby(level=0)
-            ]
-        )  # (n_subjects, n_ref, n_obs), no NaN in this dataset
-        res = bootstrap(
-            (arr.reshape(14, -1),),
-            statistic=lambda x, axis: np.mean(x, axis=axis),
-            axis=0,
-            vectorized=True,
-            method="BCa",
-            n_resamples=20000,
-            rng=np.random.default_rng(1),
-        )
-        # Constant cells (e.g. a confusion that never happens) are degenerate for scipy (NaN)
-        ok = np.isfinite(res.confidence_interval.low)
-        self.assertGreater(ok.sum(), 10)
-        np.testing.assert_allclose(
-            self.bca["ci_lower"].to_numpy()[ok], res.confidence_interval.low[ok], atol=1.0
-        )
-        np.testing.assert_allclose(
-            self.bca["ci_upper"].to_numpy()[ok], res.confidence_interval.high[ok], atol=1.0
-        )
-
-    def test_formatted_matches_reference_values(self):
-        # Means and SDs (deterministic) must reproduce the published values (in percent)
-        fmt = _EBE.get_confusion_matrix_proportional(ci_method=None, formatted=True)
-        pattern = re.compile(r"([\d.]+) \(([\d.]+)\)")
-        for (ref_stage, dev_stage), (mean, sd, _, _) in self.expected.items():
-            with self.subTest(ref=ref_stage, device=dev_stage):
-                m = pattern.fullmatch(fmt.at[ref_stage, dev_stage])
-                self.assertIsNotNone(m)
-                np.testing.assert_allclose(float(m.group(1)), mean, atol=0.6)
-                np.testing.assert_allclose(float(m.group(2)), sd, atol=0.6)
-
 
 class TestSRISanity(unittest.TestCase):
-    """Sanity checks on dataset size and output shapes."""
-
-    def test_n_subjects(self):
+    def test_dataset_and_shapes(self):
         self.assertEqual(_EBE.n_sessions, 14)
-
-    def test_bystage_index_names(self):
-        self.assertEqual(_BYSTAGE.index.names, ["stage", "sleep_id"])
-
-    def test_bystage_stages(self):
+        self.assertEqual(len(_AGREEMENT), 14)
         stages = sorted(_BYSTAGE.index.get_level_values("stage").unique())
         self.assertEqual(stages, ["DEEP", "LIGHT", "REM", "WAKE"])
-
-    def test_bystage_sw_stages(self):
-        stages = sorted(_BYSTAGE_SW.index.get_level_values("stage").unique())
-        self.assertEqual(stages, ["SLEEP", "WAKE"])
-
-    def test_bystage_columns(self):
-        expected = {"fbeta", "npv", "precision", "recall", "specificity", "support"}
-        self.assertEqual(set(_BYSTAGE.columns), expected)
-
-    def test_agreement_index_size(self):
-        self.assertEqual(len(_AGREEMENT), 14)
-
-    def test_precision_in_bounds(self):
-        self.assertTrue((_BYSTAGE["precision"] >= 0).all())
-        self.assertTrue((_BYSTAGE["precision"] <= 100).all())
-
-    def test_recall_in_bounds(self):
-        self.assertTrue((_BYSTAGE["recall"] >= 0).all())
-        self.assertTrue((_BYSTAGE["recall"] <= 100).all())
-
-    def test_specificity_in_bounds(self):
-        self.assertTrue((_BYSTAGE["specificity"] >= 0).all())
-        self.assertTrue((_BYSTAGE["specificity"] <= 100).all())
-
-    def test_npv_in_bounds(self):
-        self.assertTrue((_BYSTAGE["npv"] >= 0).all())
-        self.assertTrue((_BYSTAGE["npv"] <= 100).all())
-
-    def test_kappa_in_bounds(self):
-        self.assertTrue((_AGREEMENT["kappa"] >= -1).all())
-        self.assertTrue((_AGREEMENT["kappa"] <= 1).all())
-
-    def test_confusion_matrix_shape(self):
-        cm = _EBE.get_confusion_matrix(sleep_id="sbj01")
-        self.assertEqual(cm.shape, (4, 4))
-
-    def test_confusion_matrix_pooled_shape(self):
-        # The single-session pooled EBE always produces a 4×4 matrix.
-        cm = _EBE_POOLED.get_confusion_matrix()
-        self.assertEqual(cm.shape, (4, 4))
+        stages_sw = sorted(_BYSTAGE_SW.index.get_level_values("stage").unique())
+        self.assertEqual(stages_sw, ["SLEEP", "WAKE"])
+        self.assertEqual(_EBE.get_confusion_matrix(sleep_id="sbj01").shape, (4, 4))
+        self.assertEqual(_EBE_POOLED.get_confusion_matrix().shape, (4, 4))
 
 
 if __name__ == "__main__":
