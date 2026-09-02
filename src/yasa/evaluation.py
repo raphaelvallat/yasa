@@ -1882,15 +1882,23 @@ class SleepStatsAgreement:
         )
 
         # Select scatterplot arguments and update with optional input
-        default_scatter_kwargs = dict(facecolor="none", edgecolor="black", alpha=0.8)
+        default_scatter_kwargs = dict(s=12, facecolor="none", edgecolor="black", alpha=0.8)
         scatter_kwargs = default_scatter_kwargs | scatter_kwargs
+        # Choose a balanced grid layout with at most 4 columns: use as few rows as possible, then
+        # as few columns as needed to fill those rows (e.g. 6 -> 2x3, 8 -> 2x4, 9 -> 3x3).
+        n_stats = len(sleep_stats)
+        if n_stats > 4:
+            n_rows = int(np.ceil(n_stats / 4))
+            col_wrap = int(np.ceil(n_stats / n_rows))
+        else:
+            col_wrap = None
         # Select FacetGrid arguments and update with optional input
         default_facetgrid_kwargs = dict(
             data=self._data.reset_index("sleep_stat"),
             col="sleep_stat",
             col_order=sleep_stats,
-            col_wrap=5 if len(sleep_stats) > 5 else None,
-            height=2,
+            col_wrap=col_wrap,
+            height=4,
             aspect=1,
             sharex=False,
             sharey=False,
