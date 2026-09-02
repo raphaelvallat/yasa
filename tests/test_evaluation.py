@@ -6,6 +6,7 @@ import unittest
 import numpy as np
 import pandas as pd
 import pytest
+import scipy.stats as sps
 
 from yasa.evaluation import EpochByEpochAgreement, SleepStatsAgreement
 from yasa.hypno import Hypnogram, simulate_hypnogram
@@ -525,6 +526,52 @@ class TestSleepStatsAgreementAssumptions(unittest.TestCase):
         assert ssa.auto_methods["loa"].isin(["param", "regr"]).all()
         assert ssa.auto_methods["ci"].isin(["param", "boot"]).all()
 
+    def test_diagnostics_structure(self):
+        diag = ssa.diagnostics
+        assert isinstance(diag, pd.DataFrame)
+        assert diag.columns.names == ["assumption", "metric"]
+        assert diag.index.tolist() == ssa.assumptions.index.tolist()
+        expected = {
+            "unbiased": {"t", "pvalue", "cohen_d"},
+            "normal": {"W", "pvalue", "skew", "kurtosis"},
+            "constant_bias": {"slope", "pvalue", "r2"},
+            "homoscedastic": {"slope", "pvalue", "r2"},
+        }
+        for assumption, metrics in expected.items():
+            assert set(diag[assumption].columns) == metrics
+
+    def test_assumptions_derived_from_diagnostics(self):
+        pvals = ssa.diagnostics.xs("pvalue", level="metric", axis=1)
+        alphas = pd.Series(
+            {"unbiased": 0.05, "normal": 0.01, "constant_bias": 0.05, "homoscedastic": 0.05}
+        )
+        expected = pvals.ge(alphas, axis=1).rename_axis(columns=None)
+        pd.testing.assert_frame_equal(ssa.assumptions, expected, check_names=False)
+
+    def test_alpha_normal(self):
+        # alpha_normal only affects the normality flag; alpha_normal=1 fails every stat with p < 1
+        ssa_strict = SleepStatsAgreement(
+            _ref_stats, _obs_stats, ref_scorer=REF_SCORER, obs_scorer=OBS_SCORER, alpha_normal=1.0
+        )
+        pvals = ssa_strict.diagnostics[("normal", "pvalue")]
+        assert (ssa_strict.assumptions["normal"] == pvals.ge(1.0)).all()
+        others = ["unbiased", "constant_bias", "homoscedastic"]
+        pd.testing.assert_frame_equal(ssa_strict.assumptions[others], ssa.assumptions[others])
+        with pytest.raises(AssertionError):
+            SleepStatsAgreement(_ref_stats, _obs_stats, alpha_normal=1.5)
+
+    def test_diagnostics_values(self):
+        diag = ssa.diagnostics
+        diff = _obs_stats["TST"] - _ref_stats["TST"]
+        ttest = sps.ttest_1samp(diff, 0)
+        assert np.isclose(diag.at["TST", ("unbiased", "t")], ttest.statistic)
+        assert np.isclose(diag.at["TST", ("unbiased", "pvalue")], ttest.pvalue)
+        assert np.isclose(diag.at["TST", ("unbiased", "cohen_d")], diff.mean() / diff.std(ddof=1))
+        assert np.isclose(diag.at["TST", ("normal", "skew")], diff.skew())
+        regr = sps.linregress(_ref_stats["TST"], diff)
+        assert np.isclose(diag.at["TST", ("constant_bias", "slope")], regr.slope)
+        assert np.isclose(diag.at["TST", ("constant_bias", "r2")], regr.rvalue**2)
+
 
 class TestSleepStatsAgreementSummary(unittest.TestCase):
     """Test the summary method."""
@@ -580,6 +627,19 @@ class TestSleepStatsAgreementSummary(unittest.TestCase):
         s = ssa.summary(ci_method="param")
         assert "loa_log_slope" not in s.columns.get_level_values("variable")
 
+    def test_loa_halfwidth_is_agreement_times_residual_sd(self):
+        s = ssa.summary(ci_method="param")
+        for stat in ssa.sleep_statistics:
+            # Sessions with a NaN value are dropped by the constructor (pivot_table)
+            valid = _ref_stats[stat].notna() & _obs_stats[stat].notna()
+            ref = _ref_stats.loc[valid, stat].to_numpy()
+            diff = (_obs_stats.loc[valid, stat] - _ref_stats.loc[valid, stat]).to_numpy()
+            slope, intercept = sps.linregress(ref, diff)[:2]
+            expected = 1.96 * np.std(diff - (intercept + slope * ref), ddof=1)
+            assert np.isclose(s.at[stat, ("loa_halfwidth", "center")], expected)
+            hw = s.loc[stat, "loa_halfwidth"]
+            assert hw["lower"] <= hw["center"] <= hw["upper"]
+
 
 class TestSleepStatsAgreementCalibrate(unittest.TestCase):
     """Test the calibrate method.
@@ -629,9 +689,35 @@ class TestSleepStatsAgreementReport(unittest.TestCase):
             f"{OBS_SCORER} mean (SD)",
             f"Bias [{pct}% CI]",
             f"LoA [{pct}% CI]",
+            "MDC",
             "Assumptions",
         ]
         assert rpt.columns.tolist() == expected
+
+    def test_mdc_is_half_loa_width_for_constant_loa(self):
+        rpt = ssa.report(bias_method="param", loa_method="param", ci_method="param", decimals=2)
+        s = ssa.summary(ci_method=None)
+        for stat in ssa.sleep_statistics:
+            label = rpt.index[rpt.index.str.startswith(f"{stat} (")][0]
+            expected = (
+                s.at[stat, ("loa_upper", "center")] - s.at[stat, ("loa_lower", "center")]
+            ) / 2
+            assert rpt.at[label, "MDC"] == f"{expected:.2f}"
+
+    def test_mdc_not_available_for_regression_loa(self):
+        rpt = ssa.report(loa_method="regr", ci_method="param")
+        assert (rpt["MDC"] == "n/a").all()
+
+    def test_regr_bias_param_loa_uses_residual_halfwidth(self):
+        # Menghini et al. (2021) eq. 2: LoA parallel to the regression bias line
+        rpt = ssa.report(bias_method="regr", loa_method="param", ci_method="param", decimals=2)
+        s = ssa.summary(ci_method="param")
+        for stat in ssa.sleep_statistics:
+            label = rpt.index[rpt.index.str.startswith(f"{stat} (")][0]
+            hw = s.loc[stat, "loa_halfwidth"]
+            expected = f"bias ± {hw['center']:.2f} [{hw['lower']:.2f}, {hw['upper']:.2f}]"
+            assert rpt.at[label, f"LoA [{int(ssa._confidence * 100)}% CI]"] == expected
+            assert rpt.at[label, "MDC"] == f"{hw['center']:.2f}"
 
     def test_mean_sd_columns(self):
         rpt = ssa.report(ci_method="param", decimals=2)
@@ -757,6 +843,16 @@ class TestSleepStatsAgreementPlotBlandAltman(unittest.TestCase):
         g = ssa.plot_blandaltman(bias_method="regr", loa_method="regr", ci_method="param")
         for ax in g.axes.flat:
             assert len(ax.lines) > 0
+
+    def test_regr_bias_param_loa_parallel_to_bias(self):
+        # Menghini et al. (2021) eq. 2: constant LoA drawn parallel to the regression bias line
+        g = ssa.plot_blandaltman(bias_method="regr", loa_method="param", ci_method="param")
+        s = ssa.summary(ci_method=None)
+        for stat, ax in zip(ssa.sleep_statistics, g.axes.flat, strict=True):
+            bias, upper, lower = (line.get_ydata() for line in ax.lines[1:4])  # after refline
+            hw = s.at[stat, ("loa_halfwidth", "center")]
+            assert np.allclose(upper - bias, hw) and np.allclose(bias - lower, hw)
+            assert len(ax.collections) == 3  # scatter + two CI bands
 
     def test_no_ci(self):
         g = ssa.plot_blandaltman(ci_method=None)

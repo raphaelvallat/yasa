@@ -1203,7 +1203,13 @@ class SleepStatsAgreement:
         of agreement. Default is 0.95 (i.e., 95%). The same level is used for both parametric and
         bootstrapped confidence intervals.
     alpha : float
-        Alpha cutoff used for all assumption tests.
+        Alpha cutoff used for the ``unbiased``, ``constant_bias`` and ``homoscedastic``
+        assumption tests. Default is 0.05.
+    alpha_normal : float
+        Alpha cutoff used for the Shapiro-Wilk ``normal`` assumption test. Default is 0.01, i.e.
+        stricter than ``alpha``, because the Shapiro-Wilk test is sensitive to small departures
+        from normality that have little effect on the limits of agreement, and a violation only
+        switches the confidence intervals from parametric to bootstrap.
     bootstrap_kwargs : dict
         Optional keyword arguments passed to :py:func:`scipy.stats.bootstrap`. Defaults use
         ``n_resamples=1000`` and ``method='BCa'``. The keys ``'confidence_level'``,
@@ -1259,7 +1265,7 @@ class SleepStatsAgreement:
     %N2                 -27.3 -49.1  -5.6      -0.2  ...       0.2      12.4   7.2  17.6
     %N3                  -9.1 -23.8   5.5       1.4  ...       0.6      20.4  12.6  28.3
     <BLANKLINE>
-    [3 rows x 21 columns]
+    [3 rows x 24 columns]
 
     >>> ssa.report(ci_method="param").head(3)[["Bias [95% CI]", "LoA [95% CI]"]]  # doctest: +SKIP
 
@@ -1308,6 +1314,7 @@ class SleepStatsAgreement:
         agreement=1.96,
         confidence=0.95,
         alpha=0.05,
+        alpha_normal=0.01,
         bootstrap_kwargs={},
         log_transform=False,
     ):
@@ -1330,11 +1337,14 @@ class SleepStatsAgreement:
         assert isinstance(agreement, (float, int)) and agreement > 0, (
             "`agreement` must be a number greater than 0"
         )
-        assert isinstance(confidence, (float, int)) and 0 < alpha < 1, (
+        assert isinstance(confidence, (float, int)) and 0 < confidence < 1, (
             "`confidence` must be a number between 0 and 1"
         )
         assert isinstance(alpha, (float, int)) and 0 <= alpha <= 1, (
             "`alpha` must be a number between 0 and 1 inclusive"
+        )
+        assert isinstance(alpha_normal, (float, int)) and 0 <= alpha_normal <= 1, (
+            "`alpha_normal` must be a number between 0 and 1 inclusive"
         )
         assert isinstance(bootstrap_kwargs, dict), "`bootstrap_kwargs` must be a dictionary"
         assert all(k not in restricted_bootstrap_kwargs for k in bootstrap_kwargs), (
@@ -1426,22 +1436,55 @@ class SleepStatsAgreement:
                 "slope-upper": regr["slope"] + regr["stderr"] * t_regr,
             }
         )
+        # Constant LoA around the regression bias line: bias_i ± agreement × SD of the residuals
+        # of the bias regression (Menghini et al. 2021, eq. 2). Used when the bias is proportional
+        # but the differences are homoscedastic.
+        param_vals["loa_halfwidth"] = agreement * grouper["residuals"].std(ddof=1)
+        # Parametric CI: the SE of a standard deviation is ~ SD / sqrt(2n) (Bland & Altman 1999)
+        halfwidth_se = param_vals["loa_halfwidth"] / np.sqrt(2 * n_sessions)
+        param_ci["loa_halfwidth-lower"] = param_vals["loa_halfwidth"] - halfwidth_se * t_regr
+        param_ci["loa_halfwidth-upper"] = param_vals["loa_halfwidth"] + halfwidth_se * t_regr
 
         ########################################################################
         # Test all statistical assumptions
         ########################################################################
-        assumptions = pd.DataFrame(
-            {
-                "unbiased": (
-                    grouper["difference"].apply(lambda a: sps.ttest_1samp(a, 0).pvalue).ge(alpha)
-                ),
-                "normal": grouper["difference"]
-                .apply(lambda a: sps.shapiro(a).pvalue if len(a) >= 3 else 1.0)
-                .ge(alpha),
-                "constant_bias": bias_regr["pvalue"].ge(alpha),
-                "homoscedastic": loa_regr["pvalue"].ge(alpha),
-            }
+        # Diagnostics keep the test statistics, p-values and effect sizes behind each pass/fail
+        # flag, so that the materiality of a violation can be judged (p-values scale with n).
+        def _test_series(res):
+            return pd.Series({"statistic": res.statistic, "pvalue": res.pvalue})
+
+        ttest = grouper["difference"].apply(lambda a: _test_series(sps.ttest_1samp(a, 0))).unstack()
+        shapiro = grouper["difference"].apply(
+            lambda a: (
+                _test_series(sps.shapiro(a))
+                if len(a) >= 3
+                else pd.Series({"statistic": np.nan, "pvalue": 1.0})
+            )
         )
+        shapiro = shapiro.unstack()
+        diagnostics = pd.DataFrame(
+            {
+                ("unbiased", "t"): ttest["statistic"],
+                ("unbiased", "pvalue"): ttest["pvalue"],
+                ("unbiased", "cohen_d"): param_vals["bias_mean"]
+                / grouper["difference"].std(ddof=1),
+                ("normal", "W"): shapiro["statistic"],
+                ("normal", "pvalue"): shapiro["pvalue"],
+                ("normal", "skew"): grouper["difference"].skew(),
+                ("normal", "kurtosis"): grouper["difference"].apply(pd.Series.kurt),
+                ("constant_bias", "slope"): bias_regr["slope"],
+                ("constant_bias", "pvalue"): bias_regr["pvalue"],
+                ("constant_bias", "r2"): bias_regr["rvalue"] ** 2,
+                ("homoscedastic", "slope"): loa_regr["slope"],
+                ("homoscedastic", "pvalue"): loa_regr["pvalue"],
+                ("homoscedastic", "r2"): loa_regr["rvalue"] ** 2,
+            }
+        ).rename_axis(columns=["assumption", "metric"])
+        pvalues = diagnostics.xs("pvalue", level="metric", axis=1)
+        alphas = pd.Series(alpha, index=pvalues.columns)
+        alphas["normal"] = alpha_normal
+        assumptions = pvalues.ge(alphas, axis=1)
+        assumptions = assumptions.rename_axis(columns=None)
 
         ########################################################################
         # Log-transform analysis (Euser et al. 2008)
@@ -1525,6 +1568,7 @@ class SleepStatsAgreement:
         self._obs_scorer = obs_scorer
         self._data = data
         self._assumptions = assumptions
+        self._diagnostics = diagnostics
         self._regr = regr
         self._vals = vals
         self._ci = ci
@@ -1571,8 +1615,35 @@ class SleepStatsAgreement:
     def assumptions(self):
         """A :py:class:`pandas.DataFrame` containing boolean values indicating the pass/fail status
         of all statistical tests performed to test assumptions.
+
+        .. seealso:: :py:attr:`diagnostics` for the statistics behind each flag.
         """
         return self._assumptions
+
+    @property
+    def diagnostics(self):
+        """A :py:class:`pandas.DataFrame` with the test statistics, p-values and effect sizes
+        behind each :py:attr:`assumptions` flag. Columns form a MultiIndex with levels
+        ``assumption`` and ``metric``:
+
+        * ``unbiased`` — one-sample t-test of the differences against zero: ``t``, ``pvalue``,
+          and ``cohen_d`` (mean difference divided by its SD).
+        * ``normal`` — Shapiro-Wilk test of the differences: ``W``, ``pvalue``, plus sample
+          ``skew`` and excess ``kurtosis``.
+        * ``constant_bias`` — regression of the differences on the reference values: ``slope``,
+          ``pvalue``, ``r2``.
+        * ``homoscedastic`` — regression of the absolute residuals of the bias regression on the
+          reference values: ``slope``, ``pvalue``, ``r2``.
+
+        A flag in :py:attr:`assumptions` is ``True`` when ``pvalue >= alpha`` (``alpha_normal``
+        for the ``normal`` test). Because the power
+        of these tests grows with the number of sessions, small and practically irrelevant
+        deviations become "significant" in large samples. Use the effect sizes (``cohen_d``,
+        ``skew``, ``r2``) and the Bland-Altman plots to judge whether a violation matters.
+
+        .. versionadded:: 0.7.1
+        """
+        return self._diagnostics
 
     @property
     def auto_methods(self):
@@ -1724,9 +1795,20 @@ class SleepStatsAgreement:
             bias_mean = np.mean(diff_arr)
             loa_lower, loa_upper = self._arr_to_loa(diff_arr, self._agreement)
             bias_slope, bias_inter = sps.linregress(ref_arr, diff_arr)[:2]
+            resid = diff_arr - (bias_inter + bias_slope * ref_arr)
+            loa_halfwidth = self._agreement * np.std(resid, ddof=1)
             # Note this is NOT recalculating residuals each time for the next regression
             loa_slope, loa_inter = sps.linregress(ref_arr, rabs_arr)[:2]
-            return bias_mean, loa_lower, loa_upper, bias_inter, bias_slope, loa_inter, loa_slope
+            return (
+                bias_mean,
+                loa_lower,
+                loa_upper,
+                bias_inter,
+                bias_slope,
+                loa_inter,
+                loa_slope,
+                loa_halfwidth,
+            )
 
         # !! Column order MUST match the order of arrays boot_stats expects as INPUT
         # !! Variable order MUST match the order of floats boot_stats returns as OUTPUT
@@ -1740,6 +1822,7 @@ class SleepStatsAgreement:
             "bias_slope",
             "loa_intercept",
             "loa_slope",
+            "loa_halfwidth",
         ]
         boot_ci = (
             self._data.loc[
@@ -1815,7 +1898,9 @@ class SleepStatsAgreement:
             Method used to compute limits of agreement. Options:
 
             * ``'param'`` — constant LoA: ``bias ± 1.96 SD``. Always uses this form regardless
-              of assumptions or ``log_transform``.
+              of assumptions or ``log_transform``. When the bias is a regression line, the LoA
+              run parallel to it at ``± 1.96 SD`` of its residuals (Menghini et al. 2021, eq. 2)
+              and are reported as ``"bias ± halfwidth"``.
             * ``'regr'`` — regression LoA: ``b0 + b1 × ref``. Always uses this form regardless
               of assumptions or ``log_transform``.
             * ``'log'`` — Euser LoA: ``bias ± slope × ref``. Requires ``log_transform=True``;
@@ -1856,6 +1941,10 @@ class SleepStatsAgreement:
             * ``f"Bias [{pct}% CI]"`` (or ``"Bias"``) — mean bias or regression equation.
             * ``f"LoA [{pct}% CI]"`` (or ``"LoA"``) — lower–upper LoA, regression equation, or
               Euser proportional LoA.
+            * ``"MDC"`` — minimal detectable change, i.e. half the width of the LoA (Menghini et
+              al. 2021; Haghayegh et al. 2020): the smallest change that exceeds measurement
+              error. Only defined for constant LoA; ``"n/a"`` when the LoA vary with the
+              reference value (regression or Euser LoA).
             * ``"Assumptions"`` — pass/fail for unbiased, normal, constant bias, homoscedastic.
 
         Examples
@@ -1978,13 +2067,18 @@ class SleepStatsAgreement:
                 loa_str = f"bias ± {v['loa_log_slope_center']:.{d}f} × ref"
                 if loa_ci:
                     loa_str += _ci((v["loa_log_slope_lower"], v["loa_log_slope_upper"]))
-            elif stat in loa_param_idx:
+            elif stat in loa_param_idx and stat in bias_param_idx:
                 loa_str = f"{v['loa_lower_center']:.{d}f} to {v['loa_upper_center']:.{d}f}"
                 if loa_ci:
                     loa_str += _ci(
                         (v["loa_lower_lower"], v["loa_lower_upper"]),
                         (v["loa_upper_lower"], v["loa_upper_upper"]),
                     )
+            elif stat in loa_param_idx:
+                # Constant LoA parallel to the regression bias line (eq. 2)
+                loa_str = f"bias ± {v['loa_halfwidth_center']:.{d}f}"
+                if loa_ci:
+                    loa_str += _ci((v["loa_halfwidth_lower"], v["loa_halfwidth_upper"]))
             else:
                 loa_str = (
                     f"±{loa_regr_agreement:.{d}f} "
@@ -1996,6 +2090,14 @@ class SleepStatsAgreement:
                         (v["loa_slope_lower"], v["loa_slope_upper"]),
                         prefixes=("c0", "c1"),
                     )
+
+            # Minimal detectable change = half the LoA width, only defined for constant LoA
+            if stat not in loa_param_idx:
+                mdc_str = "n/a"
+            elif stat in bias_param_idx:
+                mdc_str = f"{(v['loa_upper_center'] - v['loa_lower_center']) / 2:.{d}f}"
+            else:
+                mdc_str = f"{v['loa_halfwidth_center']:.{d}f}"
 
             asmp = self.assumptions.loc[stat]
             assumptions_str = (
@@ -2014,6 +2116,7 @@ class SleepStatsAgreement:
                 ),
                 f"Bias [{pct}% CI]" if bias_ci else "Bias": bias_str,
                 f"LoA [{pct}% CI]" if loa_ci else "LoA": loa_str,
+                "MDC": mdc_str,
                 "Assumptions": assumptions_str,
             }
 
@@ -2027,6 +2130,8 @@ class SleepStatsAgreement:
 
         * Parametric bias
         * Parametric lower and upper limits of agreement
+        * Half-width of the constant limits of agreement around the regression bias line, i.e.
+          ``agreement × SD`` of the bias-regression residuals (Menghini et al. 2021, eq. 2)
         * Regression intercept and slope for modeled bias
         * Regression intercept and slope for modeled limits of agreement
         * Euser et al. (2008) slope for log-transformed limits of agreement (only when
@@ -2257,7 +2362,9 @@ class SleepStatsAgreement:
             Method used to draw limits of agreement. Options:
 
             * ``'param'`` — constant LoA: horizontal lines at ``bias ± 1.96 SD``. Always uses
-              this form regardless of assumptions or ``log_transform``.
+              this form regardless of assumptions or ``log_transform``. When the bias is a
+              regression line, the LoA run parallel to it at ``± 1.96 SD`` of its residuals
+              (Menghini et al. 2021, eq. 2).
             * ``'regr'`` — regression LoA: lines following ``b0 + b1 × ref``. Always uses this
               form regardless of assumptions or ``log_transform``.
             * ``'log'`` — Euser LoA: lines following ``bias ± slope × ref``. Requires
@@ -2469,7 +2576,7 @@ class SleepStatsAgreement:
                         zorder=loa_zorder - 1,
                         **band_kwargs,
                     )
-            elif stat in loa_param_idx:
+            elif stat in loa_param_idx and stat in bias_param_idx:
                 for loa_var in ("loa_lower", "loa_upper"):
                     y_loa = v[(loa_var, "center")]
                     ax.axhline(y_loa, color=loa_color, zorder=loa_zorder, **line_kwargs)
@@ -2477,6 +2584,26 @@ class SleepStatsAgreement:
                         ax.axhspan(
                             v[(loa_var, "lower")],
                             v[(loa_var, "upper")],
+                            facecolor=loa_color,
+                            zorder=loa_zorder - 1,
+                            **band_kwargs,
+                        )
+            elif stat in loa_param_idx:
+                # Constant LoA parallel to the regression bias line (eq. 2)
+                halfwidth = v[("loa_halfwidth", "center")]
+                for sign in (1, -1):
+                    ax.plot(
+                        x_line,
+                        y_bias_arr + sign * halfwidth,
+                        color=loa_color,
+                        zorder=loa_zorder,
+                        **line_kwargs,
+                    )
+                    if has_ci:
+                        ax.fill_between(
+                            x_line,
+                            y_bias_arr + sign * v[("loa_halfwidth", "lower")],
+                            y_bias_arr + sign * v[("loa_halfwidth", "upper")],
                             facecolor=loa_color,
                             zorder=loa_zorder - 1,
                             **band_kwargs,

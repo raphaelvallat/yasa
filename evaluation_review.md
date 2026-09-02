@@ -2,7 +2,7 @@
 
 Reviewed against: `sleep-trackers-performance-master/AnalyticalPipeline_v1.0.0.Rmd` and its
 companion R functions (`ebe2sleep.R`, `errorMatrix.R`, `indEBE.R`, `groupEBE.R`, `indDiscr.R`,
-`groupDiscr.R`, `BAplot.R`).
+`groupDiscr.R`, `BAplot.R`), and the published paper (Menghini et al., 2021, SLEEP 44(2), zsaa170).
 
 ## Status legend
 - ✅ Implemented / Fixed
@@ -51,6 +51,10 @@ See https://github.com/raphaelvallat/yasa/pull/228
 | 9 | **Report table** (`groupDiscr.R` output: reference mean (SD), device mean (SD), bias [CI], LoA) | ✅ Implemented | `report()` now shows `mean (SD)` strings for both scorers, takes a `sleep_stats` subset (in the requested order), and `bias_ci` / `loa_ci` flags to omit CIs (no bootstrap is run when both are off). |
 | 14 | **Euser LoA slope only reachable via private attribute** | ✅ Fixed | Public `loa_log_slope` property; `summary()` includes a `loa_log_slope` variable (center/lower/upper) when `log_transform=True`. `report()` and `plot_blandaltman()` read it through `summary()`. |
 | 15 | `summary()` always bootstrapped all stats | ✅ Improved | `summary(ci_method=None)` returns point estimates only; `sleep_stats` restricts (and orders) rows and limits bootstrapping to the requested stats. |
+| 16 | 🐛 **Paper eq. 2 not implemented** (proportional bias + homoscedastic → LoA = `bias_i ± 1.96 SD(residuals)`, parallel to the regression bias line). YASA drew horizontal LoA at `mean ± 1.96 SD(differences)`, i.e. mis-centred and too wide by `1/sqrt(1 − R²)`. | ✅ Fixed | New `loa_halfwidth` variable in `summary()` (`agreement × SD` of the bias-regression residuals, ddof=1 as in R's `sd(resid(lm))`), with parametric CI (`SE(SD) ≈ SD/sqrt(2n)`, Bland & Altman 1999) and bootstrap CI. `report()` shows `"bias ± hw [lo, hi]"` and `plot_blandaltman()` draws LoA parallel to the bias line whenever bias is `regr` and LoA is `param`. |
+| 17 | **Minimal detectable change** (half the LoA width; Menghini 2021, Haghayegh 2020) not reported | ✅ Implemented | `"MDC"` column in `report()`. Constant LoA only (`(upper − lower)/2` for mean bias, `loa_halfwidth` for regression bias); `"n/a"` for regression/Euser LoA, where MDC varies with the reference value. |
+| 18 | **Assumption tests are booleans only**; paper asks for test results "accompanied by visual inspection" and reports coefficients with CIs | ✅ Implemented | New `diagnostics` property (MultiIndex columns `assumption` × `metric`): `unbiased` (t, pvalue, cohen_d), `normal` (W, pvalue, skew, kurtosis), `constant_bias` and `homoscedastic` (slope, pvalue, r2). `assumptions` is now derived from it as `pvalue >= alpha`. |
+| 19 | **Shapiro-Wilk over-rejects** at alpha 0.05 (e.g. n = 57, skew 0.07, p = 0.008 from a single heavy-tail point) | ✅ Mitigated | New `alpha_normal` constructor parameter, default 0.01, applied only to the `normal` flag; `alpha` (0.05) still applies to the other three tests. A stricter alpha is justified here because a normality violation only switches CIs to bootstrap (the R pipeline uses alpha 0.05 for all tests). This shifts, but does not remove, the sample-size dependence. |
 
 ---
 
@@ -71,7 +75,7 @@ See https://github.com/raphaelvallat/yasa/pull/228
 
 ## Bland-Altman Plot (`BAplot.R` vs YASA)
 
-✅ **`plot_blandaltman()` implemented** in `SleepStatsAgreement` (`evaluation.py:1604`).
+✅ **`plot_blandaltman()` implemented** in `SleepStatsAgreement` (`evaluation.py:2317`).
 
 ### What `BAplot.R` produces vs YASA
 
@@ -79,8 +83,8 @@ See https://github.com/raphaelvallat/yasa/pull/228
 |---------|---------------|--------------------------|
 | Scatter points | One dot per session | ✅ One dot per session |
 | Bias line | Horizontal `mean(diff)` or regression `b0 + b1*ref` | ✅ Same; auto-selected from `assumptions` |
-| Bias CI | t-CI or bootstrap band | ✅ Shaded band; method via `ci_method` |
-| LoA lines | Constant `bias ± 1.96 SD` or `bias ± 2.46*(c0 + c1*ref)` | ✅ Same; auto-selected from `assumptions` |
+| Bias CI | t-CI or bootstrap band | ✅ Shaded band for the mean bias. No band for a regression bias: combining the intercept and slope CIs is not a valid confidence region for the fitted line (R uses a pointwise `predict(interval="confidence")` band; could be added). |
+| LoA lines | Constant `bias ± 1.96 SD`, parallel to a regression bias at `± 1.96 SD(resid)` (eq. 2), or `bias ± 2.46*(c0 + c1*ref)` | ✅ Same; auto-selected from `assumptions` |
 | LoA CI | Dashed CI bands | ✅ Shaded bands |
 | Flag biased | Red bias line if significant | ✅ `flag_biased=True` |
 | Euser LoA | `bias ± ref × euser_slope` | ✅ `log_transform=True` |
@@ -94,6 +98,38 @@ See https://github.com/raphaelvallat/yasa/pull/228
 | `logTransf = TRUE/FALSE` | Use Euser back-transform for LoA | ✅ `log_transform=True` |
 | `xaxis = "mean"` | X-axis: (obs+ref)/2 instead of ref | ❌ Not planned |
 | `xlim`, `ylim` | Axis limits | ❌ Can be set via matplotlib post-call |
+
+---
+
+## Assumption tests: sample-size dependence
+
+All four assumption flags are null-hypothesis tests with no effect-size threshold, mirroring
+the R pipeline (designed for n ≈ 10–40): `alpha` (default 0.05) for `unbiased`, `constant_bias`
+and `homoscedastic`, and `alpha_normal` (default 0.01) for `normal`. Simulations
+(500 replicates per cell) show the practical consequences:
+
+- **Ideal null** (no bias, normal, constant, homoscedastic): each test passes ~95% of the time at
+  every n, so ~19% of statistics fail at least one gate by chance (3–4 of YASA's 18 statistics).
+- **Negligible real deviations** (bias 3 min, slope 0.02, mildly heavy tails, SD ≈ 20 min): the
+  joint pass rate drops from 0.70 at n = 20 to 0.01 at n = 500. Minimum detectable bias for
+  SD = 20 min: 9.4 min at n = 20, 1.2 min at n = 1000.
+- **Reference measurement error**: regressing `obs − ref` on `ref` has a negative slope artifact
+  equal to `−var(e_ref)/var(ref)` even with no true proportional bias (Bland & Altman 1995,
+  Lancet). With equal error in both scorers the `constant_bias` flag fails 39% of the time at
+  n = 100 and 97% at n = 500; regressing on the mean of the two scorers removes it.
+
+Consequences: `normal` only switches CIs to bootstrap (benign); `unbiased` only colours the bias
+line; `constant_bias` and `homoscedastic` change the reported bias/LoA model and are the ones
+affected. The new `diagnostics` table exposes the effect sizes needed to judge materiality.
+
+### Open items (not implemented)
+| Item | Notes |
+|---|---|
+| Dual-criterion gates (significance **and** magnitude) | e.g. flag `constant_bias` only if `p < alpha` and the bias swing across the reference IQR exceeds ~0.5 SD of the differences (≈ R² > 0.1); `homoscedastic` only if the modelled SD ratio between the 90th and 10th reference percentiles exceeds ~1.5. Thresholds as constructor parameters. |
+| `x_axis="mean"` option | Removes the reference-error artifact; changes the plot x-axis and calibration functions, so a design decision. |
+| Log-first remedy order | Paper: log-transform when heteroscedastic, fall back to regression LoA only if heteroscedasticity persists. YASA's `log_transform` is a global switch. |
+| Per-stat method override | Accept a user-supplied `auto_methods`-like table instead of hard-coding `bias_method`/`loa_method` globally. |
+| `unbiased` is a result, not an assumption | Equivalent to the bias CI excluding zero; belongs in the report rather than the assumptions table. |
 
 ---
 
@@ -162,4 +198,4 @@ from the published HTML report (`AnalyticalPipeline_v1.0.0.html`), stored in
 | Per-subject accuracy (4-stage) | YASA accuracy = fraction correct across all stages; R pipeline reports binary one-vs-rest accuracy per stage. Numerically different. (Binary accuracy is tested.) |
 | Per-subject PPV / NPV | R pipeline reports these at group level only; no per-subject reference. |
 | Per-stage Cohen's κ, PABAK, prevalence index | R pipeline computes one-vs-rest; YASA `kappa` is multiclass. PABAK is not yet in YASA (item 2 above). |
-| Bland-Altman bias, LoA, and CIs | R pipeline uses conditional regression depending on assumption tests, making expected outputs data-dependent and impractical to pin as fixed reference values. |
+| Bland-Altman bias, LoA, and CIs | R pipeline uses conditional regression depending on assumption tests, making expected outputs data-dependent and impractical to pin as fixed reference values. Eq. 2 (`loa_halfwidth`), MDC and `diagnostics` are unit-tested against direct `scipy.stats` computations in `tests/test_evaluation.py` instead. |

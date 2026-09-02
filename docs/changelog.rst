@@ -35,6 +35,24 @@ v0.8.0 (unreleased)
   (2008) ``loa_log_slope`` variable when ``log_transform=True``.
 * New :py:attr:`yasa.SleepStatsAgreement.loa_log_slope` property exposing the Euser
   limits-of-agreement slope.
+* **Bugfix:** when the bias is modeled by regression but the differences are homoscedastic,
+  limits of agreement now run parallel to the regression bias line at ``± 1.96 SD`` of its
+  residuals (eq. 2 in Menghini et al., 2021), in :py:meth:`yasa.SleepStatsAgreement.report`
+  and :py:meth:`yasa.SleepStatsAgreement.plot_blandaltman`. They were previously drawn as
+  horizontal lines around the mean difference. The half-width is available as the new
+  ``loa_halfwidth`` variable in :py:meth:`yasa.SleepStatsAgreement.summary`.
+* :py:meth:`yasa.SleepStatsAgreement.report` gained an ``MDC`` column with the minimal
+  detectable change (half the width of constant limits of agreement).
+* New :py:attr:`yasa.SleepStatsAgreement.diagnostics` property with the test statistics,
+  p-values, and effect sizes (Cohen's d, skew, kurtosis, R²) behind each
+  :py:attr:`yasa.SleepStatsAgreement.assumptions` flag.
+* :py:class:`yasa.SleepStatsAgreement` gained an ``alpha_normal`` parameter (default 0.01) used
+  for the Shapiro-Wilk normality test, separate from ``alpha`` (default 0.05) used for the other
+  assumption tests. The Shapiro-Wilk test is sensitive to small departures from normality that
+  have little effect on the limits of agreement, so the stricter default reduces unnecessary
+  switches to bootstrap confidence intervals.
+* :py:meth:`yasa.SleepStatsAgreement.plot_blandaltman`: larger panels arranged in at most 4
+  columns, solid bias lines, dotted zero line, and no confidence band for regression bias lines.
 
 **Bugfixes**
 
