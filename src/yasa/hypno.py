@@ -191,7 +191,7 @@ class Hypnogram:
     TST         4.0000
     SE         66.6667
     SME        88.8889
-    SFI         7.5000
+    SFI        15.0000
     SOL         1.5000
     SOL_5min       NaN
     WAKE        2.0000
@@ -1577,7 +1577,7 @@ class Hypnogram:
         TST         20.0000
         SE          76.9231
         SME         94.1176
-        SFI          1.5000
+        SFI          6.0000
         SOL          2.5000
         SOL_5min     2.5000
         WAKE         6.0000
@@ -1595,7 +1595,7 @@ class Hypnogram:
         TST        398.0000
         SE          82.9167
         SME         83.3508
-        SFI          0.7538
+        SFI          1.5075
         SOL          2.5000
         SOL_5min     2.5000
         Lat_REM     67.0000
@@ -1679,7 +1679,8 @@ class Hypnogram:
 
         # Convert to minutes
         for key, value in stats.items():
-            if key in ["SE", "SME"]:
+            if key in ["SE", "SME", "SFI"]:
+                # SE and SME are percentages and SFI is a rate (transitions per hour of TST)
                 continue
             stats[key] = value / (60 * self.sampling_frequency)
 
