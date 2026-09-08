@@ -82,7 +82,7 @@ class TestHypnoClass(unittest.TestCase):
             "TST": 49.5,
             "SE": 82.5,
             "SME": 84.2553,
-            "SFI": 0.303,
+            "SFI": 1.2121,
             "SOL": 1.25,
             "SOL_5min": 1.25,
             "WAKE": 10.5,
@@ -191,6 +191,13 @@ class TestHypnoClass(unittest.TestCase):
         sstats = hyp.sleep_statistics()
         sstats_up = hyp_up.sleep_statistics()
         assert sstats["TIB"] == sstats_up["TIB"] == 600
+        # Sleep statistics must not depend on the epoch length of the hypnogram. Values are
+        # rounded to 4 decimals, so upsampling can shift the last digit.
+        assert sstats.keys() == sstats_up.keys()
+        for key in sstats.keys():
+            np.testing.assert_allclose(
+                sstats[key], sstats_up[key], atol=1e-3, err_msg=f"sleep_stat={key}"
+            )
 
         # Hypno is all WAKE (with Art and Uns)
         hyp = Hypnogram(100 * ["W"] + 10 * ["Art"] + 30 * ["Uns"], n_stages=5)
