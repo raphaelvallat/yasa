@@ -4,7 +4,7 @@ What's new
 ##########
 
 
-v0.7.1 (unreleased)
+v0.8.0 (unreleased)
 -------------------
 
 **Bugfixes**
@@ -19,7 +19,7 @@ v0.7.1 (unreleased)
 
    **SFI values change for every epoch length other than 60 seconds.** The previously reported
    SFI was scaled by ``epoch_length / 60``, so it was only correct for 60-second epochs. If you
-   have published or stored SFI values computed with an earlier version of YASA, recompute them, 
+   have published or stored SFI values computed with an earlier version of YASA, recompute them,
    or multiply the old values by ``60 / epoch_length`` to recover the corrected rate.
 
 ----------------------------------------------------------------------------------------
