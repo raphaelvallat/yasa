@@ -170,12 +170,21 @@ def bandpower(
         # Per each sleep stage defined in ``include``.
         from .hypno import Hypnogram  # Avoid circular import
 
+        int_to_str = {}
         if isinstance(hypno, Hypnogram):
-            # Translate string include labels to integers using the Hypnogram mapping
+            # Translate string include labels to integers using the Hypnogram mapping. The
+            # reverse mapping is kept so that the output index reuses the original string labels,
+            # e.g. so that ``bp.xs("N3")`` works as documented.
             if include is not None:
                 include_arr = np.atleast_1d(np.asarray(include))
                 if include_arr.dtype.kind in ("U", "S", "O"):
+                    unknown = [str(s) for s in include_arr if s not in hypno.mapping]
+                    assert not unknown, (
+                        f"The following stages in `include` are not valid labels of the "
+                        f"hypnogram: {unknown}. Valid labels are {sorted(hypno.mapping)}."
+                    )
                     include = np.array([hypno.mapping[s] for s in include_arr], dtype=int)
+                    int_to_str = hypno.mapping_int
             # Upsample the Hypnogram to match data
             hypno = hypno.upsample_to_data(data, sf=sf)
         hypno = np.asarray(hypno)
@@ -196,7 +205,7 @@ def bandpower(
             data_stage = data[:, hypno == stage]
             freqs, psd = signal.welch(data_stage, sf, nperseg=win, **kwargs_welch)
             bp_stage = bandpower_from_psd(psd, freqs, ch_names, bands=bands, relative=relative)
-            bp_stage["Stage"] = stage
+            bp_stage["Stage"] = int_to_str.get(stage, stage)
             df_bp = pd.concat([df_bp, bp_stage], axis=0)
         return df_bp.set_index(["Stage", "Chan"])
 

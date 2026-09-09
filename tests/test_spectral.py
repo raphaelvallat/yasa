@@ -78,8 +78,19 @@ class TestSpectral(unittest.TestCase):
         bp_hyp_str = bandpower(
             data_full, sf=sf_full, ch_names=chan_full, hypno=hyp_full, include=["N2", "N3"]
         )
-        # Both should give the same result
+        # Both should give the same numerical result
         np.testing.assert_array_almost_equal(bp_hyp_int.values, bp_hyp_str.values)
+        # Integer include should produce integer stage labels
+        assert bp_hyp_int.index.get_level_values("Stage").dtype.kind == "i"
+        # String include should produce string stage labels
+        stages_str = bp_hyp_str.index.get_level_values("Stage").unique()
+        assert stages_str.dtype.kind in ("U", "S", "O"), (
+            f"Expected string stage labels, got {stages_str.dtype}"
+        )
+        assert set(stages_str) == {"N2", "N3"}
+        # An invalid string label must raise an informative error listing the valid labels
+        with pytest.raises(AssertionError, match="not valid labels of the hypnogram"):
+            bandpower(data_full, sf=sf_full, hypno=hyp_full, include=["N2", "NREM3"])
 
         # BANDPOWER_FROM_PSD
         # 1-D EEG data
