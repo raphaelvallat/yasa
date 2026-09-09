@@ -1,153 +1,117 @@
-# YASA `evaluation.py` — Review Against Menghini et al. 2021 Pipeline
+# YASA `evaluation.py` vs the Menghini et al. (2021) pipeline
 
-Reviewed against: `sleep-trackers-performance-master/AnalyticalPipeline_v1.0.0.Rmd` and its
-companion R functions (`ebe2sleep.R`, `errorMatrix.R`, `indEBE.R`, `groupEBE.R`, `indDiscr.R`,
-`groupDiscr.R`, `BAplot.R`).
+Reviewed against the paper (Menghini et al., 2021, *SLEEP* 44(2), zsaa170), its
+`AnalyticalPipeline_v1.0.0.Rmd` report and companion R functions (`ebe2sleep.R`, `errorMatrix.R`,
+`indEBE.R`, `groupEBE.R`, `indDiscr.R`, `groupDiscr.R`, `BAplot.R`).
+Original module: https://github.com/raphaelvallat/yasa/pull/228.
 
-## Status legend
-- ✅ Implemented / Fixed
-- ⚠️  Partial / In progress
-- ❌ Missing / Not implemented
-- 🐛 Bug
-
-See https://github.com/raphaelvallat/yasa/pull/228
-
----
+Legend: ✅ implemented · ❌ not implemented · 🐛 fixed bug
 
 ## EpochByEpochAgreement
 
-| # | Issue | Status | Notes |
-|---|-------|--------|-------|
-| 1 | **Specificity (TNR) missing** from `get_agreement_bystage()` | ✅ Implemented | Per-stage one-vs-rest confusion matrix in `scorer()` |
-| 2 | **PABAK** not computed | ❌ | R: `epi.kappa()$pabak`. Not trivially added via sklearn |
-| 3 | **NPV** missing from `get_agreement_bystage()` | ✅ Implemented | Per-stage one-vs-rest confusion matrix in `scorer()` |
-| 4 | **Prevalence index / bias index** not computed | ❌ | R: `epi.kappa()$pindex`, `$bindex` |
-| 5 | **ROC curves** missing | ❌ | R: `groupEBE(doROC=TRUE)` via `ROCR`. Could add with sklearn |
-| 10 | **`pooled` mode** for `get_agreement()` not surfaced | ✅ Implemented | Added `pooled=False` parameter; `True` = R's `metricsType="sum"` |
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | Specificity and NPV per stage | ✅ | One-vs-rest confusion matrix in `get_agreement_bystage()`. |
+| 2 | 🐛 Undefined per-session metrics counted as 0 | ✅ | `zero_division` parameter, default `np.nan` (sklearn ≥ 1.3). Nights whose reference lacks a stage no longer drag down group means. |
+| 3 | Pooled epochs (R `metricsType="sum"`) | ✅ | `get_agreement(pooled=True)`; default is the per-session average (`"avg"`). |
+| 4 | Proportional error matrix (`errorMatrix.R`) | ✅ | `get_confusion_matrix_proportional()`: mean, SD and CI across sessions of row-normalized per-session matrices; absent stages kept as NaN; participant bootstrap. |
+| 5 | Percent scale | ✅ | Proportion-based metrics are 0–100. `kappa` and `mcc` unchanged. |
+| 6 | 🐛 Weighted `recall` equal to `accuracy` | ✅ | Removed from the default scorers. |
+| 7 | 🐛 `get_agreement(scorers=[...])` and `sample_weight` crashed | ✅ | Names map to `sklearn.metrics.<name>_score`. `summary()` no longer requires a prior `get_agreement()` call. |
+| 8 | PABAK, prevalence and bias index | ❌ | Not in sklearn. |
+| 9 | ROC curves | ❌ | Could be added with sklearn. |
 
-### Notes
-- Accuracy is reported 0–1 in YASA vs 0–100% in R (convention only, not a bug).
-- R's `metricsType="avg"` (per-subject average) = YASA's default `get_agreement()` behavior.
-- R's `metricsType="sum"` (pooled epochs) = YASA's new `get_agreement(pooled=True)`.
-- `get_agreement_bystage()` now returns 6 metrics: `fbeta, npv, precision, recall, specificity, support`.
-
----
+**Deviation from R.** The proportional error matrix CI defaults to the BCa bootstrap, which corrects
+the skew of bounded proportions. R's "basic" bootstrap is available via
+`bootstrap_kwargs={"method": "basic"}` and validated against the published CIs. Cells with 0/0 are
+NaN and excluded from mean, SD and CI (R's sample data never hits this case).
 
 ## SleepStatsAgreement
 
-| # | Issue | Status | Notes |
-|---|-------|--------|-------|
-| 6 | **Log transformation** missing | ✅ Implemented | `log_transform=True` param + Euser et al. (2008) back-transform; `"log"` loa_method. |
-| 7 | **Individual discrepancy heatmap** (`indDiscr.R`) | ❌ | No equivalent; data available via `get_sleep_stats()` |
-| 8 | **Calibration direction bug** | ✅ Fixed | See detailed investigation below (Bugs A, B, C) |
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 10 | Report table (`groupDiscr.R`) | ✅ | `report()`: `mean (SD)` per scorer, bias and LoA with CIs, assumption flags; `sleep_stats` subset; `ci_method=None` omits CIs and skips the bootstrap. |
+| 11 | Log transformation (Euser et al. 2008) | ✅ | `log_transform=True` gives `LoA = bias ± slope × ref`, `slope = 2(e^z − 1)/(e^z + 1)`, `z = 1.96 SD(log obs − log ref)`. `"log"` is a `loa_method`; the slope and its CI are `loa_log_slope` in `summary()`. Normality of the raw differences still selects the CI method. |
+| 12 | 🐛 Paper eq. 2 missing (proportional bias, homoscedastic differences) | ✅ | LoA were horizontal at `mean ± 1.96 SD(diff)`: mis-centred and too wide by `1/sqrt(1 − R²)`. Now `bias_i ± 1.96 SD(residuals)`, parallel to the bias line; half-width and CI (`SE(SD) ≈ SD/sqrt(2n)`) are `loa_halfwidth` in `summary()`. |
+| 13 | Assumption results beyond booleans | ✅ | `assumptions` table (`assumption` × `metric`): statistic, `pvalue`, effect size, `passed`, and the `method` used for `"auto"`. See below. |
+| 14 | 🐛 Missing values (e.g. `Lat_REM` without REM) gave NaN regressions | ✅ | Sessions with a missing value are dropped per statistic (warning); CIs use the per-statistic n. Inputs are not modified in place. |
+| 15 | 🐛 Zeros under `log_transform=True` | ✅ | The former 1e-4 offset dominated the Euser slope. Statistics with a zero are now excluded from the transform (warning) and keep regular LoA; `loa_method="log"` raises for them. Mixed cases need two objects. |
+| 16 | 🐛 Calibration direction and `bias_method="auto"` reordering or dropping columns | ✅ | `calibrate()` subtracts the mean bias or inverts the bias regression `(x − b0)/(1 + b1)`, preserving columns and NaNs. R has no calibration. |
+| 17 | API | ✅ | Constructor takes the `get_sleep_stats()` output directly (scorers read from the index); the LoA multiplier is fixed at 1.96 as in R. |
+| 18 | Individual discrepancy heatmap (`indDiscr.R`) | ❌ | Data available via `get_sleep_stats()`. |
 
----
+### Bland-Altman plot (`BAplot.R` vs `plot_blandaltman()`)
 
-## Features where YASA goes beyond the R pipeline
+| Element | R | YASA |
+|---------|---|------|
+| Bias line | `mean(diff)` or `b0 + b1 × ref` | ✅ Auto-selected from `assumptions`; solid line. |
+| Bias CI band | Yes | ✅ Mean bias only. For a regression bias, combining the intercept and slope CIs is not a valid region; R's pointwise `predict(interval="confidence")` band could be added. |
+| LoA | Constant, eq. 2, regression `bias ± 2.46 (c0 + c1 × ref)`, or Euser | ✅ Auto-selected; dashed lines with CI bands. |
+| Red bias line if significant | Yes | ❌ The bias CI band already shows whether zero is excluded. |
+| x-axis | `"reference"` (default) or `"mean"` | Reference only, matching the paper's recommendation. Regressing `obs − ref` on `ref` is biased toward a negative slope when the reference has error (Bland & Altman 1995), so a `"mean"` option may be worth adding. |
+| Marginal densities | Yes | ❌ |
+| Layout | One plot per call | Grid of at most 4 columns. |
 
-| Feature | YASA | R pipeline |
-|---------|------|------------|
-| Calibration of new data | ✅ `calibrate()`, `get_calibration_func()` | ❌ Not present |
-| MCC (Matthews Correlation Coefficient) | ✅ | ❌ |
-| Balanced accuracy | ✅ | ❌ |
-| BCa bootstrap (more robust) | ✅ | ❌ (R uses "basic" default) |
-| Overlaid hypnogram plots | ✅ `plot_hypnograms()` | ❌ |
-| MAD / median in group summary | ✅ `summary()` | ❌ |
-| Human-readable report table | ✅ `report()` | ❌ |
-| Bland-Altman plot | ✅ `plot_blandaltman()` | ✅ `BAplot.R` |
+## Assumption tests
 
----
+Four null-hypothesis tests run per statistic at `alpha` (default 0.05), as in R. Three of them
+select the method applied when `bias_method`, `loa_method` or `ci_method` is `"auto"`:
 
-## Bland-Altman Plot (`BAplot.R` vs YASA)
+| Flag | Test | Fail → | Effect size in `assumptions` |
+|---|---|---|---|
+| `unbiased` | t-test of differences vs 0 | Nothing: a finding, reported but not used | `cohen_d` |
+| `normal` | Shapiro-Wilk on differences | Bootstrap CIs instead of parametric | `skew`, `kurtosis` |
+| `constant_bias` | Slope of diff ~ ref | Regression bias `b0 + b1·ref`; constant LoA follow it (eq. 2) | `r2` |
+| `homoscedastic` | Slope of \|resid\| ~ ref | Regression LoA `bias ± 2.46 (c0 + c1·ref)`; overridden by `log_transform=True` | `r2` |
 
-✅ **`plot_blandaltman()` implemented** in `SleepStatsAgreement` (`evaluation.py:1604`).
+**Sample-size dependence.** A p-value mixes effect size and n. R was designed for n ≈ 10–40; with
+hundreds of nights, trivial deviations fail every test (a slope explaining 2% of the variance fails
+`constant_bias`; one heavy-tailed point fails `normal`), while in small samples real violations
+pass. Under a perfect null about 19% of statistics fail at least one of the four gates by chance.
+Regressing on the reference also biases `constant_bias` toward failure whenever the reference has
+its own error. A stricter alpha for Shapiro-Wilk was tried and reverted: it only shifts the
+dependence on n.
 
-### What `BAplot.R` produces vs YASA
+**Toward more robust gates.** The paper asks for the tests to be "accompanied by visual
+inspection"; the effect sizes in `assumptions` are the numerical form of that inspection and could
+gate the `auto` methods together with the p-value (fail only if `p < alpha` **and** the effect is
+material):
 
-| Element | R (`BAplot.R`) | YASA (`plot_blandaltman`) |
-|---------|---------------|--------------------------|
-| Scatter points | One dot per session | ✅ One dot per session |
-| Bias line | Horizontal `mean(diff)` or regression `b0 + b1*ref` | ✅ Same; auto-selected from `assumptions` |
-| Bias CI | t-CI or bootstrap band | ✅ Shaded band; method via `ci_method` |
-| LoA lines | Constant `bias ± 1.96 SD` or `bias ± 2.46*(c0 + c1*ref)` | ✅ Same; auto-selected from `assumptions` |
-| LoA CI | Dashed CI bands | ✅ Shaded bands |
-| Flag biased | Red bias line if significant | ✅ `flag_biased=True` |
-| Euser LoA | `bias ± ref × euser_slope` | ✅ `log_transform=True` |
-| Marginal density | `ggExtra::ggMarginal` | ❌ Not implemented |
-| `xaxis="mean"` | (obs+ref)/2 on x-axis | ❌ Only reference on x-axis |
+| Flag | Magnitude criterion | Rationale |
+|---|---|---|
+| `normal` | \|`skew`\| > 1 or excess `kurtosis` > 2 | Below this the t-based CI is accurate for n ≥ 30 (CLT). The cost of a false rejection is only a bootstrap CI, so this gate matters least. |
+| `constant_bias` | `r2` > 0.1 | The reference explains at least 10% of the variance of the differences. Below this the fitted line is nearly flat and a constant bias is simpler and more stable. |
+| `homoscedastic` | SD ratio > 1.5 | Fitted \|resid\| at the top vs bottom of the observed reference range, `(c0 + c1·max)/(c0 + c1·min)`. Below this the LoA width changes by less than 50% across the range and constant LoA are adequate. Needs the intercept of the \|resid\| ~ ref regression, which `assumptions` does not yet expose. |
 
-### `BAplot.R` parameters not yet in YASA
+Thresholds would be constructor parameters with these defaults. Other open items:
 
-| Parameter | Purpose | Status |
-|-----------|---------|--------|
-| `logTransf = TRUE/FALSE` | Use Euser back-transform for LoA | ✅ `log_transform=True` |
-| `xaxis = "mean"` | X-axis: (obs+ref)/2 instead of ref | ❌ Not planned |
-| `xlim`, `ylim` | Axis limits | ❌ Can be set via matplotlib post-call |
+- Per-statistic overrides: accept a `method` table (same shape as the `method` columns of
+  `assumptions`) instead of global `bias_method` / `loa_method`.
+- Remedy order: the paper log-transforms first and uses regression LoA only if heteroscedasticity
+  persists; YASA's `log_transform` is a global switch.
 
----
+## Regression tests against the published pipeline
 
-## Log transformation (Euser et al. 2008)
+`tests/test_evaluation_sri.py` runs the 14 subjects (10 766 epochs) of
+`tests/data/sample_data_sri.csv.xz` against the published HTML report values stored in
+`tests/data/evaluation_sri_full.json`.
 
-**Reference:** `groupDiscr.R` lines 208–264, `BAplot.R` log section, Euser et al. (2008) and Bland & Altman (1999).
-
-### Design principles (simplified vs R)
-
-- `log_transform` is **bool only** — no per-stat list. Mixed cases use two `SleepStatsAgreement` objects.
-- Euser slope is **internal** — not exposed in `summary()`, only rendered in `plot_blandaltman` and `report`.
-- `"log"` is a first-class **`loa_method` value**, alongside `"param"` and `"regr"`.
-- `auto_methods["loa"]` returns `"log"` for all stats when `log_transform=True`.
-- No `log_normal` in `assumptions` — normality of original diffs drives CI selection as before.
-- Bootstrap CI for Euser slope handled inside existing `_generate_bootstrap_ci`, no new methods.
-
----
-
-### Background and motivation
-
-When differences between devices and reference scale proportionally with the measurement size (heteroscedasticity), a log transformation stabilises the variance. The Euser et al. (2008) method computes limits of agreement in log space and back-transforms them to a slope that multiplies the reference value:
-
-```
-LoA_upper = bias + slope × ref
-LoA_lower = bias − slope × ref
-slope = 2 * (exp(agreement × SD(log_diffs)) − 1) / (exp(agreement × SD(log_diffs)) + 1)
-```
-
-where `log_diffs = log(obs + ε) − log(ref + ε)` and `ε = 1e-4` to avoid `log(0)`.
-
-This is the **only** LoA representation that applies for log-transformed stats. The standard `loa_lower`/`loa_upper` (constant) and `loa_intercept`/`loa_slope` (regression) representations do not apply to these stats.
-
----
-
-## Regression tests against the Menghini et al. (2021) pipeline
-
-`tests/test_evaluation_sri.py` loads all 14 subjects (10 766 epochs, 30-s epochs) from
-`tests/data/sample_data_sri.csv` and compares YASA's output to reference values extracted
-from the published HTML report (`AnalyticalPipeline_v1.0.0.html`), stored in
-`tests/data/evaluation_sri_full.json`. 32 test methods are run via `unittest`.
-
-### What is tested (with tolerance)
-
-| Test class | What is checked | Tolerance |
+| Test class | Checked | Tolerance |
 |---|---|:-:|
-| `TestSRIPerSubject` | Per-subject recall and specificity — 14 subjects × 4 stages (112 checks) | 0.1 pp |
-| `TestSRIPerSubjectSleepWake` | Per-subject binary SLEEP/WAKE accuracy, sensitivity, specificity — 14 subjects (42 checks) | 0.1 pp |
-| `TestSRIGroupMeans` | Group mean recall, specificity, PPV, NPV per stage — 4 metrics × 4 stages | 0.5 pp |
-| `TestSRIGroupMeansSleepWake` | Group mean binary sensitivity and specificity | 0.5 pp |
-| `TestSRISleepStats` | Per-subject TIB, TST, SE, SOL, stage durations, stage % for both scorers — 14 × 10 × 2 (280 checks) | 0.1 |
-| `TestSRISleepStats` | Per-subject WASO as TIB − SOL − TST (R pipeline definition, including post-sleep wake) — 14 × 2 | 0.1 |
-| `TestSRIDiscrepancies` | Per-subject Device − Reference differences for TST, SE, SOL, WASO, stage durations, stage % — 14 × 10 (140 checks) | 0.1 |
-| `TestSRIPooledMetrics` | Pooled (all-epoch) recall and specificity per stage matching R's `metricsType="sum"` | 0.1 pp |
-| `TestSRIConfusionMatrixValues` | All 16 cells of the pooled absolute confusion matrix, accessed by label | exact |
-| `TestSRISanity` | Dataset size, output shapes, index names, stage labels, metrics in [0, 1] | — |
+| `TestSRIPerSubject` | Recall and specificity, 14 subjects × 4 stages | 0.1 pp |
+| `TestSRIPerSubjectSleepWake` | Binary sleep/wake accuracy, sensitivity, specificity | 0.1 pp |
+| `TestSRIGroupMeans` | Group mean PPV and NPV per stage | 0.5 pp |
+| `TestSRISleepStats` | TIB, TST, SE, SOL, stage durations and % for both scorers; WASO as `TIB − SOL − TST` | 0.1 |
+| `TestSRIDiscrepancies` | Device − reference differences | 0.1 |
+| `TestSRIPooledMetrics` | Pooled recall and specificity | 0.1 pp |
+| `TestSRIConfusionMatrixValues` | 16 cells of the pooled confusion matrix | exact |
+| `TestSRIProportionalConfusionMatrix` | Mean and SD of all cells; basic-bootstrap CIs | 1 pp / 2 pp |
 
-**Tolerance note:** 0.1 pp covers single rounding in the HTML source (±0.005 pp). 0.5 pp at group level covers accumulated rounding across 14 subjects.
+Tolerances cover rounding in the HTML source. **WASO:** R counts wake from sleep onset to the end
+of the recording (`TIB − SOL − TST`); YASA counts wake within the sleep period (`SPT − TST`). The
+tests use the R definition.
 
-**WASO note:** The R pipeline (`ebe2sleep.R` lines 47–50) counts wake epochs from the first sleep epoch to the **end of the recording**, including any post-sleep wake after the final sleep epoch. This is algebraically equivalent to `TIB − SOL − TST`. YASA's built-in `WASO` counts only wake within the Sleep Period Time (first to last sleep epoch), equivalent to `SPT − TST`. For subjects with post-sleep wake (sbj09, sbj11) the two definitions disagree. The tests use `TIB − SOL − TST`, which matches the R pipeline exactly for all 14 subjects.
-
-### What cannot be tested (yet)
-
-| Item | Reason |
-|---|---|
-| Per-subject accuracy (4-stage) | YASA accuracy = fraction correct across all stages; R pipeline reports binary one-vs-rest accuracy per stage. Numerically different. (Binary accuracy is tested.) |
-| Per-subject PPV / NPV | R pipeline reports these at group level only; no per-subject reference. |
-| Per-stage Cohen's κ, PABAK, prevalence index | R pipeline computes one-vs-rest; YASA `kappa` is multiclass. PABAK is not yet in YASA (item 2 above). |
-| Bland-Altman bias, LoA, and CIs | R pipeline uses conditional regression depending on assumption tests, making expected outputs data-dependent and impractical to pin as fixed reference values. |
+Not testable against the report: per-subject 4-stage accuracy, per-subject PPV/NPV, per-stage
+kappa/PABAK, and the Bland-Altman outputs (conditional on data-dependent assumption tests).
+Eq. 2, `assumptions`, `summary()`, `calibrate()` and the Euser slope are unit-tested against direct
+`scipy.stats` computations in `tests/test_evaluation.py`.

@@ -63,7 +63,7 @@ The core dependencies of YASA are:
 * `Matplotlib <https://matplotlib.org/>`_
 * `Seaborn <https://seaborn.pydata.org/>`_
 * `MNE <https://mne.tools/stable/>`_ >= 1.3
-* `Scikit-learn <https://scikit-learn.org/>`_
+* `Scikit-learn <https://scikit-learn.org/>`_ >= 1.3
 * `LightGBM <https://lightgbm.readthedocs.io/>`_
 * `Antropy <https://github.com/raphaelvallat/antropy>`_
 * `lspopt <https://github.com/hbldh/lspopt>`_ >= 1.4

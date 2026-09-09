@@ -3035,7 +3035,7 @@ def art_detect(
     **1/ Covariance-based multi-channel artefact rejection**
 
     ``method='covar'`` is essentially a wrapper around the
-    :py:class:`pyriemann.clustering.Potato` class implemented in the
+    :py:class:`pyriemann.artifact_detection.Potato` class implemented in the
     `pyRiemann package
     <https://pyriemann.readthedocs.io/en/latest/index.html>`_.
 
@@ -3146,7 +3146,14 @@ def art_detect(
     if method in ["cov", "covar", "covariance", "riemann", "potato"]:
         method = "covar"
         is_pyriemann_installed()
-        from pyriemann.clustering import Potato
+        # Potato moved from pyriemann.clustering to pyriemann.artifact_detection in pyriemann
+        # 0.12. The back-compat alias kept in pyriemann.clustering is itself broken (it imports
+        # from a misspelled `artifactdetection` module), so try the new location first and only
+        # fall back to the old one for pyriemann <= 0.11.
+        try:
+            from pyriemann.artifact_detection import Potato
+        except ImportError:
+            from pyriemann.clustering import Potato
         from pyriemann.estimation import Covariances, Shrinkage
 
         # Must have at least 4 channels to use method='covar'
