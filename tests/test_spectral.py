@@ -88,6 +88,9 @@ class TestSpectral(unittest.TestCase):
             f"Expected string stage labels, got {stages_str.dtype}"
         )
         assert set(stages_str) == {"N2", "N3"}
+        # An invalid string label must raise an informative error listing the valid labels
+        with pytest.raises(AssertionError, match="not valid labels of the hypnogram"):
+            bandpower(data_full, sf=sf_full, hypno=hyp_full, include=["N2", "NREM3"])
 
         # BANDPOWER_FROM_PSD
         # 1-D EEG data
