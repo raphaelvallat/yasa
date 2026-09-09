@@ -562,11 +562,14 @@ def topoplot(
 
         if "show_names" in kwargs:
             kwargs.pop("show_names")
+        # MNE indexes ``data`` and ``mask`` positionally, so plain NumPy arrays must be passed
+        # here: pandas 3.0 removed the positional fallback of ``Series.__getitem__``, which
+        # made an integer key raise a KeyError against our channel-name index.
         im, _ = mne.viz.plot_topomap(
-            data=data.iloc[:, 0][chan],
+            data=data.iloc[:, 0][chan].to_numpy(),
             pos=Info,
             vlim=(vmin, vmax),
-            mask=data.iloc[:, 1][chan],
+            mask=data.iloc[:, 1][chan].to_numpy(dtype=bool),
             cmap=cmap,
             show=False,
             axes=ax,
