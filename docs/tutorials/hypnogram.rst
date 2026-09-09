@@ -408,7 +408,7 @@ Sleep Time (TST), Sleep Efficiency (SE), Wake After Sleep Onset (WASO), stage du
     TST         398.0000
     SE           82.9167
     SME          83.3508
-    SFI           0.7538
+    SFI           1.5075
     SOL           2.5000
     SOL_5min      2.5000
     Lat_REM      67.0000

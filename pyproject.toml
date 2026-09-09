@@ -123,6 +123,7 @@ exclude = [
     "__init__.py",  # Skip init files bc they use star imports (breaking rules F401, F403)
     "notebooks",  # Skip jupyter notebook examples
     "docs",
+    "*.md",  # Skip Markdown files (ruff >= 0.16 formats their Python code blocks)
 ]
 
 [tool.ruff.format]

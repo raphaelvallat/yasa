@@ -169,7 +169,7 @@ Using the hypnogram, we can calculate standard sleep statistics using the :py:me
     'TST': 459.5,
     'SE': 95.332,
     'SME': 98.079,
-    'SFI': 0.6529,
+    'SFI': 1.3058,
     'SOL': 13.0,
     'SOL_5min': 14.5,
     'Lat_REM': 77.0,

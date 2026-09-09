@@ -191,7 +191,7 @@ class Hypnogram:
     TST         4.0000
     SE         66.6667
     SME        88.8889
-    SFI         7.5000
+    SFI        15.0000
     SOL         1.5000
     SOL_5min       NaN
     WAKE        2.0000
@@ -1577,7 +1577,7 @@ class Hypnogram:
         TST         20.0000
         SE          76.9231
         SME         94.1176
-        SFI          1.5000
+        SFI          6.0000
         SOL          2.5000
         SOL_5min     2.5000
         WAKE         6.0000
@@ -1587,7 +1587,7 @@ class Hypnogram:
 
         >>> from yasa import simulate_hypnogram
         >>> # Generate a 8 hr (= 480 minutes) 5-stage hypnogram with a 30-seconds resolution
-        >>> hyp = simulate_hypnogram(tib=300, seed=42)
+        >>> hyp = simulate_hypnogram(tib=480, seed=42)
         >>> pd.Series(hyp.sleep_statistics())
         TIB        480.0000
         SPT        477.5000
@@ -1595,7 +1595,7 @@ class Hypnogram:
         TST        398.0000
         SE          82.9167
         SME         83.3508
-        SFI          0.7538
+        SFI          1.5075
         SOL          2.5000
         SOL_5min     2.5000
         Lat_REM     67.0000
@@ -1614,10 +1614,14 @@ class Hypnogram:
         assert self.n_epochs > 0, "Hypnogram is empty!"
         all_sleep = ["SLEEP", "N1", "N2", "N3", "NREM", "REM", "LIGHT", "DEEP"]
         all_non_sleep = ["WAKE", "ART", "UNS"]
+        # Every duration is converted from epochs to minutes at assignment. SE, SME (percentages)
+        # and SFI (a rate) are then derived from the minute values, so they never go through a
+        # unit conversion and do not depend on the epoch length of the hypnogram.
+        epochs_per_min = 60 * self.sampling_frequency
         stats = {}
 
         # TIB, first and last sleep
-        stats["TIB"] = self.n_epochs
+        stats["TIB"] = self.n_epochs / epochs_per_min
         idx_sleep = np.where(~np.isin(hypno, all_non_sleep))[0]
         if not len(idx_sleep):
             first_sleep, last_sleep = 0, self.n_epochs
@@ -1626,11 +1630,13 @@ class Hypnogram:
             last_sleep = idx_sleep[-1]
         # Crop to SPT
         hypno_s = hypno[first_sleep : (last_sleep + 1)]
-        stats["SPT"] = hypno_s.size if len(idx_sleep) else 0
-        stats["WASO"] = hypno_s[hypno_s == "WAKE"].size if len(idx_sleep) else np.nan
+        stats["SPT"] = hypno_s.size / epochs_per_min if len(idx_sleep) else 0
+        stats["WASO"] = (
+            hypno_s[hypno_s == "WAKE"].size / epochs_per_min if len(idx_sleep) else np.nan
+        )
         # Before YASA v0.5.0, TST was calculated as SPT - WASO, meaning that Art
         # and Unscored epochs were included. TST is now restrained to sleep stages.
-        stats["TST"] = hypno_s[np.isin(hypno_s, all_sleep)].shape[0]
+        stats["TST"] = hypno_s[np.isin(hypno_s, all_sleep)].shape[0] / epochs_per_min
 
         # Sleep efficiency and fragmentation
         stats["SE"] = 100 * stats["TST"] / stats["TIB"]
@@ -1640,7 +1646,7 @@ class Hypnogram:
         else:
             # Sleep maintenance efficiency
             stats["SME"] = 100 * stats["TST"] / stats["SPT"]
-            # SFI is the ratio of the number of transitions from sleep into Wake to TST (hours)
+            # SFI is a rate: number of transitions from sleep into Wake per hour of TST.
             # The original definition included transitions into Wake or N1.
             counts, _ = self.transition_matrix()
             n_trans_to_wake = np.sum(
@@ -1648,40 +1654,36 @@ class Hypnogram:
                     np.intersect1d(counts.index, all_sleep), np.intersect1d(counts.index, ["WAKE"])
                 ].to_numpy()
             )
-            stats["SFI"] = n_trans_to_wake / (stats["TST"] / (3600 * self.sampling_frequency))
+            stats["SFI"] = n_trans_to_wake / (stats["TST"] / 60)
 
         # Sleep stage latencies -- only relevant if hypno is cropped to TIB
-        stats["SOL"] = first_sleep if stats["TST"] > 0 else np.nan
+        stats["SOL"] = first_sleep / epochs_per_min if stats["TST"] > 0 else np.nan
         sleep_periods = hypno_find_periods(
             np.isin(hypno, all_sleep), self.sampling_frequency, threshold="5min"
         ).query("values == True")
         if sleep_periods.shape[0]:
-            stats["SOL_5min"] = sleep_periods["start"].iloc[0]
+            stats["SOL_5min"] = sleep_periods["start"].iloc[0] / epochs_per_min
         else:
             stats["SOL_5min"] = np.nan
 
         if "REM" in self.labels:
             # Question: should we add latencies for other stage too?
-            stats["Lat_REM"] = np.where(hypno == "REM")[0].min() if "REM" in hypno else np.nan
+            stats["Lat_REM"] = (
+                np.where(hypno == "REM")[0].min() / epochs_per_min if "REM" in hypno else np.nan
+            )
 
         # Duration of each stage
         for st in self.labels:
             if st == "SLEEP":
                 # SLEEP == TST
                 continue
-            stats[st] = hypno[hypno == st].size
+            stats[st] = hypno[hypno == st].size / epochs_per_min
 
         # Remove ART and UNS if they are empty
         if stats["ART"] == 0:
             stats.pop("ART")
         if stats["UNS"] == 0:
             stats.pop("UNS")
-
-        # Convert to minutes
-        for key, value in stats.items():
-            if key in ["SE", "SME"]:
-                continue
-            stats[key] = value / (60 * self.sampling_frequency)
 
         # Proportion of each sleep stages
         for st in all_sleep:
@@ -1712,7 +1714,7 @@ class Hypnogram:
         --------
         >>> from yasa import Hypnogram, simulate_hypnogram
         >>> # Generate a 8 hr (= 480 minutes) 5-stage hypnogram with a 30-seconds resolution
-        >>> hyp = simulate_hypnogram(tib=300, seed=42)
+        >>> hyp = simulate_hypnogram(tib=480, seed=42)
         >>> counts, probs = hyp.transition_matrix()
         >>> counts
         To Stage    WAKE  N1   N2  N3  REM

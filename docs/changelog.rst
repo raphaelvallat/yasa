@@ -4,6 +4,26 @@ What's new
 ##########
 
 
+v0.8.0 (unreleased)
+-------------------
+
+**Bugfixes**
+
+* Fixed a units bug in :py:meth:`yasa.Hypnogram.sleep_statistics`: the Sleep Fragmentation Index
+  (SFI) was incorrectly divided by the number of epochs per minute, which made it depend on the
+  epoch length of the hypnogram. SFI is a *rate* (number of transitions from sleep into WAKE per
+  hour of TST), so it must be excluded from the conversion of epoch counts to minutes, as is
+  already the case for ``SE`` and ``SME`` and as the method's own docstring documents.
+
+.. warning::
+
+   **SFI values change for every epoch length other than 60 seconds.** The previously reported
+   SFI was scaled by ``epoch_length / 60``, so it was only correct for 60-second epochs. If you
+   have published or stored SFI values computed with an earlier version of YASA, recompute them,
+   or multiply the old values by ``60 / epoch_length`` to recover the corrected rate.
+
+----------------------------------------------------------------------------------------
+
 v0.7.0 (March 2026)
 -------------------
 
