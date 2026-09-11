@@ -20,11 +20,28 @@ Legend: ✅ implemented · ❌ not implemented · 🐛 fixed bug
 | 7 | 🐛 `get_agreement(scorers=[...])` and `sample_weight` crashed | ✅ | Names map to `sklearn.metrics.<name>_score`. `summary()` no longer requires a prior `get_agreement()` call. |
 | 8 | PABAK, prevalence and bias index | ❌ | Not in sklearn. |
 | 9 | ROC curves | ❌ | Could be added with sklearn. |
+| 19 | CI on group-level EBE metrics | ✅ | `summary(ci_method="boot")`: participant bootstrap of the mean across sessions, for both `by_stage=False` and `True`. Off by default. `support` gets no CI. |
 
 **Deviation from R.** The proportional error matrix CI defaults to the BCa bootstrap, which corrects
 the skew of bounded proportions. R's "basic" bootstrap is available via
 `bootstrap_kwargs={"method": "basic"}` and validated against the published CIs. Cells with 0/0 are
 NaN and excluded from mean, SD and CI (R's sample data never hits this case).
+
+**Bootstrap CIs are session-level.** Both `get_confusion_matrix_proportional()` and `summary()`
+resample *sessions*, so the interval is for the mean across sessions and generalizes to a
+population of nights. Epochs are never resampled: sleep stages occur in long bouts, so epochs
+within a night are strongly autocorrelated and an i.i.d. epoch bootstrap would badly understate
+the uncertainty (a block bootstrap would be required). Both methods share `_bootstrap_ci_mean()`,
+which uses NaN-aware percentiles and falls back to plain percentiles for constant columns —
+neither of which `scipy.stats.bootstrap` does, hence the hand-rolled implementation.
+
+**BCa needs enough sessions.** The BCa bias and acceleration corrections are estimated from the
+sessions themselves. At n = 5 the adjusted percentiles land in the extreme tail of a coarse
+bootstrap distribution (only `comb(2n-1, n) = 126` distinct resample means), so the bounds are
+driven by individual sessions and keep drifting as `n_resamples` grows (accuracy upper bound
+39.1 → 41.1 → 41.3 for 1e3 → 1e4 → 1e5 resamples, versus a stable 38.5 for `"percentile"`). The
+three methods agree to ~0.2 units by n = 30. `summary()` warns below 20 sessions; the proportional
+error matrix does not, for backwards compatibility with the published CIs.
 
 ## SleepStatsAgreement
 
