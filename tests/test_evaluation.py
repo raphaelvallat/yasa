@@ -556,6 +556,9 @@ class TestSleepStatsAgreementInit(unittest.TestCase):
             dict(ref_data=_ref_stats, obs_data=_obs_stats, ref_scorer="X", obs_scorer="X"),
             dict(ref_data=_ref_stats, obs_data=_obs_stats, log_transform="TST"),
             dict(ref_data=_ref_stats, obs_data=_obs_stats, alpha=1.5),
+            dict(ref_data=_ref_stats, obs_data=_obs_stats, effect_size_gates={"bad_key": 1}),
+            dict(ref_data=_ref_stats, obs_data=_obs_stats, effect_size_gates={"r2": -1}),
+            dict(ref_data=_ref_stats, obs_data=_obs_stats, effect_size_gates=0.1),
             dict(ref_data=_ref_stats, obs_data=_obs_stats, confidence=95),
         ]
         for kwargs in bad_args:
@@ -572,7 +575,7 @@ class TestSleepStatsAgreementAssumptions(unittest.TestCase):
             "unbiased": {"t", "pvalue", "cohen_d", "passed"},
             "normal": {"W", "pvalue", "skew", "kurtosis", "passed", "method"},
             "constant_bias": {"slope", "pvalue", "r2", "passed", "method"},
-            "homoscedastic": {"slope", "pvalue", "r2", "passed", "method"},
+            "homoscedastic": {"slope", "pvalue", "r2", "sd_ratio", "passed", "method"},
         }
         for assumption, metrics in expected.items():
             assert set(asmp[assumption].columns) == metrics
@@ -588,9 +591,16 @@ class TestSleepStatsAgreementAssumptions(unittest.TestCase):
         regr = sps.linregress(_ref_stats["TST"], diff)
         assert np.isclose(asmp.at["TST", ("constant_bias", "slope")], regr.slope)
         assert np.isclose(asmp.at["TST", ("constant_bias", "r2")], regr.rvalue**2)
-        # Flags: pvalue >= alpha (0.05)
+        loa_regr = sps.linregress(
+            _ref_stats["TST"], np.abs(diff - regr.intercept - regr.slope * _ref_stats["TST"])
+        )
+        fitted = loa_regr.intercept + loa_regr.slope * np.array(
+            [_ref_stats["TST"].min(), _ref_stats["TST"].max()]
+        )
+        assert np.isclose(asmp.at["TST", ("homoscedastic", "sd_ratio")], fitted[1] / fitted[0])
+        # Flags: pvalue >= alpha (0.05), or an immaterial effect size (see test_effect_size_gates)
         for name in ["unbiased", "normal", "constant_bias", "homoscedastic"]:
-            assert (asmp[(name, "passed")] == asmp[(name, "pvalue")].ge(0.05)).all()
+            assert asmp[(name, "passed")][asmp[(name, "pvalue")].ge(0.05)].all()
         # Methods applied for "auto"
         mapping = {"normal": "boot", "constant_bias": "regr", "homoscedastic": "regr"}
         for name, failed in mapping.items():
@@ -602,15 +612,62 @@ class TestSleepStatsAgreementAssumptions(unittest.TestCase):
         assert (loa[is_log] == "log").all() and loa[~is_log].isin(["param", "regr"]).all()
 
     def test_alpha(self):
-        # alpha=1 fails every test with p < 1; the statistics themselves are unchanged
+        # alpha=1 fails every test with p < 1 once the effect-size gates are disabled;
+        # the statistics themselves are unchanged.
         ssa_strict = SleepStatsAgreement(
-            _ref_stats, _obs_stats, ref_scorer=REF_SCORER, obs_scorer=OBS_SCORER, alpha=1.0
+            _ref_stats,
+            _obs_stats,
+            ref_scorer=REF_SCORER,
+            obs_scorer=OBS_SCORER,
+            alpha=1.0,
+            effect_size_gates=dict.fromkeys(SleepStatsAgreement._default_gates),
         )
         strict = ssa_strict.assumptions
         passed = strict.xs("passed", level="metric", axis=1)
         pvalues = strict.xs("pvalue", level="metric", axis=1)
         assert (passed == pvalues.ge(1.0)).all().all()
         pd.testing.assert_frame_equal(pvalues, ssa.assumptions.xs("pvalue", level="metric", axis=1))
+
+    def test_effect_size_gates(self):
+        # Unreachable thresholds -> the effect size is never material -> nothing is ever
+        # flagged as violated, even with alpha=1 (every test significant).
+        ssa_lax = SleepStatsAgreement(
+            _ref_stats,
+            _obs_stats,
+            ref_scorer=REF_SCORER,
+            obs_scorer=OBS_SCORER,
+            alpha=1.0,
+            effect_size_gates={"skew": 1e9, "kurtosis": 1e9, "r2": 1.0, "sd_ratio": 1e9},
+        )
+        lax = ssa_lax.assumptions.xs("passed", level="metric", axis=1)
+        assert lax[["normal", "constant_bias", "homoscedastic"]].all().all()
+        # `unbiased` is not gated on an effect size, so it still fails
+        assert not lax["unbiased"].any()
+        # The resolved thresholds are exposed, with the unspecified ones left at their default
+        ssa_partial = SleepStatsAgreement(
+            _ref_stats,
+            _obs_stats,
+            ref_scorer=REF_SCORER,
+            obs_scorer=OBS_SCORER,
+            effect_size_gates={"r2": 0.5},
+        )
+        assert ssa_partial.effect_size_gates == {
+            "skew": 1.0,
+            "kurtosis": 2.0,
+            "r2": 0.5,
+            "sd_ratio": 1.5,
+        }
+        assert ssa.effect_size_gates == SleepStatsAgreement._default_gates
+        # Dual criterion: a statistic fails only if it is both significant and material
+        asmp = ssa.assumptions
+        for name, gate in [("constant_bias", "r2"), ("homoscedastic", "sd_ratio")]:
+            effect = asmp[(name, gate)]
+            if gate == "sd_ratio":
+                effect = np.maximum(effect, 1 / effect)
+            failed = ~asmp[(name, "passed")]
+            assert (
+                failed == (asmp[(name, "pvalue")].lt(0.05) & effect.gt(ssa.effect_size_gates[gate]))
+            ).all()
 
 
 class TestSleepStatsAgreementSummary(unittest.TestCase):

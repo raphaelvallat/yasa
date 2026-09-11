@@ -1315,6 +1315,28 @@ class SleepStatsAgreement:
         bootstrapped confidence intervals.
     alpha : float
         Alpha cutoff used for all assumption tests. Default is 0.05.
+    effect_size_gates : dict or None
+        Effect-size thresholds that must be exceeded, *in addition* to ``pvalue < alpha``, for
+        the normality, proportional-bias and heteroscedasticity assumptions to be considered
+        violated. Because the power of these tests grows with the number of sessions, the
+        p-value alone would flag small and practically irrelevant deviations in large samples:
+        the p-value assesses the statistical evidence for an association, the effect size its
+        practical magnitude. Pass a dict to override one or more of the defaults, or ``None``
+        (the default) to use all of them. Setting a threshold to ``None`` disables that
+        criterion. Keys:
+
+        * ``'skew'`` (default 1.0) and ``'kurtosis'`` (default 2.0) — normality is only
+          violated if the differences are markedly asymmetric (``|skew| >`` threshold) or
+          heavy-tailed (excess ``kurtosis >`` threshold).
+        * ``'r2'`` (default 0.1) — proportional bias is only present if at least 10% of the
+          variability of the differences is explained by the reference value.
+        * ``'sd_ratio'`` (default 1.5) — heteroscedasticity is only present if the fitted
+          absolute residual changes by more than 50% between the lower and the upper end of the
+          observed reference range, i.e. if the typical error varies materially across the range.
+          The criterion is applied symmetrically (a ratio above 1.5 or below 1/1.5), because the
+          variability can either grow or shrink with the reference value.
+
+        .. versionadded:: 0.8.0
     bootstrap_kwargs : dict
         Optional keyword arguments passed to :py:func:`scipy.stats.bootstrap`. Defaults use
         ``n_resamples=1000`` and ``method='BCa'``. The keys ``'confidence_level'``,
@@ -1416,6 +1438,9 @@ class SleepStatsAgreement:
     # Multiple of the SD of the differences defining the limits of agreement (95% coverage)
     _agreement = 1.96
 
+    # Default effect-size thresholds gating the assumption tests (see `effect_size_gates`)
+    _default_gates = {"skew": 1.0, "kurtosis": 2.0, "r2": 0.1, "sd_ratio": 1.5}
+
     def __init__(
         self,
         ref_data,
@@ -1425,6 +1450,7 @@ class SleepStatsAgreement:
         obs_scorer="Observed",
         confidence=0.95,
         alpha=0.05,
+        effect_size_gates=None,
         bootstrap_kwargs=None,
         log_transform=False,
     ):
@@ -1461,6 +1487,16 @@ class SleepStatsAgreement:
         assert isinstance(alpha, (float, int)) and 0 <= alpha <= 1, (
             "`alpha` must be a number between 0 and 1 inclusive"
         )
+        effect_size_gates = {} if effect_size_gates is None else effect_size_gates
+        assert isinstance(effect_size_gates, dict), "`effect_size_gates` must be a dict or None"
+        assert all(k in self._default_gates for k in effect_size_gates), (
+            f"`effect_size_gates` keys must be a subset of {list(self._default_gates)}"
+        )
+        assert all(
+            v is None or (isinstance(v, (float, int)) and not isinstance(v, bool) and v >= 0)
+            for v in effect_size_gates.values()
+        ), "`effect_size_gates` values must be non-negative numbers or None"
+        gates = self._default_gates | effect_size_gates
         assert isinstance(bootstrap_kwargs, dict), "`bootstrap_kwargs` must be a dictionary"
         assert all(k not in restricted_bootstrap_kwargs for k in bootstrap_kwargs), (
             f"None of {restricted_bootstrap_kwargs} can be set by the user"
@@ -1631,9 +1667,11 @@ class SleepStatsAgreement:
         ########################################################################
         # Test all statistical assumptions
         ########################################################################
-        # For each assumption: test statistic, p-value, effect size, pass/fail flag (p >= alpha)
-        # and the method selected when "auto" is requested. The effect sizes let users judge the
-        # materiality of a violation, since p-values scale with n.
+        # For each assumption: test statistic, p-value, effect size, pass/fail flag and the
+        # method selected when "auto" is requested. Because the power of these tests grows with
+        # the number of sessions, the normality, proportional-bias and heteroscedasticity
+        # assumptions use a dual criterion: they are only flagged as violated when the test is
+        # significant (p < alpha) *and* the effect size is material (see `effect_size_gates`).
         def _test_series(res):
             return pd.Series({"statistic": res.statistic, "pvalue": res.pvalue})
 
@@ -1646,10 +1684,54 @@ class SleepStatsAgreement:
             )
         )
         shapiro = shapiro.unstack()
+        skew = grouper["difference"].skew()
+        kurtosis = grouper["difference"].apply(pd.Series.kurt)
+        # Ratio of the fitted absolute residuals at the upper and lower ends of the observed
+        # reference range. Because the mean absolute residual is proportional to the residual SD,
+        # this is the factor by which the typical error -- and hence the LoA half-width -- changes
+        # across the range. Fitted values are clipped to a tiny positive number so that a
+        # regression line crossing zero yields a large (rather than a negative) ratio.
+        ref_range = grouper[ref_scorer].agg(["min", "max"])
+        fitted_min, fitted_max = (
+            (loa_regr["intercept"] + loa_regr["slope"] * ref_range[bound]).clip(lower=1e-9)
+            for bound in ("min", "max")
+        )
+        sd_ratio = fitted_max / fitted_min
+
+        def _material(*criteria):
+            """Combine the effect-size criteria of one assumption, ignoring disabled (None) ones.
+
+            Criteria are OR-ed together: a single material effect size is enough. When every
+            criterion is disabled, the result is all-True and the p-value alone decides.
+            """
+            criteria = [c for c in criteria if c is not None]
+            if not criteria:
+                return pd.Series(True, index=n.index)
+            return pd.concat(criteria, axis=1).any(axis=1)
+
+        # Normality: heavy tails (excess kurtosis) or marked asymmetry (|skew|)
+        normal_material = _material(
+            None if gates["skew"] is None else skew.abs().gt(gates["skew"]),
+            None if gates["kurtosis"] is None else kurtosis.gt(gates["kurtosis"]),
+        )
+        # Proportional bias: fraction of the variability in the differences explained by the
+        # reference value. Prevents a small but detectable slope from being treated as important
+        # solely because of the sample size.
+        bias_material = _material(
+            None if gates["r2"] is None else (bias_regr["rvalue"] ** 2).gt(gates["r2"])
+        )
+        # Heteroscedasticity: applied symmetrically, because the variability of the differences
+        # can either grow or shrink with the reference value.
+        hetero_material = _material(
+            None
+            if gates["sd_ratio"] is None
+            else np.maximum(sd_ratio, 1 / sd_ratio).gt(gates["sd_ratio"])
+        )
+
         unbiased = ttest["pvalue"].ge(alpha)
-        normal = shapiro["pvalue"].ge(alpha)
-        constant_bias = bias_regr["pvalue"].ge(alpha)
-        homoscedastic = loa_regr["pvalue"].ge(alpha)
+        normal = shapiro["pvalue"].ge(alpha) | ~normal_material
+        constant_bias = bias_regr["pvalue"].ge(alpha) | ~bias_material
+        homoscedastic = loa_regr["pvalue"].ge(alpha) | ~hetero_material
         loa_method = homoscedastic.map({True: "param", False: "regr"})
         loa_method[log_transform_stats] = "log"
         assumptions = pd.DataFrame(
@@ -1661,8 +1743,8 @@ class SleepStatsAgreement:
                 ("unbiased", "passed"): unbiased,
                 ("normal", "W"): shapiro["statistic"],
                 ("normal", "pvalue"): shapiro["pvalue"],
-                ("normal", "skew"): grouper["difference"].skew(),
-                ("normal", "kurtosis"): grouper["difference"].apply(pd.Series.kurt),
+                ("normal", "skew"): skew,
+                ("normal", "kurtosis"): kurtosis,
                 ("normal", "passed"): normal,
                 ("normal", "method"): normal.map({True: "param", False: "boot"}),
                 ("constant_bias", "slope"): bias_regr["slope"],
@@ -1673,6 +1755,7 @@ class SleepStatsAgreement:
                 ("homoscedastic", "slope"): loa_regr["slope"],
                 ("homoscedastic", "pvalue"): loa_regr["pvalue"],
                 ("homoscedastic", "r2"): loa_regr["rvalue"] ** 2,
+                ("homoscedastic", "sd_ratio"): sd_ratio,
                 ("homoscedastic", "passed"): homoscedastic,
                 ("homoscedastic", "method"): loa_method,
             }
@@ -1701,6 +1784,7 @@ class SleepStatsAgreement:
 
         # Set attributes
         self._confidence = confidence
+        self._effect_size_gates = gates
         self._bootstrap_kwargs = bootstrap_kwargs
         self._n_sessions = n_sessions
         self._ref_scorer = ref_scorer
@@ -1729,6 +1813,14 @@ class SleepStatsAgreement:
     def n_sessions(self):
         """The number of sessions."""
         return self._n_sessions
+
+    @property
+    def effect_size_gates(self):
+        """The effect-size thresholds used together with ``alpha`` in the assumption tests.
+
+        .. versionadded:: 0.8.0
+        """
+        return self._effect_size_gates.copy()
 
     @property
     def data(self):
@@ -1761,20 +1853,24 @@ class SleepStatsAgreement:
           ``pvalue``, ``r2``, ``passed`` and the bias ``method`` (``'param'`` if passed,
           ``'regr'`` otherwise).
         * ``homoscedastic`` — regression of the absolute residuals of the bias regression on the
-          reference values: ``slope``, ``pvalue``, ``r2``, ``passed`` and the limits-of-agreement
-          ``method`` (``'param'`` if passed, ``'regr'`` otherwise, ``'log'`` for log-transformed
-          statistics when ``log_transform=True``).
+          reference values: ``slope``, ``pvalue``, ``r2``, ``sd_ratio`` (ratio of the fitted
+          absolute residuals at the upper and lower ends of the observed reference range),
+          ``passed`` and the limits-of-agreement ``method`` (``'param'`` if passed, ``'regr'``
+          otherwise, ``'log'`` for log-transformed statistics when ``log_transform=True``).
 
-        ``passed`` is ``True`` when ``pvalue >= alpha``, and
         ``method`` is what :py:meth:`report`, :py:meth:`summary`, :py:meth:`calibrate` and
-        :py:meth:`plot_blandaltman` apply when ``'auto'`` is requested. Because the power of
-        these tests grows with the number of sessions, small and practically irrelevant deviations
-        become "significant" in large samples. Use the effect sizes (``cohen_d``, ``skew``, ``r2``)
-        and the Bland-Altman plots to judge whether a violation matters.
+        :py:meth:`plot_blandaltman` apply when ``'auto'`` is requested.
+
+        ``passed`` is ``True`` when ``pvalue >= alpha`` for the ``unbiased`` assumption. The
+        three assumptions that drive the automatic method selection use a dual criterion instead:
+        they only fail when ``pvalue < alpha`` **and** the effect size exceeds the corresponding
+        threshold in ``effect_size_gates`` (``skew``/``kurtosis`` for ``normal``, ``r2`` for
+        ``constant_bias``, ``sd_ratio`` for ``homoscedastic``). This prevents a statistically
+        detectable but practically negligible deviation from switching methods in large samples.
 
         .. versionchanged:: 0.8.0
             Includes the test statistics, effect sizes and selected methods (previously only the
-            pass/fail flags).
+            pass/fail flags), and gates ``passed`` on the effect sizes.
         """
         return self._assumptions
 
