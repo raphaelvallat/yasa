@@ -1109,19 +1109,11 @@ class EpochByEpochAgreement:
             sessions.
 
             * ``None`` (default) — no confidence interval is computed.
-            * ``'boot'`` — non-parametric bootstrap across sessions (i.e., sessions are resampled
-              with replacement, a "participant bootstrap"). The same resampled sessions are used
-              for every metric (and stage), so each replicate remains internally consistent.
-              Sessions in which a metric is undefined (see the ``zero_division`` parameter of
-              :py:meth:`get_agreement_bystage`) are ignored, and replicates in which a metric has
-              no defined value are excluded from its percentiles.
-
-            The interval refers to the **mean across sessions**, and therefore generalizes to a
-            population of nights or participants; it is not the precision of any single session's
-            score. Epochs are never resampled: sleep stages occur in long bouts, so epochs within
-            a night are strongly autocorrelated and resampling them independently would badly
-            understate the uncertainty. The intervals are marginal rather than simultaneous, i.e.
-            no correction is applied for the number of metrics reported.
+            * ``'boot'`` — non-parametric bootstrap across sessions. The same resampled sessions
+              are used for every metric (and stage), so each replicate remains internally
+              consistent. Sessions in which a metric is undefined (see the ``zero_division``
+              parameter of :py:meth:`get_agreement_bystage`) are ignored, and replicates in which a
+              metric has no defined value are excluded from its percentiles.
 
             .. versionadded:: 0.8.0
         confidence : float
@@ -1139,13 +1131,6 @@ class EpochByEpochAgreement:
             * ``'rng'`` — an integer seed or :py:class:`numpy.random.Generator` for reproducible
               intervals (default None).
 
-            .. warning:: The ``'BCa'`` bias and acceleration corrections are estimated from the
-                sessions themselves, so with fewer than 20 sessions the adjusted percentiles fall
-                in the extreme tail of a coarse bootstrap distribution and the bounds end up
-                driven by individual sessions (and keep drifting as ``n_resamples`` grows). A
-                :py:class:`RuntimeWarning` is emitted in that case; prefer
-                ``{'method': 'percentile'}`` or the parametric ``summary(func=['mean', 'sem'])``.
-
             .. versionadded:: 0.8.0
         **kwargs : key, value pairs
             Additional keyword arguments are passed to :py:meth:`pandas.DataFrame.groupby.agg`.
@@ -1159,11 +1144,7 @@ class EpochByEpochAgreement:
             descriptive statistic (e.g., mean, standard deviation).
 
             When ``ci_method`` is not ``None``, two extra columns ``ci_lower`` and ``ci_upper``
-            are appended. Unlike :py:meth:`get_confusion_matrix_proportional`, these are **not**
-            clipped to [0, 100], because the default scorers mix percentages with coefficients
-            ranging from -1 to 1 and custom ``scorers`` have an unknown range. With
-            ``by_stage=True``, ``support`` is an epoch count rather than an agreement score and
-            is therefore left without a confidence interval.
+            are appended.
 
         Examples
         --------
@@ -1198,9 +1179,6 @@ class EpochByEpochAgreement:
         f1              5.0  27.97  3.07
 
         To add a bootstrap confidence interval of the mean across sessions, pass ``ci_method``.
-        Only 5 sessions are available here, so the ``'percentile'`` method is used instead of the
-        ``'BCa'`` default (see the ``bootstrap_kwargs`` warning above), and ``rng`` makes the
-        result reproducible:
 
         >>> ebe.summary(
         ...     ci_method="boot",
