@@ -674,6 +674,49 @@ class EpochByEpochAgreement:
         return mat
 
     @staticmethod
+    def _resolve_bootstrap_kwargs(bootstrap_kwargs, n_resamples_default):
+        """
+        Validate a user-supplied ``bootstrap_kwargs`` mapping and return the resolved settings.
+
+        Shared by :py:meth:`get_confusion_matrix_proportional` and :py:meth:`summary`, which
+        expose the same three keys and differ only in their default number of resamples.
+
+        Parameters
+        ----------
+        bootstrap_kwargs : dict or None
+            User-supplied settings. Valid keys are ``'n_resamples'``, ``'method'`` and ``'rng'``.
+        n_resamples_default : int
+            Default number of resamples for the calling method.
+
+        Returns
+        -------
+        n_resamples : int
+        method : {"BCa", "basic", "percentile"}
+        rng : :py:class:`numpy.random.Generator`
+        """
+        allowed_bootstrap_kwargs = ["n_resamples", "method", "rng"]
+        assert isinstance(bootstrap_kwargs, (dict, type(None))), (
+            "`bootstrap_kwargs` must be a dictionary or None"
+        )
+        bootstrap_kwargs = {} if bootstrap_kwargs is None else bootstrap_kwargs
+        assert all(k in allowed_bootstrap_kwargs for k in bootstrap_kwargs), (
+            f"keys of `bootstrap_kwargs` must be in {allowed_bootstrap_kwargs}"
+        )
+        bs_kwargs = {
+            "n_resamples": n_resamples_default,
+            "method": "BCa",
+            "rng": None,
+        } | bootstrap_kwargs
+        n_resamples, method = bs_kwargs["n_resamples"], bs_kwargs["method"]
+        assert isinstance(n_resamples, (int, np.integer)) and n_resamples > 0, (
+            "`n_resamples` must be a positive integer"
+        )
+        assert method in ("BCa", "basic", "percentile"), (
+            "`method` must be one of 'BCa', 'basic', or 'percentile'"
+        )
+        return n_resamples, method, np.random.default_rng(bs_kwargs["rng"])
+
+    @staticmethod
     def _bootstrap_ci_mean(arr2d, mean, n_valid, confidence, n_resamples, method, rng):
         """
         Participant-level bootstrap CI of the column-wise (nan)mean of ``arr2d``.
@@ -855,7 +898,6 @@ class EpochByEpochAgreement:
         ... ]  # doctest: +SKIP
         '31.6 (9.3) [26.6, 38.0]'
         """
-        allowed_bootstrap_kwargs = ["n_resamples", "method", "rng"]
         assert self.n_sessions > 1, (
             "A proportional confusion matrix can not be computed with only one hypnogram pair."
         )
@@ -865,13 +907,7 @@ class EpochByEpochAgreement:
         assert isinstance(confidence, (int, float)) and 0 < confidence < 1, (
             "`confidence` must be a number between 0 and 1"
         )
-        assert isinstance(bootstrap_kwargs, (dict, type(None))), (
-            "`bootstrap_kwargs` must be a dictionary or None"
-        )
-        bootstrap_kwargs = {} if bootstrap_kwargs is None else bootstrap_kwargs
-        assert all(k in allowed_bootstrap_kwargs for k in bootstrap_kwargs), (
-            f"keys of `bootstrap_kwargs` must be in {allowed_bootstrap_kwargs}"
-        )
+        n_resamples, boot_method, rng = self._resolve_bootstrap_kwargs(bootstrap_kwargs, 1000)
         assert isinstance(formatted, bool), "`formatted` must be True or False"
         assert isinstance(decimals, int) and decimals >= 0, (
             "`decimals` must be a non-negative integer"
@@ -909,17 +945,8 @@ class EpochByEpochAgreement:
                 ci_lower = np.clip(mean - half_width, 0, 100)
                 ci_upper = np.clip(mean + half_width, 0, 100)
             elif ci_method == "boot":
-                bs_kwargs = {"n_resamples": 1000, "method": "BCa", "rng": None} | bootstrap_kwargs
-                n_resamples, method = bs_kwargs["n_resamples"], bs_kwargs["method"]
-                assert isinstance(n_resamples, (int, np.integer)) and n_resamples > 0, (
-                    "`n_resamples` must be a positive integer"
-                )
-                assert method in ("BCa", "basic", "percentile"), (
-                    "`method` must be one of 'BCa', 'basic', or 'percentile'"
-                )
-                rng = np.random.default_rng(bs_kwargs["rng"])
                 ci_lower, ci_upper = self._bootstrap_ci_mean(
-                    arr2d, mean, n_valid, confidence, n_resamples, method, rng
+                    arr2d, mean, n_valid, confidence, n_resamples, boot_method, rng
                 )
                 # Percentages are bounded; the basic method can slightly overshoot [0, 100].
                 ci_lower = np.clip(ci_lower, 0, 100)
@@ -1066,7 +1093,9 @@ class EpochByEpochAgreement:
                 ax.legend()
         return ax
 
-    def summary(self, by_stage=False, **kwargs):
+    def summary(
+        self, by_stage=False, ci_method=None, confidence=0.95, bootstrap_kwargs=None, **kwargs
+    ):
         """Return group-level agreement scores.
 
         Parameters
@@ -1075,6 +1104,49 @@ class EpochByEpochAgreement:
             If ``False`` (default), ``summary`` will include agreement scores derived from
             average-based metrics. If ``True``, returned ``summary`` :py:class:`~pandas.DataFrame`
             will include agreement scores for each sleep stage, derived from one-vs-rest metrics.
+        ci_method : str or None
+            Method used to compute a confidence interval of the mean of each metric across
+            sessions.
+
+            * ``None`` (default) — no confidence interval is computed.
+            * ``'boot'`` — non-parametric bootstrap across sessions (i.e., sessions are resampled
+              with replacement, a "participant bootstrap"). The same resampled sessions are used
+              for every metric (and stage), so each replicate remains internally consistent.
+              Sessions in which a metric is undefined (see the ``zero_division`` parameter of
+              :py:meth:`get_agreement_bystage`) are ignored, and replicates in which a metric has
+              no defined value are excluded from its percentiles.
+
+            The interval refers to the **mean across sessions**, and therefore generalizes to a
+            population of nights or participants; it is not the precision of any single session's
+            score. Epochs are never resampled: sleep stages occur in long bouts, so epochs within
+            a night are strongly autocorrelated and resampling them independently would badly
+            understate the uncertainty. The intervals are marginal rather than simultaneous, i.e.
+            no correction is applied for the number of metrics reported.
+
+            .. versionadded:: 0.8.0
+        confidence : float
+            Confidence level (between 0 and 1) of the confidence interval. Default is 0.95.
+
+            .. versionadded:: 0.8.0
+        bootstrap_kwargs : dict or None
+            Optional settings of the bootstrap procedure when ``ci_method='boot'``. Valid keys are:
+
+            * ``'n_resamples'`` — number of bootstrap resamples (int, default 10000).
+            * ``'method'`` — ``'BCa'`` (default) for bias-corrected and accelerated percentiles
+              [Efron1987]_, ``'percentile'`` for plain percentiles, or ``'basic'`` for the
+              reverse-percentile method. Metrics that are constant across all resamples fall back
+              to plain percentiles.
+            * ``'rng'`` — an integer seed or :py:class:`numpy.random.Generator` for reproducible
+              intervals (default None).
+
+            .. warning:: The ``'BCa'`` bias and acceleration corrections are estimated from the
+                sessions themselves, so with fewer than 20 sessions the adjusted percentiles fall
+                in the extreme tail of a coarse bootstrap distribution and the bounds end up
+                driven by individual sessions (and keep drifting as ``n_resamples`` grows). A
+                :py:class:`RuntimeWarning` is emitted in that case; prefer
+                ``{'method': 'percentile'}`` or the parametric ``summary(func=['mean', 'sem'])``.
+
+            .. versionadded:: 0.8.0
         **kwargs : key, value pairs
             Additional keyword arguments are passed to :py:meth:`pandas.DataFrame.groupby.agg`.
             This can be used to customize the descriptive statistics returned.
@@ -1085,6 +1157,13 @@ class EpochByEpochAgreement:
             A :py:class:`pandas.DataFrame` summarizing agreement scores across the entire dataset
             with descriptive statistics. Each row is an agreement metric and each column is a
             descriptive statistic (e.g., mean, standard deviation).
+
+            When ``ci_method`` is not ``None``, two extra columns ``ci_lower`` and ``ci_upper``
+            are appended. Unlike :py:meth:`get_confusion_matrix_proportional`, these are **not**
+            clipped to [0, 100], because the default scorers mix percentages with coefficients
+            ranging from -1 to 1 and custom ``scorers`` have an unknown range. With
+            ``by_stage=True``, ``support`` is an epoch count rather than an agreement score and
+            is therefore left without a confidence interval.
 
         Examples
         --------
@@ -1117,11 +1196,35 @@ class EpochByEpochAgreement:
         mcc             5.0   0.05  0.03
         precision       5.0  28.26  3.28
         f1              5.0  27.97  3.07
+
+        To add a bootstrap confidence interval of the mean across sessions, pass ``ci_method``.
+        Only 5 sessions are available here, so the ``'percentile'`` method is used instead of the
+        ``'BCa'`` default (see the ``bootstrap_kwargs`` warning above), and ``rng`` makes the
+        result reproducible:
+
+        >>> ebe.summary(
+        ...     ci_method="boot",
+        ...     bootstrap_kwargs={"method": "percentile", "n_resamples": 1000, "rng": 0},
+        ...     func=["mean"],
+        ... ).round(2)
+                       mean  ci_lower  ci_upper
+        metric
+        accuracy      28.58     23.68     33.28
+        balanced_acc  24.16     20.08     29.09
+        kappa          0.04     -0.01      0.10
+        mcc            0.05     -0.01      0.10
+        precision     28.26     22.50     34.03
+        f1            27.97     22.60     33.13
         """
         assert self.n_sessions > 1, (
             "Summary scores can not be computed with only one hypnogram pair."
         )
         assert isinstance(by_stage, bool), "`by_stage` must be True or False"
+        assert ci_method is None or ci_method == "boot", "`ci_method` must be 'boot' or None"
+        assert isinstance(confidence, (int, float)) and 0 < confidence < 1, (
+            "`confidence` must be a number between 0 and 1"
+        )
+        n_resamples, boot_method, rng = self._resolve_bootstrap_kwargs(bootstrap_kwargs, 10000)
         if by_stage and not hasattr(self, "_agreement_bystage"):
             self.get_agreement_bystage()
         elif not by_stage and not hasattr(self, "_agreement"):
@@ -1142,6 +1245,44 @@ class EpochByEpochAgreement:
             )
         else:
             summary = self._agreement.agg(**agg_kwargs).T.rename_axis("metric")
+        if ci_method is None:
+            return summary
+
+        if boot_method == "BCa" and self.n_sessions < 20:
+            warnings.warn(
+                "The BCa bootstrap interval can be unstable with few sessions "
+                f"(n_sessions={self.n_sessions}). Consider "
+                "bootstrap_kwargs={'method': 'percentile'} or the parametric "
+                "summary(func=['mean', 'sem']) instead.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+        # Reshape so that rows are sessions and columns are the quantities to summarize, which is
+        # what `_bootstrap_ci_mean` expects: sessions are the resampling unit and the same
+        # resampled sessions are used for every column.
+        if by_stage:
+            wide = self._agreement_bystage.unstack("stage")
+            # Columns are (metric, stage); reorder to match the (stage, metric) summary index
+            ci_index = wide.columns.swaplevel().rename(["stage", "metric"])
+        else:
+            wide = self._agreement
+            ci_index = pd.Index(wide.columns, name="metric")
+        arr2d = wide.to_numpy(dtype=float)
+        with warnings.catch_warnings():
+            # Metrics that are undefined in every session are all-NaN and legitimately produce
+            # NaN statistics; silence the "Mean of empty slice" family of warnings.
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            mean = np.nanmean(arr2d, axis=0)
+            n_valid = np.sum(~np.isnan(arr2d), axis=0)
+            ci_lower, ci_upper = self._bootstrap_ci_mean(
+                arr2d, mean, n_valid, confidence, n_resamples, boot_method, rng
+            )
+        summary["ci_lower"] = pd.Series(ci_lower, index=ci_index).reindex(summary.index)
+        summary["ci_upper"] = pd.Series(ci_upper, index=ci_index).reindex(summary.index)
+        if by_stage:
+            # `support` is the number of epochs of each stage, not an agreement score
+            is_support = summary.index.get_level_values("metric") == "support"
+            summary.loc[is_support, ["ci_lower", "ci_upper"]] = np.nan
         return summary
 
 

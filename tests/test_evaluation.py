@@ -2,6 +2,7 @@
 
 import re
 import unittest
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -144,6 +145,149 @@ class TestGetAgreementByStageZeroDivision(unittest.TestCase):
         assert np.isnan(ref.evaluate(obs).get_agreement_bystage().at["N2", "specificity"])
         agr0 = ref.evaluate(obs).get_agreement_bystage(zero_division=0)
         assert agr0.at["N2", "specificity"] == 0
+
+
+class TestSummaryBootCI(unittest.TestCase):
+    """Bootstrap confidence intervals for EpochByEpochAgreement.summary()."""
+
+    # A 20-session object, the threshold at which the BCa small-n warning stops being emitted.
+    # `tib` must be long enough for every stage to occur, otherwise `simulate_similar` cannot
+    # build a transition matrix.
+    _ref_large = [simulate_hypnogram(tib=480, scorer=REF_SCORER, seed=i) for i in range(20)]
+    _obs_large = [h.simulate_similar(scorer=OBS_SCORER, seed=i) for i, h in enumerate(_ref_large)]
+    ebe_large = EpochByEpochAgreement(_ref_large, _obs_large)
+
+    @staticmethod
+    def _summary(obj, **kwargs):
+        """Call summary() with the BCa small-n warning silenced."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            return obj.summary(**kwargs)
+
+    def test_no_ci_by_default(self):
+        # `ci_method=None` is the default, so the historical output is unchanged
+        default = ebe.summary()
+        assert not {"ci_lower", "ci_upper"} & set(default.columns)
+        pd.testing.assert_frame_equal(default, ebe.summary(ci_method=None))
+        pd.testing.assert_frame_equal(
+            ebe.summary(by_stage=True), ebe.summary(by_stage=True, ci_method=None)
+        )
+
+    def test_ci_brackets_mean(self):
+        for by_stage in [False, True]:
+            for method in ["BCa", "basic", "percentile"]:
+                kwargs = {"n_resamples": 200, "rng": 0, "method": method}
+                out = self._summary(
+                    ebe, by_stage=by_stage, ci_method="boot", bootstrap_kwargs=kwargs
+                )
+                msg = f"by_stage={by_stage}, method={method}"
+                assert out.columns[-2:].tolist() == ["ci_lower", "ci_upper"], msg
+                # Metrics defined in at least one session must have a finite CI around the mean
+                valid = out.dropna(subset=["ci_lower", "ci_upper"])
+                assert not valid.empty, msg
+                assert (valid["ci_lower"] <= valid["mean"] + 1e-9).all(), msg
+                assert (valid["ci_upper"] >= valid["mean"] - 1e-9).all(), msg
+
+    def test_bca_is_the_default_method(self):
+        default = self._summary(
+            ebe, ci_method="boot", bootstrap_kwargs={"n_resamples": 200, "rng": 0}
+        )
+        bca = self._summary(
+            ebe, ci_method="boot", bootstrap_kwargs={"n_resamples": 200, "rng": 0, "method": "BCa"}
+        )
+        pd.testing.assert_frame_equal(default, bca)
+
+    def test_reproducible_with_rng(self):
+        kwargs = {"n_resamples": 200, "rng": 3}
+        out = self._summary(ebe, ci_method="boot", bootstrap_kwargs=kwargs)
+        pd.testing.assert_frame_equal(
+            out, self._summary(ebe, ci_method="boot", bootstrap_kwargs=kwargs)
+        )
+        other = self._summary(
+            ebe, ci_method="boot", bootstrap_kwargs={"n_resamples": 200, "rng": 4}
+        )
+        assert not out["ci_lower"].equals(other["ci_lower"])
+
+    def test_matches_manual_session_bootstrap(self):
+        # Re-implement the basic participant bootstrap by hand with the same rng. Also checks that
+        # the CI is NOT clipped, unlike get_confusion_matrix_proportional.
+        n_resamples = 100
+        out = self._summary(
+            ebe,
+            ci_method="boot",
+            bootstrap_kwargs={"n_resamples": n_resamples, "rng": 42, "method": "basic"},
+        )
+        arr = ebe.get_agreement().to_numpy(dtype=float)  # (n_sessions, n_metrics)
+        rng = np.random.default_rng(42)
+        idx = rng.integers(0, N_SESSIONS, size=(n_resamples, N_SESSIONS))
+        boot = np.nanmean(arr[idx], axis=1)
+        mean = np.nanmean(arr, axis=0)
+        lo, hi = np.nanpercentile(boot, [2.5, 97.5], axis=0)
+        np.testing.assert_allclose(out["ci_lower"].to_numpy(), 2 * mean - hi)
+        np.testing.assert_allclose(out["ci_upper"].to_numpy(), 2 * mean - lo)
+
+    def test_undefined_metrics_and_support(self):
+        # Session 1 of `ebe_missing` has no N1 and no N3 in the reference hypnogram. Other tests
+        # share this fixture and cache `zero_division=0` scores on it, so re-compute the default
+        # (NaN) scores rather than depending on test order.
+        ebe_missing.get_agreement_bystage()
+        out = self._summary(
+            ebe_missing,
+            by_stage=True,
+            ci_method="boot",
+            bootstrap_kwargs={"n_resamples": 200, "rng": 0},
+            func=["count", "mean"],
+        )
+        # N3 recall is undefined in both sessions -> no mean and no CI
+        assert out.at[("N3", "recall"), "count"] == 0
+        assert out.loc[("N3", "recall"), ["ci_lower", "ci_upper"]].isna().all()
+        # N1 recall is defined in a single session -> the CI collapses onto that value
+        assert out.at[("N1", "recall"), "count"] == 1
+        np.testing.assert_allclose(
+            out.loc[("N1", "recall"), ["ci_lower", "ci_upper"]].to_numpy(dtype=float),
+            out.at[("N1", "recall"), "mean"],
+        )
+        # Metrics defined in both sessions get a real interval
+        assert out.loc[("WAKE", "recall"), ["ci_lower", "ci_upper"]].notna().all()
+        # `support` is an epoch count, not an agreement score
+        assert out.xs("support", level="metric")[["ci_lower", "ci_upper"]].isna().all().all()
+
+    def test_small_n_bca_warning(self):
+        assert ebe.n_sessions < 20
+        with pytest.warns(RuntimeWarning, match="BCa"):
+            ebe.summary(ci_method="boot", bootstrap_kwargs={"n_resamples": 50})
+        # Only BCa is affected, and only below the threshold
+        for obj, kwargs in [
+            (ebe, {"n_resamples": 50, "method": "percentile"}),
+            (ebe, {"n_resamples": 50, "method": "basic"}),
+            (self.ebe_large, {"n_resamples": 50}),
+        ]:
+            with warnings.catch_warnings(record=True) as rec:
+                warnings.simplefilter("always")
+                obj.summary(ci_method="boot", bootstrap_kwargs=kwargs)
+            assert not [w for w in rec if "BCa" in str(w.message)], kwargs
+        # No bootstrap at all means no warning
+        with warnings.catch_warnings(record=True) as rec:
+            warnings.simplefilter("always")
+            ebe.summary()
+        assert not [w for w in rec if "BCa" in str(w.message)]
+
+    def test_invalid_args_raise(self):
+        bad_kwargs = [
+            dict(ci_method="param"),
+            dict(ci_method=True),
+            dict(confidence=95),
+            dict(confidence=0),
+            dict(bootstrap_kwargs={"confidence_level": 0.9}),
+            dict(bootstrap_kwargs={"method": "bca"}),
+            dict(bootstrap_kwargs={"n_resamples": 0}),
+            dict(bootstrap_kwargs=[]),
+        ]
+        for kwargs in bad_kwargs:
+            with pytest.raises(AssertionError):
+                ebe.summary(**kwargs)
+        with pytest.raises(AssertionError):
+            ebe_single.summary(ci_method="boot")
 
 
 class TestGetConfusionMatrixProportional(unittest.TestCase):
