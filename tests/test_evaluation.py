@@ -665,9 +665,10 @@ class TestSleepStatsAgreementAssumptions(unittest.TestCase):
             if gate == "sd_ratio":
                 effect = np.maximum(effect, 1 / effect)
             failed = ~asmp[(name, "passed")]
-            assert (
-                failed == (asmp[(name, "pvalue")].lt(0.05) & effect.gt(ssa.effect_size_gates[gate]))
-            ).all()
+            # Use ~ge rather than lt to match the implementation when the p-value is NaN, e.g. a
+            # regression on two sessions (scipy >= 1.18 returns NaN instead of 0).
+            significant = ~asmp[(name, "pvalue")].ge(0.05)
+            assert (failed == (significant & effect.gt(ssa.effect_size_gates[gate]))).all()
 
 
 class TestSleepStatsAgreementSummary(unittest.TestCase):
