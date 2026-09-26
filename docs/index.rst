@@ -50,22 +50,22 @@ For more details, try the :ref:`tutorials` or read the :ref:`faq`.
 Installation
 ~~~~~~~~~~~~
 
-YASA is a Python 3 package and is currently tested for Python 3.10+.
+YASA is a Python 3 package and is currently tested for Python 3.11+.
 
 Dependencies
 ------------
 
 The core dependencies of YASA are:
 
-* `NumPy <https://numpy.org/>`_ >= 1.23.5
+* `NumPy <https://numpy.org/>`_ >= 2.2.2
 * `SciPy <https://www.scipy.org/>`_ >= 1.15
-* `Pandas <https://pandas.pydata.org/>`_ >= 2.1.1
-* `Matplotlib <https://matplotlib.org/>`_
-* `Seaborn <https://seaborn.pydata.org/>`_
-* `MNE <https://mne.tools/stable/>`_ >= 1.5
-* `Scikit-learn <https://scikit-learn.org/>`_ >= 1.3
-* `LightGBM <https://lightgbm.readthedocs.io/>`_
-* `Antropy <https://github.com/raphaelvallat/antropy>`_
+* `Pandas <https://pandas.pydata.org/>`_ >= 2.3
+* `Matplotlib <https://matplotlib.org/>`_ >= 3.10.1
+* `Seaborn <https://seaborn.pydata.org/>`_ >= 0.13.2
+* `MNE <https://mne.tools/stable/>`_ >= 1.10
+* `Scikit-learn <https://scikit-learn.org/>`_ >= 1.6.1
+* `LightGBM <https://lightgbm.readthedocs.io/>`_ >= 4.6
+* `Antropy <https://github.com/raphaelvallat/antropy>`_ >= 0.1.9
 * `lspopt <https://github.com/hbldh/lspopt>`_ >= 1.4
 
 Some features require optional dependencies (`SleepECG <https://sleepecg.readthedocs.io/>`_,

@@ -27,11 +27,11 @@ jobs:
       fail-fast: false
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.13"]
+        python-version: ["3.11", "3.13", "3.14"]
 
     runs-on: ${{ matrix.platform }}
     env:
-      COVERAGE_JOB: ${{ matrix.platform == 'ubuntu-latest' && matrix.python-version == '3.13' }}
+      COVERAGE_JOB: ${{ matrix.platform == 'ubuntu-latest' && matrix.python-version == '3.14' }}
 
     steps:
       - uses: actions/checkout@v6
@@ -86,11 +86,14 @@ jobs:
         platform: [ubuntu-latest, windows-latest]
         deps:
           # Minimum supported versions (as defined in pyproject.toml)
-          - python-version: "3.10"
-            numpy: "numpy==1.23.5"
+          - python-version: "3.11"
+            numpy: "numpy==2.2.2"
             scipy: "scipy==1.15.0"
-            pandas: "pandas==2.1.1"
-            mne: "mne==1.5.0"
+            pandas: "pandas==2.3.0"
+            mne: "mne==1.10.0"
+            others: >-
+              matplotlib==3.10.1 seaborn==0.13.2 antropy==0.1.9 scikit-learn==1.6.1
+              lspopt==1.4.0 lightgbm==4.6.0 pooch==1.8.0 sleepecg==0.5.9 pyriemann==0.8
             label: "minimum-versions"
 
           # The latest versions are tested in the test job
@@ -126,13 +129,10 @@ jobs:
           "${{ matrix.deps.scipy }}"
           "${{ matrix.deps.pandas }}"
           "${{ matrix.deps.mne }}"
+          ${{ matrix.deps.others }}
 
       - name: Display installed versions
-        run: |
-          python -c "import numpy; print(f'numpy: {numpy.__version__}')"
-          python -c "import scipy; print(f'scipy: {scipy.__version__}')"
-          python -c "import pandas; print(f'pandas: {pandas.__version__}')"
-          python -c "import mne; print(f'mne: {mne.__version__}')"
+        run: uv pip list
 
       - name: Test with pytest
         run: pytest --verbose
