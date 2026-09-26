@@ -737,21 +737,48 @@ class TestSleepStatsAgreementCalibrate(unittest.TestCase):
     """calibrate() requires all columns to be in ssa.sleep_statistics — stats with identical values
     across scorers (e.g. TIB) are removed during construction, so _obs_stats is subset first."""
 
+    _methods = ssa.assumptions[("constant_bias", "method")]
+    _param_stats = _methods.index[_methods == "param"].tolist()
+    _regr_stats = _methods.index[_methods == "regr"].tolist()
+
+    def test_fixture_includes_both_methods(self):
+        assert len(self._param_stats) >= 2 and len(self._regr_stats) >= 1
+
     def test_calibrated_values(self):
         obs = _obs_stats[ssa.sleep_statistics]
         vals = ssa.summary(ci_method=None).xs("center", level="interval", axis=1)
         param = ssa.calibrate(obs, bias_method="param")
         assert isinstance(param, pd.DataFrame) and param.shape == obs.shape
         pd.testing.assert_frame_equal(param, obs - vals["bias_mean"], check_names=False)
-        regr = ssa.calibrate(obs, bias_method="regr")
-        expected = (obs - vals["bias_intercept"]) / (1 + vals["bias_slope"])
-        pd.testing.assert_frame_equal(regr, expected, check_names=False)
-        # "auto" keeps the column order and missing values of the input
+        # The column order and missing values of the input are kept
         obs_nan = obs.copy()
         obs_nan.iloc[0, 0] = np.nan
-        auto = ssa.calibrate(obs_nan, bias_method="auto")
-        assert auto.columns.tolist() == obs.columns.tolist()
-        assert np.isnan(auto.iloc[0, 0]) and auto.notna().sum().sum() == obs.notna().sum().sum() - 1
+        param_nan = ssa.calibrate(obs_nan, bias_method="param")
+        assert param_nan.columns.tolist() == obs.columns.tolist()
+        assert np.isnan(param_nan.iloc[0, 0])
+        assert param_nan.notna().sum().sum() == obs.notna().sum().sum() - 1
+
+    def test_auto_constant_bias(self):
+        # With constant-bias statistics only, "auto" subtracts the mean difference
+        obs = _obs_stats[self._param_stats]
+        auto = ssa.calibrate(obs, bias_method="auto")
+        pd.testing.assert_frame_equal(auto, ssa.calibrate(obs, bias_method="param"))
+
+    def test_proportional_bias_not_implemented(self):
+        with pytest.raises(NotImplementedError):
+            ssa.calibrate(_obs_stats[self._param_stats], bias_method="regr")
+        # "auto" raises as soon as one statistic has a proportional bias, and names it
+        regr_stat = self._regr_stats[0]
+        with pytest.raises(NotImplementedError, match=re.escape(regr_stat)):
+            ssa.calibrate(_obs_stats[[self._param_stats[0], regr_stat]], bias_method="auto")
+
+    def test_subset_of_columns(self):
+        # Calibrating a subset of statistics returns only these columns, in the same order
+        cols = [self._param_stats[1], self._param_stats[0]]
+        full = ssa.calibrate(_obs_stats[ssa.sleep_statistics], bias_method="param")
+        subset = ssa.calibrate(_obs_stats[cols], bias_method="auto")
+        assert subset.columns.tolist() == cols
+        pd.testing.assert_frame_equal(subset, full[cols])
 
     def test_invalid_column_raises(self):
         bad = _obs_stats[ssa.sleep_statistics].rename(columns={"TST": "NOT_A_STAT"})
