@@ -803,7 +803,7 @@ class EpochByEpochAgreement:
         """
         Return the group-level *proportional* confusion (error) matrix, i.e. the mean, standard
         deviation, and confidence interval across sessions of the row-normalized per-session
-        confusion matrices, as reported in Menghini et al., 2021 [Menghini2021]_.
+        confusion matrices, as reported in Menghini et al. (2021).
 
         For each session, the confusion matrix is first normalized by row, so that each cell is
         the percentage of reference-scorer epochs of a given stage that the observed scorer
@@ -839,7 +839,7 @@ class EpochByEpochAgreement:
 
             * ``'n_resamples'`` — number of bootstrap resamples (int, default 1000).
             * ``'method'`` — ``'BCa'`` (default) for bias-corrected and accelerated percentiles
-              [Efron1987]_, which corrects for the skewness and bias of the bootstrap
+              (Efron, 1987), which corrects for the skewness and bias of the bootstrap
               distribution and is more accurate than the simpler alternatives; ``'percentile'``
               for plain percentiles; or ``'basic'`` for the reverse-percentile method used by the
               reference pipeline of Menghini et al. (2021). Cells that are constant across all
@@ -1125,7 +1125,7 @@ class EpochByEpochAgreement:
 
             * ``'n_resamples'`` — number of bootstrap resamples (int, default 10000).
             * ``'method'`` — ``'BCa'`` (default) for bias-corrected and accelerated percentiles
-              [Efron1987]_, ``'percentile'`` for plain percentiles, or ``'basic'`` for the
+              (Efron, 1987), ``'percentile'`` for plain percentiles, or ``'basic'`` for the
               reverse-percentile method. Metrics that are constant across all resamples fall back
               to plain percentiles.
             * ``'rng'`` — an integer seed or :py:class:`numpy.random.Generator` for reproducible
@@ -2094,7 +2094,7 @@ class SleepStatsAgreement:
         """
         Return a human-readable :py:class:`~pandas.DataFrame` for reporting bias, limits of
         agreement, and statistical assumption results, following the reporting format proposed by
-        Menghini et al. (2021) [Menghini2021]_.
+        Menghini et al. (2021).
 
         Each row corresponds to one sleep statistic, labelled with its unit (e.g.
         ``"TST (min)"``). Reference and observed scorer means (SD) are shown first, followed by
