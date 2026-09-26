@@ -7,6 +7,58 @@ What's new
 v0.8.0 (unreleased)
 -------------------
 
+**Evaluation module**
+
+The evaluation module (:py:class:`yasa.EpochByEpochAgreement` and
+:py:class:`yasa.SleepStatsAgreement`), previously experimental, now follows the standardized
+framework for testing the performance of sleep-tracking technology of Menghini et al. (2021), and
+is validated against the published sample dataset of that paper.
+
+*Epoch-by-epoch agreement*
+
+* All proportion-based metrics (accuracy, precision, F1, specificity, NPV, ...) are expressed as
+  percentages (0-100), as in the reference framework. ``kappa`` and ``mcc`` keep their -1 to 1
+  scale.
+* :py:meth:`yasa.EpochByEpochAgreement.get_confusion_matrix_proportional` returns the group-level
+  proportional error matrix: the mean, SD, and confidence interval across sessions of the
+  row-normalized per-session confusion matrices (Table 5 of the paper). Confidence intervals use a
+  participant bootstrap (BCa by default; ``basic`` and ``percentile`` available) or a parametric
+  t-interval. Use ``formatted=True`` for a ``"mean (SD) [lower, upper]"`` table.
+* :py:meth:`yasa.EpochByEpochAgreement.get_agreement_bystage` reports specificity and NPV per
+  stage, and leaves metrics that are undefined for a session (e.g. recall for a stage absent from
+  the reference hypnogram) missing rather than counting them as 0, so that they do not bias group
+  averages. The ``zero_division`` parameter controls this behavior.
+* :py:meth:`yasa.EpochByEpochAgreement.get_agreement` can pool all epochs across sessions
+  (``pooled=True``), accept a list of ``sklearn.metrics`` names as ``scorers``, and weight epochs
+  with ``sample_weight``. :py:meth:`~yasa.EpochByEpochAgreement.summary` computes the scores
+  itself if needed.
+
+*Sleep statistics agreement*
+
+* :py:class:`yasa.SleepStatsAgreement` can be built directly from the output of
+  :py:meth:`yasa.EpochByEpochAgreement.get_sleep_stats`.
+* :py:meth:`yasa.SleepStatsAgreement.report` produces the publication-ready table of the paper:
+  ``mean (SD)`` of both scorers, bias and limits of agreement with confidence intervals, and the
+  assumption checks that drove the method selection. Select statistics with ``sleep_stats`` and
+  omit confidence intervals (and the bootstrap) with ``ci_method=None``.
+* Limits of agreement follow the paper for every combination of assumptions: constant, parallel
+  to a regression bias line at ``± 1.96 SD`` of its residuals (eq. 2), modeled as a function of
+  the reference value (heteroscedasticity), or proportional after a log transformation
+  (``log_transform=True``, Euser et al. 2008). All quantities, including the new
+  ``loa_halfwidth`` and ``loa_log_slope`` variables, are available with confidence intervals in
+  :py:meth:`yasa.SleepStatsAgreement.summary`.
+* :py:attr:`yasa.SleepStatsAgreement.assumptions` gathers, for each assumption test, the test
+  statistic, p-value, effect size (Cohen's d, skew, kurtosis, R²), pass/fail flag, and the method
+  selected when ``'auto'`` is requested, so that the practical relevance of a violation can be
+  judged.
+* :py:meth:`yasa.SleepStatsAgreement.calibrate` corrects new data for the observed bias, using
+  either the mean bias or the inverted bias regression per statistic.
+* :py:meth:`yasa.SleepStatsAgreement.plot_blandaltman` draws a grid of Bland-Altman plots (at
+  most 4 columns) with the bias line, limits of agreement, and their confidence bands.
+* Robust handling of edge cases: sessions with a missing value are dropped per statistic (e.g. REM
+  latency for a night without REM sleep), and statistics containing a zero are excluded from the
+  log transformation with a warning instead of depending on an arbitrary offset.
+
 **Bugfixes**
 
 * Fixed a units bug in :py:meth:`yasa.Hypnogram.sleep_statistics`: the Sleep Fragmentation Index
@@ -21,6 +73,10 @@ v0.8.0 (unreleased)
    SFI was scaled by ``epoch_length / 60``, so it was only correct for 60-second epochs. If you
    have published or stored SFI values computed with an earlier version of YASA, recompute them,
    or multiply the old values by ``60 / epoch_length`` to recover the corrected rate.
+
+**Dependencies**
+
+* Bumped minimum ``scikit-learn`` version to 1.3.
 
 ----------------------------------------------------------------------------------------
 

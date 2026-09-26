@@ -1851,13 +1851,12 @@ class Hypnogram:
         >>> hyp_b = hyp_a.simulate_similar(scorer="YASA", seed=9)
         >>> ebe = hyp_a.evaluate(hyp_b)
         >>> ebe.get_agreement().round(3)
-        accuracy        0.550
-        balanced_acc    0.355
-        kappa           0.227
-        mcc             0.231
-        precision       0.515
-        recall          0.550
-        f1              0.524
+        accuracy        55.000
+        balanced_acc    35.497
+        kappa            0.227
+        mcc              0.231
+        precision       51.484
+        f1              52.380
         Name: agreement, dtype: float64
         """
         return EpochByEpochAgreement([self], [obs_hyp])
