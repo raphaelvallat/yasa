@@ -65,10 +65,10 @@ jobs:
         deps:
           # Minimum supported versions (as defined in pyproject.toml)
           - python-version: "3.10"
-            numpy: "numpy==1.22.4"
-            scipy: "scipy==1.10.0"
+            numpy: "numpy==1.23.5"
+            scipy: "scipy==1.15.0"
             pandas: "pandas==2.1.1"
-            mne: "mne==1.3.0"
+            mne: "mne==1.5.0"
             label: "minimum-versions"
 
           # Latest available versions (already tested above)
@@ -96,10 +96,6 @@ jobs:
         with:
           path: ${{ github.workspace }}/.yasa_data
           key: yasa-sample-data-14564285
-
-      - name: Install setuptools (required by mne==1.3.0)
-        if: ${{ matrix.deps.label == 'minimum-versions' }}
-        run: uv pip install setuptools
 
       - name: Install numpy (${{ matrix.deps.label }})
         run: uv pip install "${{ matrix.deps.numpy }}"
