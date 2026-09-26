@@ -1420,8 +1420,8 @@ class SleepStatsAgreement:
     3  57.0  469.5  120.0
     4  71.0  531.0   69.0
 
-    >>> new_stats_calibrated = ssa.calibrate(new_sstats[ssa.sleep_statistics], bias_method="auto")
-    >>> new_stats_calibrated[["N1", "TST", "WASO"]].round(1).head(5)
+    >>> new_stats_calibrated = ssa.calibrate(new_sstats[["N1", "TST", "WASO"]], bias_method="auto")
+    >>> new_stats_calibrated.round(1).head(5)
          N1    TST   WASO
     0  42.1  445.2  145.0
     1  83.6  555.8   36.0
@@ -2389,18 +2389,29 @@ class SleepStatsAgreement:
             A :py:class:`pandas.DataFrame` with sleep statistics from an observed scorer.
             Rows are unique observations and columns are unique sleep statistics.
         bias_method : str
-            If ``'param'``, sleep statistics are always adjusted based on parametric bias.
-            If ``'regr'``, sleep statistics are always adjusted based on regression-modeled bias.
-            If ``'auto'`` (default), bias sleep statistics are adjusted by either ``'param'`` or
-            ``'regr'``, depending on assumption violations.
+            If ``'param'``, sleep statistics are always adjusted based on parametric bias, i.e.
+            the mean difference is subtracted from ``data``.
+            If ``'auto'`` (default), the parametric bias is used for all sleep statistics with a
+            constant bias, and a :py:class:`NotImplementedError` is raised if ``data`` contains a
+            sleep statistic with a proportional bias (see
+            :py:attr:`~yasa.SleepStatsAgreement.assumptions`).
+            ``'regr'`` (regression-modeled bias) is not implemented yet and raises a
+            :py:class:`NotImplementedError`.
 
             .. seealso:: :py:meth:`~yasa.SleepStatsAgreement.summary`
 
         Returns
         -------
         calibrated_data : :py:class:`pandas.DataFrame`
-            A :py:class:`~pandas.DataFrame` with calibrated sleep statistics: ``x - bias_mean``
-            for the parametric bias and ``(x - b0) / (1 + b1)`` for the regression bias.
+            A :py:class:`~pandas.DataFrame` with calibrated sleep statistics: ``x - bias_mean``.
+
+        Raises
+        ------
+        NotImplementedError
+            If ``bias_method='regr'``, or if ``bias_method='auto'`` and ``data`` contains a sleep
+            statistic with a proportional bias. To calibrate only the statistics with a constant
+            bias, subset the columns of ``data``, or use ``bias_method='param'`` to subtract the
+            mean difference from all statistics.
         """
         assert isinstance(data, pd.DataFrame), "`data` must be a pandas DataFrame"
         assert all(col in self.sleep_statistics for col in data), (
@@ -2410,23 +2421,36 @@ class SleepStatsAgreement:
         assert bias_method in self._bias_method_opts, (
             f"`bias_method` must be one of {self._bias_method_opts}"
         )
-        # Restrict to the columns of `data`, otherwise the arithmetic below would align on all
-        # sleep statistics and add columns of NaN for those not in `data`
-        vals = self._vals.loc[data.columns]
-        param_adjusted = data - vals["bias_mean"]
-        regr_adjusted = (data - vals["bias_intercept"]) / (1 + vals["bias_slope"])
-        if bias_method == "param":
-            calibrated_data = param_adjusted
-        elif bias_method == "regr":
-            calibrated_data = regr_adjusted
-        elif bias_method == "auto":
-            # Select the method column by column. DataFrame.where does not align a boolean Series
-            # with the columns, so it would silently apply the regression to all statistics.
-            use_param = self._assumptions.loc[data.columns, ("constant_bias", "method")].eq("param")
-            param_cols = use_param.index[use_param]
-            calibrated_data = regr_adjusted.copy()
-            calibrated_data[param_cols] = param_adjusted[param_cols]
-        return calibrated_data
+        # TODO: implement the calibration of sleep statistics with a proportional bias, i.e. with
+        # a bias modeled as `obs - ref = b0 + b1 * ref`. Three candidate methods:
+        #   1. Invert the bias model: `(x - b0) / (1 + b1)`. Exact without random error, but the
+        #      random error of the device is multiplied by 1 / (1 + b1), which explodes when the
+        #      slope is close to -1. This was the previous implementation of `bias_method="regr"`.
+        #   2. Use the device value as the size of the measurement, as suggested by Menghini et
+        #      al. (2021): `x - (b0 + b1 * x)`. Less extreme, but it also amplifies the error.
+        #   3. Regress the reference on the device, `ref = a0 + a1 * obs`, and predict the
+        #      reference from new device values. This minimizes the prediction error, but shrinks
+        #      the values toward the mean of the calibration sample, so it only transfers to
+        #      similar populations, and it is no longer derived from the Bland-Altman bias.
+        # On the 14 nights of the SRI sample dataset (leave-one-night-out), only method 3 reduced
+        # the error of the device for deep and REM sleep, and method 1 was worse than no
+        # calibration for all statistics with a proportional bias.
+        if bias_method == "regr":
+            raise NotImplementedError(
+                "Calibration based on a regression-modeled (proportional) bias is not implemented "
+                "yet. Use `bias_method='param'` to subtract the mean difference instead."
+            )
+        if bias_method == "auto":
+            is_regr = self._assumptions.loc[data.columns, ("constant_bias", "method")].eq("regr")
+            if is_regr.any():
+                raise NotImplementedError(
+                    "Calibration of sleep statistics with a proportional bias is not implemented "
+                    f"yet: {is_regr.index[is_regr].tolist()}. Remove these columns from `data`, or "
+                    "use `bias_method='param'` to subtract the mean difference instead."
+                )
+        # Restrict to the columns of `data`, otherwise the subtraction would align on all sleep
+        # statistics and add columns of NaN for those not in `data`
+        return data - self._vals.loc[data.columns, "bias_mean"]
 
     def plot_blandaltman(
         self,
