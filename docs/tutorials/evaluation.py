@@ -144,6 +144,15 @@ def main(local, outdir):
         ssa.assumptions["unbiased"].loc[unbiased_stats].round(3),
     )
 
+    # Effect-size gates (dropdown panel)
+    ssa_strict = yasa.SleepStatsAgreement(sstats, effect_size_gates={"r2": 0.2})
+    show("ssa_strict.effect_size_gates", ssa_strict.effect_size_gates)
+    no_gates = {"skew": None, "kurtosis": None, "r2": None, "sd_ratio": None}
+    ssa_r = yasa.SleepStatsAgreement(sstats, effect_size_gates=no_gates)
+    passed = ssa.assumptions.xs("passed", level="metric", axis=1).loc[STATS]
+    passed_r = ssa_r.assumptions.xs("passed", level="metric", axis=1).loc[STATS]
+    show("Report statistics whose outcome changes without gates", passed.compare(passed_r))
+
     # Report table
     report = ssa.report(sleep_stats=STATS)
     show(

@@ -37,8 +37,8 @@ class EpochByEpochAgreement:
     summarized across all sleep and summarized by sleep stage, and various plotting options to
     visualize the two hypnograms simultaneously. See examples for more detail.
 
-    .. warning:: **Experimental** — the API of this class may change before the full release
-        planned for v0.8.0. Use with caution.
+    For a complete walkthrough of the evaluation pipeline of Menghini et al. (2021), see the
+    :ref:`tutorial_evaluation` tutorial.
 
     .. versionadded:: 0.7.0
 
@@ -50,7 +50,7 @@ class EpochByEpochAgreement:
         Each :py:class:`yasa.Hypnogram` in ``ref_hyps`` must have the same
         :py:attr:`~yasa.Hypnogram.scorer`.
 
-        If a ``dict``, key values are use to generate unique sleep session IDs. If any other
+        If a ``dict``, key values are used to generate unique sleep session IDs. If any other
         iterable (e.g., ``list`` or ``tuple``), then unique sleep session IDs are automatically
         generated.
     obs_hyps : iterable of :py:class:`yasa.Hypnogram`
@@ -70,20 +70,12 @@ class EpochByEpochAgreement:
 
         .. seealso:: For comparing just two hypnograms, use :py:meth:`yasa.Hypnogram.evaluate`.
 
-    Notes
-    -----
-    Many steps here are influenced by guidelines proposed in Menghini et al., 2021 [Menghini2021]_.
-    See https://sri-human-sleep.github.io/sleep-trackers-performance/AnalyticalPipeline_v1.0.0.html
-
     References
     ----------
     .. [Menghini2021] Menghini, L., Cellini, N., Goldstone, A., Baker, F. C., & de Zambotti, M.
                       (2021). A standardized framework for testing the performance of sleep-tracking
                       technology: step-by-step guidelines and open-source code. SLEEP, 44(2),
                       zsaa170. https://doi.org/10.1093/sleep/zsaa170
-    .. [Efron1987] Efron, B. (1987). Better bootstrap confidence intervals. Journal of the
-                   American Statistical Association, 82(397), 171-185.
-                   https://doi.org/10.1080/01621459.1987.10478410
 
     Examples
     --------
@@ -194,7 +186,8 @@ class EpochByEpochAgreement:
                 "keys in `ref_hyps` must be the same as keys in `obs_hyps`"
             )
             sleep_ids, ref_hyps = zip(*ref_hyps.items())
-            obs_hyps = tuple(obs_hyps.values())
+            # Pair by key, not by position: the keys comparison above ignores order
+            obs_hyps = tuple(obs_hyps[k] for k in sleep_ids)
         else:
             # Create hypnogram_ids
             sleep_ids = tuple(range(1, 1 + len(ref_hyps)))
@@ -411,8 +404,9 @@ class EpochByEpochAgreement:
             # Add weights as a third column for multi_scorer to use
             df["weights"] = sample_weight
         if pooled:
-            # Pool all epochs across sessions and compute a single set of scores
-            agreement = pd.Series(self.multi_scorer(df, scorers=scorers), name="agreement")
+            # Pool all epochs across sessions and compute a single set of scores. Not stored for
+            # summary(), which needs per-session scores.
+            return pd.Series(self.multi_scorer(df, scorers=scorers), name="agreement")
         else:
             # Get per-session averaged/weighted agreement scores
             agreement = (
@@ -452,7 +446,8 @@ class EpochByEpochAgreement:
         agreement : :py:class:`pandas.DataFrame`
             A :py:class:`~pandas.DataFrame` with agreement metrics as columns
             (``fbeta``, ``npv``, ``precision``, ``recall``, ``specificity``, ``support``) and a
-            :py:class:`~pandas.MultiIndex` with session and sleep stage as rows.
+            :py:class:`~pandas.MultiIndex` with sleep stage and session as rows (only sleep stage
+            if a single session is evaluated).
 
             ``specificity`` (True Negative Rate) and ``npv`` (Negative Predictive Value) are
             computed using a one-vs-rest confusion matrix per stage.
@@ -840,10 +835,11 @@ class EpochByEpochAgreement:
             * ``'n_resamples'`` — number of bootstrap resamples (int, default 1000).
             * ``'method'`` — ``'BCa'`` (default) for bias-corrected and accelerated percentiles
               (Efron, 1987), which corrects for the skewness and bias of the bootstrap
-              distribution and is more accurate than the simpler alternatives; ``'percentile'``
-              for plain percentiles; or ``'basic'`` for the reverse-percentile method used by the
-              reference pipeline of Menghini et al. (2021). Cells that are constant across all
-              resamples (e.g. a stage that is never confused) fall back to plain percentiles.
+              distribution but can be unstable with few sessions (e.g. fewer than 20);
+              ``'percentile'`` for plain percentiles; or ``'basic'`` for the reverse-percentile
+              method used by the reference pipeline of Menghini et al. (2021). Cells that are
+              constant across all resamples (e.g. a stage that is never confused) fall back to
+              plain percentiles.
             * ``'rng'`` — an integer seed or :py:class:`numpy.random.Generator` for reproducible
               intervals (default None).
         formatted : bool
@@ -1127,7 +1123,8 @@ class EpochByEpochAgreement:
             * ``'method'`` — ``'BCa'`` (default) for bias-corrected and accelerated percentiles
               (Efron, 1987), ``'percentile'`` for plain percentiles, or ``'basic'`` for the
               reverse-percentile method. Metrics that are constant across all resamples fall back
-              to plain percentiles.
+              to plain percentiles. BCa can be unstable with few sessions, and a warning is
+              emitted below 20 sessions.
             * ``'rng'`` — an integer seed or :py:class:`numpy.random.Generator` for reproducible
               intervals (default None).
 
@@ -1140,11 +1137,13 @@ class EpochByEpochAgreement:
         -------
         summary : :py:class:`pandas.DataFrame`
             A :py:class:`pandas.DataFrame` summarizing agreement scores across the entire dataset
-            with descriptive statistics. Each row is an agreement metric and each column is a
-            descriptive statistic (e.g., mean, standard deviation).
+            with descriptive statistics. Each row is an agreement metric (or a (stage, metric)
+            pair if ``by_stage=True``) and each column is a descriptive statistic (e.g., mean,
+            standard deviation).
 
             When ``ci_method`` is not ``None``, two extra columns ``ci_lower`` and ``ci_upper``
-            are appended.
+            are appended. They are left missing for ``support``, which is not an agreement
+            score.
 
         Examples
         --------
@@ -1273,7 +1272,7 @@ class SleepStatsAgreement:
     """
     Evaluate agreement between sleep statistics reported by two different scorers.
     Evaluation includes bias and limits of agreement (as well as both their confidence intervals),
-    various plotting options, and calibration functions for correcting biased values from the
+    various plotting options, and a calibration function for correcting a constant bias of the
     observed scorer.
 
     Features include:
@@ -1281,11 +1280,11 @@ class SleepStatsAgreement:
     * Get summary calculations of bias, limits of agreement, and their confidence intervals.
     * Test statistical assumptions of bias, limits of agreement, and their confidence intervals, and apply corrective procedures when the assumptions are not met.
     * Get bias and limits of agreement in a string-formatted table.
-    * Calibrate new data to correct for biases in observed data.
+    * Calibrate new data to correct for a constant bias in observed data.
     * Visualize Bland-Altman plots.
 
-    .. warning:: **Experimental** — the API of this class may change before the full release
-        planned for v0.8.0. Use with caution.
+    For a complete walkthrough of the evaluation pipeline of Menghini et al. (2021), see the
+    :ref:`tutorial_evaluation` tutorial.
 
     .. seealso:: :py:meth:`yasa.Hypnogram.sleep_statistics`
 
@@ -1317,16 +1316,16 @@ class SleepStatsAgreement:
         Alpha cutoff used for all assumption tests. Default is 0.05.
     effect_size_gates : dict or None
         Effect-size thresholds that must be exceeded, *in addition* to ``pvalue < alpha``, for
-        the normality, proportional-bias and heteroscedasticity assumptions to be considered
-        violated. Because the power of these tests grows with the number of sessions, the
+        the normality, constant-bias and homoscedasticity assumptions to be considered not
+        met. Because the power of these tests grows with the number of sessions, the
         p-value alone would flag small and practically irrelevant deviations in large samples:
         the p-value assesses the statistical evidence for an association, the effect size its
         practical magnitude. Pass a dict to override one or more of the defaults, or ``None``
         (the default) to use all of them. Setting a threshold to ``None`` disables that
         criterion. Keys:
 
-        * ``'skew'`` (default 1.0) and ``'kurtosis'`` (default 2.0) — normality is only
-          violated if the differences are markedly asymmetric (``|skew| >`` threshold) or
+        * ``'skew'`` (default 1.0) and ``'kurtosis'`` (default 2.0) — normality is only considered
+          not met if the differences are markedly asymmetric (``|skew| >`` threshold) or
           heavy-tailed (excess ``kurtosis >`` threshold).
         * ``'r2'`` (default 0.1) — proportional bias is only present if at least 10% of the
           variability of the differences is explained by the reference value.
@@ -1357,10 +1356,10 @@ class SleepStatsAgreement:
 
     Notes
     -----
-    Sleep statistics that are identical between scorers are removed from analysis.
-
-    Many steps here are influenced by guidelines proposed in Menghini et al., 2021 [Menghini2021]_.
-    See https://sri-human-sleep.github.io/sleep-trackers-performance/AnalyticalPipeline_v1.0.0.html
+    Sleep statistics that are identical between scorers are removed from analysis. Sessions with a
+    missing value in either scorer (e.g. ``Lat_REM`` for a night without REM sleep) are removed
+    separately for each sleep statistic, with a warning, so the number of sessions can differ
+    between statistics.
 
     References
     ----------
@@ -1670,7 +1669,7 @@ class SleepStatsAgreement:
         # For each assumption: test statistic, p-value, effect size, pass/fail flag and the
         # method selected when "auto" is requested. Because the power of these tests grows with
         # the number of sessions, the normality, proportional-bias and heteroscedasticity
-        # assumptions use a dual criterion: they are only flagged as violated when the test is
+        # assumptions use a dual criterion: they are only flagged as not met when the test is
         # significant (p < alpha) *and* the effect size is material (see `effect_size_gates`).
         def _test_series(res):
             return pd.Series({"statistic": res.statistic, "pvalue": res.pvalue})
@@ -2100,7 +2099,7 @@ class SleepStatsAgreement:
         ``"TST (min)"``). Reference and observed scorer means (SD) are shown first, followed by
         bias and LoA, optionally merged with their confidence intervals (e.g.
         ``"2.34 [1.10, 3.58]"``). An ``"Assumptions"`` column shows whether each statistical
-        assumption was met (``"✓"``) or violated (``"✗"``), which drives the automatic
+        assumption was met (``"✓"``) or not met (``"✗"``), which drives the automatic
         method selection.
 
         Parameters
@@ -2116,18 +2115,20 @@ class SleepStatsAgreement:
               of assumptions or ``log_transform``. When the bias is a regression line, the LoA
               run parallel to it at ``± 1.96 SD`` of its residuals (Menghini et al. 2021, eq. 2)
               and are reported as ``"bias ± halfwidth"``.
-            * ``'regr'`` — regression LoA: ``b0 + b1 × ref``. Always uses this form regardless
+            * ``'regr'`` — regression LoA: ``bias ± 2.46 (c0 + c1 × ref)``, where ``c0 + c1 ×
+              ref`` models the absolute residuals of the bias. Always uses this form regardless
               of assumptions or ``log_transform``.
-            * ``'log'`` — Euser LoA: ``bias ± slope × ref``. Requires ``log_transform=True``;
-              raises ``ValueError`` otherwise.
-            * ``'auto'`` (default) — if ``log_transform=True``, always uses ``'log'``. Otherwise,
-              uses ``'param'`` when the homoscedasticity assumption passes and ``'regr'`` when it
-              fails.
+            * ``'log'`` — Euser LoA: ``bias ± slope × ref``. Requires ``log_transform=True`` and
+              no zero values; raises ``ValueError`` otherwise.
+            * ``'auto'`` (default) — uses ``'log'`` for the log-transformed statistics (see
+              ``log_transform``). Otherwise, uses ``'param'`` when the homoscedasticity assumption
+              passes and ``'regr'`` when it fails.
         ci_method : str or None
-            If ``'param'``, parametric t-distribution CIs are used. If ``'boot'``, BCa bootstrap
-            CIs are used. If ``'auto'`` (default), the method is chosen per statistic based on
-            the normality assumption test. If ``None``, no confidence intervals are computed or
-            shown (the columns are then named ``"Bias"`` and ``"LoA"``).
+            If ``'param'``, parametric t-distribution CIs are used. If ``'boot'``, bootstrap CIs
+            are used (BCa by default, see ``bootstrap_kwargs``). If ``'auto'`` (default), the
+            method is chosen per statistic based on the normality assumption test. If ``None``, no
+            confidence intervals are computed or shown (the columns are then named ``"Bias"`` and
+            ``"LoA"``).
         decimals : int
             Number of decimal places. Default is 2.
         sleep_stats : list or None
@@ -2288,7 +2289,7 @@ class SleepStatsAgreement:
         * Parametric bias
         * Parametric lower and upper limits of agreement
         * Half-width of the constant limits of agreement around the regression bias line, i.e.
-          ``agreement × SD`` of the bias-regression residuals (Menghini et al. 2021, eq. 2)
+          ``1.96 × SD`` of the bias-regression residuals (Menghini et al. 2021, eq. 2)
         * Regression intercept and slope for modeled bias
         * Regression intercept and slope for modeled limits of agreement
         * Euser et al. (2008) slope for log-transformed limits of agreement (only when
@@ -2488,19 +2489,20 @@ class SleepStatsAgreement:
               this form regardless of assumptions or ``log_transform``. When the bias is a
               regression line, the LoA run parallel to it at ``± 1.96 SD`` of its residuals
               (Menghini et al. 2021, eq. 2).
-            * ``'regr'`` — regression LoA: lines following ``b0 + b1 × ref``. Always uses this
+            * ``'regr'`` — regression LoA: lines following ``bias ± 2.46 (c0 + c1 × ref)``,
+              where ``c0 + c1 × ref`` models the absolute residuals of the bias. Always uses this
               form regardless of assumptions or ``log_transform``.
             * ``'log'`` — Euser LoA: lines following ``bias ± slope × ref``. Requires
-              ``log_transform=True``; raises ``ValueError`` otherwise.
-            * ``'auto'`` (default) — if ``log_transform=True``, always uses ``'log'``. Otherwise,
-              uses ``'param'`` when the homoscedasticity assumption passes and ``'regr'`` when it
-              fails.
+              ``log_transform=True`` and no zero values; raises ``ValueError`` otherwise.
+            * ``'auto'`` (default) — uses ``'log'`` for the log-transformed statistics (see
+              ``log_transform``). Otherwise, uses ``'param'`` when the homoscedasticity assumption
+              passes and ``'regr'`` when it fails.
         ci_method : str or None
             If ``'param'``, parametric CIs are drawn. If ``'boot'``, bootstrap CIs are drawn. If
             ``'auto'`` (default), chosen per statistic based on the normality assumption test.
             If ``None``, no confidence intervals are drawn.
-        scatter_kwargs : dict
-            Other keyword arguments are passed through to :py:func:`matplotlib.pyplot.scatter`.
+        scatter_kwargs : dict or None
+            Keyword arguments passed to :py:func:`matplotlib.pyplot.scatter`.
         **kwargs : dict
             Other keyword arguments are passed through to :py:class:`seaborn.FacetGrid`.
 
