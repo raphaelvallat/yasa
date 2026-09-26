@@ -9,7 +9,6 @@ import pytest
 from mne.filter import filter_data
 
 from yasa.fetchers import fetch_sample
-from yasa.hypno import hypno_str_to_int, hypno_upsample_to_data
 from yasa.others import (
     _index_to_events,
     _merge_close,
@@ -40,10 +39,6 @@ data_mne_fp = fetch_sample("sub-02_mne_raw.fif")
 data_mne = mne.io.read_raw_fif(data_mne_fp, preload=True, verbose=0)
 data_mne.pick("eeg")
 data_mne_single = data_mne.copy().pick(["F3"])
-hypno_mne_fp = fetch_sample("sub-02_hypno_30s.txt")
-hypno_mne = np.loadtxt(hypno_mne_fp, dtype=str)
-hypno_mne = hypno_str_to_int(hypno_mne)
-hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30), data=data_mne)
 
 
 class TestOthers(unittest.TestCase):

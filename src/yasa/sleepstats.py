@@ -3,7 +3,8 @@ This file contains several helper functions to calculate sleep statistics from
 a one-dimensional sleep staging vector (hypnogram).
 """
 
-# import warnings
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -17,6 +18,10 @@ __all__ = ["transition_matrix", "sleep_statistics"]
 
 def transition_matrix(hypno):
     """Create a state-transition matrix from an hypnogram.
+
+    .. deprecated:: 0.8.0
+        Use :py:meth:`yasa.Hypnogram.transition_matrix` instead. This function will be removed
+        in v0.9.
 
     .. versionadded:: 0.1.9
 
@@ -135,13 +140,23 @@ def transition_matrix(hypno):
         >>> ax.set_ylabel("From sleep stage")
         >>> ax.xaxis.set_label_position("top")
     """
-    # Local import avoids a circular dependency: hypno.py imports transition_matrix from
+    warnings.warn(
+        "The `yasa.transition_matrix` function is deprecated and will be removed in v0.9. "
+        "Please use the `yasa.Hypnogram.transition_matrix` method instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    # Local import avoids a circular dependency: hypno.py imports _transition_matrix from
     # this module at the top level, so we cannot import Hypnogram at module level here.
     from .hypno import Hypnogram
 
     if isinstance(hypno, Hypnogram):
         return hypno.transition_matrix()
+    return _transition_matrix(hypno)
 
+
+def _transition_matrix(hypno):
+    """Create a state-transition matrix from an integer array. See :py:func:`transition_matrix`."""
     x = np.asarray(hypno, dtype=int)
     unique, inverse = np.unique(x, return_inverse=True)  # unique is sorted
     n = unique.size
@@ -167,6 +182,10 @@ def transition_matrix(hypno):
 
 def sleep_statistics(hypno, sf_hyp):
     """Compute standard sleep statistics from an hypnogram.
+
+    .. deprecated:: 0.8.0
+        Use :py:meth:`yasa.Hypnogram.sleep_statistics` instead. This function will be removed in
+        v0.9.
 
     .. versionadded:: 0.1.9
 
@@ -266,11 +285,12 @@ def sleep_statistics(hypno, sf_hyp):
      'SE': 80.0,
      'SME': 100.0}
     """
-    # warnings.warn(
-    #     "The `yasa.sleep_statistics` function is deprecated and will be removed in v0.8. "
-    #     "Please use the `yasa.Hypnogram.sleep_statistics` method instead.",
-    #     FutureWarning,
-    # )
+    warnings.warn(
+        "The `yasa.sleep_statistics` function is deprecated and will be removed in v0.9. "
+        "Please use the `yasa.Hypnogram.sleep_statistics` method instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
     stats = {}
     hypno = np.asarray(hypno)
     assert hypno.ndim == 1, "hypno must have only one dimension."

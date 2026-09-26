@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from yasa.hypno import Hypnogram, hypno_int_to_str, hypno_str_to_int, simulate_hypnogram
+from yasa.hypno import Hypnogram, simulate_hypnogram
 
 
 def create_raw(npts, ch_names=["F4-M1", "F3-M2"], sf=100):
@@ -69,7 +69,7 @@ class TestHypnoClass(unittest.TestCase):
         )
 
         # Test class methods
-        values_int = hypno_str_to_int(hyp.hypno.tolist(), mapping_dict={"wake": 0, "sleep": 1})
+        values_int = hyp.hypno.map({"WAKE": 0, "SLEEP": 1}).to_numpy()
         np.testing.assert_array_equal(hyp.as_int(), values_int)
         hyp.transition_matrix()
         hyp.find_periods()
@@ -259,13 +259,6 @@ class TestHypnoClass(unittest.TestCase):
         np.testing.assert_array_equal(
             hyp_custom.hypno.to_numpy(), ["WAKE", "N1", "N2", "N3", "REM"]
         )
-
-        # --- consistency with hypno_int_to_str ---
-        int_arr = np.array([0, 1, 2, 3, 4, -1, -2])
-        str_arr = hypno_int_to_str(int_arr)
-        hyp_via_fn = Hypnogram(str_arr)
-        hyp_via_cls = Hypnogram.from_integers(int_arr)
-        np.testing.assert_array_equal(hyp_via_fn.hypno.to_numpy(), hyp_via_cls.hypno.to_numpy())
 
         # --- invalid integer (not in mapping) raises ---
         with pytest.raises(Exception):

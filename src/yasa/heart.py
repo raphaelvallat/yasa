@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from .detection import _check_data_hypno
-from .hypno import hypno_find_periods
+from .hypno import _hypno_find_periods
 from .io import is_sleepecg_installed, set_log_level
 
 logger = logging.getLogger("yasa")
@@ -49,8 +49,7 @@ def hrv_stage(
 
         Can be an upsampled integer array (same number of samples as ``data``) or a
         :py:class:`yasa.Hypnogram` instance (automatically upsampled). To manually upsample an
-        integer array, use :py:meth:`yasa.Hypnogram.upsample_to_data` or
-        :py:func:`yasa.hypno_upsample_to_data`.
+        integer array, use :py:meth:`yasa.Hypnogram.upsample_to_data`.
 
         .. note::
             When passing an integer array, hypnogram values follow this mapping:
@@ -143,7 +142,7 @@ def hrv_stage(
     data = np.squeeze(data)
 
     # Find periods of equal duration
-    epochs = hypno_find_periods(hypno, sf, threshold=threshold, equal_length=equal_length)
+    epochs = _hypno_find_periods(hypno, sf, threshold=threshold, equal_length=equal_length)
     assert epochs.shape[0] > 0, f"No epochs longer than {threshold} found in hypnogram."
     epochs = epochs[epochs["values"].isin(include)].reset_index(drop=True)
     # Sort by stage and add epoch number

@@ -1,4 +1,4 @@
-"""Tests for hypnogram upsampling: legacy helpers and Hypnogram.upsample_to_data.
+"""Tests for hypnogram upsampling: hypno_fit_to_data and Hypnogram.upsample_to_data.
 
 Covers all combinations of:
   - data type : NumPy array | MNE Raw without meas_date | MNE Raw with meas_date
@@ -20,12 +20,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from yasa.hypno import (
-    Hypnogram,
-    hypno_fit_to_data,
-    hypno_upsample_to_data,
-    hypno_upsample_to_sf,
-)
+from yasa.hypno import Hypnogram, hypno_fit_to_data
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -34,7 +29,7 @@ from yasa.hypno import (
 SF = 100  # EEG sampling frequency (Hz)
 SPE = SF * 30  # samples per 30-second epoch = 3000
 
-# 9-epoch integer array used by the legacy helper tests (same as original test suite)
+# 9-epoch integer array used by the hypno_fit_to_data tests (same as original test suite)
 HYPNO_INT = np.array([0, 0, 0, 1, 2, 2, 3, 3, 4])
 
 # 10-epoch string hypnogram used by Hypnogram class tests
@@ -66,30 +61,13 @@ def utc(h, m, s=0):
 
 
 # ---------------------------------------------------------------------------
-# Legacy helper: hypno_upsample_to_sf
-# ---------------------------------------------------------------------------
-
-
-def test_upsample_to_sf_basic():
-    up = hypno_upsample_to_sf(HYPNO_INT, sf_hypno=1 / 30, sf_data=SF)
-    assert up.size == HYPNO_INT.size * SPE
-    # each epoch is repeated exactly SPE times
-    assert up[up == 2].size == (HYPNO_INT == 2).sum() * SPE
-
-
-def test_upsample_to_sf_passthrough():
-    # sf_hypno == sf_data → output identical to input
-    assert np.array_equal(hypno_upsample_to_sf(HYPNO_INT, sf_hypno=1, sf_data=1), HYPNO_INT)
-
-
-# ---------------------------------------------------------------------------
-# Legacy helper: hypno_fit_to_data
+# Internal helper: hypno_fit_to_data
 # ---------------------------------------------------------------------------
 
 
 @pytest.fixture
 def hypno100():
-    return hypno_upsample_to_sf(HYPNO_INT, sf_hypno=1 / 30, sf_data=SF)
+    return np.repeat(HYPNO_INT, SPE)
 
 
 @pytest.mark.parametrize(
@@ -124,36 +102,6 @@ def test_fit_crops_when_longer(hypno100):
     assert (
         hypno_fit_to_data(hypno100, np.zeros((HYPNO_INT.size - 1) * SPE)).size
         == (HYPNO_INT.size - 1) * SPE
-    )
-
-
-# ---------------------------------------------------------------------------
-# Legacy helper: hypno_upsample_to_data (upsample + fit combined)
-# ---------------------------------------------------------------------------
-
-
-def test_upsample_to_data_with_raw():
-    assert (
-        hypno_upsample_to_data(HYPNO_INT, sf_hypno=1 / 30, data=make_raw(HYPNO_INT.size - 1)).size
-        == (HYPNO_INT.size - 1) * SPE
-    )
-
-
-def test_upsample_to_data_with_array():
-    assert (
-        hypno_upsample_to_data(HYPNO_INT, sf_hypno=1 / 30, data=np.zeros(27250), sf_data=100).size
-        == 27250
-    )
-
-
-def test_upsample_to_data_different_sf():
-    # double SF → double samples, same padding logic
-    n_expected = 2 * (HYPNO_INT.size * SPE + 250)
-    assert (
-        hypno_upsample_to_data(
-            HYPNO_INT, sf_hypno=1 / 30, data=np.zeros(n_expected), sf_data=200
-        ).size
-        == n_expected
     )
 
 

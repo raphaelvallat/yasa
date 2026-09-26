@@ -13,8 +13,8 @@ from pandas.api.types import CategoricalDtype
 
 from .evaluation import EpochByEpochAgreement
 from .io import set_log_level
-from .plotting import plot_hypnogram
-from .sleepstats import transition_matrix
+from .plotting import _plot_hypnogram
+from .sleepstats import _transition_matrix
 
 __all__ = [
     "Hypnogram",
@@ -448,9 +448,8 @@ class Hypnogram:
         """Create a :py:class:`Hypnogram` from an integer-encoded hypnogram array.
 
         This is a convenience constructor for users migrating from the legacy integer-based API
-        (e.g. ``[0, 1, 2, 3, 4]`` for Wake, N1, N2, N3, REM). Internally, it calls
-        :py:func:`yasa.hypno_int_to_str` to convert integers to strings before creating the
-        :py:class:`Hypnogram`.
+        (e.g. ``[0, 1, 2, 3, 4]`` for Wake, N1, N2, N3, REM). Integers are converted to string
+        labels using ``mapping`` before creating the :py:class:`Hypnogram`.
 
         .. versionadded:: 0.7.0
 
@@ -526,7 +525,7 @@ class Hypnogram:
         >>> custom_mapping = {1: "W", 2: "R", 3: "N1", 4: "N2", 5: "N3"}
         >>> hyp = Hypnogram.from_integers([1, 3, 4, 5, 2], mapping=custom_mapping)
         """
-        str_hypno = hypno_int_to_str(values, mapping_dict=mapping)
+        str_hypno = _hypno_int_to_str(values, mapping_dict=mapping)
         return cls(
             str_hypno, n_stages=n_stages, freq=freq, start=start, tz=tz, scorer=scorer, proba=proba
         )
@@ -1504,7 +1503,7 @@ class Hypnogram:
             return self._upsample_to_raw_timestamps(
                 data, meas_date_is_local=meas_date_is_local, verbose=verbose
             )
-        hypno_up = hypno_upsample_to_data(
+        hypno_up = _hypno_upsample_to_data(
             self.as_int(), self.sampling_frequency, data=data, sf_data=sf, verbose=verbose
         )
         return hypno_up
@@ -1658,7 +1657,7 @@ class Hypnogram:
 
         # Sleep stage latencies -- only relevant if hypno is cropped to TIB
         stats["SOL"] = first_sleep / epochs_per_min if stats["TST"] > 0 else np.nan
-        sleep_periods = hypno_find_periods(
+        sleep_periods = _hypno_find_periods(
             np.isin(hypno, all_sleep), self.sampling_frequency, threshold="5min"
         ).query("values == True")
         if sleep_periods.shape[0]:
@@ -1734,7 +1733,7 @@ class Hypnogram:
         N3          0.010  0.029  0.038  0.914  0.01
         REM         0.000  0.067  0.013  0.000  0.92
         """
-        counts, probs = transition_matrix(self.as_int())
+        counts, probs = _transition_matrix(self.as_int())
         counts.index = counts.index.map(self.mapping_int)
         counts.columns = counts.columns.map(self.mapping_int)
         probs.index = probs.index.map(self.mapping_int)
@@ -1820,7 +1819,7 @@ class Hypnogram:
         because it is less than 5 minutes. In other words, the remainder of the division of a given
         segment by the desired duration is discarded.
         """
-        return hypno_find_periods(
+        return _hypno_find_periods(
             self.hypno, self.sampling_frequency, threshold=threshold, equal_length=equal_length
         )
 
@@ -1865,15 +1864,21 @@ class Hypnogram:
     # VISUALIZATION
     #######################################################################
 
-    def plot_hypnogram(self, **kwargs):
+    def plot_hypnogram(self, highlight="REM", fill_color=None, ax=None, **kwargs):
         """Plot the hypnogram.
-
-        .. seealso:: :py:func:`yasa.plot_hypnogram`
 
         Parameters
         ----------
+        highlight : str or None
+            Optional stage to highlight with alternate color.
+        fill_color : str or None
+            Optional color to fill space above hypnogram line.
+        ax : :py:class:`matplotlib.axes.Axes`
+            Axis on which to draw the plot, optional.
         **kwargs : dict
-            Optional keyword arguments passed to :py:func:`yasa.plot_hypnogram`.
+            Keyword arguments controlling hypnogram line display (e.g., ``lw``, ``linestyle``).
+            Passed to :py:func:`matplotlib.pyplot.stairs` and
+            :py:func:`matplotlib.pyplot.hlines`.
 
         Returns
         -------
@@ -1885,9 +1890,30 @@ class Hypnogram:
         .. plot::
 
             >>> from yasa import simulate_hypnogram
-            >>> ax = simulate_hypnogram(tib=300, seed=88).plot_hypnogram(highlight="REM")
+            >>> import matplotlib.pyplot as plt
+            >>> hyp = simulate_hypnogram(tib=300, seed=11)
+            >>> ax = hyp.plot_hypnogram()
+            >>> plt.tight_layout()
+
+        .. plot::
+
+            >>> from yasa import Hypnogram
+            >>> values = 4 * ["W", "N1", "N2", "N3", "REM"] + ["ART", "N2", "REM", "W", "UNS"]
+            >>> hyp = Hypnogram(values, freq="24min").upsample("30s")
+            >>> ax = hyp.plot_hypnogram(lw=2, fill_color="thistle")
+            >>> plt.tight_layout()
+
+        .. plot::
+
+            >>> from yasa import simulate_hypnogram
+            >>> import matplotlib.pyplot as plt
+            >>> fig, axes = plt.subplots(nrows=2, figsize=(6, 4), constrained_layout=True)
+            >>> hyp_a = simulate_hypnogram(n_stages=3, seed=99)
+            >>> hyp_b = simulate_hypnogram(n_stages=3, seed=99, start="2022-01-31 23:30:00")
+            >>> hyp_a.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[0])
+            >>> hyp_b.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[1])
         """
-        return plot_hypnogram(self, **kwargs)
+        return _plot_hypnogram(self, highlight=highlight, fill_color=fill_color, ax=ax, **kwargs)
 
     def plot_hypnodensity(self, palette=None, ax=None):
         """Plot the hypnodensity: per-epoch stage probabilities as a stacked area chart.
@@ -2190,7 +2216,7 @@ class Hypnogram:
             hypno_sliced = np.concatenate([prepend, hypno_int])
 
         # --- upsample and fit to exact sample count ---
-        hypno_up = hypno_upsample_to_sf(
+        hypno_up = _hypno_upsample_to_sf(
             hypno=hypno_sliced, sf_hypno=self.sampling_frequency, sf_data=sf_data
         )
         return hypno_fit_to_data(hypno=hypno_up, data=raw, sf=sf_data)
@@ -2227,7 +2253,7 @@ def hypno_str_to_int(
 
     .. deprecated:: 0.7.0
         Use :py:class:`yasa.Hypnogram` and its :py:meth:`~yasa.Hypnogram.as_int` method instead.
-        This function will be removed in v0.8.
+        This function will be removed in v0.9.
 
     .. versionadded:: 0.1.5
 
@@ -2245,7 +2271,7 @@ def hypno_str_to_int(
         The corresponding integer hypnogram.
     """
     warnings.warn(
-        "The `yasa.hypno_str_to_int` function is deprecated and will be removed in v0.8. "
+        "The `yasa.hypno_str_to_int` function is deprecated and will be removed in v0.9. "
         "Please use the `yasa.Hypnogram` class and its `.as_int()` method instead.",
         FutureWarning,
         stacklevel=2,
@@ -2262,6 +2288,10 @@ def hypno_int_to_str(
     """Convert an integer hypnogram array to a string array.
 
     [0, 2, 2, 3, 4] ==> ['W', 'N2', 'N2', 'N3', 'R']
+
+    .. deprecated:: 0.8.0
+        Use :py:meth:`yasa.Hypnogram.from_integers` instead. This function will be removed in
+        v0.9.
 
     .. versionadded:: 0.1.5
 
@@ -2283,6 +2313,19 @@ def hypno_int_to_str(
     :py:meth:`yasa.Hypnogram.from_integers` : Convenience constructor that combines this
         conversion with :py:class:`yasa.Hypnogram` creation in a single step.
     """
+    warnings.warn(
+        "The `yasa.hypno_int_to_str` function is deprecated and will be removed in v0.9. "
+        "Please use `yasa.Hypnogram.from_integers` instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return _hypno_int_to_str(hypno, mapping_dict=mapping_dict)
+
+
+def _hypno_int_to_str(
+    hypno, mapping_dict={0: "W", 1: "N1", 2: "N2", 3: "N3", 4: "R", -1: "Art", -2: "Uns"}
+):
+    """Convert an integer hypnogram array to a string array. See :py:func:`hypno_int_to_str`."""
     assert isinstance(hypno, (list, np.ndarray, pd.Series)), "Not an array."
     hypno = pd.Series(np.asarray(hypno, dtype=int))
     return hypno.map(mapping_dict).values
@@ -2295,6 +2338,10 @@ def hypno_int_to_str(
 
 def hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
     """Upsample the hypnogram to a given sampling frequency.
+
+    .. deprecated:: 0.8.0
+        Use :py:meth:`yasa.Hypnogram.upsample` or :py:meth:`yasa.Hypnogram.upsample_to_data`
+        instead. This function will be removed in v0.9.
 
     .. versionadded:: 0.1.5
 
@@ -2315,11 +2362,18 @@ def hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
     hypno : array_like
         The hypnogram, upsampled to ``sf_data``.
     """
-    # warnings.warn(
-    #     "The `yasa.hypno_upsample_to_sf` function is deprecated and will be removed in v0.8. "
-    #     "Please use the `yasa.Hypnogram.upsample` method instead.",
-    #     FutureWarning,
-    # )
+    warnings.warn(
+        "The `yasa.hypno_upsample_to_sf` function is deprecated and will be removed in v0.9. "
+        "Please use the `yasa.Hypnogram.upsample` or `yasa.Hypnogram.upsample_to_data` "
+        "methods instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return _hypno_upsample_to_sf(hypno, sf_hypno, sf_data)
+
+
+def _hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
+    """Upsample the hypnogram to a given sampling frequency. See :py:func:`hypno_upsample_to_sf`."""
     repeats = sf_data / sf_hypno
     assert sf_hypno <= sf_data, "sf_hypno must be less than sf_data."
     assert repeats.is_integer(), "sf_hypno / sf_data must be a whole number."
@@ -2396,6 +2450,10 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=True):
     resulting hypnogram to corresponding EEG data, such that the hypnogram
     and EEG data have the exact same number of samples.
 
+    .. deprecated:: 0.8.0
+        Use :py:meth:`yasa.Hypnogram.upsample_to_data` instead. This function will be removed in
+        v0.9.
+
     .. versionadded:: 0.1.5
 
     Parameters
@@ -2431,13 +2489,22 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=True):
         and therefore needs to be padded/cropped respectively. This output can be disabled by
         passing ``verbose='ERROR'``.
     """
-    # NOTE: FutureWarning not added here otherwise it would also be shown when calling
-    # yasa.Hypnogram.upsample_to_data.
+    warnings.warn(
+        "The `yasa.hypno_upsample_to_data` function is deprecated and will be removed in v0.9. "
+        "Please use the `yasa.Hypnogram.upsample_to_data` method instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return _hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=sf_data, verbose=verbose)
+
+
+def _hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=True):
+    """Upsample an hypnogram and fit it to data. See :py:func:`hypno_upsample_to_data`."""
     set_log_level(verbose)
     if isinstance(data, mne.io.BaseRaw):
         sf_data = data.info["sfreq"]
         data = data.times
-    hypno_up = hypno_upsample_to_sf(hypno=hypno, sf_hypno=sf_hypno, sf_data=sf_data)
+    hypno_up = _hypno_upsample_to_sf(hypno=hypno, sf_hypno=sf_hypno, sf_data=sf_data)
     return hypno_fit_to_data(hypno=hypno_up, data=data, sf=sf_data)
 
 
@@ -2470,9 +2537,9 @@ def load_profusion_hypno(fname, replace=True):  # pragma: no cover
         Sampling frequency of the hypnogram (e.g. 1/30 Hz).
     """
     warnings.warn(
-        "load_profusion_hypno is deprecated and will be removed in a future release. "
-        "Use yasa.Hypnogram.from_profusion() instead.",
-        DeprecationWarning,
+        "The `yasa.load_profusion_hypno` function is deprecated and will be removed in v0.9. "
+        "Please use the `yasa.Hypnogram.from_profusion` method instead.",
+        FutureWarning,
         stacklevel=2,
     )
     import xml.etree.ElementTree as ET
@@ -2494,6 +2561,10 @@ def load_profusion_hypno(fname, replace=True):  # pragma: no cover
 
 def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     """Find sequences of consecutive values exceeding a certain duration in hypnogram.
+
+    .. deprecated:: 0.8.0
+        Use :py:meth:`yasa.Hypnogram.find_periods` instead. This function will be removed in
+        v0.9.
 
     .. versionadded:: 0.6.2
 
@@ -2581,8 +2652,17 @@ def hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
     removed to keep only a segment of 2 exactly minutes. In other words, the remainder of the
     division of a given segment by the desired duration is discarded.
     """
-    # NOTE: FutureWarning not added here otherwise it would also be shown when calling
-    # yasa.Hypnogram.find_periods
+    warnings.warn(
+        "The `yasa.hypno_find_periods` function is deprecated and will be removed in v0.9. "
+        "Please use the `yasa.Hypnogram.find_periods` method instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return _hypno_find_periods(hypno, sf_hypno, threshold=threshold, equal_length=equal_length)
+
+
+def _hypno_find_periods(hypno, sf_hypno, threshold="5min", equal_length=False):
+    """Find runs of consecutive values in an array. See :py:func:`hypno_find_periods`."""
     # Convert the threshold to number of samples
     assert isinstance(threshold, str), "Threshold must be a string, e.g. '5min', '30sec', '15min'"
     thr_sec = pd.Timedelta(threshold).total_seconds()
@@ -2671,7 +2751,7 @@ def simulate_hypnogram(
         Returned hypnogram will be slightly shorter if ``tib`` is not evenly divisible by ``freq``.
         Default is 480 minutes (= 8 hours).
 
-        .. seealso:: :py:func:`yasa.sleep_statistics`
+        .. seealso:: :py:meth:`yasa.Hypnogram.sleep_statistics`
     trans_probas : :py:class:`pandas.DataFrame` or None
         Transition probability matrix where each cell is a transition probability
         between sleep stages of consecutive *epochs*.
@@ -2688,7 +2768,7 @@ def simulate_hypnogram(
             probability between *epochs* (i.e., probability of the next epoch) and
             not simply stage (i.e., probability of non-similar stage).
 
-        .. seealso:: Return value from :py:func:`yasa.transition_matrix`
+        .. seealso:: Return value from :py:meth:`yasa.Hypnogram.transition_matrix`
     init_probas : :py:class:`pandas.Series` or None
         Probabilites of each stage to initialize random walk.
         If None (default), initialize with "from"-WAKE row of ``trans_probas``.
@@ -2790,11 +2870,9 @@ def simulate_hypnogram(
         >>> import numpy as np
         >>> import yasa
         >>> import matplotlib.pyplot as plt
-        >>> from yasa import Hypnogram, hypno_int_to_str
-        >>> values_str = hypno_int_to_str(
-        ...     np.loadtxt(yasa.fetch_sample("full_6hrs_100Hz_hypno_30s.txt"))
-        ... )
-        >>> real_hyp = Hypnogram(values_str)
+        >>> from yasa import Hypnogram
+        >>> values_int = np.loadtxt(yasa.fetch_sample("full_6hrs_100Hz_hypno_30s.txt"))
+        >>> real_hyp = Hypnogram.from_integers(values_int)
         >>> fake_hyp = real_hyp.simulate_similar(seed=2)
         >>> fig, (ax1, ax2) = plt.subplots(nrows=2, figsize=(7, 5))
         >>> real_hyp.plot_hypnogram(ax=ax1).set_title("Real hypnogram")  # doctest: +SKIP
