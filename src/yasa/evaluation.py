@@ -1423,11 +1423,11 @@ class SleepStatsAgreement:
     >>> new_stats_calibrated = ssa.calibrate(new_sstats[ssa.sleep_statistics], bias_method="auto")
     >>> new_stats_calibrated[["N1", "TST", "WASO"]].round(1).head(5)
          N1    TST   WASO
-    0  53.0  448.4  143.0
-    1  79.8  549.7   40.2
-    2  60.1  493.7  101.0
-    3  62.4  475.9  117.1
-    4  71.4  532.2   69.0
+    0  42.1  445.2  145.0
+    1  83.6  555.8   36.0
+    2  53.1  494.8  100.5
+    3  56.6  475.2  117.5
+    4  70.6  536.8   66.5
 
     """
 
@@ -2410,15 +2410,22 @@ class SleepStatsAgreement:
         assert bias_method in self._bias_method_opts, (
             f"`bias_method` must be one of {self._bias_method_opts}"
         )
-        param_adjusted = data - self._vals["bias_mean"]
-        regr_adjusted = (data - self._vals["bias_intercept"]) / (1 + self._vals["bias_slope"])
+        # Restrict to the columns of `data`, otherwise the arithmetic below would align on all
+        # sleep statistics and add columns of NaN for those not in `data`
+        vals = self._vals.loc[data.columns]
+        param_adjusted = data - vals["bias_mean"]
+        regr_adjusted = (data - vals["bias_intercept"]) / (1 + vals["bias_slope"])
         if bias_method == "param":
             calibrated_data = param_adjusted
         elif bias_method == "regr":
             calibrated_data = regr_adjusted
         elif bias_method == "auto":
+            # Select the method column by column. DataFrame.where does not align a boolean Series
+            # with the columns, so it would silently apply the regression to all statistics.
             use_param = self._assumptions.loc[data.columns, ("constant_bias", "method")].eq("param")
-            calibrated_data = param_adjusted.where(use_param, regr_adjusted, axis=1)
+            param_cols = use_param.index[use_param]
+            calibrated_data = regr_adjusted.copy()
+            calibrated_data[param_cols] = param_adjusted[param_cols]
         return calibrated_data
 
     def plot_blandaltman(

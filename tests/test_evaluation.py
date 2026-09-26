@@ -753,6 +753,25 @@ class TestSleepStatsAgreementCalibrate(unittest.TestCase):
         assert auto.columns.tolist() == obs.columns.tolist()
         assert np.isnan(auto.iloc[0, 0]) and auto.notna().sum().sum() == obs.notna().sum().sum() - 1
 
+    def test_auto_selects_method_per_statistic(self):
+        obs = _obs_stats[ssa.sleep_statistics]
+        methods = ssa.assumptions[("constant_bias", "method")]
+        assert set(methods) == {"param", "regr"}, "fixture must include both methods"
+        param = ssa.calibrate(obs, bias_method="param")
+        regr = ssa.calibrate(obs, bias_method="regr")
+        auto = ssa.calibrate(obs, bias_method="auto")
+        for stat, method in methods.items():
+            expected = param[stat] if method == "param" else regr[stat]
+            pd.testing.assert_series_equal(auto[stat], expected)
+
+    def test_subset_of_columns(self):
+        # Calibrating a subset of statistics returns only these columns, in the same order
+        cols = [ssa.sleep_statistics[1], ssa.sleep_statistics[0]]
+        full = ssa.calibrate(_obs_stats[ssa.sleep_statistics], bias_method="auto")
+        subset = ssa.calibrate(_obs_stats[cols], bias_method="auto")
+        assert subset.columns.tolist() == cols
+        pd.testing.assert_frame_equal(subset, full[cols])
+
     def test_invalid_column_raises(self):
         bad = _obs_stats[ssa.sleep_statistics].rename(columns={"TST": "NOT_A_STAT"})
         with pytest.raises(AssertionError):
