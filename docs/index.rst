@@ -57,12 +57,12 @@ Dependencies
 
 The core dependencies of YASA are:
 
-* `NumPy <https://numpy.org/>`_ >= 1.22.4
-* `SciPy <https://www.scipy.org/>`_ >= 1.10
+* `NumPy <https://numpy.org/>`_ >= 1.23.5
+* `SciPy <https://www.scipy.org/>`_ >= 1.15
 * `Pandas <https://pandas.pydata.org/>`_ >= 2.1.1
 * `Matplotlib <https://matplotlib.org/>`_
 * `Seaborn <https://seaborn.pydata.org/>`_
-* `MNE <https://mne.tools/stable/>`_ >= 1.3
+* `MNE <https://mne.tools/stable/>`_ >= 1.5
 * `Scikit-learn <https://scikit-learn.org/>`_ >= 1.3
 * `LightGBM <https://lightgbm.readthedocs.io/>`_
 * `Antropy <https://github.com/raphaelvallat/antropy>`_
