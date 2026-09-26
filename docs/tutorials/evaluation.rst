@@ -1,28 +1,29 @@
 .. _tutorial_evaluation:
 
-Evaluating a Sleep Tracker
-##########################
+Evaluating a wearable or staging algorithm against a reference
+##############################################################
 
 .. currentmodule:: yasa
 
-How good is a wearable, or a sleep staging algorithm, at scoring sleep? This tutorial answers
-that question by comparing a device against polysomnography (PSG), following the standardized
-framework of `Menghini et al. (2021) <https://doi.org/10.1093/sleep/zsaa170>`_. We use the same
-data and the same steps as the authors'
+How good is a wearable, or a sleep staging algorithm, at scoring sleep? To find out, we need to
+compare it against polysomnography (PSG), the gold standard. This tutorial shows how to do this
+with YASA, following the standardized framework of
+`Menghini et al. (2021)`_. We use the same data and the
+same steps as the authors'
 `R analytical pipeline <https://sri-human-sleep.github.io/sleep-trackers-performance/AnalyticalPipeline_v1.0.0.html>`_,
-in a few lines of Python.
+in just a few lines of Python.
 
-The evaluation has two parts, each handled by one class:
+The evaluation has two parts, each handled by a dedicated class in the YASA API:
 
-1. **Epoch-by-epoch agreement** (:py:class:`EpochByEpochAgreement`): does the device assign the
-   right stage to each 30-second epoch?
-2. **Sleep statistics agreement** (:py:class:`SleepStatsAgreement`): does the device get the
-   night-level summaries right, such as total sleep time or minutes of deep sleep?
+1. **Epoch-by-epoch agreement** (:py:class:`EpochByEpochAgreement`). Does the device assign the
+   right stage to each 30-second epoch? This part tells you *where* and *why* the device goes
+   wrong.
+2. **Sleep statistics agreement** (:py:class:`SleepStatsAgreement`). Does the device get the
+   nightly summaries right, such as total sleep time or minutes of REM sleep? This part tells you
+   *how much* these errors matter for the numbers that people actually look at.
 
-.. warning::
-
-    The evaluation module is **experimental**. Its API may change before the full release planned
-    for v0.8.0.
+Throughout the tutorial, the "device" is the sleep tracker or algorithm that we want to evaluate,
+and the "reference" is the method we compare it against, usually PSG.
 
 .. contents:: Contents
     :local:
@@ -33,9 +34,11 @@ The evaluation has two parts, each handled by one class:
 The data
 --------
 
-The sample dataset of the R pipeline contains 14 nights (10,766 epochs of 30 seconds), each
-scored simultaneously by PSG and by a consumer device. Stages are coded as integers:
-0 = Wake, 1 = Light (N1 + N2), 2 = Deep (N3), 3 = REM.
+We'll use the sample dataset of the R pipeline. It contains one night from each of 14 healthy
+adults (30–53 years old, 6 women), recorded in the SRI human sleep laboratory. That's 10,766
+epochs of 30 seconds in total. Each night was scored at the same time by PSG, following the AASM
+criteria, and by a consumer wrist-worn device (Fitbit Charge 2). Stages are coded as integers:
+0 = Wake, 1 = Light (N1 + N2), 2 = Deep (N3) and 3 = REM.
 
 .. code-block:: python
 
@@ -49,8 +52,11 @@ scored simultaneously by PSG and by a consumer device. Stages are coded as integ
     1   sbj01      2          0       0
     2   sbj01      3          0       0
 
-We turn each night into a pair of 4-stage :py:class:`Hypnogram` objects, one per scorer. The
-``scorer`` name is how YASA tells the reference from the device in all outputs:
+The data is in the "long" format recommended by `Menghini et al.`_ There is one row per epoch, one
+column for the subject, one for the epoch, and one for each scoring method.
+
+Let's turn each night into a pair of 4-stage :py:class:`Hypnogram` objects, one per scorer. YASA
+uses the ``scorer`` name to tell the reference from the device in all its outputs:
 
 .. code-block:: python
 
@@ -66,17 +72,51 @@ We turn each night into a pair of 4-stage :py:class:`Hypnogram` objects, one per
     >>> ref_hyps["sbj01"]
     <Hypnogram | 882 epochs x 30s (441.00 minutes), 4 unique stages, scored by PSG>
 
-Passing dictionaries makes the keys (here, the subject IDs) the session IDs used throughout.
-
 .. note::
 
-    To compare just two hypnograms, skip the dictionaries and use
+    To compare just two hypnograms, you don't need the dictionaries. Simply use
     ``ref_hyp.evaluate(obs_hyp)`` (see :py:meth:`Hypnogram.evaluate`).
+
+    Our dataset has one night per subject. If you have several nights per subject, give each night
+    its own key (e.g. ``"sbj01_night1"``). Keep in mind that the group-level metrics and confidence
+    intervals will then treat each night as independent.
+
+Data requirements
+~~~~~~~~~~~~~~~~~
+
+Before running the analyses, make sure that your data meets the following conditions (adapted
+from the R pipeline):
+
+* **Simultaneous recordings.** The device and the reference measured the same night, at the same
+  time.
+* **Same epoch length.** Both recordings use the same epoch length, e.g. 30 seconds. Ideally,
+  this is the resolution that the device's algorithm was designed for. Evaluating a 30-second
+  algorithm on coarser epochs (e.g. 5 minutes) creates artificial stages and degrades the metrics
+  (`de Zambotti et al., 2025`_). If the device only provides 1-minute epochs, aggregate the PSG
+  into 1-minute epochs. A minute is scored as wake if either of its two 30-second epochs is wake.
+* **Same recording bounds.** Both recordings cover the same time in bed, from lights-off to
+  lights-on.
+* **Synchronization.** The two recordings are aligned epoch by epoch. This is important, because
+  even a small offset can substantially degrade the epoch-by-epoch metrics.
+* **Same coding system.** Both recordings use the same stages. Most consumer devices report
+  "light" sleep for PSG N1 + N2 and "deep" sleep for PSG N3, but it is worth checking this with
+  the manufacturer.
+* **No missing data.** Every epoch has a value for both the device and the reference.
+* **Proper use.** The device was worn as recommended by the manufacturer, e.g. its fit and
+  placement. Poor fit degrades the signal quality, and any deviation from these recommendations should be documented.
+
+YASA checks some of these for you. Each pair of hypnograms must have the same number of epochs,
+and all hypnograms must share the same epoch length and stage labels.
 
 --------
 
 Part 1: Epoch-by-epoch agreement
 --------------------------------
+
+Epoch-by-epoch (EBE) analysis is the recommended way to assess how well a device classifies sleep
+stages. Because it compares the two hypnograms epoch by epoch, it requires a device that lets you
+export its epoch-level data. If yours only provides nightly summaries, skip to
+:ref:`Part 2 <tutorial_evaluation_part2>`.
 
 .. code-block:: python
 
@@ -85,8 +125,9 @@ Part 1: Epoch-by-epoch agreement
     <EpochByEpochAgreement | Observed hypnograms scored by Device evaluated against reference
     hypnograms scored by PSG, 14 sleep sessions>
 
-Start by looking at one night. The device tracks the overall architecture, but misses a few
-periods of deep sleep, scoring them as light sleep instead:
+Before computing any metric, it is a good idea to look at the data. Here is one night. The
+device follows the overall structure of the night well, but it misses a few periods of deep sleep
+and scores them as light sleep instead:
 
 .. code-block:: python
 
@@ -98,8 +139,10 @@ periods of deep sleep, scoring them as light sleep instead:
 
     import matplotlib.pyplot as plt
     import pandas as pd
+    import seaborn as sns
     import yasa
 
+    sns.set_context("notebook", font_scale=1.15)
     df = pd.read_csv("../../tests/data/sample_data_sri.csv.xz")
     mapping = {0: "WAKE", 1: "LIGHT", 2: "DEEP", 3: "REM"}
     ref_hyps, obs_hyps = {}, {}
@@ -118,8 +161,11 @@ periods of deep sleep, scoring them as light sleep instead:
 Error matrix
 ~~~~~~~~~~~~
 
-The confusion (or error) matrix shows where the device goes wrong. Rows are PSG stages, columns
-are device stages. Summing the epochs of all nights gives:
+The error matrix, also known as the confusion matrix, shows where the device goes wrong.
+Rows are PSG stages and columns are device stages. Each cell counts the epochs that fall into
+that combination. For example, the cell at the ``DEEP`` row and ``LIGHT`` column counts the
+epochs scored as deep sleep by PSG but as light sleep by the device. Summing the epochs of all
+nights gives the *absolute* error matrix:
 
 .. code-block:: python
 
@@ -131,24 +177,39 @@ are device stages. Summing the epochs of all nights gives:
     DEEP      34   1142   925   16
     REM       57    564    49  922
 
-Raw counts are dominated by the most common stage and by the longest nights. Menghini et al.
-recommend the **proportional** error matrix instead: each night is normalized by row, then
-averaged across nights, so that every night weighs the same. The confidence interval comes from
-a bootstrap across nights:
+This matrix is easy to compute but can be hard to interpret. Raw counts are dominated by the most
+common stage (light sleep) and by the longest nights. In addition, pooling all nights gives a
+single number per cell and hides how much the device varies from one person to the next. Yet our
+14 nights are only a sample, and any metric computed from them should come with a measure of
+variability (the SD) and of uncertainty (the confidence interval).
+
+This is why `Menghini et al.`_ recommend the **proportional** error matrix. First, a matrix is
+computed for each night, and each row is expressed as a percentage of the PSG epochs of that
+stage. The individual matrices are then averaged across nights, and each cell is reported with
+its SD and 95% confidence interval. Here, the confidence intervals are obtained by bootstrapping
+the nights. This per-night matrix is required in all performance evaluation papers submitted to
+the journal *Sleep Health* (`de Zambotti et al., 2022`_).
 
 .. code-block:: python
 
-    >>> cm = ebe.get_confusion_matrix_proportional(bootstrap_kwargs={"rng": 42})
+    >>> boot = {"method": "percentile", "rng": 42}
+    >>> cm = ebe.get_confusion_matrix_proportional(bootstrap_kwargs=boot)
     >>> cm.round(1).head(4)
                  mean   std  ci_lower  ci_upper  n_sessions
     PSG  Device
-    WAKE WAKE    61.9  16.2      52.9      69.2          14
-         LIGHT   30.6  17.6      23.0      40.5          14
-         DEEP     1.9   2.5       0.9       3.6          14
-         REM      5.5  10.4       2.1      15.1          14
+    WAKE WAKE    61.9  16.2      53.4      69.5          14
+         LIGHT   30.6  17.6      22.6      39.9          14
+         DEEP     1.9   2.5       0.8       3.3          14
+         REM      5.5  10.4       1.5      11.4          14
 
-Use ``formatted=True`` to get a publication-ready ``mean (SD) [CI]`` table, or plot the means as
-a heatmap:
+.. tip::
+
+    Setting a seed (``"rng": 42``) makes the bootstrap confidence intervals reproducible. The
+    default bootstrap method, BCa, works best with large samples and can be unstable with few
+    nights. With only 14 nights, we use plain percentiles throughout this tutorial.
+
+Use ``formatted=True`` to get a publication-ready table with ``mean (SD) [CI]`` in each cell. For
+a quick overview, a heatmap of the means works best:
 
 .. code-block:: python
 
@@ -161,8 +222,6 @@ a heatmap:
     :context: close-figs
     :include-source: False
 
-    import seaborn as sns
-
     cm = ebe.get_confusion_matrix_proportional(ci_method=None)
     stages = ["WAKE", "LIGHT", "DEEP", "REM"]
     mat = cm["mean"].unstack().loc[stages, stages]
@@ -173,16 +232,28 @@ a heatmap:
     )
     fig.tight_layout()
 
-The diagonal is the percentage of each PSG stage correctly detected. The story is clear: the
-device recognizes light sleep well (79%), but classifies more than half of deep sleep, and about
-30% of wake and REM, as light sleep.
+Each row now reads as "what happens to the epochs of this PSG stage". The diagonal is the
+percentage of epochs that the device got right, which is the sensitivity of each stage (more on
+this below).
+
+The device recognizes light sleep well, with about 80% of PSG N1 + N2 epochs correctly
+classified. Deep sleep is a different story: more than half of the PSG N3 epochs end up as light sleep. Wake (31%) and REM sleep (27%) are also frequently mistaken for light sleep. This is where most of the device's errors go, and as we'll see in :ref:`Part 2 <tutorial_evaluation_part2>`, it overestimates light sleep as a result.
+
+Note that the SD and the confidence interval answer two different questions:
+
+* The **SD** tells you how much nights differ from each other. Deep and REM sensitivities vary a
+  lot between participants, with an SD of 24% and 33%.
+* The **confidence interval** tells you how precisely we know the group mean. The percentage of
+  light sleep scored as wake is estimated precisely (5.2%, CI: 3.7–6.9%). Deep sensitivity (44%,
+  CI: 33–57%) and REM sensitivity (67%, CI: 50–84%) are much less certain, and should be
+  interpreted with caution.
 
 Overall agreement
 ~~~~~~~~~~~~~~~~~
 
-:py:meth:`~EpochByEpochAgreement.get_agreement` returns one row of agreement scores per night,
-and :py:meth:`~EpochByEpochAgreement.summary` aggregates them across nights. Add
-``ci_method="boot"`` for a bootstrap confidence interval of the mean:
+:py:meth:`~EpochByEpochAgreement.get_agreement` returns one row of agreement scores per night.
+:py:meth:`~EpochByEpochAgreement.summary` then aggregates them across nights. Add
+``ci_method="boot"`` to get a bootstrap confidence interval of the mean:
 
 .. code-block:: python
 
@@ -193,9 +264,8 @@ and :py:meth:`~EpochByEpochAgreement.summary` aggregates them across nights. Add
     sbj02        59.06         50.52   0.31  0.37      62.22  52.08
     sbj03        76.16         76.53   0.62  0.63      77.25  76.37
 
-    >>> ebe.summary(
-    ...     ci_method="boot", bootstrap_kwargs={"method": "percentile", "rng": 42}
-    ... )[["mean", "std", "ci_lower", "ci_upper"]].round(2)
+    >>> summ = ebe.summary(ci_method="boot", bootstrap_kwargs=boot)
+    >>> summ[["mean", "std", "ci_lower", "ci_upper"]].round(2)
                    mean   std  ci_lower  ci_upper
     metric
     accuracy      66.18  6.60     62.83     69.51
@@ -205,20 +275,36 @@ and :py:meth:`~EpochByEpochAgreement.summary` aggregates them across nights. Add
     precision     69.53  8.28     65.26     73.54
     f1            64.53  8.19     60.37     68.64
 
-On average, the device agrees with PSG on two out of three epochs (Cohen's kappa = 0.45).
+On average, the device agrees with PSG on two out of three epochs. That's the accuracy. The other
+scores look at the agreement from different angles:
 
-.. tip::
+* **Cohen's kappa** (0.45) measures the agreement beyond what we would expect by chance. Its value
+  depends on the number of stages and on how common each stage is. Only compare it between
+  studies that use the same number of stages.
+* **Balanced accuracy** is the average sensitivity across stages. Each stage counts equally, no
+  matter how long it lasts.
 
-    The default bootstrap method is BCa, which is more accurate with larger samples. With only 14
-    nights, YASA warns that BCa may be unstable, so we use plain percentiles here.
+The other scores are described in :py:meth:`~EpochByEpochAgreement.get_agreement`.
+
+.. warning::
+
+    Avoid reporting accuracy alone. Sleep stages are typically imbalanced, and a device can reach
+    a high accuracy while missing most epochs of a rare stage. Report it together with the
+    sensitivity and specificity of each stage (see below), as required by *Sleep Health*.
 
 Agreement by stage
 ~~~~~~~~~~~~~~~~~~
 
-Overall scores hide stage-specific errors. :py:meth:`~EpochByEpochAgreement.get_agreement_bystage`
-computes one-vs-rest metrics for each stage and each night, and
-``summary(by_stage=True)`` averages them. YASA uses the scikit-learn names, which map to the
-Menghini et al. metrics as follows:
+Overall scores can hide large errors in specific stages. To see them,
+:py:meth:`~EpochByEpochAgreement.get_agreement_bystage` computes metrics for each stage and each
+night, treating each stage as a yes/no question ("is this epoch REM or not?"). As before,
+``summary(by_stage=True)`` averages them across nights.
+
+You may know sensitivity and specificity from sleep-wake studies, where sensitivity is the ability
+to detect sleep and specificity is the ability to detect wake. With more stages, `Menghini et al.`_
+generalize them. **Stage sensitivity** is the ability of the device to detect a given stage (e.g.
+REM). **Stage specificity** is its ability to reject all the other stages. YASA uses the
+scikit-learn names for these metrics:
 
 .. list-table::
     :header-rows: 1
@@ -226,60 +312,58 @@ Menghini et al. metrics as follows:
 
     * - YASA
       - Menghini et al.
-      - Question answered
+      - Definition, for a given stage
     * - ``recall``
       - Sensitivity
-      - % of PSG epochs of this stage that the device detects
+      - % of the PSG epochs of this stage that the device correctly classifies as this stage
     * - ``specificity``
       - Specificity
-      - % of PSG epochs of other stages that the device correctly rejects
+      - % of the PSG epochs of other stages that the device correctly does not classify as this
+        stage
     * - ``precision``
       - Positive predictive value (PPV)
-      - When the device says this stage, how often is it right?
+      - % of the epochs classified as this stage by the device that are this stage in the PSG
     * - ``npv``
       - Negative predictive value (NPV)
-      - When the device says another stage, how often is it right?
+      - % of the epochs not classified as this stage by the device that are not this stage in the
+        PSG
+
+In plain words, for REM sleep, sensitivity answers "how much of the REM sleep does the device
+catch?". PPV answers "when the device says REM, how often is it right?".
 
 .. code-block:: python
 
     >>> summ = ebe.summary(by_stage=True)
-    >>> summ["mean"].unstack("stage").round(1)
-    stage         DEEP  LIGHT    REM   WAKE
+    >>> metrics = ["recall", "specificity", "precision", "npv"]
+    >>> summ["mean"].unstack("stage").loc[metrics, stages].round(1)
+    stage        WAKE  LIGHT  DEEP   REM
     metric
-    fbeta         50.2   71.9   59.6   62.7
-    npv           87.2   73.0   93.4   93.7
-    precision     66.1   67.7   62.2   68.1
-    recall        44.2   79.3   67.3   61.9
-    specificity   94.9   58.4   93.6   95.9
-    support      151.2  400.2  113.7  103.9
+    recall       61.9   79.3  44.2  67.3
+    specificity  95.9   58.4  94.9  93.6
+    precision    68.1   67.7  66.1  62.2
+    npv          93.7   73.0  87.2  93.4
 
-The recall row is the diagonal of the proportional error matrix. The low specificity of light
-sleep (58%) is the flip side of the previous finding: the device over-scores light sleep, at the
-expense of the other stages. ``support`` is the average number of PSG epochs of each stage.
+The recall row is simply the diagonal of the proportional error matrix. Specificity is above 90%
+for all stages except light sleep (58%). This is the flip side of what we saw earlier. Because
+the device over-scores light sleep, it often says "light" when PSG says otherwise.
 
 .. note::
 
-    If a stage is absent from the PSG of a night (e.g. no deep sleep), its recall is undefined for
-    that night. YASA leaves it as ``NaN`` so that it does not pull the group mean down. Use
-    ``get_agreement_bystage(zero_division=0)`` to count it as 0% instead.
+    If a night has no epoch of a given stage in the PSG (e.g. no deep sleep), the recall of that
+    stage is undefined for that night. YASA leaves it as ``NaN`` to avoid pulling the group mean
+    down. Use ``get_agreement_bystage(zero_division=0)`` to count it as 0% instead.
 
 Sleep vs wake
 ~~~~~~~~~~~~~
 
-Many devices are first judged on sleep/wake detection. Collapsing Light, Deep and REM into a
-single ``SLEEP`` stage only requires a different mapping and ``n_stages=2``:
+Many devices, including standard actigraphy, only distinguish sleep from wake. To evaluate them,
+merge Light, Deep and REM into a single ``SLEEP`` stage with
+:py:meth:`Hypnogram.consolidate_stages`:
 
 .. code-block:: python
 
-    >>> sw = {0: "WAKE", 1: "SLEEP", 2: "SLEEP", 3: "SLEEP"}
-    >>> ref_sw, obs_sw = {}, {}
-    >>> for sub, d in df.groupby("subject"):
-    ...     ref_sw[sub] = yasa.Hypnogram.from_integers(
-    ...         d["reference"], mapping=sw, n_stages=2, scorer="PSG"
-    ...     )
-    ...     obs_sw[sub] = yasa.Hypnogram.from_integers(
-    ...         d["device"], mapping=sw, n_stages=2, scorer="Device"
-    ...     )
+    >>> ref_sw = {k: h.consolidate_stages(2) for k, h in ref_hyps.items()}
+    >>> obs_sw = {k: h.consolidate_stages(2) for k, h in obs_hyps.items()}
     >>> ebe_sw = yasa.EpochByEpochAgreement(ref_sw, obs_sw)
     >>> ebe_sw.summary().loc[["accuracy", "kappa"], ["mean", "std"]].round(2)
                mean   std
@@ -294,90 +378,142 @@ single ``SLEEP`` stage only requires a different mapping and ``n_stages=2``:
     recall       95.9   2.3
     specificity  61.9  16.2
 
-Accuracy jumps to 91%, but that is mostly because sleep makes up most of the night. The device
-detects 96% of sleep epochs but only 62% of wake epochs (the specificity of ``SLEEP``). This is
-the classic profile of wearables, which tend to mistake quiet wakefulness for sleep.
+With only two stages, the metrics of one stage mirror those of the other. The specificity of
+sleep is the sensitivity of wake, and vice versa. The device detects 96% of the sleep epochs, but
+only 62% of the wake epochs. This is the typical profile of wearables, which tend to mistake quiet
+wakefulness for sleep.
+
+An accuracy of 91% may seem high, but it should be interpreted in light of how common sleep is.
+Sleep makes up 86% of the night on average. A "device" that simply scores every epoch as sleep
+would therefore reach an accuracy of 86%, with a kappa of 0. Kappa corrects for this imbalance,
+and it only rises from 0.45 to 0.58.
 
 --------
+
+.. _tutorial_evaluation_part2:
 
 Part 2: Sleep statistics agreement
 ----------------------------------
 
-Next, we compare night-level sleep statistics. :py:meth:`~EpochByEpochAgreement.get_sleep_stats`
-computes them for every night and both scorers:
+In the second part, we move from epochs to nights. How far are the device's nightly sleep
+statistics from those of the reference? This discrepancy analysis doesn't need epoch-by-epoch
+data. It is also directly relevant if you plan to use the device in a study, for example to
+measure total sleep time.
+
+:py:meth:`~EpochByEpochAgreement.get_sleep_stats` computes the sleep statistics of every night,
+for both scorers:
 
 .. code-block:: python
 
     >>> sstats = ebe.get_sleep_stats()
-    >>> sstats.loc["Device", ["TST", "SE", "SOL", "WASO", "LIGHT", "DEEP", "REM"]].head(3).round(1)
+    >>> stats = ["TST", "SE", "SOL", "WASO", "LIGHT", "DEEP", "REM"]
+    >>> sstats.loc["Device", stats].head(3).round(1)
                 TST    SE   SOL  WASO  LIGHT  DEEP   REM
     sleep_id
     sbj01     378.0  85.7  22.0  41.0  315.0  39.5  23.5
     sbj02     354.5  89.9   7.5  32.5  312.0  26.5  16.0
     sbj03     262.5  78.7   8.5  62.5  170.5  38.5  53.5
 
-Durations are in minutes. :py:class:`SleepStatsAgreement` then takes this table as is and runs a
-Bland-Altman analysis on every statistic (statistics identical between scorers, such as the time
-in bed, are dropped):
+All durations are in minutes. :py:class:`SleepStatsAgreement` takes this table as is, and runs a
+Bland-Altman analysis on every statistic. Statistics that are identical between the two scorers,
+such as the time in bed, are dropped.
 
 .. code-block:: python
 
-    >>> ssa = yasa.SleepStatsAgreement(sstats, bootstrap_kwargs={"rng": 42})
+    >>> ssa = yasa.SleepStatsAgreement(sstats, bootstrap_kwargs=boot)
     >>> ssa
     <SleepStatsAgreement | Observed scorer ('Device') evaluated against reference scorer ('PSG'),
     14 sleep sessions>
 
-.. note::
+Bias and limits of agreement
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    YASA computes WASO within the sleep period, i.e. from the first to the last sleep epoch. The R
-    pipeline also counts wake after the final awakening, so WASO differs for the nights that end
-    with a period of wake.
+For each night, we compute the difference *device − reference*. A positive difference means that
+the device overestimates the statistic, and a negative difference means that it underestimates
+it. Following `Bland and Altman`_, we then summarize these differences into the two components
+of the device's measurement error:
 
-The report table
-~~~~~~~~~~~~~~~~
+* The **bias** is the systematic error, i.e. the average difference between the device and the
+  reference. If its confidence interval excludes zero, the device consistently over- or
+  underestimates the statistic.
+* The **95% limits of agreement (LoA)** describe the random error. For a new night, we expect the
+  difference to fall within these limits 95% of the time.
 
-:py:meth:`~SleepStatsAgreement.report` returns the reporting table recommended by Menghini et al.:
-the mean (SD) of each scorer, the bias (device − PSG) and the 95% limits of agreement (LoA), each
-with their 95% confidence interval:
+Both are expressed in the unit of the statistic, e.g. minutes. This makes them easier to
+interpret than a correlation coefficient. A correlation measures the association between two
+methods, not their agreement. Two measures of total sleep time that always differ by 50 minutes
+are perfectly correlated, even though they never agree.
+
+Bland-Altman plots
+~~~~~~~~~~~~~~~~~~
+
+The Bland-Altman plot is a widely used way to visualize the agreement between two methods.
+:py:meth:`~SleepStatsAgreement.plot_blandaltman` plots the differences against the PSG values.
+The solid line is the bias and the dashed lines are the LoA, each with its confidence band:
 
 .. code-block:: python
 
-    >>> stats = ["TST", "SE", "SOL", "WASO", "LIGHT", "DEEP", "REM"]
-    >>> report = ssa.report(sleep_stats=stats)
-    >>> report[["PSG mean (SD)", "Device mean (SD)", "Bias [95% CI]"]]
-                  PSG mean (SD) Device mean (SD)                                         Bias [95% CI]
-    sleep_stat
-    TST (min)    332.57 (67.25)   339.32 (60.61)                                   6.75 [-6.19, 19.69]
-    SE (%)         86.08 (6.90)     88.07 (4.53)   58.10 + -0.65x [b0: 14.71, 85.02; b1: -0.96, -0.17]
-    SOL (min)     13.75 (11.60)    11.36 (14.81)                                  -2.39 [-10.93, 5.42]
-    WASO (min)    36.18 (21.19)    33.29 (12.57)   25.55 + -0.79x [b0: 10.20, 40.28; b1: -1.32, -0.24]
-    LIGHT (min)  200.11 (48.52)   234.64 (56.85)                                   34.54 [4.01, 65.06]
-    DEEP (min)    75.61 (23.71)    50.04 (22.58)  23.70 + -0.65x [b0: -20.32, 67.72; b1: -1.21, -0.09]
-    REM (min)     56.86 (23.11)    54.64 (27.39)  56.14 + -1.03x [b0: 10.63, 101.66; b1: -1.77, -0.28]
+    >>> ssa.plot_blandaltman(sleep_stats=["TST", "WASO", "DEEP", "REM"], col_wrap=2)
 
-    >>> report[["LoA [95% CI]", "Assumptions"]]
-                                                                LoA [95% CI]                                 Assumptions
-    sleep_stat
-    TST (min)                 -37.16 to 50.66 [-59.57, -14.76; 28.26, 73.07]  ✓ normal  ✓ constant bias  ✓ homoscedastic
-    SE (%)       ±2.46 (24.90 + -0.26x) [c0: 15.19, 39.63; c1: -0.40, -0.15]  ✗ normal  ✗ constant bias  ✗ homoscedastic
-    SOL (min)                 -34.69 to 29.90 [-54.47, -19.55; 16.45, 54.06]  ✗ normal  ✓ constant bias  ✓ homoscedastic
-    WASO (min)                                   bias ± 22.98 [15.74, 36.30]  ✗ normal  ✗ constant bias  ✓ homoscedastic
-    LIGHT (min)            -69.08 to 138.15 [-121.94, -16.21; 85.28, 191.01]  ✓ normal  ✓ constant bias  ✓ homoscedastic
-    DEEP (min)                                   bias ± 41.18 [24.23, 58.14]  ✓ normal  ✗ constant bias  ✓ homoscedastic
-    REM (min)                                    bias ± 53.68 [31.57, 75.78]  ✓ normal  ✗ constant bias  ✓ homoscedastic
+.. plot::
+    :context: close-figs
+    :include-source: False
 
-A few highlights: total sleep time is well estimated (+7 min on average), but light sleep is
-overestimated by 35 min. Individual errors are large, though: for a given night, the device's TST
-can be anywhere from 37 min below to 51 min above PSG.
+    boot = {"method": "percentile", "rng": 42}
+    ssa = yasa.SleepStatsAgreement(ebe.get_sleep_stats(), bootstrap_kwargs=boot)
+    ssa.plot_blandaltman(sleep_stats=["TST", "WASO", "DEEP", "REM"], col_wrap=2)
 
-When the differences are not normal (here SE, SOL and WASO), the confidence intervals come from
-a bootstrap. Passing a seed with ``bootstrap_kwargs={"rng": 42}`` makes them reproducible.
+The four panels tell two different stories. For TST, the differences scatter around a flat line: the device makes about the same error whether the night is short or long. WASO, deep and REM sleep are another matter. Their lines slope downward, meaning that the device pulls these statistics toward the group average, overestimating them on nights with little WASO, deep or REM sleep and underestimating them on nights with a lot. A single mean difference does not describe this kind of error well. Instead, YASA draws a sloped bias line, and the next section explains how it decides when to do so.
+
+The plot is also useful to spot outliers. Outliers and influential nights deserve a close
+look, but they should only be excluded for a specific and clearly reported reason, e.g. a
+participant with only 4 hours of sleep in a sample of good sleepers.
 
 Assumptions drive the method
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Why do some rows show a single number and others an equation? As in the R pipeline, each statistic
-is first tested for three assumptions, and the method is adapted when one is violated:
+The classic bias and LoA rely on three assumptions (`Bland and Altman, 1999`_):
+
+1. The bias does not depend on the size of the measurement.
+2. The random error is the same across the range of measurements (homoscedasticity).
+3. The differences are normally distributed.
+
+Like the R pipeline, YASA tests each assumption for each statistic, and adapts the method when an
+assumption is violated. Following `Menghini et al.`_, the size of the measurement (:math:`SM`) is
+the PSG value, since PSG is the gold standard. The original Bland-Altman plot uses the mean of the
+two methods instead.
+
+**Constant bias.** YASA regresses the differences on the PSG values:
+
+.. math::
+
+    \text{Bias}_i = b_0 + b_1 \, SM_i
+
+If the slope :math:`b_1` is significant, the bias is *proportional*. It is then reported as this
+regression line, rather than as a mean difference. For deep sleep, the bias is
+:math:`23.70 - 0.65 \times SM`. Let's plug in some numbers. On a night with 75 minutes of deep sleep (the group average), the device underestimates deep sleep by about 25 minutes, whereas on a night with only 36 minutes, it is right on average. The LoA then run parallel to the bias line, at :math:`\pm 1.96` SD of the regression residuals (shown as ``bias ± 41.18`` in the report).
+
+**Homoscedasticity.** YASA regresses the absolute residuals of the bias model (:math:`AR`) on the
+PSG values:
+
+.. math::
+
+    AR_i = c_0 + c_1 \, SM_i
+
+If the slope :math:`c_1` is significant, the differences are *heteroscedastic*. Their spread
+increases or decreases with the size of the measurement, and so do the LoA:
+
+.. math::
+
+    \text{LoA}_i = \text{Bias}_i \pm 2.46 \, (c_0 + c_1 \, SM_i)
+
+The factor 2.46, i.e. :math:`1.96 \times \sqrt{\pi / 2}`, converts the mean absolute residual into a standard deviation. For sleep efficiency, :math:`c_1 = -0.26`: the LoA get narrower as sleep efficiency increases. In other words, the device is less reliable on nights of poor sleep.
+
+**Normality.** YASA tests the differences with a Shapiro-Wilk test. For the LoA, a deviation from normality matters less than in many other analyses, although very skewed or heavy-tailed distributions still call for caution. When normality is violated, YASA computes the confidence intervals with a
+bootstrap instead of the t-distribution. Log-transforming the data is another option (see
+:ref:`Going further <tutorial_evaluation_further>`).
+
+In summary:
 
 ==================  ========================================  =====================================
 Assumption          Test                                      If violated
@@ -389,72 +525,200 @@ Assumption          Test                                      If violated
                                                               ``±2.46 (c0 + c1 × PSG)``
 ==================  ========================================  =====================================
 
-For deep sleep, for example, the bias depends on how much deep sleep the night actually had: with
-a slope of −0.65, the device underestimates deep sleep more on nights with more deep sleep. The
-full test results are in :py:attr:`~SleepStatsAgreement.assumptions`:
+The detailed results of each test are stored in :py:attr:`~SleepStatsAgreement.assumptions`, along with a fourth test, ``unbiased``: a one-sample t-test of whether the differences are zero on average, with Cohen's d as the effect size. This test does not change the method, but it tells you whether the device is biased on average:
 
 .. code-block:: python
 
-    >>> ssa.assumptions["constant_bias"].loc[stats].round(3)
-    metric      slope  pvalue     r2  passed method
+    >>> ssa.assumptions["unbiased"].loc[["TST", "LIGHT", "DEEP", "REM"]].round(3)
+    metric          t  pvalue  cohen_d  passed
     sleep_stat
-    TST        -0.149   0.108  0.201    True  param
-    SE         -0.652   0.002  0.579   False   regr
-    SOL        -0.694   0.076  0.239    True  param
-    WASO       -0.786   0.000  0.669   False   regr
-    LIGHT      -0.407   0.188  0.140    True  param
-    DEEP       -0.652   0.026  0.351   False   regr
-    REM        -1.026   0.011  0.429   False   regr
+    TST         1.127   0.280    0.301    True
+    LIGHT       2.444   0.030    0.653   False
+    DEEP       -3.668   0.003   -0.980   False
+    REM        -0.229   0.823   -0.061    True
+
+REM sleep is a good example of why the average alone can be misleading. On average, the device is
+unbiased (p = 0.82). Yet its bias is strongly proportional (:math:`56.14 - 1.03 \times SM`). It overestimates REM sleep by about 25 minutes on a night with 30 minutes of REM, and underestimates it by about 36 minutes on a night with 90 minutes. These errors cancel out in the group mean, but not for individual nights.
 
 .. tip::
 
-    With many nights, statistical tests flag even trivial deviations. YASA therefore requires the
-    effect size to be material too (e.g. :math:`R^2 > 0.1` for a proportional bias). The thresholds
-    can be changed with the ``effect_size_gates`` argument. You can also override the automatic
+    `Menghini et al.`_ recommend checking the Bland-Altman plots in addition to the statistical
+    tests. Why? A p-value depends on the sample size: with many nights, the tests flag even trivial deviations, while with few nights, they can miss real ones. For this reason, YASA also requires
+    the effect size to be meaningful, e.g. :math:`R^2 > 0.1` for a proportional bias. You can
+    change these thresholds with the ``effect_size_gates`` argument, or override the automatic
     choice with ``bias_method``, ``loa_method`` and ``ci_method``.
 
-Bland-Altman plots
-~~~~~~~~~~~~~~~~~~
+The report table
+~~~~~~~~~~~~~~~~
 
-Finally, :py:meth:`~SleepStatsAgreement.plot_blandaltman` visualizes all of the above: the
-differences against the PSG values, the bias (solid line) and the LoA (dashed lines), with their
-confidence bands. The methods are selected automatically, just as in the report:
+:py:meth:`~SleepStatsAgreement.report` puts everything together in the table recommended by
+`Menghini et al.`_ For each statistic, it shows the mean (SD) of each scorer, the bias and LoA with
+their 95% confidence intervals, and the outcome of the assumption tests:
 
 .. code-block:: python
 
-    >>> ssa.plot_blandaltman(sleep_stats=["TST", "WASO", "DEEP", "REM"])
+    >>> report = ssa.report(sleep_stats=stats)
+    >>> report[["PSG mean (SD)", "Device mean (SD)", "Bias [95% CI]"]]
+                  PSG mean (SD) Device mean (SD)                                         Bias [95% CI]
+    sleep_stat
+    TST (min)    332.57 (67.25)   339.32 (60.61)                                   6.75 [-6.19, 19.69]
+    SE (%)         86.08 (6.90)     88.07 (4.53)   58.10 + -0.65x [b0: 15.69, 85.54; b1: -0.97, -0.18]
+    SOL (min)     13.75 (11.60)    11.36 (14.81)                                  -2.39 [-11.43, 5.14]
+    WASO (min)    36.18 (21.19)    33.29 (12.57)    25.55 + -0.79x [b0: 8.16, 38.75; b1: -1.24, -0.10]
+    LIGHT (min)  200.11 (48.52)   234.64 (56.85)                                   34.54 [4.01, 65.06]
+    DEEP (min)    75.61 (23.71)    50.04 (22.58)  23.70 + -0.65x [b0: -20.32, 67.72; b1: -1.21, -0.09]
+    REM (min)     56.86 (23.11)    54.64 (27.39)  56.14 + -1.03x [b0: 10.63, 101.66; b1: -1.77, -0.28]
 
-.. plot::
-    :context: close-figs
-    :include-source: False
+    >>> report[["LoA [95% CI]", "Assumptions"]]
+                                                                LoA [95% CI]                                 Assumptions
+    sleep_stat
+    TST (min)                 -37.16 to 50.66 [-59.57, -14.76; 28.26, 73.07]  ✓ normal  ✓ constant bias  ✓ homoscedastic
+    SE (%)       ±2.46 (24.90 + -0.26x) [c0: 13.44, 36.70; c1: -0.39, -0.13]  ✗ normal  ✗ constant bias  ✗ homoscedastic
+    SOL (min)                 -34.69 to 29.90 [-48.39, -11.58; 10.54, 46.16]  ✗ normal  ✓ constant bias  ✓ homoscedastic
+    WASO (min)                                   bias ± 22.98 [11.14, 30.45]  ✗ normal  ✗ constant bias  ✓ homoscedastic
+    LIGHT (min)            -69.08 to 138.15 [-121.94, -16.21; 85.28, 191.01]  ✓ normal  ✓ constant bias  ✓ homoscedastic
+    DEEP (min)                                   bias ± 41.18 [24.23, 58.14]  ✓ normal  ✗ constant bias  ✓ homoscedastic
+    REM (min)                                    bias ± 53.68 [31.57, 75.78]  ✓ normal  ✗ constant bias  ✓ homoscedastic
 
-    ssa = yasa.SleepStatsAgreement(ebe.get_sleep_stats(), bootstrap_kwargs={"rng": 42})
-    ssa.plot_blandaltman(sleep_stats=["TST", "WASO", "DEEP", "REM"])
+How to read this table? In the equations, ``x`` is the PSG value. A constant bias is a single number, while a proportional bias is the regression line ``b0 + b1x``, with a confidence interval for each coefficient. The LoA come in three flavors:
 
-The downward slopes of WASO, DEEP and REM are clear: the device compresses these statistics
-toward the group average, overestimating them on nights with little and underestimating them on
-nights with a lot.
+* a range (``lower to upper``), when the bias is constant,
+* ``bias ± ...``, when they run parallel to a proportional bias,
+* ``±2.46 (c0 + c1x)``, when they are heteroscedastic.
+
+A few highlights:
+
+* **Total sleep time** is well estimated on average. The bias is only +7 minutes, and its
+  confidence interval includes zero. Individual nights are another matter: on a given night, the device can be anywhere from 37 minutes below to 51 minutes above PSG.
+* **Light sleep** is overestimated. The bias is positive, and its confidence interval is entirely
+  above zero. We could correct this systematic error by subtracting 34.54 minutes (the
+  "calibration index") from the device's light sleep. But calibration does not reduce the random
+  error, and the LoA still span more than 3 hours.
+* **SE, WASO, deep and REM sleep** have a proportional bias. Any correction would therefore need
+  to depend on the size of the measurement.
+
+.. note::
+
+    These numbers differ slightly from Table 4 of `Menghini et al. (2021)`_. The authors used
+    log-transformed LoA for WASO and REM sleep, and bootstrap confidence intervals for all statistics. Their WASO also includes the wake after the final awakening, whereas YASA only counts the wake between the first and the last sleep epoch.
+
+Is the agreement acceptable?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The bias and LoA describe the agreement, but they do not tell you whether it is good enough. Are a
+bias of +7 minutes and LoA of −37 to +51 minutes acceptable for total sleep time? The answer
+depends on what you want to use the device for. It may be good enough to compare the average
+sleep of two groups, but not to tell whether a given patient slept 30 minutes more after a
+treatment. `Bland and Altman`_ recommend defining the acceptable limits *before* the study, based
+on clinical or practical grounds. Once the data is in, check whether the LoA and their confidence
+intervals fall within these limits.
+
+Keep in mind that the reference is not perfect either. Even two expert scorers do not fully agree
+on the same PSG recording, which sets a realistic ceiling on the agreement that any device can
+reach (`de Zambotti et al., 2025`_).
 
 --------
+
+Summary
+-------
+
+Here is how we could summarize the performance of the device on this sample of 14 healthy adults:
+
+* It detects 96% of PSG sleep epochs, but only 62% of wake epochs. Its sleep-wake accuracy is 91%
+  (kappa = 0.58).
+* With four stages, it agrees with PSG on 66% of epochs (kappa = 0.45). It detects light sleep
+  best (sensitivity of 79%) and deep sleep worst (44%). More than half of PSG deep sleep is scored
+  as light sleep.
+* Total sleep time is unbiased (+7 minutes), but individual nights can be off by −37 to +51
+  minutes.
+* The device overestimates light sleep by 35 minutes. It underestimates deep sleep by 26 minutes
+  on average, and more so on nights with more deep sleep. WASO and REM sleep are pulled toward the
+  group average.
+
+Notice that every statement is a specific metric with a clear direction and size. As recommended by `de Zambotti et al. (2022)`_, none of them is an overall verdict such as "the device is accurate" or "the device is valid".
+
+--------
+
+Reporting checklist
+-------------------
+
+`de Zambotti et al. (2022)`_ list what a performance evaluation paper should report, based on the
+framework of `Menghini et al.`_ Here is where to find each item in YASA:
+
+.. list-table::
+    :header-rows: 1
+    :widths: 45 55
+
+    * - What to report
+      - In YASA
+    * - Sensitivity and specificity of **each stage**
+      - ``ebe.summary(by_stage=True)``
+    * - Accuracy, **together with** sensitivity and specificity
+      - ``ebe.summary()`` and ``ebe.summary(by_stage=True)``
+    * - Confusion matrix computed per night, summarized with mean, SD and 95% CI
+      - ``ebe.get_confusion_matrix_proportional(formatted=True)``
+    * - Bias and LoA, distinguishing constant from proportional bias, and homoscedastic from
+        heteroscedastic LoA
+      - ``ssa.report()`` and ``ssa.plot_blandaltman()``
+    * - 95% confidence intervals for all performance metrics
+      - ``ci_method="boot"`` in ``ebe.summary()``, included by default in ``ssa.report()``
+    * - Kappa and prevalence-adjusted bias-adjusted kappa (PABAK), ROC curves and AUC for each
+        stage (recommended)
+      - Kappa in ``ebe.summary()``. PABAK and ROC curves are not yet available in YASA.
+
+If you are evaluating an algorithm that was trained on data, such as a sleep staging algorithm
+(e.g. YASA), compute its performance on nights that were not used for training. Cross-validation
+or an independent test sample both work.
+
+`de Zambotti et al. (2025)`_ add a few practical recommendations: report the device's hardware, firmware and algorithm versions, evaluate it at the resolution its algorithm was designed for, and wear it as the manufacturer recommends. They also call for testing devices on diverse samples (age, sex, body mass index, skin tone, health conditions). And finally, do not draw conclusions beyond what the device and the data can support.
+
+--------
+
+.. _tutorial_evaluation_further:
 
 Going further
 -------------
 
-* **Pooled metrics**: ``ebe.get_agreement(pooled=True)`` computes the metrics on all epochs
-  together, instead of averaging per night (``"sum"`` vs ``"avg"`` in the R pipeline).
-* **Log transformation**: for statistics whose error grows with their magnitude, use
-  ``SleepStatsAgreement(sstats, log_transform=True)`` to get proportional LoA (Euser et al.,
-  2008).
-* **Calibration**: :py:meth:`SleepStatsAgreement.calibrate` corrects the systematic bias of the
-  device in new data.
-* **Numeric output**: :py:meth:`SleepStatsAgreement.summary` returns all biases, LoA and CIs as
+* **Pooled metrics.** ``ebe.get_agreement(pooled=True)`` computes the metrics on all epochs at
+  once, instead of averaging them across nights. This is the ``"sum"`` option of the R pipeline,
+  as opposed to ``"avg"``.
+* **Log transformation.** When the error grows with the size of the measurement, use
+  ``SleepStatsAgreement(sstats, log_transform=True)``. The LoA then become proportional to the
+  size of the measurement (`Euser et al., 2008`_).
+* **Calibration.** :py:meth:`SleepStatsAgreement.calibrate` corrects a constant bias of the device
+  in new data, by subtracting the calibration index (e.g. 34.54 minutes of light sleep). The
+  calibration of proportional biases is not implemented yet.
+* **Numeric output.** :py:meth:`SleepStatsAgreement.summary` returns all the biases, LoA and CIs as
   numbers instead of formatted strings.
 
 See the :ref:`API reference <api_ref>` for all options.
 
-Reference
----------
+References
+----------
 
-Menghini, L., Cellini, N., Goldstone, A., Baker, F. C., & de Zambotti, M. (2021). A standardized
-framework for testing the performance of sleep-tracking technology: step-by-step guidelines and
-open-source code. *SLEEP*, 44(2), zsaa170. https://doi.org/10.1093/sleep/zsaa170
+* Menghini, L., Cellini, N., Goldstone, A., Baker, F. C., & de Zambotti, M. (2021). A standardized
+  framework for testing the performance of sleep-tracking technology: step-by-step guidelines and
+  open-source code. *SLEEP*, 44(2), zsaa170. https://doi.org/10.1093/sleep/zsaa170
+* de Zambotti, M., Menghini, L., Grandner, M. A., Redline, S., Zhang, Y., Wallace, M. L., &
+  Buxton, O. M. (2022). Rigorous performance evaluation (previously, "validation") for informed use
+  of new technologies for sleep health measurement. *Sleep Health*.
+  https://doi.org/10.1016/j.sleh.2022.02.006
+* de Zambotti, M., Vallat, R., Pho, G., Goldstein, C., & Patel, S. (2025). Toward better evaluation
+  of consumer sleep technologies: a call for rigor, context, and collaboration. *SLEEP Advances*,
+  6(4), zpaf063. https://doi.org/10.1093/sleepadvances/zpaf063
+* Bland, J. M., & Altman, D. G. (1999). Measuring agreement in method comparison studies.
+  *Statistical Methods in Medical Research*, 8(2), 135–160.
+  https://doi.org/10.1177/096228029900800204
+* Euser, A. M., Dekker, F. W., & le Cessie, S. (2008). A practical approach to Bland-Altman plots
+  and variation coefficients for log transformed variables. *Journal of Clinical Epidemiology*,
+  61(10), 978–982. https://doi.org/10.1016/j.jclinepi.2007.11.003
+
+.. _Menghini et al.: https://doi.org/10.1093/sleep/zsaa170
+.. _Menghini et al. (2021): https://doi.org/10.1093/sleep/zsaa170
+.. _de Zambotti et al. (2022): https://doi.org/10.1016/j.sleh.2022.02.006
+.. _de Zambotti et al., 2022: https://doi.org/10.1016/j.sleh.2022.02.006
+.. _de Zambotti et al. (2025): https://doi.org/10.1093/sleepadvances/zpaf063
+.. _de Zambotti et al., 2025: https://doi.org/10.1093/sleepadvances/zpaf063
+.. _Bland and Altman: https://doi.org/10.1177/096228029900800204
+.. _Bland and Altman, 1999: https://doi.org/10.1177/096228029900800204
+.. _Euser et al., 2008: https://doi.org/10.1016/j.jclinepi.2007.11.003

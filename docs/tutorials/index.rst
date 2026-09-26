@@ -30,7 +30,7 @@ Step-by-step guides for common YASA workflows.
         Learn how to create, manipulate, analyze, and visualize sleep hypnograms
         using the :py:class:`~yasa.Hypnogram` class introduced in YASA 0.7.
 
-    .. grid-item-card:: Evaluating a Sleep Tracker
+    .. grid-item-card:: Evaluating a wearable or staging algorithm against a reference
         :link: evaluation
         :link-type: doc
 
