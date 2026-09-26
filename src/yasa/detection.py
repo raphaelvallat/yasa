@@ -640,8 +640,7 @@ def spindles_detect(
         Can be an upsampled integer array (same number of samples as ``data``)
         or a :py:class:`yasa.Hypnogram` instance (automatically upsampled).
         To manually upsample an integer array, use
-        :py:meth:`yasa.Hypnogram.upsample_to_data` or
-        :py:func:`yasa.hypno_upsample_to_data`.
+        :py:meth:`yasa.Hypnogram.upsample_to_data`.
 
         .. note::
             When passing an integer array, hypnogram values follow this mapping:
@@ -1499,8 +1498,7 @@ def sw_detect(
         Can be an upsampled integer array (same number of samples as ``data``)
         or a :py:class:`yasa.Hypnogram` instance (automatically upsampled).
         To manually upsample an integer array, use
-        :py:meth:`yasa.Hypnogram.upsample_to_data` or
-        :py:func:`yasa.hypno_upsample_to_data`.
+        :py:meth:`yasa.Hypnogram.upsample_to_data`.
 
         .. note::
             When passing an integer array, hypnogram values follow this mapping:
@@ -2445,8 +2443,7 @@ def rem_detect(
         Can be an upsampled integer array (same number of samples as ``data``)
         or a :py:class:`yasa.Hypnogram` instance (automatically upsampled).
         To manually upsample an integer array, use
-        :py:meth:`yasa.Hypnogram.upsample_to_data` or
-        :py:func:`yasa.hypno_upsample_to_data`.
+        :py:meth:`yasa.Hypnogram.upsample_to_data`.
 
         .. note::
             When passing an integer array, hypnogram values follow this mapping:
@@ -2950,8 +2947,7 @@ def art_detect(
         Can be an upsampled integer array (same number of samples as ``data``)
         or a :py:class:`yasa.Hypnogram` instance (automatically upsampled).
         To manually upsample an integer array, use
-        :py:meth:`yasa.Hypnogram.upsample_to_data` or
-        :py:func:`yasa.hypno_upsample_to_data`.
+        :py:meth:`yasa.Hypnogram.upsample_to_data`.
 
         .. note::
             When passing an integer array, hypnogram values follow this mapping:

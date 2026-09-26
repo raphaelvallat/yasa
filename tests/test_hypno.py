@@ -2,17 +2,15 @@
 
 import unittest
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-from yasa.hypno import hypno_find_periods as hfp
-from yasa.hypno import (
-    hypno_int_to_str,
-    hypno_str_to_int,
-    simulate_hypnogram,
-)
+import yasa
+from yasa.hypno import Hypnogram, simulate_hypnogram
+from yasa.hypno import _hypno_find_periods as hfp
 
 hypno = np.array([0, 0, 0, 1, 2, 2, 3, 3, 4])
 hypno_txt = np.array(["W", "W", "W", "N1", "N2", "N2", "N3", "N3", "R"])
@@ -20,11 +18,6 @@ hypno_txt = np.array(["W", "W", "W", "N1", "N2", "N2", "N3", "N3", "R"])
 
 class TestHypno(unittest.TestCase):
     """Test functions in the hypno.py file."""
-
-    def test_conversion(self):
-        """Test str <--> int conversion."""
-        assert np.array_equal(hypno_str_to_int(hypno_txt), hypno)
-        assert np.array_equal(hypno_int_to_str(hypno), hypno_txt)
 
     def test_periods(self):
         """Test periods detection."""
@@ -130,3 +123,24 @@ class TestHypno(unittest.TestCase):
         # Passing **kwargs through to yasa.Hypnogram
         shyp = simulate_hypnogram(tib=5, scorer="RV", start="2022-12-15 22:30:00")
         assert shyp.scorer == shyp.hypno.name == "RV"
+
+
+@pytest.mark.parametrize(
+    "name, args",
+    [
+        ("hypno_str_to_int", (hypno_txt,)),
+        ("hypno_int_to_str", (hypno,)),
+        ("hypno_upsample_to_sf", (hypno, 1 / 30, 1)),
+        ("hypno_upsample_to_data", (hypno, 1 / 30, np.zeros(270), 1)),
+        ("hypno_find_periods", (hypno, 1 / 30, "1min")),
+        ("sleep_statistics", (hypno, 1 / 30)),
+        ("transition_matrix", (hypno,)),
+        ("transition_matrix", (Hypnogram.from_integers(hypno),)),
+        ("plot_hypnogram", (hypno,)),
+    ],
+)
+def test_deprecated_functions(name, args):
+    """Standalone hypnogram functions emit a FutureWarning pointing to the Hypnogram API."""
+    with pytest.warns(FutureWarning, match="deprecated and will be removed in v0.9"):
+        getattr(yasa, name)(*args)
+    plt.close("all")

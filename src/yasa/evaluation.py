@@ -1010,7 +1010,7 @@ class EpochByEpochAgreement:
     ):
         """Plot the two hypnograms of one session overlapping on the same axis.
 
-        .. seealso:: :py:func:`yasa.plot_hypnogram`
+        .. seealso:: :py:meth:`yasa.Hypnogram.plot_hypnogram`
 
         Parameters
         ----------
@@ -1025,11 +1025,11 @@ class EpochByEpochAgreement:
         ax : :py:class:`matplotlib.axes.Axes` or None
             Axis on which to draw the plot, optional.
         ref_kwargs : dict
-            Keyword arguments passed to :py:func:`yasa.plot_hypnogram` when plotting the reference
-            hypnogram.
+            Keyword arguments passed to :py:meth:`yasa.Hypnogram.plot_hypnogram` when plotting the
+            reference hypnogram.
         obs_kwargs : dict
-            Keyword arguments passed to :py:func:`yasa.plot_hypnogram` when plotting the observed
-            hypnogram.
+            Keyword arguments passed to :py:meth:`yasa.Hypnogram.plot_hypnogram` when plotting the
+            observed hypnogram.
 
         Returns
         -------

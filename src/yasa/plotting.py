@@ -2,6 +2,8 @@
 Plotting functions of YASA.
 """
 
+import warnings
+
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import mne
@@ -17,6 +19,10 @@ __all__ = ["plot_hypnogram", "plot_spectrogram", "topoplot"]
 def plot_hypnogram(hyp, sf_hypno=1 / 30, highlight="REM", fill_color=None, ax=None, **kwargs):
     """
     Plot a hypnogram.
+
+    .. deprecated:: 0.8.0
+        Use :py:meth:`yasa.Hypnogram.plot_hypnogram` instead. This function will be removed in
+        v0.9.
 
     .. versionadded:: 0.6.0
 
@@ -53,36 +59,14 @@ def plot_hypnogram(hyp, sf_hypno=1 / 30, highlight="REM", fill_color=None, ax=No
     -------
     ax : :py:class:`matplotlib.axes.Axes`
         Matplotlib Axes
-
-    Examples
-    --------
-    .. plot::
-
-        >>> from yasa import simulate_hypnogram
-        >>> import matplotlib.pyplot as plt
-        >>> hyp = simulate_hypnogram(tib=300, seed=11)
-        >>> ax = hyp.plot_hypnogram()
-        >>> plt.tight_layout()
-
-    .. plot::
-
-        >>> from yasa import Hypnogram
-        >>> values = 4 * ["W", "N1", "N2", "N3", "REM"] + ["ART", "N2", "REM", "W", "UNS"]
-        >>> hyp = Hypnogram(values, freq="24min").upsample("30s")
-        >>> ax = hyp.plot_hypnogram(lw=2, fill_color="thistle")
-        >>> plt.tight_layout()
-
-    .. plot::
-
-        >>> from yasa import simulate_hypnogram
-        >>> import matplotlib.pyplot as plt
-        >>> fig, axes = plt.subplots(nrows=2, figsize=(6, 4), constrained_layout=True)
-        >>> hyp_a = simulate_hypnogram(n_stages=3, seed=99)
-        >>> hyp_b = simulate_hypnogram(n_stages=3, seed=99, start="2022-01-31 23:30:00")
-        >>> hyp_a.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[0])
-        >>> hyp_b.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[1])
     """
-    from .hypno import Hypnogram, hypno_int_to_str  # Avoiding circular imports
+    warnings.warn(
+        "The `yasa.plot_hypnogram` function is deprecated and will be removed in v0.9. "
+        "Please use the `yasa.Hypnogram.plot_hypnogram` method instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    from .hypno import Hypnogram, _hypno_int_to_str  # Avoiding circular imports
 
     if not isinstance(hyp, Hypnogram):
         # Convert sampling frequency to pandas timefrequency string (e.g., "30s")
@@ -91,8 +75,12 @@ def plot_hypnogram(hyp, sf_hypno=1 / 30, highlight="REM", fill_color=None, ax=No
         if not freq_str[0].isdigit():
             freq_str = "1" + freq_str
         # Create Hypnogram instance for plotting
-        hyp = Hypnogram(hypno_int_to_str(hyp), freq=freq_str)
+        hyp = Hypnogram(_hypno_int_to_str(hyp), freq=freq_str)
+    return _plot_hypnogram(hyp, highlight=highlight, fill_color=fill_color, ax=ax, **kwargs)
 
+
+def _plot_hypnogram(hyp, highlight="REM", fill_color=None, ax=None, **kwargs):
+    """Plot a :py:class:`yasa.Hypnogram`. See :py:meth:`yasa.Hypnogram.plot_hypnogram`."""
     # Work with a copy of the Hypnogram to not alter the original
     hyp = hyp.copy()
 
@@ -204,8 +192,7 @@ def plot_spectrogram(
         :py:class:`yasa.Hypnogram` instance (automatically upsampled). When a
         :py:class:`yasa.Hypnogram` is passed, the hypnogram is used directly for plotting.
 
-        To manually upsample an integer array, use :py:meth:`yasa.Hypnogram.upsample_to_data` or
-        :py:func:`yasa.hypno_upsample_to_data`.
+        To manually upsample an integer array, use :py:meth:`yasa.Hypnogram.upsample_to_data`.
 
         .. note::
             When passing an integer array, hypnogram values follow this mapping:
@@ -257,7 +244,7 @@ def plot_spectrogram(
         >>> sf = 100
         >>> fig = yasa.plot_spectrogram(data, sf)
 
-    2. Full-night multitaper spectrogram on Cz with the hypnogram on top (legacy integer array)
+    2. Full-night multitaper spectrogram on Cz with the hypnogram on top (upsampled integer array)
 
     .. plot::
 
@@ -267,8 +254,8 @@ def plot_spectrogram(
         >>> npz = np.load(fpath)
         >>> data = npz["data"][0, :]
         >>> sf = 100
-        >>> hypno = np.loadtxt(yasa.fetch_sample("full_6hrs_100Hz_hypno_30s.txt"))
-        >>> hypno = yasa.hypno_upsample_to_data(hypno, 1 / 30, data, sf)
+        >>> hypno_30s = np.loadtxt(yasa.fetch_sample("full_6hrs_100Hz_hypno_30s.txt")).astype(int)
+        >>> hypno = yasa.Hypnogram.from_integers(hypno_30s, freq="30s").upsample_to_data(data, sf)
         >>> fig = yasa.plot_spectrogram(data, sf, hypno, cmap="Spectral_r")
 
     3. Same plot using a :py:class:`~yasa.Hypnogram` directly — no upsampling needed:
@@ -281,13 +268,11 @@ def plot_spectrogram(
         >>> npz = np.load(fpath)
         >>> data = npz["data"][0, :]
         >>> sf = 100
-        >>> hypno_30s = yasa.hypno_int_to_str(
-        ...     np.loadtxt(yasa.fetch_sample("full_6hrs_100Hz_hypno_30s.txt")).astype(int)
-        ... )
-        >>> hyp = yasa.Hypnogram(hypno_30s, freq="30s")
+        >>> hypno_30s = np.loadtxt(yasa.fetch_sample("full_6hrs_100Hz_hypno_30s.txt")).astype(int)
+        >>> hyp = yasa.Hypnogram.from_integers(hypno_30s, freq="30s")
         >>> fig = yasa.plot_spectrogram(data, sf, hyp, cmap="Spectral_r")
     """
-    from .hypno import Hypnogram, hypno_int_to_str  # Avoiding circular imports
+    from .hypno import Hypnogram, _hypno_int_to_str  # Avoiding circular imports
 
     # Increase font size while preserving original
     old_fontsize = plt.rcParams["font.size"]
@@ -358,7 +343,7 @@ def plot_spectrogram(
             if not freq_str[0].isdigit():
                 freq_str = "1" + freq_str
             # Create Hypnogram instance for plotting
-            hyp_obj = Hypnogram(hypno_int_to_str(hypno), freq=freq_str)
+            hyp_obj = Hypnogram(_hypno_int_to_str(hypno), freq=freq_str)
         hypnoplot_kwargs = dict(lw=1.5, fill_color=None)
         hypnoplot_kwargs.update(kwargs)
         # Draw hypnogram

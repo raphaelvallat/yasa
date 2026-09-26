@@ -131,8 +131,7 @@ def fetch_sample(fname, version="v1", **kwargs):
     True
     >>> # Load the hypnogram
     >>> stages_int = np.loadtxt(fpath, skiprows=1, dtype=int)
-    >>> stages_str = yasa.hypno_int_to_str(stages_int)
-    >>> hyp = yasa.Hypnogram(stages_str)
+    >>> hyp = yasa.Hypnogram.from_integers(stages_int)
     >>> print(hyp.hypno.head(3))
     Epoch
     0    WAKE

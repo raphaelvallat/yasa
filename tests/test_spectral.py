@@ -10,7 +10,7 @@ import pytest
 from scipy.signal import welch
 
 from yasa.fetchers import fetch_sample
-from yasa.hypno import Hypnogram, hypno_int_to_str, hypno_str_to_int, hypno_upsample_to_data
+from yasa.hypno import Hypnogram
 from yasa.plotting import plot_spectrogram
 from yasa.spectral import (
     bandpower,
@@ -39,13 +39,11 @@ data_mne_fp = fetch_sample("sub-02_mne_raw.fif")
 data_mne = mne.io.read_raw_fif(data_mne_fp, preload=True, verbose=0)
 data_mne.pick("eeg")
 hypno_mne_fp = fetch_sample("sub-02_hypno_30s.txt")
-hypno_mne = np.loadtxt(hypno_mne_fp, dtype=str)
-hypno_mne = hypno_str_to_int(hypno_mne)
-hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30), data=data_mne)
+hypno_mne = Hypnogram(np.loadtxt(hypno_mne_fp, dtype=str), freq="30s").upsample_to_data(data_mne)
 
 # Hypnogram objects for testing Hypnogram-based hypno support
 hypno_full_30s = hypno_full[:: int(sf_full * 30)]  # 1 value per 30s epoch
-hyp_full = Hypnogram(hypno_int_to_str(hypno_full_30s), freq="30s")
+hyp_full = Hypnogram.from_integers(hypno_full_30s, freq="30s")
 
 # Eyes-open 6 minutes resting-state, 2 channels, 200 Hz
 raw_eo_fp = fetch_sample("resting_EO_200Hz_raw.fif")
@@ -193,7 +191,7 @@ class TestSpectral(unittest.TestCase):
         hypno_s_art = np.copy(hypno_s)
         hypno_s_art[hypno_s_art == 3.0] = -1  # Replace N3 by Artefact
         hypno_s_art[hypno_s_art == 4.0] = -2  # Replace REM by Unscored
-        hyp_s = Hypnogram(hypno_int_to_str(hypno_s[:: int(sf_full * 30)]), freq="30s")
+        hyp_s = Hypnogram.from_integers(hypno_s[:: int(sf_full * 30)], freq="30s")
         # No hypnogram, with fmin/fmax and vmin/vmax
         plot_spectrogram(data_s, sf_full, fmin=0.5, fmax=30, vmin=-50, vmax=100)
         # Integer hypnogram array with trimperc

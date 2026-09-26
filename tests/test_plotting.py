@@ -3,12 +3,10 @@
 import unittest
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
-from yasa.fetchers import fetch_sample
 from yasa.hypno import simulate_hypnogram
-from yasa.plotting import plot_hypnogram, topoplot
+from yasa.plotting import topoplot
 
 
 class TestPlotting(unittest.TestCase):
@@ -39,14 +37,7 @@ class TestPlotting(unittest.TestCase):
         plt.close("all")
 
     def test_plot_hypnogram(self):
-        """Test plot_hypnogram function."""
-        # Old format: array of integer
-        hypno_fp = fetch_sample("full_6hrs_100Hz_hypno_30s.txt")
-        hypno = np.loadtxt(hypno_fp)
-        _ = plot_hypnogram(hypno)
-        # Error because of input is not a yasa.Hypnogram
-        # with pytest.raises(AssertionError):
-        #     _ = plot_hypnogram(np.repeat([0, 1, 2, 3, 4, -2, -1, -3], 120))
+        """Test Hypnogram.plot_hypnogram method."""
         # Default parameters
         hyp5 = simulate_hypnogram(n_stages=5)
         hyp2 = simulate_hypnogram(n_stages=2)

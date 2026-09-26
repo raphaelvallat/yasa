@@ -19,7 +19,7 @@ from yasa.detection import (
     sw_detect,
 )
 from yasa.fetchers import fetch_sample
-from yasa.hypno import Hypnogram, hypno_int_to_str, hypno_str_to_int, hypno_upsample_to_data
+from yasa.hypno import Hypnogram
 
 ##############################################################################
 # DATA LOADING
@@ -65,18 +65,15 @@ data_mne_fp = fetch_sample("sub-02_mne_raw.fif")
 data_mne = mne.io.read_raw_fif(data_mne_fp, preload=True, verbose=0)
 data_mne.pick("eeg")
 data_mne_single = data_mne.copy().pick(["F3"])
-hypno_mne_fp = fetch_sample("sub-02_hypno_30s.txt")
-hypno_mne = np.loadtxt(hypno_mne_fp, dtype=str)
-hypno_mne = hypno_str_to_int(hypno_mne)
-hypno_mne = hypno_upsample_to_data(hypno=hypno_mne, sf_hypno=(1 / 30), data=data_mne)
+# sub-02 Hypnogram (30s epochs, string stages already)
+hypno_mne_str = np.loadtxt(fetch_sample("sub-02_hypno_30s.txt"), dtype=str)
+hyp_mne = Hypnogram(hypno_mne_str, freq="30s")
+hypno_mne = hyp_mne.upsample_to_data(data_mne)
 
 # Hypnogram objects for testing Hypnogram-based hypno support
 # Full-night 5-stage Hypnogram (30s epochs, 100 Hz data)
 hypno_full_30s = hypno_full[:: int(sf * 30)]  # downsample to 1 value per 30s epoch
-hyp_full = Hypnogram(hypno_int_to_str(hypno_full_30s), freq="30s")
-# sub-02 Hypnogram (30s epochs, string stages already)
-hypno_mne_str = np.loadtxt(fetch_sample("sub-02_hypno_30s.txt"), dtype=str)
-hyp_mne = Hypnogram(hypno_mne_str, freq="30s")
+hyp_full = Hypnogram.from_integers(hypno_full_30s, freq="30s")
 
 
 class TestDetection(unittest.TestCase):

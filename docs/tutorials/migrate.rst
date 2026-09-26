@@ -12,9 +12,10 @@ equivalents, so you can update your code quickly.
 
 .. note::
 
-    The old helper functions (``hypno_upsample_to_data``, ``hypno_str_to_int``, etc.) still work
-    in v0.7 but will be removed in v0.8. Migrating now will make your code cleaner and compatible
-    with future releases.
+    The old standalone functions (``hypno_upsample_to_data``, ``hypno_str_to_int``,
+    ``plot_hypnogram``, ``sleep_statistics``, etc.) still work in v0.8 but emit a
+    ``FutureWarning`` and will be removed in v0.9. Migrating now will make your code cleaner and
+    compatible with future releases.
 
 .. contents:: Contents
     :local:
@@ -308,7 +309,7 @@ Reference table
     * - ``yasa.hypno_find_periods(hypno, sf_hypno, threshold)``
       - :py:meth:`Hypnogram.find_periods`
     * - ``yasa.plot_hypnogram(hypno_array)``
-      - ``hyp.plot_hypnogram()`` or ``yasa.plot_hypnogram(hyp)``
+      - :py:meth:`Hypnogram.plot_hypnogram`
     * - ``yasa.hypno_int_to_str(hypno_int)``
       - ``hyp.hypno.to_numpy()`` (after :py:meth:`Hypnogram.from_integers`)
     * - ``yasa.hypno_str_to_int(hypno_str)``
