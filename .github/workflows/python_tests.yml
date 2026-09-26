@@ -7,12 +7,14 @@ on:
       - 'src/**'
       - 'tests/**'
       - 'pyproject.toml'
+      - '.github/workflows/python_tests.yml'
   pull_request:
     branches: [master]
     paths:
       - 'src/**'
       - 'tests/**'
       - 'pyproject.toml'
+      - '.github/workflows/python_tests.yml'
 
 env:
   FORCE_COLOR: 1
