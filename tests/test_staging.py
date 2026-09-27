@@ -101,6 +101,9 @@ class TestStaging(unittest.TestCase):
         SleepStaging(raw, eeg_name="C4", metadata=metadata)
         assert metadata["male"] is True
         assert SleepStaging(raw, eeg_name="C4", metadata={}).metadata is None
+        # Partial metadata
+        assert SleepStaging(raw, eeg_name="C4", metadata=dict(age=21)).metadata == {"age": 21}
+        assert SleepStaging(raw, eeg_name="C4", metadata=dict(male=True)).metadata == {"male": 1}
 
     def test_very_short_data(self):
         """Test that one epoch of data works, and that less than one epoch raises an error."""
@@ -129,3 +132,6 @@ class TestStaging(unittest.TestCase):
         raw_cropped = raw_dated.copy().crop(tmin=150)
         hyp = SleepStaging(raw_cropped, eeg_name="C4").predict()
         assert hyp.start == pd.Timestamp("2022-01-01 23:02:30", tz="UTC")
+        # No measurement date
+        raw_undated = raw.copy().set_meas_date(None).crop(tmin=150)
+        assert SleepStaging(raw_undated, eeg_name="C4").predict().start is None

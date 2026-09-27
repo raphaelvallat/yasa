@@ -342,7 +342,9 @@ class Hypnogram:
         params.update(kwargs)
         new = type(self)(values, **params)
         if new.n_stages == self._n_stages:
-            new._mapping = self._mapping.copy()
+            # Use the setter, which checks that the custom mapping covers any stage added to the
+            # new values (e.g. a ``fill_value`` in :py:meth:`pad`)
+            new.mapping = self._mapping
         return new
 
     def __repr__(self):
@@ -2048,7 +2050,15 @@ class Hypnogram:
             simulate_hypnogram_kwargs["init_probas"] = pd.Series(
                 (trans_probas.index == first_stage).astype(float), index=trans_probas.index
             )
-        return simulate_hypnogram(**simulate_hypnogram_kwargs)
+        sim = simulate_hypnogram(**simulate_hypnogram_kwargs)
+        # Return an instance of the same class as ``self``
+        return type(self)(
+            sim.hypno.to_numpy(),
+            n_stages=sim.n_stages,
+            freq=sim.freq,
+            start=sim.start,
+            scorer=sim.scorer,
+        )
 
     #######################################################################
     # PRIVATE METHODS

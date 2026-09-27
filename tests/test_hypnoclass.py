@@ -964,9 +964,12 @@ def test_mapping_custom_partial_and_many_to_one():
     # The mapping is kept when slicing / copying
     assert hyp.copy().mapping == hyp.mapping
     assert hyp[1:3].as_int().tolist() == [1, 1]
-    # Missing stages still raise
+    # Missing stages still raise, including stages added by pad
     with pytest.raises(AssertionError):
         hyp.mapping = {"WAKE": 0, "N1": 1}
+    with pytest.raises(AssertionError):
+        hyp.pad(after=1, fill_value="REM")
+    assert hyp.pad(after=1, fill_value="N2").as_int().tolist() == [0, 1, 1, 1, -1, 1]
 
 
 def test_as_int_nan_raises():
@@ -974,6 +977,8 @@ def test_as_int_nan_raises():
     hyp.hypno.iloc[0] = np.nan
     with pytest.raises(ValueError, match="missing"):
         hyp.as_int()
+    with pytest.raises(ValueError, match="missing"):
+        hyp.transition_matrix()
 
 
 def test_dict_roundtrip_named_timezone():
@@ -1013,3 +1018,22 @@ def test_transition_matrix_many_to_one_mapping():
     assert counts.loc["N2", "N1"] == 1
     assert counts.loc["N2", "N2"] == 1
     assert np.allclose(probs.sum(axis=1), 1)
+
+
+def test_subclass_preserved():
+    """Methods that return a new hypnogram preserve the subclass."""
+
+    class MyHypnogram(Hypnogram):
+        pass
+
+    hyp = MyHypnogram(["W", "N1", "N2", "N2", "N3", "REM"], start="2022-01-01 23:00:00")
+    for new in [
+        hyp.copy(),
+        hyp.crop(start=1),
+        hyp[1:3],
+        hyp.pad(before=1),
+        hyp.upsample("10s"),
+        hyp.consolidate_stages(2),
+        hyp.simulate_similar(seed=0),
+    ]:
+        assert type(new) is MyHypnogram
