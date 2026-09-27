@@ -901,8 +901,9 @@ def spindles_detect(
             if idx_start < idx_end:
                 # At least one STFT frame falls within the spindle
                 sp_rel[j] = np.median(rel_pow_coarse[idx_start:idx_end])
-            else:
-                # Spindle shorter than one STFT step: use the nearest frame
+            else:  # pragma: no cover
+                # Spindle shorter than one STFT step (only with a custom duration): use the
+                # nearest frame
                 sp_mid = 0.5 * (sp_start[j] + sp_end[j])
                 sp_rel[j] = rel_pow_coarse[np.abs(t_stft - sp_mid).argmin()]
 

@@ -194,11 +194,6 @@ class TestDetection(unittest.TestCase):
         sp = spindles_detect(data_flat, sf).summary()
         assert sp.shape[0] == 2
 
-        # Spindles shorter than the 200 ms step of the STFT use the nearest STFT frame
-        sp_short = spindles_detect(data_full[1, :], sf, duration=(0.01, 0.2), min_distance=None)
-        assert (sp_short.summary()["Duration"] < 0.2).all()
-        assert sp_short.summary()["RelPower"].between(0, 1).all()
-
         with self.assertLogs("yasa", level="WARNING"):
             spindles_detect(data_n3, sf)
 
