@@ -5,11 +5,15 @@ from itertools import product
 
 import mne
 import numpy as np
+import pandas as pd
 import pytest
 from mne.filter import filter_data
 
 from yasa.fetchers import fetch_sample
+from yasa.hypno import Hypnogram
 from yasa.others import (
+    _check_data,
+    _check_hypno_include,
     _index_to_events,
     _merge_close,
     _zerocrossings,
@@ -263,3 +267,83 @@ class TestOthers(unittest.TestCase):
         assert (data[idx_ep] == idx_ep).all()
         assert (idx_nomask == [1, 2, 3, 4]).all()
         assert idx_ep.shape == (len(idx_nomask), before + after + 1)
+        # Epochs must end at the last sample of data (index 99) at the latest
+        idx_ep, idx_nomask = get_centered_indices(data, [97, 98], before, after)
+        assert (idx_nomask == [0]).all()
+        assert idx_ep[0, -1] == 99
+
+    def test_check_data(self):
+        """Test function _check_data"""
+        # 1D NumPy array
+        data_2d, sf_out, ch_names, raw = _check_data(data, sf)
+        assert data_2d.shape == (1, data.size) and data_2d.dtype == np.float64
+        assert sf_out == sf and ch_names == ["CHAN000"] and raw is None
+        # Channel names are converted to a list of strings
+        assert _check_data(data_full, sf_full, chan_full)[2] == ["Cz", "Fz", "Pz"]
+        with pytest.raises(AssertionError):
+            _check_data(data_full, sf_full, ["Cz"])
+        # The sampling frequency can be a NumPy scalar
+        for sf_np in [np.int64(sf), np.float32(sf), np.array(sf)]:
+            assert _check_data(data, sf_np)[1] == sf
+        with pytest.raises(AssertionError):
+            _check_data(data)  # sf is required
+        # MNE Raw: data is converted to uV, sf and ch_names are ignored with a warning
+        with self.assertLogs("yasa", level="WARNING"):
+            data_mne_uv, sf_out, ch_names, raw = _check_data(data_mne, sf=999, ch_names=["A"])
+        np.testing.assert_allclose(data_mne_uv, data_mne.get_data() * 1e6)
+        assert sf_out == data_mne.info["sfreq"] and ch_names == data_mne.ch_names
+        assert raw is data_mne
+
+    def test_check_hypno_include(self):
+        """Test function _check_hypno_include"""
+        n = data_full.shape[1]
+        hypno = hypno_full.astype(np.int64)
+        hyp = Hypnogram.from_integers(hypno[:: 30 * sf_full], freq="30s")
+        # Integer hypnogram array: returned as is, without copy
+        hypno_out, include, int_to_str = _check_hypno_include(hypno, (2, 3), data_full, sf_full)
+        assert hypno_out is hypno
+        np.testing.assert_array_equal(include, [2, 3])
+        assert int_to_str == {}
+        # Float hypnogram (e.g. loaded from a txt file) with integer or float include
+        for inc in [2, 2.0, (1, 2)]:
+            hypno_out, include, _ = _check_hypno_include(hypno.astype(float), inc, data_full, 100)
+            assert hypno_out.dtype.kind == include.dtype.kind == "i"
+        with pytest.raises(AssertionError, match="whole numbers"):
+            _check_hypno_include(hypno, 2.5, data_full, sf_full)
+        # String hypnogram arrays require string include
+        hypno_str = np.where(hypno == 2, "N2", "Other")
+        assert _check_hypno_include(hypno_str, "N2", data_full, sf_full)[1].tolist() == ["N2"]
+        with pytest.raises(AssertionError, match="same dtype"):
+            _check_hypno_include(hypno_str, 2, data_full, sf_full)
+        # Hypnogram: upsampled, and string labels are converted to integers
+        hypno_out, include, int_to_str = _check_hypno_include(hyp, ["N2", "N3"], data_full, 100)
+        assert hypno_out.shape == (n,)
+        np.testing.assert_array_equal(include, [2, 3])
+        assert int_to_str[2] == "N2"
+        with pytest.raises(AssertionError, match="not valid labels of the hypnogram"):
+            _check_hypno_include(hyp, ["N2", "NREM3"], data_full, sf_full)
+        # Other errors
+        with pytest.raises(AssertionError, match="include cannot be None"):
+            _check_hypno_include(hypno, None, data_full, sf_full)
+        with pytest.raises(AssertionError, match="same size"):
+            _check_hypno_include(hypno[:-1], 2, data_full, sf_full)
+        with pytest.raises(AssertionError, match="None of the stages"):
+            _check_hypno_include(hypno, 7, data_full, sf_full)
+
+    def test_check_hypno_include_timestamps(self):
+        """A Hypnogram with a start time is aligned to a MNE Raw using absolute timestamps."""
+        raw = data_mne_single.copy().crop(0, 600, include_tmax=False)
+        sf_raw = raw.info["sfreq"]
+        # meas_date is treated as a local time, and the hypnogram starts 60 s (2 epochs) before
+        raw_start = pd.Timestamp(raw.info["meas_date"]).replace(tzinfo=None)
+        hyp = Hypnogram(
+            ["W", "W"] + ["N2"] * 18, freq="30s", start=raw_start - pd.Timedelta(60, "s")
+        )
+        hypno_out = _check_hypno_include(hyp, ["N2"], raw, sf_raw)[0]
+        # The first two (Wake) epochs are before the start of the recording
+        assert (hypno_out[: int(18 * 30 * sf_raw)] == 2).all()
+        # The end of the recording is not covered by the hypnogram
+        assert (hypno_out[int(18 * 30 * sf_raw) :] == -2).all()
+        # Without the Raw, the hypnogram is aligned with the start of the data
+        hypno_out = _check_hypno_include(hyp, ["N2"], raw.get_data(), sf_raw)[0]
+        assert (hypno_out[: int(60 * sf_raw)] == 0).all()

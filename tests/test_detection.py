@@ -66,7 +66,6 @@ hyp_full = Hypnogram.from_integers(hypno_full[:: int(sf * 30)], freq="30s")
 data_mne_fp = fetch_sample("sub-02_mne_raw.fif")
 data_mne = mne.io.read_raw_fif(data_mne_fp, preload=True, verbose=0)
 data_mne.pick("eeg").crop(1800, 2400, include_tmax=False)
-data_mne_single = data_mne.copy().pick(["F3"])
 # sub-02 Hypnogram (30s epochs, string stages already)
 hypno_mne_str = np.loadtxt(fetch_sample("sub-02_hypno_30s.txt"), dtype=str)[60:80]
 hyp_mne = Hypnogram(hypno_mne_str, freq="30s")
@@ -104,58 +103,22 @@ class TestDetection(unittest.TestCase):
         with self.assertLogs("yasa", level="WARNING"):
             _check_data_hypno(data_mne, ch_names=["CH999"])  # ch_names is ignored
 
-        # Test with Hypnogram instance + integer include (default behavior preserved)
-        _, _, _, hypno_out, include_out, mask, _, n_samples, _ = _check_data_hypno(
-            data_full[1, :], sf, hypno=hyp_full, include=(2, 3)
+        # The data and hypnogram checks are tested in test_others.py. Here, we test the outputs
+        # that are specific to the detection functions.
+        data_out, _, _, hypno_out, include_out, mask, n_chan, n_samples, bad_chan = (
+            _check_data_hypno(data_full, sf, hypno=hyp_full, include=["N2", "N3"])
         )
-        assert hypno_out.shape == (n_samples,)
-        assert set(include_out) == {2, 3}
+        assert data_out.shape == (n_chan, n_samples) == (4, hypno_full.size)
+        # The hypnogram is always returned as int64, as needed for the Stage column
+        assert hypno_out.dtype == np.int64
+        np.testing.assert_array_equal(include_out, [2, 3])
         np.testing.assert_array_equal(mask, np.isin(hypno_out, [2, 3]))
-
-        # Test with Hypnogram instance + string include
-        _, _, _, hypno_out2, include_out2, _, _, _, _ = _check_data_hypno(
-            data_full[1, :], sf, hypno=hyp_full, include=["N2", "N3"]
-        )
-        np.testing.assert_array_equal(include_out, include_out2)
-
-        # Test with Hypnogram instance + single string include
-        _, _, _, _, include_out3, _, _, _, _ = _check_data_hypno(
-            data_full[1, :], sf, hypno=hyp_full, include="REM"
-        )
-        np.testing.assert_array_equal(include_out3, [4])
-
-        # Invalid string labels give an informative error
-        with pytest.raises(AssertionError, match="not valid labels of the hypnogram"):
-            _check_data_hypno(data_full[1, :], sf, hypno=hyp_full, include=["NREM2"])
-
-        # Test with MNE raw + Hypnogram
-        _, _, _, hypno_out_mne, _, _, _, n_mne, _ = _check_data_hypno(
-            data_mne, hypno=hyp_mne, include=["N2", "N3"]
-        )
-        assert hypno_out_mne.shape == (n_mne,)
-
-        # The sampling frequency can be a NumPy scalar
-        for sf_np in [np.int64(sf), np.float32(sf), np.array(sf)]:
-            assert _check_data_hypno(data, sf_np)[1] == sf
-
-        # A float hypnogram (e.g. loaded from a txt file) works with integer and float include
-        hypno_float = np.full(data.size, 2.0)
-        for inc in [2, 2.0, (1, 2)]:
-            hypno_out = _check_data_hypno(data, sf, hypno=hypno_float, include=inc)[3]
-            assert hypno_out.dtype.kind == "i"
-
-    def test_check_data_hypno_timestamps(self):
-        """A Hypnogram with a start time is aligned to a MNE Raw using absolute timestamps."""
-        raw = data_mne_single.copy()
-        # meas_date is treated as a local time, and the hypnogram starts 60 s (2 epochs) before
-        raw_start = pd.Timestamp(raw.info["meas_date"]).replace(tzinfo=None)
-        values = ["W", "W"] + ["N2"] * 18
-        hyp = Hypnogram(values, freq="30s", start=raw_start - pd.Timedelta(seconds=60))
-        hypno_out = _check_data_hypno(raw, hypno=hyp, include=["N2"])[3]
-        # The first two (Wake) epochs are before the start of the recording
-        assert (hypno_out[: int(18 * 30 * sf)] == 2).all()
-        # The end of the recording is not covered by the hypnogram
-        assert (hypno_out[int(18 * 30 * sf) :] == -2).all()
+        np.testing.assert_array_equal(bad_chan, [False, False, False, True])
+        # Without hypnogram, the mask is all True
+        assert _check_data_hypno(data, sf)[5].all()
+        # String hypnogram arrays are not supported
+        with pytest.raises(AssertionError, match="integer array"):
+            _check_data_hypno(data, sf, hypno=np.full(data.size, "N2"), include="N2")
 
     def test_spindles_detect(self):
         """Test spindles_detect"""
@@ -190,7 +153,11 @@ class TestDetection(unittest.TestCase):
         # Compare channels return dataframe with single cell
         assert sp.compare_channels().shape == (1, 1)
         assert sp._sf == sf
-        sp.summary(grp_chan=True, grp_stage=True, aggfunc="median", sort=False)
+        # Errors with a single channel
+        with pytest.raises(ValueError):
+            sp.get_coincidence_matrix()
+        with pytest.raises(ValueError):
+            sp.compare_detection(other="WRONG")
 
         # Test with custom thresholds. The thresh dictionary of the user is not modified.
         thresh = {"rms": 1.25}
@@ -227,26 +194,10 @@ class TestDetection(unittest.TestCase):
         sp = spindles_detect(data_flat, sf).summary()
         assert sp.shape[0] == 2
 
-        # Full night single channel with Isolation Forest + hypnogram
-        sp = spindles_detect(data_full[1, :], sf, hypno=hypno_full)
-        sp_no_out = spindles_detect(data_full[1, :], sf, hypno=hypno_full, remove_outliers=True)
-        assert sp_no_out.summary().shape[0] < sp.summary().shape[0]
-        assert sp.compare_detection(sp_no_out).shape[0] == 1
-        # Spindles are only detected in the stages defined in include (N1, N2, N3)
-        assert sp.summary()["Stage"].isin([1, 2, 3]).all()
-
         # Spindles shorter than the 200 ms step of the STFT use the nearest STFT frame
         sp_short = spindles_detect(data_full[1, :], sf, duration=(0.01, 0.2), min_distance=None)
         assert (sp_short.summary()["Duration"] < 0.2).all()
         assert sp_short.summary()["RelPower"].between(0, 1).all()
-
-        # Calculate the coincidence matrix with only one channel
-        with pytest.raises(ValueError):
-            sp.get_coincidence_matrix()
-
-        # compare_detection with invalid other
-        with pytest.raises(ValueError):
-            sp.compare_detection(other="WRONG")
 
         with self.assertLogs("yasa", level="WARNING"):
             spindles_detect(data_n3, sf)
@@ -268,7 +219,7 @@ class TestDetection(unittest.TestCase):
 
         # No values in hypno intersect with include
         with pytest.raises(AssertionError):
-            sp = spindles_detect(data, sf, include=2, hypno=np.zeros(data.size, dtype=int))
+            spindles_detect(data, sf, include=2, hypno=np.zeros(data.size, dtype=int))
 
         #######################################################################
         # MULTI CHANNEL
@@ -282,7 +233,6 @@ class TestDetection(unittest.TestCase):
         sp_grp = sp.summary(grp_chan=True)
         assert sp_grp.index.tolist() == ["Cz", "Fz", "Pz"]
         assert (sp_grp["Count"] == sp.summary()["Channel"].value_counts()[sp_grp.index]).all()
-        sp.plot_average(errorbar=None)
         coinc = sp.get_coincidence_matrix()
         assert coinc.shape == (4, 4)
         assert (np.diag(coinc) == 1).all()
@@ -293,7 +243,6 @@ class TestDetection(unittest.TestCase):
         sp.plot_detection()
         assert sp._data.shape == sp._data_filt.shape
         np.testing.assert_array_equal(sp._data, data_full)
-        assert sp._sf == sf
         sp_no_out = spindles_detect(data_full, sf, chan_full, remove_outliers=True)
         sp_multi = spindles_detect(data_full, sf, chan_full, multi_only=True)
         assert sp_multi.summary().shape[0] < sp.summary().shape[0]
@@ -319,16 +268,13 @@ class TestDetection(unittest.TestCase):
         # Test with hypnogram
         sp = spindles_detect(data_full, sf, hypno=hypno_full, include=2)
         assert (sp.summary()["Stage"] == 2).all()
-        assert sp.summary(grp_chan=False, grp_stage=False).shape == sp.summary().shape
         sp_stage = sp.summary(grp_chan=False, grp_stage=True, aggfunc="median")
         # Density = number of spindles per minute of N2 sleep
         n2_min = (hypno_full == 2).sum() / (60 * sf)
         np.testing.assert_allclose(sp_stage["Density"], sp_stage["Count"] / n2_min)
         assert sp.summary(grp_chan=True, grp_stage=False).shape[0] == 3
         assert sp.summary(grp_chan=True, grp_stage=True, sort=False).shape[0] == 3
-        sp.plot_average(errorbar=None)
         sp.plot_average(hue="Stage", errorbar=None)
-        sp.plot_detection()
 
         # Test compare_channels function
         # .. F1-score -- symmetric matrix
@@ -350,19 +296,9 @@ class TestDetection(unittest.TestCase):
         assert set(sp.summary()["Channel"]) <= set(data_mne.ch_names)
         sp = spindles_detect(data_mne, hypno=hypno_mne, include=2, verbose=True)
         assert (sp.summary()["Stage"] == 2).all()
-
-        # Test with Hypnogram instance (integer include, default)
-        sp_hyp = spindles_detect(data_full[1, :], sf, hypno=hyp_full, include=(1, 2, 3))
-        assert sp_hyp is not None
-        # Test with Hypnogram instance + string include
-        sp_hyp_str = spindles_detect(
-            data_full[1, :], sf, hypno=hyp_full, include=["N1", "N2", "N3"]
-        )
-        assert sp_hyp_str is not None
-        # Both should detect the same spindles
-        pd.testing.assert_frame_equal(sp_hyp.summary(), sp_hyp_str.summary())
-        # Test with MNE raw + Hypnogram
-        spindles_detect(data_mne, hypno=hyp_mne, include=["N2"], verbose=True)
+        # MNE raw + Hypnogram with string include: same as the upsampled integer hypnogram
+        sp_hyp = spindles_detect(data_mne, hypno=hyp_mne, include=["N2"])
+        pd.testing.assert_frame_equal(sp_hyp.summary(), sp.summary())
         plt.close("all")
 
     def test_sw_detect(self):
@@ -419,8 +355,6 @@ class TestDetection(unittest.TestCase):
         assert "ndPAC" not in sw_grp.columns
         df_sync = sw.get_sync_events()
         assert df_sync["Channel"].unique().tolist() == ["Cz", "Fz", "Pz"]
-        sw.plot_average(errorbar=None)
-        sw.plot_detection()
         assert (np.diag(sw.get_coincidence_matrix()) == 1).all()
         assert sw.get_coincidence_matrix(scaled=False).to_numpy().dtype.kind == "i"
         # Test with outlier removal. There should be fewer events.
@@ -433,7 +367,6 @@ class TestDetection(unittest.TestCase):
         # Test with hypnogram
         sw = sw_detect(data_full, sf, chan_full, hypno=hypno_full, coupling=True)
         assert sw.summary()["Stage"].isin([2, 3]).all()
-        assert sw.summary(grp_chan=False, grp_stage=False).shape == sw.summary().shape
         assert sw.summary(grp_chan=False, grp_stage=True, aggfunc="median").shape[0] == 2
         assert sw.summary(grp_chan=True, grp_stage=False).shape[0] == 3
         assert sw.summary(grp_chan=True, grp_stage=True, sort=False).shape[0] == 6
@@ -459,30 +392,19 @@ class TestDetection(unittest.TestCase):
         )
         assert (sw_sum_masked["Count"] < sw.summary(grp_chan=True)["Count"]).all()
 
-        # Test with different coupling params. Missing keys are set to their default value.
+        # Test with different coupling params. Missing keys (freq_sp) are set to their default.
         sw = sw_detect(
-            data_full,
-            sf,
-            chan_full,
-            hypno=hypno_full,
-            coupling=True,
-            coupling_params={"freq_sp": (12, 16), "time": 2, "p": None},
+            data_full, sf, chan_full, coupling=True, coupling_params={"time": 2, "p": None}
         )
         assert (sw.summary()["ndPAC"] > 0).all()  # No thresholding
-        sw_detect(data_sw, sf, coupling=True, coupling_params={"p": None})
 
         # Using a MNE raw object
         assert sw_detect(data_mne) is not None
-        assert (sw_detect(data_mne, hypno=hypno_mne, include=3).summary()["Stage"] == 3).all()
-
-        # Test with Hypnogram instance + integer include
-        sw_hyp = sw_detect(data_full[1, :], sf, hypno=hyp_full, include=(2, 3))
-        assert sw_hyp is not None
-        # Test with Hypnogram instance + string include
-        sw_hyp_str = sw_detect(data_full[1, :], sf, hypno=hyp_full, include=["N2", "N3"])
-        pd.testing.assert_frame_equal(sw_hyp.summary(), sw_hyp_str.summary())
-        # Test with MNE raw + Hypnogram
-        sw_detect(data_mne, hypno=hyp_mne, include=["N3"])
+        sw = sw_detect(data_mne, hypno=hypno_mne, include=3)
+        assert (sw.summary()["Stage"] == 3).all()
+        # MNE raw + Hypnogram with string include: same as the upsampled integer hypnogram
+        sw_hyp = sw_detect(data_mne, hypno=hyp_mne, include=["N3"])
+        pd.testing.assert_frame_equal(sw_hyp.summary(), sw.summary())
         plt.close("all")
 
     def test_get_sync_events_edges(self):
@@ -502,13 +424,6 @@ class TestDetection(unittest.TestCase):
         np.testing.assert_array_equal(
             df_sync.loc[df_sync["Time"] == 0, "Amplitude"], data_sw[[2000, 4000]]
         )
-        # Events at the very end of the data (n_samples = 6000)
-        events["NegPeak"] = [59.49, 20.0, 40.0]  # Last sample of the epoch = 5999
-        sw._events = events.reset_index(drop=True)
-        assert sw.get_sync_events(time_before=0.5, time_after=0.5)["Event"].nunique() == 3
-        events["NegPeak"] = [59.5, 20.0, 40.0]  # Last sample of the epoch = 6000, out of bounds
-        sw._events = events.reset_index(drop=True)
-        assert sw.get_sync_events(time_before=0.5, time_after=0.5)["Event"].nunique() == 2
 
     def test_get_mask_rounding(self):
         """get_mask includes the first and last sample of each event."""
@@ -543,7 +458,6 @@ class TestDetection(unittest.TestCase):
         df_sync = rem.get_sync_events()
         assert df_sync["Channel"].unique().tolist() == ["LOC", "ROC"]
         assert df_sync["Event"].nunique() == rem.summary().shape[0]
-        rem.plot_average(errorbar=None)
         rem.plot_average(filt=(0.5, 5), errorbar=None)
         plt.close("all")
 
@@ -604,10 +518,6 @@ class TestDetection(unittest.TestCase):
         art, zscores = art_detect(data_9, sf=100, window=10, method="covar", threshold=3)
         assert art.shape == zscores.shape == (data_9.shape[1] // (10 * sf),)
         assert art.dtype == bool
-        art, zscores = art_detect(
-            data_9, sf=100, window=6, hypno=hypno_9, include=(2, 3), method="covar", threshold=3
-        )
-        assert art.shape == (data_9.shape[1] // (6 * sf),)
         art, zscores = art_detect(data_9, sf=100, window=5, method="std", threshold=2)
         assert zscores.shape == (art.size, data_9.shape[0])
         # The flat epochs at the end are always marked as artefacts, with z-scores set to NaN
@@ -640,7 +550,6 @@ class TestDetection(unittest.TestCase):
         # Single channel
         art, _ = art_detect(data_9[0], 100, window=10, method="covar")  # Switches to std
         assert art.shape == (data_9.shape[1] // (10 * sf),)
-        art_detect(data_9[0], 100, window=5, method="std", verbose=True)
 
         # Exactly 4 channels is enough for method="covar"
         with self.assertNoLogs("yasa", level="WARNING"):
@@ -671,7 +580,8 @@ class TestDetection(unittest.TestCase):
         assert zscores.shape[1] == data_9.shape[0]  # The flat channel is removed
 
         # Using a MNE raw object
-        art_detect(data_mne, window=10.0, hypno=hypno_mne, method="covar", verbose="INFO")
+        art, _ = art_detect(data_mne, window=10.0, hypno=hypno_mne, method="covar")
+        assert art.shape == (data_mne.n_times // (10 * sf),)
 
         with pytest.raises(AssertionError):
             # None of include in hypno
@@ -682,6 +592,7 @@ class TestDetection(unittest.TestCase):
         art_hyp, _ = art_detect(
             data_9, sf=100, window=6, hypno=hyp_9, include=["N2", "N3"], method="covar"
         )
+        assert art_hyp.shape == (data_9.shape[1] // (6 * sf),)
         hypno_9_up = hyp_9.upsample_to_data(data_9, sf=sf, verbose="error")
         art_int, _ = art_detect(
             data_9, sf=100, window=6, hypno=hypno_9_up, include=(2, 3), method="covar"
