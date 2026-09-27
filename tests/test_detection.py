@@ -177,7 +177,7 @@ class TestDetection(unittest.TestCase):
             assert sp is not None
             assert sp.summary()["Duration"].between(*d).all()
 
-        sp = spindles_detect(data, sf, verbose=True)
+        sp = sp_default = spindles_detect(data, sf, verbose=True)
         assert sp.summary().shape[0] == 2
         assert sp.get_mask().shape == data.shape
         df_sync = sp.get_sync_events()
@@ -216,6 +216,11 @@ class TestDetection(unittest.TestCase):
         sp = spindles_detect(data, sf, hypno=np.ones(data.size))
         assert (sp.summary()["Stage"] == 1).all()
 
+        # Outliers are only removed with at least 50 spindles
+        pd.testing.assert_frame_equal(
+            spindles_detect(data, sf, remove_outliers=True).summary(), sp_default.summary()
+        )
+
         # Test with 1-sec of flat data -- we should still have 2 detected spindles
         data_flat = data.copy()
         data_flat[100:200] = 1
@@ -229,6 +234,11 @@ class TestDetection(unittest.TestCase):
         assert sp.compare_detection(sp_no_out).shape[0] == 1
         # Spindles are only detected in the stages defined in include (N1, N2, N3)
         assert sp.summary()["Stage"].isin([1, 2, 3]).all()
+
+        # Spindles shorter than the 200 ms step of the STFT use the nearest STFT frame
+        sp_short = spindles_detect(data_full[1, :], sf, duration=(0.01, 0.2), min_distance=None)
+        assert (sp_short.summary()["Duration"] < 0.2).all()
+        assert sp_short.summary()["RelPower"].between(0, 1).all()
 
         # Calculate the coincidence matrix with only one channel
         with pytest.raises(ValueError):
@@ -403,6 +413,10 @@ class TestDetection(unittest.TestCase):
 
         sw = _sw_full()
         assert sw.get_mask().shape == data_full.shape
+        # Without coupling, there are no coupling columns in the grouped summary
+        sw_grp = sw.summary(grp_chan=True)
+        assert sw_grp.index.tolist() == ["Cz", "Fz", "Pz"]
+        assert "ndPAC" not in sw_grp.columns
         df_sync = sw.get_sync_events()
         assert df_sync["Channel"].unique().tolist() == ["Cz", "Fz", "Pz"]
         sw.plot_average(errorbar=None)

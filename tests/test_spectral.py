@@ -90,6 +90,13 @@ class TestSpectral(unittest.TestCase):
         assert bp.index.get_level_values("Stage").unique().tolist() == [2]
         with pytest.raises(ValueError, match="shorter than the Welch window"):
             bandpower(data_full, sf=sf_full, hypno=hypno_short, include=1)
+        # String hypnogram arrays work with string include, but not with integer include
+        hypno_str = np.where(hypno_full == 2, "N2", "Other")
+        bp_str = bandpower(data_full, sf=sf_full, hypno=hypno_str, include="N2")
+        assert bp_str.index.get_level_values("Stage").unique().tolist() == ["N2"]
+        np.testing.assert_allclose(bp_str.to_numpy(float), bp_int.to_numpy(float))
+        with pytest.raises(AssertionError, match="same dtype"):
+            bandpower(data_full, sf=sf_full, hypno=hypno_str, include=2)
         # The sampling frequency can be a NumPy scalar
         assert bandpower(data, sf=np.int64(sf)).equals(bandpower(data, sf=sf))
 
@@ -223,6 +230,13 @@ class TestSpectral(unittest.TestCase):
         assert any("Fitting range" in msg for msg in logs.output)
         with self.assertLogs("yasa", level="WARNING"):
             irasa(data=data, sf=sf, band=(1, 80))  # Beyond the resampled Nyquist frequency
+
+        # Warnings when the evaluated frequency range exceeds the filters of the MNE Raw
+        raw_filt = raw.copy().filter(1, 20, verbose=0)
+        with self.assertLogs("yasa", level="WARNING") as logs:
+            irasa(raw_filt, band=(1, 30))
+        assert any("highpass" in msg for msg in logs.output)
+        assert any("lowpass" in msg for msg in logs.output)
 
         # Data is too short for the resampling factors
         with pytest.raises(ValueError, match="too short for IRASA"):
