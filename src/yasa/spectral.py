@@ -164,15 +164,15 @@ def bandpower(
     .. code-block:: python
 
         >>> import yasa
-        >>> bp = yasa.bandpower(raw, hypno=hypno_up, include=(2, 3, 4))
+        >>> bp = yasa.bandpower(raw, hypno=hypno_up, include=(2, 3, 4))  # doctest: +SKIP
 
     2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling is handled automatically.
        String stage labels can be used for ``include``:
 
     .. code-block:: python
 
-        >>> hyp = yasa.Hypnogram.from_integers(hypno_30s, freq="30s")
-        >>> bp = yasa.bandpower(raw, hypno=hyp, include=["N2", "N3", "REM"])
+        >>> hyp = yasa.Hypnogram.from_integers(hypno_30s, freq="30s")  # doctest: +SKIP
+        >>> bp = yasa.bandpower(raw, hypno=hyp, include=["N2", "N3", "REM"])  # doctest: +SKIP
 
     For a full walkthrough, please refer to:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_bandpower.ipynb

@@ -88,7 +88,7 @@ def transition_matrix(hypno):
     calculated by taking the average of the diagonal values (excluding Wake
     and N1 sleep):
 
-    >>> np.diag(probs.loc[2:, 2:]).mean().round(3)
+    >>> float(np.diag(probs.loc[2:, 2:]).mean().round(3))
     0.514
 
     :py:class:`yasa.Hypnogram` input — output uses string stage labels:
@@ -119,7 +119,7 @@ def transition_matrix(hypno):
         >>> # Start the plot
         >>> grid_kws = {"height_ratios": (0.9, 0.05), "hspace": 0.1}
         >>> f, (ax, cbar_ax) = plt.subplots(2, gridspec_kw=grid_kws, figsize=(5, 5))
-        >>> sns.heatmap(
+        >>> ax = sns.heatmap(
         ...     probs,
         ...     ax=ax,
         ...     square=False,
@@ -136,10 +136,9 @@ def transition_matrix(hypno):
         ...         "label": "Transition probability",
         ...     },
         ... )
-        >>> ax.set_xlabel("To sleep stage")
         >>> ax.xaxis.tick_top()
-        >>> ax.set_ylabel("From sleep stage")
         >>> ax.xaxis.set_label_position("top")
+        >>> _ = ax.set(xlabel="To sleep stage", ylabel="From sleep stage")
     """
     warnings.warn(
         "The `yasa.transition_matrix` function is deprecated and will be removed in v0.9. "
@@ -307,4 +306,5 @@ def sleep_statistics(hypno, sf_hyp):
         stats[f"%{st}"] = 100 * stats[st] / stats["TST"] if has_sleep else np.nan
     stats["SE"] = 100 * stats["TST"] / stats["TIB"]
     stats["SME"] = 100 * stats["TST"] / stats["SPT"] if has_sleep else np.nan
-    return stats
+    # Return built-in floats rather than NumPy scalars
+    return {key: float(value) for key, value in stats.items()}

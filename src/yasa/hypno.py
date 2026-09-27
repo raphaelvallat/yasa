@@ -376,7 +376,7 @@ class Hypnogram:
         >>> hyp2 = Hypnogram(["W", "N1", "N3", "REM"], freq="30s")
         >>> hyp1 == hyp2
         array([ True,  True, False,  True])
-        >>> (hyp1 == hyp2).all()
+        >>> bool((hyp1 == hyp2).all())
         False
         """
         if not isinstance(other, Hypnogram):
@@ -1818,8 +1818,8 @@ class Hypnogram:
             >>> fig, axes = plt.subplots(nrows=2, figsize=(6, 4), constrained_layout=True)
             >>> hyp_a = simulate_hypnogram(n_stages=3, seed=99)
             >>> hyp_b = simulate_hypnogram(n_stages=3, seed=99, start="2022-01-31 23:30:00")
-            >>> hyp_a.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[0])
-            >>> hyp_b.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[1])
+            >>> ax = hyp_a.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[0])
+            >>> ax = hyp_b.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[1])
         """
         return _plot_hypnogram(self, highlight=highlight, fill_color=fill_color, ax=ax, **kwargs)
 

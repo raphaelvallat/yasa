@@ -640,15 +640,15 @@ def spindles_detect(
     sp : :py:class:`yasa.SpindlesResults`
         To get the full detection dataframe, use:
 
-        >>> sp = spindles_detect(...)
-        >>> sp.summary()
+        >>> sp = spindles_detect(...)  # doctest: +SKIP
+        >>> sp.summary()  # doctest: +SKIP
 
         This will give a :py:class:`pandas.DataFrame` where each row is a
         detected spindle and each column is a parameter (= feature or property)
         of this spindle. To get the average spindles parameters per channel and
         sleep stage:
 
-        >>> sp.summary(grp_chan=True, grp_stage=True)
+        >>> sp.summary(grp_chan=True, grp_stage=True)  # doctest: +SKIP
 
     Notes
     -----
@@ -707,7 +707,7 @@ def spindles_detect(
     .. code-block:: python
 
         >>> import yasa
-        >>> sp = yasa.spindles_detect(raw, hypno=hypno_up, include=(1, 2, 3))
+        >>> sp = yasa.spindles_detect(raw, hypno=hypno_up, include=(1, 2, 3))  # doctest: +SKIP
 
     2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling and stage filtering are
        handled automatically. String stage labels can be used for ``include``:
@@ -715,7 +715,7 @@ def spindles_detect(
     .. code-block:: python
 
         >>> hyp = yasa.Hypnogram(["W", "N1", "N2", "N2", "N3", "REM"], freq="30s")
-        >>> sp = yasa.spindles_detect(raw, hypno=hyp, include=["N1", "N2", "N3"])
+        >>> sp = yasa.spindles_detect(raw, hypno=hyp, include=["N1", "N2", "N3"])  # doctest: +SKIP
 
     For a full walkthrough, please refer to the following Jupyter notebooks:
 
@@ -1071,10 +1071,10 @@ class SpindlesResults(_DetectionResults):
         >>> x * y
         array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])
 
-        >>> (x * y).sum()  # Unscaled coincidence
+        >>> int((x * y).sum())  # Unscaled coincidence
         3
 
-        >>> (x * y).sum() / (x.sum() * y.sum())  # Scaled coincidence
+        >>> float((x * y).sum() / (x.sum() * y.sum()))  # Scaled coincidence
         0.12
 
         References
@@ -1300,7 +1300,7 @@ class SpindlesResults(_DetectionResults):
 
         To activate the interactive mode, make sure to run:
 
-        >>> %matplotlib widget
+        >>> %matplotlib widget  # doctest: +SKIP
 
         .. versionadded:: 0.4.0
         """
@@ -1475,14 +1475,14 @@ def sw_detect(
     sw : :py:class:`yasa.SWResults`
         To get the full detection dataframe, use:
 
-        >>> sw = sw_detect(...)
-        >>> sw.summary()
+        >>> sw = sw_detect(...)  # doctest: +SKIP
+        >>> sw.summary()  # doctest: +SKIP
 
         This will give a :py:class:`pandas.DataFrame` where each row is a
         detected slow-wave and each column is a parameter (= property).
         To get the average SW parameters per channel and sleep stage:
 
-        >>> sw.summary(grp_chan=True, grp_stage=True)
+        >>> sw.summary(grp_chan=True, grp_stage=True)  # doctest: +SKIP
 
     Notes
     -----
@@ -1538,7 +1538,7 @@ def sw_detect(
     .. code-block:: python
 
         >>> import yasa
-        >>> sw = yasa.sw_detect(raw, hypno=hypno_up, include=(2, 3))
+        >>> sw = yasa.sw_detect(raw, hypno=hypno_up, include=(2, 3))  # doctest: +SKIP
 
     2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling and stage filtering are
        handled automatically. String stage labels can be used for ``include``:
@@ -1546,7 +1546,7 @@ def sw_detect(
     .. code-block:: python
 
         >>> hyp = yasa.Hypnogram(["W", "N1", "N2", "N2", "N3", "REM"], freq="30s")
-        >>> sw = yasa.sw_detect(raw, hypno=hyp, include=["N2", "N3"])
+        >>> sw = yasa.sw_detect(raw, hypno=hyp, include=["N2", "N3"])  # doctest: +SKIP
 
     For a full walkthrough, please refer to the tutorial:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb
@@ -2068,10 +2068,10 @@ class SWResults(_DetectionResults):
         >>> x * y
         array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])
 
-        >>> (x * y).sum()  # Coincidence
+        >>> int((x * y).sum())  # Coincidence
         3
 
-        >>> (x * y).sum() / (x.sum() * y.sum())  # Scaled coincidence
+        >>> float((x * y).sum() / (x.sum() * y.sum()))  # Scaled coincidence
         0.12
 
         References
@@ -2199,7 +2199,7 @@ class SWResults(_DetectionResults):
 
         To activate the interactive mode, make sure to run:
 
-        >>> %matplotlib widget
+        >>> %matplotlib widget  # doctest: +SKIP
 
         .. versionadded:: 0.4.0
         """
@@ -2244,7 +2244,8 @@ def rem_detect(
             Therefore, if passing data from a :py:class:`mne.io.BaseRaw`,
             make sure to use units="uV" to get the data in micro-Volts, e.g.:
 
-            >>> data = raw.get_data(units="uV")  # Make sure that data is in uV
+            >>> data = raw.get_data(units="uV")  # doctest: +SKIP
+
     sf : float
         Sampling frequency of the data, in Hz.
     hypno : array_like or :py:class:`yasa.Hypnogram`
@@ -2304,14 +2305,14 @@ def rem_detect(
     rem : :py:class:`yasa.REMResults`
         To get the full detection dataframe, use:
 
-        >>> rem = rem_detect(...)
-        >>> rem.summary()
+        >>> rem = rem_detect(...)  # doctest: +SKIP
+        >>> rem.summary()  # doctest: +SKIP
 
         This will give a :py:class:`~pandas.DataFrame` where each row is a
         detected REM and each column is a parameter (= property).
         To get the average parameters for each sleep stage:
 
-        >>> rem.summary(grp_stage=True)
+        >>> rem.summary(grp_stage=True)  # doctest: +SKIP
 
         This will give a :py:class:`~pandas.DataFrame` where each row corresponds with a
         sleep stage where >0 REMs were detected. Additional columns ``Count`` (number
@@ -2361,7 +2362,7 @@ def rem_detect(
     .. code-block:: python
 
         >>> import yasa
-        >>> rem = yasa.rem_detect(loc, roc, sf, hypno=hypno_up, include=4)
+        >>> rem = yasa.rem_detect(loc, roc, sf, hypno=hypno_up, include=4)  # doctest: +SKIP
 
     2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling and stage filtering are
        handled automatically. String stage labels can be used for ``include``:
@@ -2369,7 +2370,7 @@ def rem_detect(
     .. code-block:: python
 
         >>> hyp = yasa.Hypnogram(["W", "N1", "N2", "N3", "REM", "REM"], freq="30s")
-        >>> rem = yasa.rem_detect(loc, roc, sf, hypno=hyp, include="REM")
+        >>> rem = yasa.rem_detect(loc, roc, sf, hypno=hyp, include="REM")  # doctest: +SKIP
 
     For a full walkthrough, please refer to:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb
@@ -2833,7 +2834,7 @@ def art_detect(
     .. code-block:: python
 
         >>> import yasa
-        >>> art = yasa.art_detect(data, sf, hypno=hypno_up, include=(1, 2, 3, 4))
+        >>> art = yasa.art_detect(data, sf, hypno=hypno_up, include=(1, 2, 3, 4))  # doctest: +SKIP
 
     2. Pass a :py:class:`~yasa.Hypnogram` directly — upsampling and stage filtering are
        handled automatically. String stage labels can be used for ``include``:
@@ -2841,7 +2842,7 @@ def art_detect(
     .. code-block:: python
 
         >>> hyp = yasa.Hypnogram(["W", "N1", "N2", "N3", "REM"], freq="30s")
-        >>> art = yasa.art_detect(data, sf, hypno=hyp, include=["N1", "N2", "N3", "REM"])
+        >>> art = yasa.art_detect(data, sf, hypno=hyp, include=["N1", "N2", "N3", "REM"])  # doctest: +SKIP
 
     For a full walkthrough, please refer to:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/13_artifact_rejection.ipynb
@@ -3092,8 +3093,8 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
      'recall': 0.5555555555555556,
      'f1': 0.6250000000000001}
 
-    There are 4 true positives, 2 false positives and 4 false negatives. This gives a precision
-    score of 0.71 (= 5 / (5 + 2)), a recall score of 0.55 (= 5 / (5 + 4)) and a F1-score of 0.625.
+    There are 5 true positives, 2 false positives and 4 false negatives. This gives a precision
+    score of 0.71 (= 5 / (5 + 2)), a recall score of 0.56 (= 5 / (5 + 4)) and a F1-score of 0.625.
     The F1-score is the harmonic average of precision and recall, and should be the preferred
     metric when comparing the performance of a detection against a ground-truth.
 
