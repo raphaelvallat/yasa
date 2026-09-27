@@ -1,9 +1,10 @@
 """Automatic sleep staging of polysomnography data."""
 
+import datetime
 import glob
 import logging
 import os
-import warnings
+import re
 
 import antropy as ant
 import joblib
@@ -12,11 +13,11 @@ import mne
 import numpy as np
 import pandas as pd
 import scipy.signal as sp_sig
-import scipy.stats as sp_stats
 from mne.filter import filter_data
 from scipy.integrate import trapezoid
 from sklearn.preprocessing import robust_scale
 
+from .hypno import Hypnogram
 from .others import sliding_window
 from .spectral import bandpower_from_psd_ndarray
 
@@ -172,36 +173,36 @@ class SleepStaging:
         assert isinstance(eeg_name, str), "`eeg_name` must be a string."
         assert isinstance(eog_name, (str, type(None))), "`eog_name` must be a string or None."
         assert isinstance(emg_name, (str, type(None))), "`emg_name` must be a string or None."
-        assert isinstance(metadata, (dict, type(None))), "`metadata` must be a string or None."
+        assert isinstance(metadata, (dict, type(None))), "`metadata` must be a dict or None."
 
-        # Validate metadata
-        if isinstance(metadata, dict):
-            if "age" in metadata.keys():
+        # Validate metadata. An empty dict is equivalent to no metadata. We work on a copy so that
+        # the caller's dictionary is not modified.
+        metadata = dict(metadata) if metadata else None
+        if metadata is not None:
+            if "age" in metadata:
                 assert 0 < metadata["age"] < 120, "age must be between 0 and 120."
-            if "male" in metadata.keys():
+            if "male" in metadata:
                 metadata["male"] = int(metadata["male"])
                 assert metadata["male"] in [0, 1], "male must be 0 or 1."
 
         # Validate Raw instance and load data
         assert isinstance(raw, mne.io.BaseRaw), "`raw` must be a MNE Raw object."
         sf = raw.info["sfreq"]
-        ch_names = np.array([eeg_name, eog_name, emg_name])
-        ch_types = np.array(["eeg", "eog", "emg"])
-        keep_chan = []
-        for c in ch_names:
+        assert sf > 80, "Sampling frequency must be at least 80 Hz."
+        ch_names, ch_types = [], []
+        for c, t in zip([eeg_name, eog_name, emg_name], ["eeg", "eog", "emg"]):
             if c is not None:
                 assert c in raw.ch_names, "%s does not exist" % c
-                keep_chan.append(True)
-            else:
-                keep_chan.append(False)
-        # Subset
-        ch_names = ch_names[keep_chan].tolist()
-        ch_types = ch_types[keep_chan].tolist()
-        # Keep only selected channels (creating a copy of Raw)
-        raw_pick = raw.copy().pick(ch_names)
+                ch_names.append(c)
+                ch_types.append(t)
+        # Keep only the selected channels, in that order. Building a new Raw from only these
+        # channels avoids copying every channel of `raw` (e.g. a full 64-channel PSG).
+        picks = mne.pick_channels(raw.ch_names, ch_names, ordered=True)
+        raw_pick = mne.io.RawArray(
+            raw.get_data(picks=picks), mne.pick_info(raw.info, picks), verbose=False
+        )
 
         # Downsample if sf != 100
-        assert sf > 80, "Sampling frequency must be at least 80 Hz."
         if sf != 100:
             raw_pick.resample(100, npad="auto")
             sf = raw_pick.info["sfreq"]
@@ -211,6 +212,8 @@ class SleepStaging:
 
         # Extract duration of recording in minutes
         duration_minutes = data.shape[1] / sf / 60
+        if data.shape[1] < 30 * sf:
+            raise ValueError("Insufficient data. At least one 30-seconds epoch is required.")
         if duration_minutes < 5:
             msg = (
                 "Insufficient data. A minimum of 5 minutes of data is recommended "
@@ -224,19 +227,16 @@ class SleepStaging:
         self.ch_types = ch_types
         self.data = data
         self.metadata = metadata
-        self._meas_date = raw.info["meas_date"]  # UTC-aware datetime or None
+        # Start time of the first sample of `raw`, as a UTC-aware datetime or None. `meas_date` is
+        # the time of the first sample of the original recording and is not updated by
+        # `raw.crop()`, so we need to add the time of the first sample (`raw.first_time`).
+        self._meas_date = raw.info["meas_date"]
+        if self._meas_date is not None:
+            self._meas_date += datetime.timedelta(seconds=raw.first_time)
 
     def __repr__(self):
         n_samples = self.data.shape[-1]
         duration = (n_samples / self.sf) / 60
-        return (
-            f"<SleepStaging | {len(self.ch_names)} x {n_samples} samples ({duration:.1f} minutes), "
-            f"{self.sf} Hz>"
-        )
-
-    def __str__(self):
-        n_samples = self.data.shape[-1]
-        duration = n_samples / self.sf
         return (
             f"<SleepStaging | {len(self.ch_names)} x {n_samples} samples ({duration:.1f} minutes), "
             f"{self.sf} Hz>"
@@ -289,11 +289,19 @@ class SleepStaging:
             hmob, hcomp = ant.hjorth_params(epochs, axis=1)
 
             q = np.quantile(epochs, [0.25, 0.75], axis=1)
+            # Skewness and (Fisher) kurtosis from the central moments, which is equivalent to
+            # scipy.stats.skew / kurtosis (with bias=True) but computes the moments only once.
+            dev = epochs - epochs.mean(axis=1, keepdims=True)
+            dev2 = dev**2
+            m2 = dev2.mean(axis=1)
+            with np.errstate(invalid="ignore", divide="ignore"):  # NaN for flat epochs
+                skew = (dev2 * dev).mean(axis=1) / m2**1.5
+                kurt = (dev2**2).mean(axis=1) / m2**2 - 3
             feat = {
                 "std": np.std(epochs, ddof=1, axis=1),
                 "iqr": q[1] - q[0],
-                "skew": sp_stats.skew(epochs, axis=1),
-                "kurt": sp_stats.kurtosis(epochs, axis=1),
+                "skew": skew,
+                "kurt": kurt,
                 "nzc": ant.num_zerocross(epochs, axis=1),
                 "hmob": hmob,
                 "hcomp": hcomp,
@@ -356,20 +364,20 @@ class SleepStaging:
         #######################################################################
 
         # Add temporal features and metadata using concat to avoid fragmentation
-        extra = {"time_hour": times / 3600, "time_norm": times / times[-1]}
+        # time_norm goes from 0 to 1 (it is 0 when there is only one epoch)
+        time_norm = times / times[-1] if times[-1] > 0 else np.zeros_like(times)
+        extra = {"time_hour": times / 3600, "time_norm": time_norm}
         if self.metadata is not None:
-            for c in self.metadata.keys():
-                extra[c] = self.metadata[c]
+            extra.update(self.metadata)
         features = pd.concat([features, pd.DataFrame(extra, index=features.index)], axis=1)
 
         # Downcast float64 to float32 (to reduce size of training datasets)
         cols_float = features.select_dtypes(np.float64).columns.tolist()
         features[cols_float] = features[cols_float].astype(np.float32)
         # Make sure that age and sex are encoded as int
-        if "age" in features.columns:
-            features["age"] = features["age"].astype(int)
-        if "male" in features.columns:
-            features["male"] = features["male"].astype(int)
+        for c in ["age", "male"]:
+            if c in features.columns:
+                features[c] = features[c].astype(int)
 
         # Sort the column names here (same behavior as lightGBM)
         features.sort_index(axis=1, inplace=True)
@@ -394,38 +402,44 @@ class SleepStaging:
         """Validate classifier."""
         # Check that we're using exactly the same features
         # Note that clf.feature_name_ is only available in lightgbm>=3.0
-        f_diff = np.setdiff1d(clf.feature_name_, self.feature_name_)
-        if len(f_diff):
-            raise ValueError(
-                "The following features are present in the "
-                "classifier but not in the current features set:",
-                f_diff,
-            )
-        f_diff = np.setdiff1d(
-            self.feature_name_,
-            clf.feature_name_,
-        )
-        if len(f_diff):
-            raise ValueError(
-                "The following features are present in the "
-                "current feature set but not in the classifier:",
-                f_diff,
-            )
+        for a, b, where in [
+            (
+                clf.feature_name_,
+                self.feature_name_,
+                "classifier but not in the current feature set",
+            ),
+            (
+                self.feature_name_,
+                clf.feature_name_,
+                "current feature set but not in the classifier",
+            ),
+        ]:
+            f_diff = np.setdiff1d(a, b)
+            if len(f_diff):
+                raise ValueError(f"The following features are present in the {where}: {f_diff}")
 
     def _load_model(self, path_to_model):
         """Load the relevant trained classifier."""
         if path_to_model == "auto":
-            from pathlib import Path
-
-            clf_dir = os.path.join(str(Path(__file__).parent), "classifiers/")
+            clf_dir = os.path.join(os.path.dirname(__file__), "classifiers")
             name = "clf_eeg"
             name = name + "+eog" if "eog" in self.ch_types else name
             name = name + "+emg" if "emg" in self.ch_types else name
             name = name + "+demo" if self.metadata is not None else name
-            # e.g. clf_eeg+eog+emg+demo_lgb_0.4.0.joblib
-            all_matching_files = glob.glob(clf_dir + name + "*.joblib")
-            # Find the latest file
-            path_to_model = np.sort(all_matching_files)[-1]
+            # e.g. clf_eeg+eog+emg+demo_lgb_0.4.0.joblib. The "_lgb_" suffix prevents matching
+            # other combinations of channels (e.g. "clf_eeg" would otherwise match "clf_eeg+eog").
+            all_matching_files = glob.glob(
+                os.path.join(clf_dir, glob.escape(name) + "_lgb_*.joblib")
+            )
+            assert len(all_matching_files), f"No pre-trained classifier found for {name}."
+
+            # Find the latest version, comparing version numbers and not strings (0.10 > 0.9)
+            def _version(fname):
+                return tuple(
+                    int(v) for v in re.findall(r"_lgb_([\d.]+)\.joblib$", fname)[0].split(".")
+                )
+
+            path_to_model = max(all_matching_files, key=_version)
         # Check that file exists
         assert os.path.isfile(path_to_model), "File does not exist."
         logger.info("Using pre-trained classifier: %s" % path_to_model)
@@ -456,70 +470,35 @@ class SleepStaging:
             returned as a :py:class:`yasa.Hypnogram` instance, which also includes the
             probability of each sleep stage for each epoch.
         """
-        from .hypno import Hypnogram
-
         if not hasattr(self, "_features"):
             self.fit()
         # Load and validate pre-trained classifier
         clf = self._load_model(path_to_model)
         # Now we make sure that the features are aligned
-        X = self._features.copy()[clf.feature_name_]
-        # Predict the sleep stages and probabilities
-        self._predicted = clf.predict(X)
-        # Predict the probabilities
-        classes = clf.classes_.copy()
-        classes[classes == "W"] = "WAKE"  # Compat for yasa.Hypnogram
-        classes[classes == "R"] = "REM"
-        proba = pd.DataFrame(clf.predict_proba(X), columns=classes)
-        proba.index.name = "Epoch"
-        self._proba = proba
+        X = self._features[clf.feature_name_]
+        # Predict the sleep stages and probabilities. The classifier uses "W" and "R" for Wake
+        # and REM, which yasa.Hypnogram converts to "WAKE" and "REM" in both values and proba.
+        proba = pd.DataFrame(clf.predict_proba(X), columns=clf.classes_)
         # Convert to a `yasa.Hypnogram` instance (including `proba`)
         # If meas_date was set on the original Raw, pass it as start so that the returned
         # Hypnogram is timestamp-aware and upsample_to_data aligns correctly on cropped data.
         start = pd.Timestamp(self._meas_date) if self._meas_date is not None else None
-        return Hypnogram(
-            values=self._predicted.copy(),
+        hyp = Hypnogram(
+            values=clf.predict(X),
             freq="30s",
             n_stages=5,
             scorer="YASA",
-            proba=proba.copy(),
+            proba=proba,
             start=start,
         )
-
-    def predict_proba(self, path_to_model="auto"):
-        """
-        Return the predicted probability for each sleep stage for each 30-sec epoch of data.
-
-        Currently, only classifiers that were trained using a
-        `LGBMClassifier <https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMClassifier.html>`_
-        are supported.
-
-        Parameters
-        ----------
-        path_to_model : str or "auto"
-            Full path to a trained LGBMClassifier, exported as a joblib file. Can be "auto" to
-            use YASA's default classifier.
-
-        Returns
-        -------
-        proba : :py:class:`pandas.DataFrame`
-            The predicted probability for each sleep stage for each 30-sec epoch of data.
-        """
-        warnings.warn(
-            "The `predict_proba` function is deprecated and will be removed in v0.8. "
-            "The predicted probabilities can now be accessed with `yasa.Hypnogram.proba` instead, "
-            "e.g `SleepStaging.predict().proba`",
-            FutureWarning,
-        )
-        if not hasattr(self, "_proba"):
-            self.predict(path_to_model)
-        return self._proba.copy()
+        self._proba = hyp.proba
+        return hyp
 
     def plot_predict_proba(
         self,
         proba=None,
         majority_only=False,
-        palette=["#99d7f1", "#009DDC", "xkcd:twilight blue", "xkcd:rich purple", "xkcd:sunflower"],
+        palette=("#99d7f1", "#009DDC", "xkcd:twilight blue", "xkcd:rich purple", "xkcd:sunflower"),
     ):
         """
         Plot the predicted probability for each sleep stage for each 30-sec epoch of data.
@@ -530,20 +509,21 @@ class SleepStaging:
             A dataframe with the probability of each sleep stage for each 30-sec epoch of data.
         majority_only : boolean
             If True, probabilities of the non-majority classes will be set to 0.
+        palette : list or tuple
+            The color of each column of ``proba``. The default colors are for Wake, N1, N2, N3 and
+            REM, in that order.
         """
-        if proba is None and not hasattr(self, "_features"):
+        if proba is None and not hasattr(self, "_proba"):
             raise ValueError("Must call `.predict` before this function")
         if proba is None:
-            proba = self._proba.copy()
+            proba = self._proba
         else:
             assert isinstance(proba, pd.DataFrame), "`proba` must be a pandas.DataFrame"
         if majority_only:
-            cond = proba.apply(lambda x: x == x.max(), axis=1)
-            proba = proba.where(cond, other=0)
-        ax = proba.plot(kind="area", color=palette, figsize=(10, 5), alpha=0.8, stacked=True, lw=0)
-        # Add confidence
-        # confidence = proba.max(1)
-        # ax.plot(confidence, lw=1, color='k', ls='-', alpha=0.5, label='Confidence')
+            proba = proba.where(proba.eq(proba.max(axis=1), axis=0), other=0)
+        ax = proba.plot(
+            kind="area", color=list(palette), figsize=(10, 5), alpha=0.8, stacked=True, lw=0
+        )
         ax.set_xlim(0, proba.shape[0])
         ax.set_ylim(0, 1)
         ax.set_ylabel("Probability")

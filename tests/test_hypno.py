@@ -97,6 +97,8 @@ class TestHypno(unittest.TestCase):
         assert simulate_hypnogram(tib=4, freq="30s").duration == 4
         with pytest.raises(AssertionError):
             simulate_hypnogram(freq="60s")
+        with pytest.raises(AssertionError):
+            simulate_hypnogram(freq="20s")  # 30s is not a multiple of 20s
 
         # Hanling different probabilities
         trans_probas = pd.DataFrame(
@@ -105,6 +107,7 @@ class TestHypno(unittest.TestCase):
             columns=["WAKE", "N1", "N2", "N3", "REM"],
         )
         simulate_hypnogram(tib=2, trans_probas=trans_probas)
+        assert trans_probas.attrs == {}  # The user's dataframe is not modified
         simulate_hypnogram(tib=2, init_probas=trans_probas.loc["WAKE"])
         simulate_hypnogram(tib=2, trans_probas=trans_probas, init_probas=trans_probas.loc["WAKE"])
         # Setting all probabilities between stages as zero

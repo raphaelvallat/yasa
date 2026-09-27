@@ -6,12 +6,14 @@ implementation used by :py:meth:`yasa.Hypnogram.transition_matrix`.
 """
 
 import unittest
+import warnings
 
 import numpy as np
 import pandas as pd
+import pytest
 
-from yasa.hypno import Hypnogram, simulate_hypnogram
-from yasa.sleepstats import _transition_matrix
+from yasa.hypno import Hypnogram, _transition_matrix, simulate_hypnogram
+from yasa.sleepstats import sleep_statistics
 
 
 class TestSleepStats(unittest.TestCase):
@@ -73,3 +75,53 @@ class TestSleepStats(unittest.TestCase):
         assert counts_k.loc["N2"].sum() == 2  # N2→N3 and N2→REM
         np.testing.assert_allclose(probs_k.loc["N2", "N3"], 0.5)
         np.testing.assert_allclose(probs_k.loc["N2", "REM"], 0.5)
+
+    def test_transition_no_outgoing(self):
+        """A stage only present in the last epoch has an undefined (NaN) probability row."""
+        hyp = Hypnogram(["W", "N1", "N2", "N3", "REM"])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")  # No RuntimeWarning for 0 / 0
+            counts, probs = hyp.transition_matrix()
+        assert counts.loc["REM"].sum() == 0
+        assert probs.loc["REM"].isna().all()
+        np.testing.assert_allclose(probs.drop(index="REM").sum(axis=1), 1.0)
+
+
+@pytest.mark.filterwarnings("ignore::FutureWarning")
+def test_sleep_statistics_no_sleep():
+    """The deprecated sleep_statistics returns NaN instead of crashing without sleep."""
+    for hypno in [[0, 0, 0], [0, -1, -1, 0]]:
+        stats = sleep_statistics(hypno, sf_hyp=1 / 30)
+        assert stats["TST"] == 0 and stats["SPT"] == 0 and stats["SE"] == 0
+        for key in ["WASO", "SOL", "SME", "%N2", "Lat_REM"]:
+            assert np.isnan(stats[key])
+
+
+@pytest.mark.filterwarnings("ignore::FutureWarning")
+def test_sleep_statistics_values():
+    """The deprecated sleep_statistics returns the documented values."""
+    hypno = [0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 2, 3, 3, 4, 4, 4, 4, 0, 0]
+    expected = {
+        "TIB": 10.0,
+        "SPT": 8.0,
+        "WASO": 0.0,
+        "TST": 8.0,
+        "N1": 1.5,
+        "N2": 2.0,
+        "N3": 2.5,
+        "REM": 2.0,
+        "NREM": 6.0,
+        "SOL": 1.0,
+        "Lat_N1": 1.0,
+        "Lat_N2": 2.5,
+        "Lat_N3": 4.0,
+        "Lat_REM": 7.0,
+        "%N1": 18.75,
+        "%N2": 25.0,
+        "%N3": 31.25,
+        "%REM": 25.0,
+        "%NREM": 75.0,
+        "SE": 80.0,
+        "SME": 100.0,
+    }
+    assert sleep_statistics(hypno, sf_hyp=1 / 30) == expected
