@@ -4,6 +4,7 @@ This file contains several helper functions to manipulate 1D and 2D EEG data.
 
 import logging
 
+import mne
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 from scipy.interpolate import interp1d
@@ -12,6 +13,110 @@ from scipy.special import erfinv
 logger = logging.getLogger("yasa")
 
 __all__ = ["moving_transform", "trimbothstd", "sliding_window", "get_centered_indices"]
+
+# Units used when extracting data from a MNE Raw object (MNE stores data in Volts)
+UNITS_UV = dict(eeg="uV", emg="uV", eog="uV", ecg="uV")
+
+
+def _check_data(data, sf=None, ch_names=None):
+    """Validate EEG data and extract data, sf and ch_names from a MNE Raw object if needed.
+
+    Returns
+    -------
+    data : np.ndarray
+        2D float64 array of shape (n_chan, n_samples), in uV.
+    sf : int or float
+        Sampling frequency.
+    ch_names : list of str
+        Channel names, of length n_chan.
+    raw : :py:class:`mne.io.BaseRaw` or None
+        The original MNE Raw object, if ``data`` was one. It is needed to align a
+        :py:class:`yasa.Hypnogram` with the recording using absolute timestamps.
+    """
+    raw = None
+    if isinstance(data, mne.io.BaseRaw):
+        if sf is not None:
+            logger.warning("sf parameter will be ignored, sf from MNE Raw will be used")
+        if ch_names is not None:
+            logger.warning("ch_names parameter will be ignored, ch_names from MNE Raw will be used")
+        raw = data
+        sf = raw.info["sfreq"]
+        ch_names = raw.ch_names
+        data = raw.get_data(units=UNITS_UV)
+    else:
+        assert sf is not None, "sf must be specified if not using MNE Raw."
+        if isinstance(sf, (np.ndarray, np.generic)):  # e.g. array(100.) or np.int64(100)
+            sf = sf.item()
+        assert isinstance(sf, (int, float)), "sf must be int or float."
+    data = np.asarray(data, dtype=np.float64)
+    assert data.ndim in [1, 2], "data must be 1D (times) or 2D (chan, times)."
+    data = np.atleast_2d(data)  # (n_chan, n_samples)
+    n_chan = data.shape[0]
+    if ch_names is None:
+        ch_names = ["CHAN" + str(i).zfill(3) for i in range(n_chan)]
+    else:
+        ch_names = [str(c) for c in np.atleast_1d(ch_names)]
+        assert len(ch_names) == n_chan, "ch_names must match data.shape[0]."
+    return data, sf, ch_names, raw
+
+
+def _check_hypno_include(hypno, include, data, sf, verbose=False):
+    """Validate a hypnogram and the stages to include.
+
+    Parameters
+    ----------
+    hypno : array_like or :py:class:`yasa.Hypnogram`
+        Upsampled hypnogram, or a Hypnogram instance that is upsampled to ``data``.
+    include : int, str or list
+        Stages to include. String labels are only allowed with a Hypnogram instance.
+    data : np.ndarray or :py:class:`mne.io.BaseRaw`
+        The data. Passing the original MNE Raw object (instead of the extracted array) enables
+        the timestamp-based alignment of :py:meth:`yasa.Hypnogram.upsample_to_data`.
+    sf : float
+        Sampling frequency of ``data``.
+
+    Returns
+    -------
+    hypno : np.ndarray
+        1D hypnogram with one value per sample. Numeric hypnograms are returned as a signed
+        integer array, which may be the user's array itself: callers must not modify it in-place.
+    include : np.ndarray
+        1D array of the stages to include, with the same dtype kind as ``hypno``.
+    int_to_str : dict
+        Mapping from the integer stages to the string labels of ``include``. Empty unless
+        ``include`` contained string labels.
+    """
+    from .hypno import Hypnogram  # Avoid circular import
+
+    assert include is not None, "include cannot be None if hypno is given"
+    include = np.atleast_1d(np.asarray(include))
+    assert include.size >= 1, "`include` must have at least one element."
+    n_samples = data.n_times if isinstance(data, mne.io.BaseRaw) else data.shape[-1]
+    int_to_str = {}
+    if isinstance(hypno, Hypnogram):
+        if include.dtype.kind in ("U", "S", "O"):
+            unknown = [str(s) for s in include if s not in hypno.mapping]
+            assert not unknown, (
+                f"The following stages in `include` are not valid labels of the "
+                f"hypnogram: {unknown}. Valid labels are {sorted(hypno.mapping)}."
+            )
+            include = np.array([hypno.mapping[s] for s in include], dtype=int)
+            int_to_str = hypno.mapping_int
+        hypno = hypno.upsample_to_data(data, sf=sf, verbose=verbose)
+    hypno = np.asarray(hypno)
+    assert hypno.ndim == 1, "Hypno must be one dimensional."
+    assert hypno.size == n_samples, "Hypno must have same size as data."
+    if hypno.dtype.kind in "iuf" and include.dtype.kind in "iuf":
+        # Numeric stages: compare as integers, e.g. a float hypnogram loaded from a txt file
+        assert np.array_equal(include, np.round(include)), "include must contain whole numbers."
+        include = include.astype(int)
+        if hypno.dtype.kind != "i":
+            hypno = hypno.astype(int)
+    assert hypno.dtype.kind == include.dtype.kind, "hypno and include must have same dtype"
+    assert np.isin(hypno, include).any(), (
+        "None of the stages specified in `include` are present in hypno."
+    )
+    return hypno, include, int_to_str
 
 
 def _merge_close(index, min_distance_ms, sf):
@@ -524,17 +629,10 @@ def get_centered_indices(data, idx, npts_before, npts_after):
     assert idx.ndim == 1, "idx must be 1D."
     assert data.ndim == 1, "data must be 1D."
 
-    def rng(x):
-        """Create a range before and after a given value."""
-        return np.arange(x[0] - npts_before, x[0] + npts_after + 1, dtype="int")
-
-    idx_ep = np.apply_along_axis(rng, 1, idx[..., np.newaxis])
-    # We drop the events for which the indices exceed data
-    idx_ep = np.ma.mask_rows(np.ma.masked_outside(idx_ep, 0, data.shape[0]))
-    # Indices of non-masked (valid) epochs in idx
-    idx_ep_nomask = np.unique(idx_ep.nonzero()[0])
-    idx_ep = np.ma.compress_rows(idx_ep)
-    return idx_ep, idx_ep_nomask
+    idx_ep = idx[:, None] + np.arange(-npts_before, npts_after + 1, dtype="int")
+    # We drop the events for which the indices exceed data (last valid index is n - 1)
+    is_valid = (idx_ep[:, 0] >= 0) & (idx_ep[:, -1] < data.shape[0])
+    return idx_ep[is_valid], np.flatnonzero(is_valid)
 
 
 def _norm_direct_pac(pha, amp, p=0.05):
