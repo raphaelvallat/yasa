@@ -997,3 +997,19 @@ def test_simulate_similar_edge_cases():
     sim = hyp.simulate_similar(seed=0)
     assert sim.hypno.iloc[0] == "N2"
     assert "WAKE" not in sim.hypno.tolist()
+    # A user-defined trans_probas (with WAKE) overrides the default one without error
+    default = simulate_hypnogram(tib=480, seed=42).transition_matrix()[1]
+    sim = hyp.simulate_similar(trans_probas=default, seed=0)
+    assert sim.n_epochs == hyp.n_epochs
+
+
+def test_transition_matrix_many_to_one_mapping():
+    """Stages that share the same integer in a custom mapping keep their own label."""
+    hyp = Hypnogram(["W", "N1", "N2", "N2", "N1"])
+    hyp.mapping = {"WAKE": 0, "N1": 1, "N2": 1, "N3": 1, "REM": 1}
+    counts, probs = hyp.transition_matrix()
+    assert counts.index.tolist() == ["WAKE", "N1", "N2"]
+    assert counts.columns.tolist() == ["WAKE", "N1", "N2"]
+    assert counts.loc["N2", "N1"] == 1
+    assert counts.loc["N2", "N2"] == 1
+    assert np.allclose(probs.sum(axis=1), 1)

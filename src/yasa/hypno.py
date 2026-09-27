@@ -1630,10 +1630,20 @@ class Hypnogram:
         N3          0.010  0.029  0.038  0.914  0.01
         REM         0.000  0.067  0.013  0.000  0.92
         """
-        counts, probs = _transition_matrix(self.as_int())
-        mapping_int = self.mapping_int
-        counts = counts.rename(index=mapping_int, columns=mapping_int)
-        probs = probs.rename(index=mapping_int, columns=mapping_int)
+        # Build the matrix from the stage labels rather than from ``as_int()``, so that stages
+        # sharing the same integer in a custom mapping keep their own row and column. Stages are
+        # sorted by integer value, then by category order (the sort is stable).
+        categories = self.hypno.cat.categories
+        codes = self.hypno.cat.codes.to_numpy()
+        if (codes < 0).any():
+            raise ValueError("Hypnogram contains missing (NaN) values.")
+        stages = sorted(categories[np.unique(codes)], key=self.mapping.get)
+        rank = np.zeros(categories.size, dtype=int)
+        rank[categories.get_indexer(stages)] = np.arange(len(stages))
+        counts, probs = _transition_matrix(rank[codes])
+        labels = dict(enumerate(stages))
+        counts = counts.rename(index=labels, columns=labels)
+        probs = probs.rename(index=labels, columns=labels)
         return counts, probs
 
     def find_periods(self, threshold="5min", equal_length=False):
@@ -2023,14 +2033,21 @@ class Hypnogram:
             "start": self.start,
             "scorer": self.scorer,
         }
-        if "WAKE" not in trans_probas.index:
-            # By default, the simulation starts from the WAKE row of `trans_probas`. If there is
-            # no WAKE, start from the first stage of the current hypnogram instead.
-            first_stage = self.hypno.iloc[0]
+        simulate_hypnogram_kwargs.update(kwargs)
+        # By default, the simulation starts from the WAKE row of `trans_probas`. If there is no
+        # WAKE, start from the first stage of the current hypnogram instead. This is done after
+        # merging `kwargs`, so that it uses the index of a user-defined `trans_probas`.
+        trans_probas = simulate_hypnogram_kwargs["trans_probas"]
+        first_stage = self.hypno.iloc[0]
+        if (
+            "init_probas" not in kwargs
+            and trans_probas is not None
+            and "WAKE" not in trans_probas.index
+            and first_stage in trans_probas.index
+        ):
             simulate_hypnogram_kwargs["init_probas"] = pd.Series(
                 (trans_probas.index == first_stage).astype(float), index=trans_probas.index
             )
-        simulate_hypnogram_kwargs.update(kwargs)
         return simulate_hypnogram(**simulate_hypnogram_kwargs)
 
     #######################################################################
