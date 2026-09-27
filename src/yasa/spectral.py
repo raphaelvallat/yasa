@@ -512,7 +512,9 @@ def irasa(
     h_max = np.max(hset)
     # The downsampled signal must be at least as long as the Welch window. Otherwise, Welch
     # silently shortens the window and the PSDs of the resampled signals have different shapes.
-    if npts / h_max < win:
+    # resample_poly(data, down, up) returns ceil(npts * down / up) samples.
+    rat_max = fractions.Fraction(str(h_max))
+    if -(-npts * rat_max.denominator // rat_max.numerator) < win:
         raise ValueError(
             f"Data is too short for IRASA: at least win_sec * max(hset) = {win_sec * h_max:.2f} "
             f"seconds are required. Use a shorter win_sec or a lower max(hset)."

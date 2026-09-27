@@ -3090,7 +3090,7 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
      'fn': array([18, 26, 55, 68]),
      'precision': 0.7142857142857143,
      'recall': 0.5555555555555556,
-     'f1': 0.625}
+     'f1': 0.6250000000000001}
 
     There are 4 true positives, 2 false positives and 4 false negatives. This gives a precision
     score of 0.71 (= 5 / (5 + 2)), a recall score of 0.55 (= 5 / (5 + 4)) and a F1-score of 0.625.
@@ -3108,7 +3108,7 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
      'fn': array([20, 57]),
      'precision': 0.5555555555555556,
      'recall': 0.7142857142857143,
-     'f1': 0.625}
+     'f1': 0.6250000000000001}
 
     There might be some events that are very close to each other, and we would like to count them
     as true positive even though they do not occur exactly at the same index. This is possible
@@ -3121,7 +3121,7 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
      'fn': array([26, 68]),
      'precision': 1.0,
      'recall': 0.7777777777777778,
-     'f1': 0.875}
+     'f1': 0.8750000000000001}
 
     Finally, if detected is empty, all performance metrics will be set to zero, and a copy of
     the groundtruth array will be returned as false negatives.
