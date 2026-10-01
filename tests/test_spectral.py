@@ -25,14 +25,15 @@ data_fp = fetch_sample("N2_spindles_15sec_200Hz.txt")
 data = np.loadtxt(data_fp)
 sf = 200
 
-# Load a full recording and its hypnogram
+# Load one hour of a full recording and its hypnogram. The third hour of the recording
+# includes all the sleep stages (W, N1, N2, N3 and REM).
 file_full_fp = fetch_sample("full_6hrs_100Hz_Cz+Fz+Pz.npz")
 file_full = np.load(file_full_fp)
-data_full = file_full.get("data")
+data_full = file_full.get("data")[:, 720_000:1_080_000]
 chan_full = file_full.get("chan")
 sf_full = 100
 hypno_full_fp = fetch_sample("full_6hrs_100Hz_hypno.npz")
-hypno_full = np.load(hypno_full_fp).get("hypno")
+hypno_full = np.load(hypno_full_fp).get("hypno")[720_000:1_080_000]
 
 # Using MNE
 data_mne_fp = fetch_sample("sub-02_mne_raw.fif")
@@ -52,43 +53,52 @@ data_eo = raw_eo.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
 sf_eo = raw_eo.info["sfreq"]
 chan_eo = raw_eo.ch_names
 
+bands = ["Delta", "Theta", "Alpha", "Sigma", "Beta", "Gamma"]
+
 
 class TestSpectral(unittest.TestCase):
     def test_bandpower(self):
         """Test function bandpower"""
         # BANDPOWER
-        bandpower(data_mne)  # Raw MNE multi-channel
-        bandpower(data, sf=sf, bandpass=True)  # Single channel Numpy
-        bandpower(data, sf=sf, ch_names="F4")  # Single channel Numpy labelled
-        bandpower(
-            data_full, sf=sf_full, ch_names=chan_full, hypno=hypno_full, include=(2, 3)
-        )  # Multi channel numpy
-        bandpower(
+        bp = bandpower(data_mne)  # Raw MNE multi-channel
+        assert bp.index.tolist() == data_mne.ch_names
+        np.testing.assert_allclose(bp[bands].sum(axis=1), 1, atol=1e-2)
+        bp = bandpower(data, sf=sf, bandpass=True)  # Single channel Numpy
+        assert bp.index.tolist() == ["CHAN000"]
+        bp = bandpower(data, sf=sf, ch_names="F4")  # Single channel Numpy labelled
+        assert bp.index.tolist() == ["F4"]
+        bp = bandpower(
             data_full, sf=sf_full, hypno=hypno_full, include=(3, 4, 5), bandpass=True
-        )  # Multi channel numpy
-        bandpower(data_mne, hypno=hypno_mne, include=2)  # Raw MNE with hypno
+        )  # Multi channel numpy. There is no stage 5 in the hypnogram.
+        assert bp.index.get_level_values("Stage").unique().tolist() == [3, 4]
+        bp = bandpower(data_mne, hypno=hypno_mne, include=2)  # Raw MNE with hypno
+        assert bp.shape[0] == len(data_mne.ch_names)
+        bp_int = bandpower(data_full, sf=sf_full, hypno=hypno_full, include=2)
+        # Stages shorter than the Welch window are skipped with a warning
+        hypno_short = np.full(data_full.shape[1], 2)
+        hypno_short[:200] = 1  # 2 seconds of N1, shorter than the 4-seconds window
+        with self.assertLogs("yasa", level="WARNING"):
+            bp = bandpower(data_full, sf=sf_full, hypno=hypno_short, include=(1, 2))
+        assert bp.index.get_level_values("Stage").unique().tolist() == [2]
+        with pytest.raises(ValueError, match="shorter than the Welch window"):
+            bandpower(data_full, sf=sf_full, hypno=hypno_short, include=1)
+        # String hypnogram arrays (with string include) are labelled with the string stages
+        hypno_str = np.where(hypno_full == 2, "N2", "Other")
+        bp_str = bandpower(data_full, sf=sf_full, hypno=hypno_str, include="N2")
+        assert bp_str.index.get_level_values("Stage").unique().tolist() == ["N2"]
+        np.testing.assert_allclose(bp_str.to_numpy(float), bp_int.to_numpy(float))
 
-        # Test with Hypnogram instance + integer include
+        # Hypnogram instance: the output is labelled with the stages as given in include
         bp_hyp_int = bandpower(
             data_full, sf=sf_full, ch_names=chan_full, hypno=hyp_full, include=(2, 3)
         )
-        # Test with Hypnogram instance + string include
         bp_hyp_str = bandpower(
             data_full, sf=sf_full, ch_names=chan_full, hypno=hyp_full, include=["N2", "N3"]
         )
-        # Both should give the same numerical result
-        np.testing.assert_array_almost_equal(bp_hyp_int.values, bp_hyp_str.values)
-        # Integer include should produce integer stage labels
-        assert bp_hyp_int.index.get_level_values("Stage").dtype.kind == "i"
-        # String include should produce string stage labels
-        stages_str = bp_hyp_str.index.get_level_values("Stage").unique()
-        assert stages_str.dtype.kind in ("U", "S", "O"), (
-            f"Expected string stage labels, got {stages_str.dtype}"
-        )
-        assert set(stages_str) == {"N2", "N3"}
-        # An invalid string label must raise an informative error listing the valid labels
-        with pytest.raises(AssertionError, match="not valid labels of the hypnogram"):
-            bandpower(data_full, sf=sf_full, hypno=hyp_full, include=["N2", "NREM3"])
+        assert bp_hyp_int.index.names == ["Stage", "Chan"]
+        assert bp_hyp_int.index.get_level_values("Stage").unique().tolist() == [2, 3]
+        assert bp_hyp_str.index.get_level_values("Stage").unique().tolist() == ["N2", "N3"]
+        np.testing.assert_array_equal(bp_hyp_int.to_numpy(), bp_hyp_str.to_numpy())
 
         # BANDPOWER_FROM_PSD
         # 1-D EEG data
@@ -96,8 +106,8 @@ class TestSpectral(unittest.TestCase):
         freqs, psd = welch(data, sf, nperseg=win)
         bp_abs_true = bandpower_from_psd(psd, freqs, relative=False)
         bp = bandpower_from_psd(psd, freqs, ch_names=["F4"])
-        bands = ["Delta", "Theta", "Alpha", "Sigma", "Beta", "Gamma"]
         assert bp.shape[0] == 1
+        assert bp.columns.tolist() == ["Chan", *bands, "TotalAbsPow", "FreqRes", "Relative"]
         assert bp.at[0, "Chan"] == "F4"
         assert bp.at[0, "FreqRes"] == 1 / (win / sf)
         assert np.isclose(bp.loc[0, bands].sum(), 1, atol=1e-2)
@@ -108,7 +118,6 @@ class TestSpectral(unittest.TestCase):
         )
 
         # Check that we can recover the physical power using TotalAbsPow
-        bands = ["Delta", "Theta", "Alpha", "Sigma", "Beta", "Gamma"]
         bp_abs = bp[bands] * bp["TotalAbsPow"].values[..., None]
         np.testing.assert_array_almost_equal(bp_abs[bands].values, bp_abs_true[bands].values)
 
@@ -122,6 +131,25 @@ class TestSpectral(unittest.TestCase):
         # Unlabelled
         bp = bandpower_from_psd(psd, freqs, ch_names=None, relative=False)
         assert np.array_equal(bp.loc[:, "Chan"], ["CHAN000", "CHAN001", "CHAN002"])
+        # The DataFrame and NumPy implementations give the same output
+        np.testing.assert_allclose(
+            bp[bands].to_numpy().T, bandpower_from_psd_ndarray(psd, freqs, relative=False)
+        )
+
+        # More channels than frequency bins (e.g. high-density EEG)
+        freqs, psd = welch(np.random.rand(128, 2000), sf_full, nperseg=2 * sf_full)
+        assert psd.shape[1] < 128
+        assert bandpower_from_psd(psd, freqs).shape[0] == 128
+        # ... but the PSD must be (n_channels, n_freqs)
+        with pytest.raises(AssertionError):
+            bandpower_from_psd(psd.T, freqs)
+
+        # Bands with fewer than 2 frequency bins raise an informative error
+        freqs, psd = welch(data, sf, nperseg=int(4 * sf))  # 0.25 Hz resolution
+        with pytest.raises(ValueError, match="fewer than 2 frequency bins"):
+            bandpower_from_psd(psd, freqs, bands=[(1, 4, "Delta"), (10.1, 10.2, "Narrow")])
+        with pytest.raises(ValueError, match="At least 2 frequency bins"):
+            bandpower_from_psd_ndarray(psd, freqs, bands=[(10, 10, "A")])
 
         # Bandpower from PSD with NDarray
         n_chan = 4
@@ -133,8 +161,10 @@ class TestSpectral(unittest.TestCase):
         freqs, psd_1d = welch(data_1d, sf, nperseg=int(4 * sf), axis=-1)
         freqs, psd_2d = welch(data_2d, sf, nperseg=int(4 * sf), axis=-1)
         freqs, psd_3d = welch(data_3d, sf, nperseg=int(4 * sf), axis=-1)
-        bandpower_from_psd_ndarray(psd_1d, freqs, relative=True)
-        bandpower_from_psd_ndarray(psd_2d, freqs, relative=False)
+        bp_1d = bandpower_from_psd_ndarray(psd_1d, freqs, relative=True)
+        assert bp_1d.shape == (len(bands),)
+        assert np.isclose(bp_1d.sum(), 1, atol=1e-2)
+        assert bandpower_from_psd_ndarray(psd_2d, freqs, relative=False).shape == (6, n_chan)
         assert (
             bandpower_from_psd_ndarray(psd_3d, freqs, bands=[(0.5, 4, "Delta")], relative=True) == 1
         ).all()
@@ -153,14 +183,42 @@ class TestSpectral(unittest.TestCase):
         freqs, psd_aperiodic, psd_osc, fit_params = irasa(data=data, sf=sf)
         assert np.isin(freqs, np.arange(1, 30.25, 0.25), True).all()
         assert np.median(psd_aperiodic) > np.median(psd_osc)
+        assert fit_params.shape[0] == 1
+        assert fit_params.at[0, "Slope"] < 0
+        assert 0 < fit_params.at[0, "R^2"] <= 1
 
         # 2D Numpy
-        irasa(data=data_eo, sf=sf_eo, ch_names=chan_eo)
-        irasa(data=data_eo, sf=sf_eo, ch_names=None)
+        _, psd_aperiodic, _, fit_params = irasa(data=data_eo, sf=sf_eo, ch_names=chan_eo)
+        assert psd_aperiodic.shape[0] == len(chan_eo)
+        assert fit_params["Chan"].tolist() == chan_eo
+        _, _, _, fit_params = irasa(data=data_eo, sf=sf_eo, ch_names=None)
+        assert fit_params["Chan"].tolist() == ["CHAN000", "CHAN001"]
 
-        # 2D MNE
-        assert len(irasa(data_mne, return_fit=False)) == 3
-        assert len(irasa(data_mne, band=(2, 24), win_sec=2)) == 4
+        # 2D MNE (5 minutes of data)
+        raw = data_mne.copy().crop(0, 300)
+        assert len(irasa(raw, return_fit=False)) == 3
+        freqs, psd_aperiodic, psd_osc, fit_params = irasa(raw, band=(2, 24), win_sec=2)
+        assert freqs.min() == 2 and freqs.max() == 24
+        assert psd_aperiodic.shape == psd_osc.shape == (len(raw.ch_names), freqs.size)
+        assert fit_params["Chan"].tolist() == raw.ch_names
+
+        # Messages are sent to the yasa logger
+        with self.assertLogs("yasa", level="INFO") as logs:
+            irasa(data=data, sf=sf, verbose=True)
+        assert any("Fitting range" in msg for msg in logs.output)
+        with self.assertLogs("yasa", level="WARNING"):
+            irasa(data=data, sf=sf, band=(1, 80))  # Beyond the resampled Nyquist frequency
+
+        # Warnings when the evaluated frequency range exceeds the filters of the MNE Raw
+        raw_filt = raw.copy().filter(1, 20, verbose=0)
+        with self.assertLogs("yasa", level="WARNING") as logs:
+            irasa(raw_filt, band=(1, 30))
+        assert any("highpass" in msg for msg in logs.output)
+        assert any("lowpass" in msg for msg in logs.output)
+
+        # Data is too short for the resampling factors
+        with pytest.raises(ValueError, match="too short for IRASA"):
+            irasa(data=data[: int(5 * sf)], sf=sf, win_sec=4)
 
     def test_stft_power(self):
         """Test function stft_power"""
@@ -170,10 +228,13 @@ class TestSpectral(unittest.TestCase):
         norm = [True, False]
         interp = [True, False]
 
-        prod_args = product(window, step, band, interp, norm)
-
-        for i, (w, s, b, i, n) in enumerate(prod_args):
-            stft_power(data, sf, window=w, step=s, band=b, interp=i, norm=n)
+        for w, s, b, it, n in product(window, step, band, interp, norm):
+            f, t, Sxx = stft_power(data, sf, window=w, step=s, band=b, interp=it, norm=n)
+            assert Sxx.shape == (f.size, t.size)
+            if it:
+                assert t.size == data.size
+            if n:
+                np.testing.assert_allclose(Sxx.sum(0), 1)
 
         f, t, _ = stft_power(data, sf, window=4, step=0.1, band=(11, 16), interp=True, norm=False)
 
@@ -182,10 +243,15 @@ class TestSpectral(unittest.TestCase):
         assert max(f) == 16
         assert min(f) == 11
 
+        # Interpolation with fewer than 4 frequency bins
+        f, t, Sxx = stft_power(data, sf, window=2, step=0.2, band=(12, 13), interp=True)
+        assert f.size == 3
+        assert Sxx.shape == (3, data.size)
+
     def test_plot_spectrogram(self):
         """Test function plot_spectrogram"""
-        # Use 2 hours of data to keep the test fast (spectrogram is O(n))
-        n = int(2 * 3600 * sf_full)
+        # Use 30 minutes of data to keep the test fast (spectrogram is O(n))
+        n = int(0.5 * 3600 * sf_full)
         data_s = data_full[0, :n]
         hypno_s = hypno_full[:n]
         hypno_s_art = np.copy(hypno_s)
@@ -193,7 +259,8 @@ class TestSpectral(unittest.TestCase):
         hypno_s_art[hypno_s_art == 4.0] = -2  # Replace REM by Unscored
         hyp_s = Hypnogram.from_integers(hypno_s[:: int(sf_full * 30)], freq="30s")
         # No hypnogram, with fmin/fmax and vmin/vmax
-        plot_spectrogram(data_s, sf_full, fmin=0.5, fmax=30, vmin=-50, vmax=100)
+        fig = plot_spectrogram(data_s, sf_full, fmin=0.5, fmax=30, vmin=-50, vmax=100)
+        assert isinstance(fig, plt.Figure)
         # Integer hypnogram array with trimperc
         plot_spectrogram(data_s, sf_full, hypno_s, trimperc=5)
         # With artefact (-1) and unscored (-2) stages
