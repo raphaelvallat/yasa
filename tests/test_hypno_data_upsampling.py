@@ -294,3 +294,14 @@ def test_non_whole_epoch_offset_warns(caplog):
     with caplog.at_level(logging.WARNING, logger="yasa"):
         hyp.upsample_to_data(raw)
     assert "not a whole number" in caplog.text
+
+
+def test_ts_cropped_raw():
+    # raw.crop() does not update meas_date, so the offset of the first sample (raw.first_time)
+    # must be taken into account. Cropping 4 epochs → the data starts at epoch 4: N2
+    hyp = Hypnogram(STAGES, start=HYP_START)
+    raw = make_raw(N, meas_date=utc(23, 0)).crop(tmin=4 * 30)
+    assert raw.info["meas_date"] == utc(23, 0)
+    result = hyp.upsample_to_data(raw)
+    assert result.size == 6 * SPE
+    assert np.array_equal(result[::SPE], [2, 3, 3, 4, 4, 0])

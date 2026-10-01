@@ -520,10 +520,16 @@ def test_crop_by_index():
 
 def test_crop_by_timestamp():
     # Epochs: 23:00:00 23:00:30 23:01:00 23:01:30 23:02:00 23:02:30 23:03:00
-    hyp = Hypnogram(_STAGES, start="2024-01-01 23:00:00")
+    proba = pd.get_dummies(Hypnogram(_STAGES).hypno).astype(float).reset_index(drop=True)
+    hyp = Hypnogram(_STAGES, start="2024-01-01 23:00:00", proba=proba)
     cropped = hyp.crop(start="2024-01-01 23:01:00", end="2024-01-01 23:02:00")
     assert cropped.start == pd.Timestamp("2024-01-01 23:01:00")
-    assert cropped.n_epochs == 3  # loc is inclusive on both ends
+    assert cropped.n_epochs == 3  # inclusive on both ends
+    # proba is cropped to the same epochs
+    np.testing.assert_array_equal(cropped.proba.to_numpy(), hyp.proba.iloc[2:5].to_numpy())
+    # Only one bound
+    assert hyp.crop(start="2024-01-01 23:02:30").n_epochs == 2
+    assert hyp.crop(end="2024-01-01 23:00:30").n_epochs == 2
 
 
 def test_crop_timestamp_requires_start():
@@ -858,3 +864,176 @@ def test_plot_hypnodensity_ylim_and_legend():
     legend_labels = [t.get_text() for t in ax.get_legend().get_texts()]
     assert set(legend_labels) == {"WAKE", "N1", "N2", "N3", "REM"}
     plt.close("all")
+
+
+def test_plot_hypnodensity_restores_font_size():
+    font_size = plt.rcParams["font.size"]
+    hyp = Hypnogram(["WAKE"] * 50 + ["N2"] * 50, proba=_make_proba(["WAKE", "N2"]))
+    hyp.plot_hypnodensity()
+    assert plt.rcParams["font.size"] == font_size
+    plt.close("all")
+
+
+###############################################################################
+# Regression tests
+###############################################################################
+
+
+def test_input_types_equivalent():
+    """list, ndarray, Series (with custom index), Categorical and string arrays are equivalent."""
+    values = ["W", "N1", "n2", "Rem", "art"]
+    ref = Hypnogram(values).hypno
+    assert ref.tolist() == ["WAKE", "N1", "N2", "REM", "ART"]
+    for v in [
+        np.array(values),
+        pd.Series(values, index=[10, 11, 12, 13, 14]),
+        pd.Categorical(values),
+        pd.array(values, dtype="string"),
+    ]:
+        pd.testing.assert_series_equal(Hypnogram(v).hypno, ref)
+
+
+def test_proba_aliases_and_index():
+    """proba columns accept the same aliases as values, and get a positional index."""
+    proba = pd.DataFrame(
+        {"W": [0.9, 0.1, 0.0], "N2": [0.1, 0.8, 0.5], "R": [0.0, 0.1, 0.5]}, index=[10, 11, 12]
+    )
+    hyp = Hypnogram(["W", "N2", "R"], proba=proba)
+    assert hyp.proba.columns.tolist() == ["WAKE", "N2", "REM"]
+    assert hyp.proba.index.tolist() == [0, 1, 2]
+    # The user's dataframe is not modified
+    assert proba.columns.tolist() == ["W", "N2", "R"]
+    assert proba.index.tolist() == [10, 11, 12]
+
+
+def test_getitem_out_of_range_raises():
+    """Out-of-range integers raise IndexError instead of wrapping around."""
+    hyp = Hypnogram(["W", "W", "N1", "N2", "N3", "REM"])
+    assert hyp[-6].hypno.iloc[0] == "WAKE"
+    for key in [6, 10, -7]:
+        with pytest.raises(IndexError):
+            hyp[key]
+
+
+def test_crop_negative_indices():
+    """Negative integers in crop count from the end, and update the start accordingly."""
+    hyp = Hypnogram(["W", "W", "N1", "N2", "N3", "REM"], start="2022-01-01 23:00:00")
+    cropped = hyp.crop(start=-2)
+    assert cropped.hypno.tolist() == ["N3", "REM"]
+    assert cropped.start == pd.Timestamp("2022-01-01 23:02:00")
+    assert hyp.crop(end=-1).n_epochs == 6
+    assert hyp.crop(end=-2).hypno.tolist() == ["WAKE", "WAKE", "N1", "N2", "N3"]
+    assert hyp.crop(start=-3, end=-2).hypno.tolist() == ["N2", "N3"]
+
+
+def test_upsample():
+    """Each epoch is repeated, and new_freq must evenly divide the current epoch duration."""
+    hyp = Hypnogram(["W", "N1", "N2"], start="2022-01-01 23:00")
+    up = hyp.upsample("10s")
+    assert up.hypno.tolist() == 3 * ["WAKE"] + 3 * ["N1"] + 3 * ["N2"]
+    assert up.end == hyp.end
+    with pytest.raises(AssertionError):
+        hyp.upsample("20s")
+
+
+def test_sol_5min_any_epoch_length():
+    """SOL_5min is defined for epoch lengths that do not evenly divide 5 minutes."""
+    # 2-min epochs: 5 minutes of persistent sleep = 3 epochs
+    hyp = Hypnogram(["W", "N2", "N2", "W", "N2", "N2", "N2", "W"], freq="2min")
+    stats = hyp.sleep_statistics()
+    assert stats["SOL"] == 2
+    assert stats["SOL_5min"] == 8
+
+
+def test_sleep_statistics_sfi():
+    """SFI counts transitions from any sleep stage into WAKE."""
+    hyp = Hypnogram(["W", "N2", "N2", "W", "REM", "W", "N1", "N1"], freq="1min")
+    # 2 sleep -> wake transitions, TST = 5 minutes
+    assert hyp.sleep_statistics()["SFI"] == np.round(2 / (5 / 60), 4)
+
+
+def test_mapping_custom_partial_and_many_to_one():
+    """Custom mappings can be partial or many-to-one, and do not modify the input dict."""
+    hyp = Hypnogram(["W", "N1", "N2", "N3", "ART"])
+    mapping = {"WAKE": 0, "N1": 1, "N2": 1, "N3": 1}
+    hyp.mapping = mapping
+    assert mapping == {"WAKE": 0, "N1": 1, "N2": 1, "N3": 1}
+    assert hyp.mapping == {"ART": -1, "UNS": -2, **mapping}
+    assert hyp.as_int().tolist() == [0, 1, 1, 1, -1]
+    assert hyp.as_int().dtype == np.int16
+    # The mapping is kept when slicing / copying
+    assert hyp.copy().mapping == hyp.mapping
+    assert hyp[1:3].as_int().tolist() == [1, 1]
+    # Missing stages still raise, including stages added by pad
+    with pytest.raises(AssertionError):
+        hyp.mapping = {"WAKE": 0, "N1": 1}
+    with pytest.raises(AssertionError):
+        hyp.pad(after=1, fill_value="REM")
+    assert hyp.pad(after=1, fill_value="N2").as_int().tolist() == [0, 1, 1, 1, -1, 1]
+
+
+def test_as_int_nan_raises():
+    hyp = Hypnogram(["W", "N1", "N2"])
+    hyp.hypno.iloc[0] = np.nan
+    with pytest.raises(ValueError, match="missing"):
+        hyp.as_int()
+    with pytest.raises(ValueError, match="missing"):
+        hyp.transition_matrix()
+
+
+def test_dict_roundtrip_named_timezone():
+    """The named timezone of start survives a to_dict / from_dict roundtrip."""
+    hyp = Hypnogram(["W", "N1", "N2"], start="2022-03-26 23:00:00", tz="Europe/Paris")
+    d = hyp.to_dict()
+    assert d["tz"] == "Europe/Paris"
+    hyp2 = Hypnogram.from_dict(json.loads(json.dumps(d)))
+    assert str(hyp2.start.tz) == "Europe/Paris"
+    assert hyp2.start == hyp.start
+    # No tz key when start is naive or None
+    assert "tz" not in Hypnogram(["W"], start="2022-01-01").to_dict()
+    assert "tz" not in Hypnogram(["W"]).to_dict()
+
+
+def test_simulate_similar_edge_cases():
+    """simulate_similar works without WAKE, or with a stage only present at the last epoch."""
+    hyp = Hypnogram(["W", "N1", "N2", "N2", "N3", "REM"])
+    assert hyp.simulate_similar(seed=0).n_epochs == hyp.n_epochs
+    hyp = Hypnogram(["N2", "N2", "N3", "N2", "REM", "REM"])
+    sim = hyp.simulate_similar(seed=0)
+    assert sim.hypno.iloc[0] == "N2"
+    assert "WAKE" not in sim.hypno.tolist()
+    # A user-defined trans_probas (with WAKE) overrides the default one without error
+    default = simulate_hypnogram(tib=480, seed=42).transition_matrix()[1]
+    sim = hyp.simulate_similar(trans_probas=default, seed=0)
+    assert sim.n_epochs == hyp.n_epochs
+
+
+def test_transition_matrix_many_to_one_mapping():
+    """Stages that share the same integer in a custom mapping keep their own label."""
+    hyp = Hypnogram(["W", "N1", "N2", "N2", "N1"])
+    hyp.mapping = {"WAKE": 0, "N1": 1, "N2": 1, "N3": 1, "REM": 1}
+    counts, probs = hyp.transition_matrix()
+    assert counts.index.tolist() == ["WAKE", "N1", "N2"]
+    assert counts.columns.tolist() == ["WAKE", "N1", "N2"]
+    assert counts.loc["N2", "N1"] == 1
+    assert counts.loc["N2", "N2"] == 1
+    assert np.allclose(probs.sum(axis=1), 1)
+
+
+def test_subclass_preserved():
+    """Methods that return a new hypnogram preserve the subclass."""
+
+    class MyHypnogram(Hypnogram):
+        pass
+
+    hyp = MyHypnogram(["W", "N1", "N2", "N2", "N3", "REM"], start="2022-01-01 23:00:00")
+    for new in [
+        hyp.copy(),
+        hyp.crop(start=1),
+        hyp[1:3],
+        hyp.pad(before=1),
+        hyp.upsample("10s"),
+        hyp.consolidate_stages(2),
+        hyp.simulate_similar(seed=0),
+    ]:
+        assert type(new) is MyHypnogram

@@ -82,6 +82,8 @@ def _init_repository(name, version):
         base_url=REGISTRY[name][version]["base_url"],
         registry=REGISTRY[name][version]["registry"],
         env=cache_dir_env_var,
+        # Zenodo sometimes times out, so retry failed downloads (with a 1, 2, 3 sec wait)
+        retry_if_failed=3,
     )
     return repo
 

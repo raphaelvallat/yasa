@@ -6,7 +6,8 @@ a one-dimensional sleep staging vector (hypnogram).
 import warnings
 
 import numpy as np
-import pandas as pd
+
+from .hypno import Hypnogram, _transition_matrix
 
 __all__ = ["transition_matrix", "sleep_statistics"]
 
@@ -146,33 +147,9 @@ def transition_matrix(hypno):
         FutureWarning,
         stacklevel=2,
     )
-    # Local import avoids a circular dependency: hypno.py imports _transition_matrix from
-    # this module at the top level, so we cannot import Hypnogram at module level here.
-    from .hypno import Hypnogram
-
     if isinstance(hypno, Hypnogram):
         return hypno.transition_matrix()
     return _transition_matrix(hypno)
-
-
-def _transition_matrix(hypno):
-    """Create a state-transition matrix from an integer array. See :py:func:`transition_matrix`."""
-    x = np.asarray(hypno, dtype=int)
-    unique, inverse = np.unique(x, return_inverse=True)  # unique is sorted
-    n = unique.size
-    # Integer transition counts
-    counts = np.zeros((n, n), dtype=int)
-    np.add.at(counts, (inverse[:-1], inverse[1:]), 1)
-    # Conditional probabilities
-    probs = counts / counts.sum(axis=-1, keepdims=True)
-    # Convert to a Pandas DataFrame
-    counts = pd.DataFrame(counts, index=unique, columns=unique)
-    probs = pd.DataFrame(probs, index=unique, columns=unique)
-    counts.index.name = "From Stage"
-    probs.index.name = "From Stage"
-    counts.columns.name = "To Stage"
-    probs.columns.name = "To Stage"
-    return counts, probs
 
 
 #############################################################################
@@ -295,44 +272,39 @@ def sleep_statistics(hypno, sf_hyp):
     hypno = np.asarray(hypno)
     assert hypno.ndim == 1, "hypno must have only one dimension."
     assert hypno.size > 1, "hypno must have at least two elements."
+    stages = {"N1": 1, "N2": 2, "N3": 3, "REM": 4}
 
     # TIB, first and last sleep
     stats["TIB"] = len(hypno)
-    first_sleep = np.where(hypno > 0)[0][0]
-    last_sleep = np.where(hypno > 0)[0][-1]
+    idx_sleep = np.flatnonzero(hypno > 0)
+    has_sleep = idx_sleep.size > 0
 
-    # Crop to SPT
-    hypno_s = hypno[first_sleep : (last_sleep + 1)]
+    # Crop to SPT. Without any sleep, SPT and TST are 0 and WASO and SOL are undefined.
+    hypno_s = hypno[idx_sleep[0] : (idx_sleep[-1] + 1)] if has_sleep else hypno[:0]
     stats["SPT"] = hypno_s.size
-    stats["WASO"] = hypno_s[hypno_s == 0].size
+    stats["WASO"] = np.count_nonzero(hypno_s == 0) if has_sleep else np.nan
     # Before YASA v0.5.0, TST was calculated as SPT - WASO, meaning that Art
     # and Unscored epochs were included. TST is now restrained to sleep stages.
-    stats["TST"] = hypno_s[hypno_s > 0].size
+    stats["TST"] = np.count_nonzero(hypno_s > 0)
 
     # Duration of each sleep stages
-    stats["N1"] = hypno[hypno == 1].size
-    stats["N2"] = hypno[hypno == 2].size
-    stats["N3"] = hypno[hypno == 3].size
-    stats["REM"] = hypno[hypno == 4].size
+    for st, val in stages.items():
+        stats[st] = np.count_nonzero(hypno == val)
     stats["NREM"] = stats["N1"] + stats["N2"] + stats["N3"]
 
     # Sleep stage latencies -- only relevant if hypno is cropped to TIB
-    stats["SOL"] = first_sleep
-    stats["Lat_N1"] = np.where(hypno == 1)[0].min() if 1 in hypno else np.nan
-    stats["Lat_N2"] = np.where(hypno == 2)[0].min() if 2 in hypno else np.nan
-    stats["Lat_N3"] = np.where(hypno == 3)[0].min() if 3 in hypno else np.nan
-    stats["Lat_REM"] = np.where(hypno == 4)[0].min() if 4 in hypno else np.nan
+    stats["SOL"] = idx_sleep[0] if has_sleep else np.nan
+    for st, val in stages.items():
+        idx_st = np.flatnonzero(hypno == val)
+        stats[f"Lat_{st}"] = idx_st[0] if idx_st.size else np.nan
 
     # Convert to minutes
     for key, value in stats.items():
         stats[key] = value / (60 * sf_hyp)
 
     # Percentage
-    stats["%N1"] = 100 * stats["N1"] / stats["TST"]
-    stats["%N2"] = 100 * stats["N2"] / stats["TST"]
-    stats["%N3"] = 100 * stats["N3"] / stats["TST"]
-    stats["%REM"] = 100 * stats["REM"] / stats["TST"]
-    stats["%NREM"] = 100 * stats["NREM"] / stats["TST"]
+    for st in [*stages, "NREM"]:
+        stats[f"%{st}"] = 100 * stats[st] / stats["TST"] if has_sleep else np.nan
     stats["SE"] = 100 * stats["TST"] / stats["TIB"]
-    stats["SME"] = 100 * stats["TST"] / stats["SPT"]
+    stats["SME"] = 100 * stats["TST"] / stats["SPT"] if has_sleep else np.nan
     return stats
