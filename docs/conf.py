@@ -645,7 +645,7 @@ plot_pre_code = None
 # [(suffix, dpi), suffix, ...]
 # For entries whose DPI was omitted, sensible defaults are chosen.
 # Defaults to ['png', 'hires.png', 'pdf']
-plot_formats = [("png", 90)]
+plot_formats = [("png", 150)]
 
 # Whether to show links to the files in HTML.
 # Options: True (default) | False

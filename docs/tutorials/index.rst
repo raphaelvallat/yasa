@@ -10,6 +10,7 @@ Step-by-step guides for common YASA workflows.
 
     quickstart
     hypnogram
+    evaluation
     migrate
 
 .. grid:: 1 2 2 2
@@ -28,6 +29,14 @@ Step-by-step guides for common YASA workflows.
 
         Learn how to create, manipulate, analyze, and visualize sleep hypnograms
         using the :py:class:`~yasa.Hypnogram` class introduced in YASA 0.7.
+
+    .. grid-item-card:: Evaluating a wearable or staging algorithm against a reference
+        :link: evaluation
+        :link-type: doc
+
+        Benchmark a wearable or a staging algorithm against PSG, following the
+        Menghini et al. (2021) framework: epoch-by-epoch agreement, error matrices,
+        and Bland-Altman analysis of sleep statistics.
 
     .. grid-item-card:: Migrating to the Hypnogram class
         :link: migrate

@@ -48,6 +48,12 @@ class TestEpochByEpochAgreementInit(unittest.TestCase):
         ref_dict = {f"night{i}": h for i, h in enumerate(ref_hyps)}
         obs_dict = {f"night{i}": h for i, h in enumerate(obs_hyps)}
         assert EpochByEpochAgreement(ref_dict, obs_dict).n_sessions == N_SESSIONS
+        # Hypnograms are paired by key, regardless of the order of the dictionaries
+        obs_reversed = dict(reversed(obs_dict.items()))
+        pd.testing.assert_frame_equal(
+            EpochByEpochAgreement(ref_dict, obs_reversed).data,
+            EpochByEpochAgreement(ref_dict, obs_dict).data,
+        )
 
     def test_single_night_via_evaluate(self):
         assert ebe_single.n_sessions == 1
@@ -73,6 +79,12 @@ class TestGetAgreement(unittest.TestCase):
 
     def test_single_night_returns_series(self):
         assert isinstance(ebe_single.get_agreement(), pd.Series)
+
+    def test_pooled_does_not_affect_summary(self):
+        ebe_pooled = EpochByEpochAgreement(ref_hyps, obs_hyps)
+        ebe_pooled.get_agreement(pooled=True)
+        expected = EpochByEpochAgreement(ref_hyps, obs_hyps).summary()
+        pd.testing.assert_frame_equal(ebe_pooled.summary(), expected)
 
     def test_scorers_list_and_sample_weight(self):
         default = ebe.get_agreement()

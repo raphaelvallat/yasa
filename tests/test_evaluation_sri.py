@@ -1,4 +1,5 @@
-"""Regression tests for EpochByEpochAgreement against the SRI Analytical Pipeline.
+"""Regression tests for EpochByEpochAgreement and SleepStatsAgreement against the SRI Analytical
+Pipeline.
 
 Reference values are taken from AnalyticalPipeline_v1.0.0.html (v1.0.0) published at:
   https://github.com/SRI-human-sleep/sleep-trackers-performance
@@ -8,7 +9,7 @@ Ground-truth values live in evaluation_sri_full.json.
 
 Dataset notes
 -------------
-- sample_data_sri.csv contains all 14 subjects (sbj01-sbj14) with complete epoch data.
+- sample_data_sri.csv.xz contains all 14 subjects (sbj01-sbj14) with complete epoch data.
 - Integer stage encoding:  0 = Wake,  1 = Light (N1+N2),  2 = Deep (N3),  3 = REM
 - For binary SLEEP/WAKE analyses 1/2/3 are collapsed to "S" (Sleep).
 
@@ -37,6 +38,9 @@ What is tested
   (``group_ebe_staging["basic_sum"]``).
 - Confusion matrix absolute epoch counts pooled across all 14 subjects
   (``error_matrices["_condition_staging"]["absolute_sum"]``).
+- Proportional error matrix (Section 3.1, ``error_matrices["_condition_staging"]["proportional_avg"]``):
+  mean and SD across subjects of each row-normalized cell, and the 95% CIs from R's "basic"
+  bootstrap, compared against YASA's ``method="basic"`` with a looser tolerance.
 
 What is NOT tested
 ------------------
@@ -51,7 +55,8 @@ What is NOT tested
   kappa.  The two definitions are not directly comparable.
 - Bland-Altman group bias, limits of agreement, and confidence intervals: the R pipeline
   applies conditional regression-modelling depending on assumption tests, making the
-  expected outputs data-dependent and complex to pin to fixed reference values.
+  expected outputs data-dependent and complex to pin to fixed reference values. These outputs
+  are unit-tested against direct ``scipy.stats`` computations in ``test_evaluation.py``.
 """
 
 import json

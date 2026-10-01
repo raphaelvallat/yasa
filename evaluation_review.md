@@ -3,7 +3,8 @@
 Reviewed against the paper (Menghini et al., 2021, *SLEEP* 44(2), zsaa170), its
 `AnalyticalPipeline_v1.0.0.Rmd` report and companion R functions (`ebe2sleep.R`, `errorMatrix.R`,
 `indEBE.R`, `groupEBE.R`, `indDiscr.R`, `groupDiscr.R`, `BAplot.R`).
-Original module: https://github.com/raphaelvallat/yasa/pull/228.
+Original module: https://github.com/raphaelvallat/yasa/pull/228. Tutorial: `docs/tutorials/evaluation.rst`
+(reproduced by `docs/tutorials/evaluation.py`).
 
 Legend: ✅ implemented · ❌ not implemented · 🐛 fixed bug
 
@@ -41,7 +42,8 @@ bootstrap distribution (only `comb(2n-1, n) = 126` distinct resample means), so 
 driven by individual sessions and keep drifting as `n_resamples` grows (accuracy upper bound
 39.1 → 41.1 → 41.3 for 1e3 → 1e4 → 1e5 resamples, versus a stable 38.5 for `"percentile"`). The
 three methods agree to ~0.2 units by n = 30. `summary()` warns below 20 sessions; the proportional
-error matrix does not, for backwards compatibility with the published CIs.
+error matrix does not, for backwards compatibility with the published CIs. The tutorial uses
+`{"method": "percentile", "rng": 42}` throughout (14 nights).
 
 ## SleepStatsAgreement
 
@@ -50,10 +52,11 @@ error matrix does not, for backwards compatibility with the published CIs.
 | 10 | Report table (`groupDiscr.R`) | ✅ | `report()`: `mean (SD)` per scorer, bias and LoA with CIs, assumption flags; `sleep_stats` subset; `ci_method=None` omits CIs and skips the bootstrap. |
 | 11 | Log transformation (Euser et al. 2008) | ✅ | `log_transform=True` gives `LoA = bias ± slope × ref`, `slope = 2(e^z − 1)/(e^z + 1)`, `z = 1.96 SD(log obs − log ref)`. `"log"` is a `loa_method`; the slope and its CI are `loa_log_slope` in `summary()`. Normality of the raw differences still selects the CI method. |
 | 12 | 🐛 Paper eq. 2 missing (proportional bias, homoscedastic differences) | ✅ | LoA were horizontal at `mean ± 1.96 SD(diff)`: mis-centred and too wide by `1/sqrt(1 − R²)`. Now `bias_i ± 1.96 SD(residuals)`, parallel to the bias line; half-width and CI (`SE(SD) ≈ SD/sqrt(2n)`) are `loa_halfwidth` in `summary()`. |
-| 13 | Assumption results beyond booleans | ✅ | `assumptions` table (`assumption` × `metric`): statistic, `pvalue`, effect size, `passed`, and the `method` used for `"auto"`. See below. |
+| 13 | Assumption results beyond booleans | ✅ | `assumptions` table (`assumption` × `metric`): statistic, `pvalue`, effect size, `passed`, and the `method` used for `"auto"`. `passed` combines the p-value with an effect-size gate. See below. |
 | 14 | 🐛 Missing values (e.g. `Lat_REM` without REM) gave NaN regressions | ✅ | Sessions with a missing value are dropped per statistic (warning); CIs use the per-statistic n. Inputs are not modified in place. |
 | 15 | 🐛 Zeros under `log_transform=True` | ✅ | The former 1e-4 offset dominated the Euser slope. Statistics with a zero are now excluded from the transform (warning) and keep regular LoA; `loa_method="log"` raises for them. Mixed cases need two objects. |
-| 16 | 🐛 Calibration direction and `bias_method="auto"` reordering or dropping columns | ✅ | `calibrate()` subtracts the mean bias or inverts the bias regression `(x − b0)/(1 + b1)`, preserving columns and NaNs. R has no calibration. |
+| 16 | 🐛 Calibration direction and `bias_method="auto"` reordering or dropping columns | ✅ | `calibrate()` subtracts the mean bias, preserving columns and NaNs. `bias_method="auto"` now selects the method per statistic (`DataFrame.where` did not align the condition, so the regression was always used). R has no calibration. |
+| 20 | Calibration of proportional biases | ❌ | Removed in #260: inverting the bias regression, `(x − b0)/(1 + b1)`, multiplies the device's random error by `1/(1 + b1)` and was worse than no calibration on the SRI data (leave-one-night-out), unusable for REM (`1 + b1 = −0.03`). `bias_method="regr"`, and `"auto"` with a proportional bias, raise `NotImplementedError`. Candidate methods are listed in a TODO in `calibrate()`. |
 | 17 | API | ✅ | Constructor takes the `get_sleep_stats()` output directly (scorers read from the index); the LoA multiplier is fixed at 1.96 as in R. |
 | 18 | Individual discrepancy heatmap (`indDiscr.R`) | ❌ | Data available via `get_sleep_stats()`. |
 
@@ -74,33 +77,38 @@ error matrix does not, for backwards compatibility with the published CIs.
 Four null-hypothesis tests run per statistic at `alpha` (default 0.05), as in R. Three of them
 select the method applied when `bias_method`, `loa_method` or `ci_method` is `"auto"`:
 
-| Flag | Test | Fail → | Effect size in `assumptions` |
+| Flag | Test | Violated → | Effect-size gate (`effect_size_gates`) |
 |---|---|---|---|
-| `unbiased` | t-test of differences vs 0 | Nothing: a finding, reported but not used | `cohen_d` |
-| `normal` | Shapiro-Wilk on differences | Bootstrap CIs instead of parametric | `skew`, `kurtosis` |
-| `constant_bias` | Slope of diff ~ ref | Regression bias `b0 + b1·ref`; constant LoA follow it (eq. 2) | `r2` |
-| `homoscedastic` | Slope of \|resid\| ~ ref | Regression LoA `bias ± 2.46 (c0 + c1·ref)`; overridden by `log_transform=True` | `r2` |
+| `unbiased` | t-test of differences vs 0 | Nothing: a finding, reported but not used | None (`cohen_d` reported) |
+| `normal` | Shapiro-Wilk on differences | Bootstrap CIs instead of parametric | \|`skew`\| > 1 or excess `kurtosis` > 2 |
+| `constant_bias` | Slope of diff ~ ref | Regression bias `b0 + b1·ref`; constant LoA follow it (eq. 2) | `r2` > 0.1 |
+| `homoscedastic` | Slope of \|resid\| ~ ref | Regression LoA `bias ± 2.46 (c0 + c1·ref)`; overridden by `log_transform=True` | `sd_ratio` > 1.5 (or < 1/1.5) |
 
 **Sample-size dependence.** A p-value mixes effect size and n. R was designed for n ≈ 10–40; with
 hundreds of nights, trivial deviations fail every test (a slope explaining 2% of the variance fails
 `constant_bias`; one heavy-tailed point fails `normal`), while in small samples real violations
-pass. Under a perfect null about 19% of statistics fail at least one of the four gates by chance.
+pass. Under a perfect null about 19% of statistics fail at least one of the four tests by chance.
 Regressing on the reference also biases `constant_bias` toward failure whenever the reference has
 its own error. A stricter alpha for Shapiro-Wilk was tried and reverted: it only shifts the
 dependence on n.
 
-**Toward more robust gates.** The paper asks for the tests to be "accompanied by visual
-inspection"; the effect sizes in `assumptions` are the numerical form of that inspection and could
-gate the `auto` methods together with the p-value (fail only if `p < alpha` **and** the effect is
-material):
+**Effect-size gates (#257, deviation from R).** The paper asks for the tests to be "accompanied by
+visual inspection"; the gates are the numerical form of that inspection. `normal`, `constant_bias`
+and `homoscedastic` are violated only if `p < alpha` **and** the effect size exceeds its threshold
+(criteria within one assumption are OR-ed). `sd_ratio` is the ratio of the fitted \|resid\| at the
+top vs bottom of the observed reference range, `(c0 + c1·max)/(c0 + c1·min)`, applied
+symmetrically; it is exposed in `assumptions`. Thresholds are overridden with the
+`effect_size_gates` constructor parameter, and a threshold of `None` disables that criterion (the
+p-value alone decides, as in R). Rationale for the defaults:
 
-| Flag | Magnitude criterion | Rationale |
-|---|---|---|
-| `normal` | \|`skew`\| > 1 or excess `kurtosis` > 2 | Below this the t-based CI is accurate for n ≥ 30 (CLT). The cost of a false rejection is only a bootstrap CI, so this gate matters least. |
-| `constant_bias` | `r2` > 0.1 | The reference explains at least 10% of the variance of the differences. Below this the fitted line is nearly flat and a constant bias is simpler and more stable. |
-| `homoscedastic` | SD ratio > 1.5 | Fitted \|resid\| at the top vs bottom of the observed reference range, `(c0 + c1·max)/(c0 + c1·min)`. Below this the LoA width changes by less than 50% across the range and constant LoA are adequate. Needs the intercept of the \|resid\| ~ ref regression, which `assumptions` does not yet expose. |
+- `normal`: below these values the t-based CI is accurate for n ≥ 30 (CLT). The cost of a false
+  rejection is only a bootstrap CI, so this gate matters least.
+- `constant_bias`: the reference explains at least 10% of the variance of the differences. Below
+  this the fitted line is nearly flat and a constant bias is simpler and more stable.
+- `homoscedastic`: the LoA width changes by more than 50% across the range. Below this constant
+  LoA are adequate.
 
-Thresholds would be constructor parameters with these defaults. Other open items:
+Open items:
 
 - Per-statistic overrides: accept a `method` table (same shape as the `method` columns of
   `assumptions`) instead of global `bias_method` / `loa_method`.
@@ -130,5 +138,5 @@ tests use the R definition.
 
 Not testable against the report: per-subject 4-stage accuracy, per-subject PPV/NPV, per-stage
 kappa/PABAK, and the Bland-Altman outputs (conditional on data-dependent assumption tests).
-Eq. 2, `assumptions`, `summary()`, `calibrate()` and the Euser slope are unit-tested against direct
+Eq. 2, `assumptions` (including the effect-size gates), `summary()`, `calibrate()` and the Euser slope are unit-tested against direct
 `scipy.stats` computations in `tests/test_evaluation.py`.
