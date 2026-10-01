@@ -475,8 +475,8 @@ def topoplot(
         ...     name="REM",
         ... )
         >>> fig, axes = plt.subplots(1, 2, figsize=(8, 4))
-        >>> yasa.topoplot(data1, ax=axes[0])
-        >>> yasa.topoplot(data2, ax=axes[1])
+        >>> fig = yasa.topoplot(data1, ax=axes[0])
+        >>> fig = yasa.topoplot(data2, ax=axes[1])
     """
     # Increase font size while preserving original
     old_fontsize = plt.rcParams["font.size"]

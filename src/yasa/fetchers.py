@@ -134,13 +134,8 @@ def fetch_sample(fname, version="v1", **kwargs):
     >>> # Load the hypnogram
     >>> stages_int = np.loadtxt(fpath, skiprows=1, dtype=int)
     >>> hyp = yasa.Hypnogram.from_integers(stages_int)
-    >>> print(hyp.hypno.head(3))
-    Epoch
-    0    WAKE
-    1    WAKE
-    2    WAKE
-    Name: Stage, dtype: category
-    Categories (7, object): ['WAKE', 'N1', 'N2', 'N3', 'REM', 'ART', 'UNS']
+    >>> hyp.hypno.head(3).tolist()
+    ['WAKE', 'WAKE', 'WAKE']
 
     You can also set the ``YASA_DATA_DIR`` environment variable to a custom location.
 

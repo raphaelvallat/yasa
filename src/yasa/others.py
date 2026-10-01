@@ -401,10 +401,10 @@ def _zerocrossings(x):
     Examples
     --------
     >>> import numpy as np
-    >>> from yasa.main import _zerocrossings
+    >>> from yasa.others import _zerocrossings
     >>> a = np.array([4, 2, -1, -3, 1, 2, 3, -2, -5])
     >>> _zerocrossings(a)
-        array([1, 3, 6], dtype=int64)
+    array([1, 3, 6])
     """
     pos = x > 0
     npos = ~pos
@@ -496,7 +496,7 @@ def sliding_window(data, sf, window, step=None, axis=-1):
            [10, 11, 12, 13, 14],
            [15, 16, 17, 18, 19]])
 
-    >>> sliding_window(data, sf=1, window=5, step=1)[1]
+    >>> sliding_window(data, sf=1, window=5, step=2)[1]
     array([[ 0,  1,  2,  3,  4],
            [ 2,  3,  4,  5,  6],
            [ 4,  5,  6,  7,  8],
@@ -615,7 +615,7 @@ def get_centered_indices(data, idx, npts_before, npts_after):
            [ 0.41,  0.98,  2.24, -1.29, -1.04,  1.74]])
 
     >>> idx_nomask
-    array([1, 2, 3, 4], dtype=int64)
+    array([1, 2, 3, 4])
     """
     # Safety check
     assert isinstance(npts_before, (int, float))

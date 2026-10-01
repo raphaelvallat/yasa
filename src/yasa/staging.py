@@ -142,9 +142,9 @@ class SleepStaging:
     >>> import mne
     >>> import yasa
     >>> # Load an EDF file using MNE
-    >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)
+    >>> raw = mne.io.read_raw_edf("myfile.edf", preload=True)  # doctest: +SKIP
     >>> # Initialize the sleep staging instance
-    >>> sls = yasa.SleepStaging(
+    >>> sls = yasa.SleepStaging(  # doctest: +SKIP
     ...     raw,
     ...     eeg_name="C4-M1",
     ...     eog_name="LOC-M2",
@@ -152,16 +152,16 @@ class SleepStaging:
     ...     metadata=dict(age=29, male=True),
     ... )
     >>> # Print some basic info
-    >>> sls
+    >>> sls  # doctest: +SKIP
     >>> # Get the predicted sleep stages
-    >>> hyp = sls.predict()
-    >>> hyp.hypno
+    >>> hyp = sls.predict()  # doctest: +SKIP
+    >>> hyp.hypno  # doctest: +SKIP
     >>> # Get the predicted probabilities
-    >>> hyp.proba
+    >>> hyp.proba  # doctest: +SKIP
     >>> # Get the confidence
-    >>> confidence = hyp.proba.max(axis=1)
+    >>> confidence = hyp.proba.max(axis=1)  # doctest: +SKIP
     >>> # Plot the predicted probabilities
-    >>> sls.plot_predict_proba()
+    >>> sls.plot_predict_proba()  # doctest: +SKIP
 
     The sleep scores can then be manually edited in an external graphical user interface
     (e.g. EDFBrowser), as described in the
