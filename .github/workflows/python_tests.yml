@@ -9,7 +9,6 @@ on:
       - 'pyproject.toml'
       - '.github/workflows/python_tests.yml'
   pull_request:
-    branches: [master]
     paths:
       - 'src/**'
       - 'tests/**'
