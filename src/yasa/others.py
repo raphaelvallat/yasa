@@ -423,14 +423,15 @@ def sliding_window(data, sf, window, step=None, axis=-1):
             [-83,  31, -12, -41, -87, -92, -11, -48,  29, -17],
             [-51,   3,  31, -99,  33, -47,   5, -97, -47,  90]]])
     """
-    assert axis <= data.ndim, "Axis value out of range."
+    assert isinstance(axis, int), "axis must be int."
+    assert -data.ndim <= axis < data.ndim, "Axis value out of range."
+    axis = axis % data.ndim
     assert isinstance(sf, (int, float)), "sf must be int or float"
     assert isinstance(window, (int, float)), "window must be int or float"
     assert isinstance(step, (int, float, type(None))), "step must be int, float or None."
     if isinstance(sf, float):
         assert sf.is_integer(), "sf must be a whole number."
         sf = int(sf)
-    assert isinstance(axis, int), "axis must be int."
 
     # window and step in samples instead of points
     window *= sf
@@ -445,7 +446,7 @@ def sliding_window(data, sf, window, step=None, axis=-1):
         step = int(step)
 
     assert step >= 1, "Stepsize may not be zero or negative."
-    assert window < data.shape[axis], "Sliding window size may not exceed size of selected axis"
+    assert window <= data.shape[axis], "Sliding window size may not exceed size of selected axis"
 
     # Define output shape
     shape = list(data.shape)
@@ -457,11 +458,10 @@ def sliding_window(data, sf, window, step=None, axis=-1):
     strides[axis] *= step
     strides.append(data.strides[axis])
     strided = as_strided(data, shape=shape, strides=strides)
-    t = np.arange(strided.shape[-2]) * (step / sf)
+    t = np.arange(strided.shape[axis]) * (step / sf)
 
     # Swap axis: n_epochs, ..., n_samples
-    if strided.ndim > 2:
-        strided = np.rollaxis(strided, -2, 0)
+    strided = np.moveaxis(strided, axis, 0)
     return t, strided
 
 

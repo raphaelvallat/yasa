@@ -110,8 +110,7 @@ def fetch_sample(fname, version="v1", **kwargs):
 
     version : str, optional
         The version string of the dataset to :py:meth:`~pooch.Pooch.fetch`.
-        Setting this to ``latest`` (default) is equivalent to setting to the latest version string.
-        Must be one of the versions available for the YASA samples dataset.
+        Default is ``"v1"``. Must be one of the versions available for the YASA samples dataset.
         See the `Zenodo repo <https://doi.org/10.5281/zenodo.14564284>`_ for available versions.
 
     **kwargs : dict
@@ -148,6 +147,12 @@ def fetch_sample(fname, version="v1", **kwargs):
     assert isinstance(version, str), "`version` must be a string"
     assert version in allowed_versions, f"`version` must be one of {allowed_versions}."
     pup = _init_repository("sample", version=version)
+    # Check the filename first, so that a typo is not retried as if it were a network error
+    if fname not in pup.registry:
+        raise ValueError(
+            f"File '{fname}' is not in the YASA samples dataset (version '{version}'). "
+            f"Available files are: {sorted(pup.registry)}."
+        )
     for attempt in range(3):
         try:
             fetched = pup.fetch(fname, **kwargs)

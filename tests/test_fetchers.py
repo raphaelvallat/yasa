@@ -44,6 +44,12 @@ def test_version_picker():
         fetchers.fetch_sample(SMALL_SAMPLE_FILE, version="999")
 
 
+def test_unknown_file():
+    """An unknown filename raises immediately, without retrying"""
+    with pytest.raises(ValueError, match="not in the YASA samples dataset"):
+        fetchers.fetch_sample("typo.npz")
+
+
 @pytest.mark.network
 def test_file_download(tmp_path, monkeypatch):
     """Test the download of a single arbitrary file from the samples repo"""

@@ -389,6 +389,7 @@ class SleepStaging:
         # Add to self
         self._features = features
         self.feature_name_ = self._features.columns.tolist()
+        return self
 
     def get_features(self):
         """Extract features from data and return a copy of the dataframe.

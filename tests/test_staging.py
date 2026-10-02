@@ -45,7 +45,7 @@ def sls_full(raw_sub02_shared):
 def sls_eeg(raw_sub02_shared):
     """SleepStaging with only the EEG, after fit()."""
     sls = SleepStaging(raw_sub02_shared, eeg_name="C4")
-    sls.fit()
+    assert sls.fit() is sls
     return sls
 
 
