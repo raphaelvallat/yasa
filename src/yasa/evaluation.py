@@ -1217,7 +1217,7 @@ class EpochByEpochAgreement:
             summary = (
                 self._agreement_bystage.groupby("stage")
                 .agg(**agg_kwargs)
-                .stack(level=0)
+                .stack(level=0, future_stack=True)
                 .rename_axis(["stage", "metric"])
             )
         else:
