@@ -236,6 +236,40 @@ class TestEpochByEpochAgreementInit:
         with pytest.raises(AssertionError):
             EpochByEpochAgreement(ref_hyps, no_scorer)
 
+    def test_art_uns_excluded(self, ref_hyps, obs_hyps):
+        # Epochs scored as ART or UNS by either scorer are excluded from the epoch-by-epoch
+        # analyses, i.e. the results are the same as when these epochs are removed beforehand
+        ref = ref_hyps[0].hypno.to_numpy().copy()
+        obs = obs_hyps[0].hypno.to_numpy().copy()
+        ref[:5], obs[10:15], ref[20], obs[20] = "ART", "UNS", "UNS", "ART"
+        keep = np.ones(ref.size, dtype=bool)
+        keep[[*range(5), *range(10, 15), 20]] = False
+        ebe_art = EpochByEpochAgreement(
+            [Hypnogram(list(ref), scorer=REF_SCORER), ref_hyps[1]],
+            [Hypnogram(list(obs), scorer=OBS_SCORER), obs_hyps[1]],
+        )
+        ebe_rm = EpochByEpochAgreement(
+            [Hypnogram(list(ref[keep]), scorer=REF_SCORER), ref_hyps[1]],
+            [Hypnogram(list(obs[keep]), scorer=OBS_SCORER), obs_hyps[1]],
+        )
+        assert ebe_art.data.shape[0] == ebe_rm.data.shape[0]
+        np.testing.assert_array_equal(ebe_art.data, ebe_rm.data)
+        pd.testing.assert_frame_equal(ebe_art.get_agreement(), ebe_rm.get_agreement())
+        pd.testing.assert_frame_equal(
+            ebe_art.get_agreement_bystage(), ebe_rm.get_agreement_bystage()
+        )
+        cm = ebe_art.get_confusion_matrix(agg_func="sum")
+        assert "ART" not in cm.index and "UNS" not in cm.columns
+        pd.testing.assert_frame_equal(cm, ebe_rm.get_confusion_matrix(agg_func="sum"))
+        # ... but they are kept in the hypnograms, e.g. for the sleep statistics
+        assert ebe_art.get_sleep_stats().loc[REF_SCORER, "TIB"].iloc[0] == ref.size / 2
+
+    def test_all_art_uns_raises(self, ref_hyps, obs_hyps):
+        ref = Hypnogram(["ART"] * 5 + ["UNS"] * 5, scorer=REF_SCORER)
+        obs = Hypnogram(["WAKE"] * 10, scorer=OBS_SCORER)
+        with pytest.raises(ValueError, match="All epochs are scored as ART or UNS"):
+            EpochByEpochAgreement([ref, ref_hyps[0]], [obs, obs_hyps[0]])
+
 
 class TestMultiScorer:
     """EpochByEpochAgreement.multi_scorer is a staticmethod returning a dict of scores."""

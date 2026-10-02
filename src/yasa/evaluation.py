@@ -72,6 +72,16 @@ class EpochByEpochAgreement:
 
         .. seealso:: For comparing just two hypnograms, use :py:meth:`yasa.Hypnogram.evaluate`.
 
+    Notes
+    -----
+    Epochs scored as artefact (``ART``) or unscored (``UNS``) by either scorer are excluded from all
+    epoch-by-epoch analyses (agreement scores and confusion matrices), since they are not a sleep
+    stage. They are kept in the hypnograms themselves, e.g. in :py:meth:`get_sleep_stats` and
+    :py:meth:`plot_hypnograms`.
+
+    .. versionchanged:: 0.8.0
+        ``ART`` and ``UNS`` epochs were previously counted as regular stages.
+
     References
     ----------
     .. [Menghini2021] Menghini, L., Cellini, N., Goldstone, A., Baker, F. C., & de Zambotti, M.
@@ -224,6 +234,23 @@ class EpochByEpochAgreement:
         obs = pd.concat(pd.concat({s: h.as_int()}, names=["sleep_id"]) for s, h in obs_hyps.items())
         data = pd.concat([ref, obs], axis=1)
 
+        # Exclude the epochs scored as artefact or unscored by either scorer: they are not a sleep
+        # stage, so they should neither count as agreement nor as disagreement.
+        mapping = ref_hyps[sleep_ids[0]].mapping
+        excluded_codes = [mapping[lab] for lab in ("ART", "UNS") if lab in mapping]
+        is_excluded = data.isin(excluded_codes).any(axis=1)
+        if is_excluded.any():
+            n_left = (~is_excluded).groupby(level="sleep_id", sort=False).sum()
+            if (n_left == 0).any():
+                raise ValueError(
+                    "All epochs are scored as ART or UNS in session(s) "
+                    f"{n_left[n_left == 0].index.tolist()}, which can therefore not be evaluated."
+                )
+            logger.info(
+                f"Excluding {is_excluded.sum()} epoch(s) scored as ART or UNS by either scorer."
+            )
+            data = data[~is_excluded]
+
         # Generate some mapping dictionaries to be used later in class methods
         skm_labels = np.unique(data).tolist()  # all unique YASA integer codes in this hypno
         skm2yasa_map = {i: lab for i, lab in enumerate(skm_labels)}  # skm order to YASA integers
@@ -257,7 +284,8 @@ class EpochByEpochAgreement:
 
     @property
     def data(self):
-        """A :py:class:`pandas.DataFrame` including all hypnograms."""
+        """A :py:class:`pandas.DataFrame` including all hypnograms, without the epochs scored as
+        ``ART`` or ``UNS`` by either scorer."""
         return self._data
 
     @property
@@ -325,7 +353,8 @@ class EpochByEpochAgreement:
         sample_weight : None or :py:class:`pandas.Series`
             Sample weights passed to underlying :py:mod:`sklearn.metrics` functions where possible.
             If a :py:class:`pandas.Series`, the index must match exactly that of
-            :py:attr:`~yasa.EpochByEpochAgreement.data`.
+            :py:attr:`~yasa.EpochByEpochAgreement.data`, which excludes ``ART`` and ``UNS``
+            epochs.
         scorers : None, list, or dictionary
             The scorers to be used for evaluating agreement. If None (default), default scorers are
             used. If a list of strings, each ``name`` is mapped to the
