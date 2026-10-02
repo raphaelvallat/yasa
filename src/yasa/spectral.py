@@ -14,8 +14,8 @@ from scipy.integrate import simpson
 from scipy.interpolate import RectBivariateSpline
 from scipy.optimize import curve_fit
 
+from ._validation import _check_data, _check_hypno_include
 from .io import _restore_log_level
-from .others import _check_data, _check_hypno_include
 
 logger = logging.getLogger("yasa")
 

@@ -10,7 +10,7 @@ import logging
 import numpy as np
 import pandas as pd
 
-from .detection import _check_data_hypno
+from ._validation import _check_data_hypno
 from .hypno import _hypno_find_periods
 from .io import _restore_log_level, is_sleepecg_installed
 

@@ -9,11 +9,10 @@ import pandas as pd
 import pytest
 from mne.filter import filter_data
 
+from yasa._validation import _check_data, _check_hypno_include
 from yasa.fetchers import fetch_sample
 from yasa.hypno import Hypnogram
 from yasa.others import (
-    _check_data,
-    _check_hypno_include,
     _index_to_events,
     _merge_close,
     _zerocrossings,

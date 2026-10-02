@@ -16,16 +16,15 @@ import pandas as pd
 from mne.filter import filter_data
 from scipy import signal
 from scipy.fftpack import next_fast_len
+from scipy.special import erfinv
 from scipy.stats import circmean
 from sklearn.ensemble import IsolationForest
 
+from ._validation import _check_data_hypno
 from .io import _restore_log_level, is_pyriemann_installed
 from .others import (
-    _check_data,
-    _check_hypno_include,
     _index_to_events,
     _merge_close,
-    _norm_direct_pac,
     _zerocrossings,
     get_centered_indices,
     moving_transform,
@@ -51,58 +50,6 @@ __all__ = [
 #############################################################################
 # DATA PREPROCESSING
 #############################################################################
-
-
-def _check_data_hypno(
-    data, sf=None, ch_names=None, hypno=None, include=None, check_amp=True, verbose=False
-):
-    """Helper functions for preprocessing of data and hypnogram.
-
-    Accepts an upsampled integer hypnogram (array_like) or a :py:class:`yasa.Hypnogram` instance.
-    When a :py:class:`yasa.Hypnogram` is passed, it is automatically upsampled to match ``data``
-    and ``include`` may be specified as string stage labels (e.g. ``["N2", "REM"]``).
-    """
-    # 1) Extract data as a 2D NumPy array, and check channel names
-    data, sf, ch_names, raw = _check_data(data, sf, ch_names)
-    n_chan, n_samples = data.shape
-
-    # 2) Check hypnogram. The original Raw is passed so that a Hypnogram with a start time is
-    # aligned with the recording using absolute timestamps.
-    if hypno is not None:
-        hypno, include, _ = _check_hypno_include(
-            hypno, include, raw if raw is not None else data, sf, verbose=verbose
-        )
-        assert hypno.dtype.kind == "i", (
-            "hypno must be an integer array. Use a yasa.Hypnogram to work with string labels."
-        )
-        hypno = hypno.astype(int, copy=False)
-        logger.info("Number of unique values in hypno = %i", np.unique(hypno).size)
-
-    # 3) Check data amplitude
-    logger.info("Number of samples in data = %i", n_samples)
-    logger.info("Sampling frequency = %.2f Hz", sf)
-    logger.info("Data duration = %.2f seconds", n_samples / sf)
-    all_ptp = np.ptp(data, axis=-1)
-    all_trimstd = trimbothstd(data, cut=0.05)
-    bad_chan = np.zeros(n_chan, dtype=bool)
-    for i in range(n_chan):
-        logger.info("Trimmed standard deviation of %s = %.4f uV" % (ch_names[i], all_trimstd[i]))
-        logger.info("Peak-to-peak amplitude of %s = %.4f uV" % (ch_names[i], all_ptp[i]))
-        if check_amp and not (0.1 < all_trimstd[i] < 1e3):
-            logger.error(
-                "Wrong data amplitude for %s "
-                "(trimmed STD = %.3f). Unit of data MUST be uV! "
-                "Channel will be skipped." % (ch_names[i], all_trimstd[i])
-            )
-            bad_chan[i] = True
-
-    # 4) Create sleep stage vector mask
-    if hypno is not None:
-        mask = np.isin(hypno, include)
-    else:
-        mask = np.ones(n_samples, dtype=bool)
-
-    return (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan)
 
 
 def _detrend_linear(x):
@@ -1310,6 +1257,39 @@ class SpindlesResults(_DetectionResults):
 #############################################################################
 # SLOW-WAVES DETECTION
 #############################################################################
+
+
+def _norm_direct_pac(pha, amp, p=0.05):
+    """Normalized direct PAC (ndPAC).
+
+    Re-implementation of tensorpac's ``norm_direct_pac`` (Ozkurt et al. 2012).
+
+    Parameters
+    ----------
+    pha : array_like
+        Phase array of shape (n_pha, ..., n_times).
+    amp : array_like
+        Amplitude array of shape (n_amp, ..., n_times).
+    p : float | .05
+        P-value threshold. Sub-threshold PAC values are set to 0.
+        Use ``p=1`` or ``p=None`` to disable thresholding.
+
+    Returns
+    -------
+    pac : array_like
+        Phase-amplitude coupling array of shape (n_amp, n_pha, ...).
+    """
+    n_times = amp.shape[-1]
+    amp = np.subtract(amp, np.mean(amp, axis=-1, keepdims=True))
+    amp = np.divide(amp, np.std(amp, ddof=1, axis=-1, keepdims=True))
+    pac = np.abs(np.einsum("i...j, k...j->ik...", amp, np.exp(1j * pha)))
+    if p == 1.0 or p is None:
+        return pac / n_times
+    s = pac**2
+    pac /= n_times
+    xlim = n_times * erfinv(1 - p) ** 2
+    pac[s <= 2 * xlim] = 0.0
+    return pac
 
 
 @_restore_log_level

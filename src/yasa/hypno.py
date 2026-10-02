@@ -11,12 +11,11 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
 
-from .evaluation import EpochByEpochAgreement
 from .io import _restore_log_level
-from .plotting import _plot_hypnogram
 
 __all__ = [
     "Hypnogram",
+    "load_profusion_hypno",
     "hypno_str_to_int",
     "hypno_int_to_str",
     "hypno_upsample_to_sf",
@@ -1769,6 +1768,8 @@ class Hypnogram:
         f1              52.380
         Name: agreement, dtype: float64
         """
+        from .evaluation import EpochByEpochAgreement  # evaluation.py imports this module
+
         return EpochByEpochAgreement([self], [obs_hyp])
 
     #######################################################################
@@ -1824,6 +1825,8 @@ class Hypnogram:
             >>> ax = hyp_a.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[0])
             >>> ax = hyp_b.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[1])
         """
+        from .plotting import _plot_hypnogram  # plotting.py imports this module
+
         return _plot_hypnogram(self, highlight=highlight, fill_color=fill_color, ax=ax, **kwargs)
 
     def plot_hypnodensity(self, palette=None, ax=None):
@@ -2309,12 +2312,10 @@ def _hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
     return np.repeat(np.asarray(hypno), repeats)
 
 
-def hypno_fit_to_data(hypno, data, sf=None):
+def _hypno_fit_to_data(hypno, data, sf=None):
     """Crop or pad the hypnogram to fit the length of data.
 
     Hypnogram and data MUST have the SAME sampling frequency.
-
-    This is an internal function.
 
     Parameters
     ----------
@@ -2418,7 +2419,7 @@ def _hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=False):
         sf_data = data.info["sfreq"]
         data = data.times
     hypno_up = _hypno_upsample_to_sf(hypno=hypno, sf_hypno=sf_hypno, sf_data=sf_data)
-    return hypno_fit_to_data(hypno=hypno_up, data=data, sf=sf_data)
+    return _hypno_fit_to_data(hypno=hypno_up, data=data, sf=sf_data)
 
 
 #############################################################################

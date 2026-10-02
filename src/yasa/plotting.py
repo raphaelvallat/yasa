@@ -13,6 +13,8 @@ import seaborn as sns
 from lspopt import spectrogram_lspopt
 from matplotlib.colors import ListedColormap, Normalize
 
+from .hypno import Hypnogram, _hypno_int_to_str
+
 __all__ = ["plot_hypnogram", "plot_spectrogram", "topoplot"]
 
 
@@ -66,8 +68,6 @@ def plot_hypnogram(hyp, sf_hypno=1 / 30, highlight="REM", fill_color=None, ax=No
         FutureWarning,
         stacklevel=2,
     )
-    from .hypno import Hypnogram, _hypno_int_to_str  # Avoiding circular imports
-
     if not isinstance(hyp, Hypnogram):
         # Convert sampling frequency to pandas timefrequency string (e.g., "30s")
         freq_str = pd.tseries.frequencies.to_offset(pd.Timedelta(1 / sf_hypno, "s")).freqstr
@@ -272,8 +272,6 @@ def plot_spectrogram(
         >>> hyp = yasa.Hypnogram.from_integers(hypno_30s, freq="30s")
         >>> fig = yasa.plot_spectrogram(data, sf, hyp, cmap="Spectral_r")
     """
-    from .hypno import Hypnogram, _hypno_int_to_str  # Avoiding circular imports
-
     # Increase font size while preserving original
     old_fontsize = plt.rcParams["font.size"]
     plt.rcParams.update({"font.size": 18})

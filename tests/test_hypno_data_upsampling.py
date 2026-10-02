@@ -1,4 +1,4 @@
-"""Tests for hypnogram upsampling: hypno_fit_to_data and Hypnogram.upsample_to_data.
+"""Tests for hypnogram upsampling: _hypno_fit_to_data and Hypnogram.upsample_to_data.
 
 Covers all combinations of:
   - data type : NumPy array | MNE Raw without meas_date | MNE Raw with meas_date
@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from yasa.hypno import Hypnogram, hypno_fit_to_data
+from yasa.hypno import Hypnogram, _hypno_fit_to_data
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -29,7 +29,7 @@ from yasa.hypno import Hypnogram, hypno_fit_to_data
 SF = 100  # EEG sampling frequency (Hz)
 SPE = SF * 30  # samples per 30-second epoch = 3000
 
-# 9-epoch integer array used by the hypno_fit_to_data tests (same as original test suite)
+# 9-epoch integer array used by the _hypno_fit_to_data tests (same as original test suite)
 HYPNO_INT = np.array([0, 0, 0, 1, 2, 2, 3, 3, 4])
 
 # 10-epoch string hypnogram used by Hypnogram class tests
@@ -61,7 +61,7 @@ def utc(h, m, s=0):
 
 
 # ---------------------------------------------------------------------------
-# Internal helper: hypno_fit_to_data
+# Internal helper: _hypno_fit_to_data
 # ---------------------------------------------------------------------------
 
 
@@ -80,16 +80,17 @@ def hypno100():
 def test_fit_exact(hypno100, data):
     if isinstance(data, str) and data == "raw_exact":
         data = make_raw(HYPNO_INT.size)
-    assert np.array_equal(hypno_fit_to_data(hypno100, data), hypno100)
+    assert np.array_equal(_hypno_fit_to_data(hypno100, data), hypno100)
 
 
 def test_fit_pads_when_shorter(hypno100):
     # hypno shorter than data → last value repeated at the end
     assert (
-        hypno_fit_to_data(hypno100, make_raw(HYPNO_INT.size + 1)).size == (HYPNO_INT.size + 1) * SPE
+        _hypno_fit_to_data(hypno100, make_raw(HYPNO_INT.size + 1)).size
+        == (HYPNO_INT.size + 1) * SPE
     )
     assert (
-        hypno_fit_to_data(hypno100, np.zeros((HYPNO_INT.size + 1) * SPE)).size
+        _hypno_fit_to_data(hypno100, np.zeros((HYPNO_INT.size + 1) * SPE)).size
         == (HYPNO_INT.size + 1) * SPE
     )
 
@@ -97,10 +98,11 @@ def test_fit_pads_when_shorter(hypno100):
 def test_fit_crops_when_longer(hypno100):
     # hypno longer than data → trailing epochs removed
     assert (
-        hypno_fit_to_data(hypno100, make_raw(HYPNO_INT.size - 1)).size == (HYPNO_INT.size - 1) * SPE
+        _hypno_fit_to_data(hypno100, make_raw(HYPNO_INT.size - 1)).size
+        == (HYPNO_INT.size - 1) * SPE
     )
     assert (
-        hypno_fit_to_data(hypno100, np.zeros((HYPNO_INT.size - 1) * SPE)).size
+        _hypno_fit_to_data(hypno100, np.zeros((HYPNO_INT.size - 1) * SPE)).size
         == (HYPNO_INT.size - 1) * SPE
     )
 

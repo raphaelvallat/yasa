@@ -11,8 +11,8 @@ import pandas as pd
 import pytest
 from mne.filter import filter_data
 
+from yasa._validation import _check_data_hypno
 from yasa.detection import (
-    _check_data_hypno,
     art_detect,
     compare_detection,
     rem_detect,
