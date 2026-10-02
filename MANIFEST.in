@@ -2,5 +2,6 @@
 include README.rst
 include LICENSE
 
-# Add trained classifiers
-recursive-include yasa/classifiers/ *.joblib
+# Ship the full test suite, including the conftest and the regression data
+graft tests
+global-exclude *.py[cod] __pycache__ .DS_Store
