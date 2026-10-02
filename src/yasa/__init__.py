@@ -43,4 +43,4 @@ def __getattr__(name):
 
 
 __author__ = "Raphael Vallat <raphaelvallat9@gmail.com>"
-__version__ = "0.7.0"
+__version__ = "0.8.0"
