@@ -354,7 +354,7 @@ In this final section, we'll see how to perform automatic sleep staging in YASA.
 
     >>> sls = yasa.SleepStaging(raw, eeg_name="C3-A2")
     >>> hypno_pred = sls.predict()  # Returns a yasa.Hypnogram
-    >>> yasa.plot_hypnogram(hypno_pred);  # Plot
+    >>> hypno_pred.plot_hypnogram();  # Plot
 
 .. figure:: https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/quickstart/hypno_pred.png
     :align: center
