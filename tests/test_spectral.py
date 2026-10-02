@@ -208,6 +208,8 @@ class TestSpectral(unittest.TestCase):
         assert any("Fitting range" in msg for msg in logs.output)
         with self.assertLogs("yasa", level="WARNING"):
             irasa(data=data, sf=sf, band=(1, 80))  # Beyond the resampled Nyquist frequency
+        with self.assertNoLogs("yasa", level="WARNING"):
+            irasa(data=data, sf=sf, band=(1, 20))  # Within the resampled Nyquist frequency
 
         # Warnings when the evaluated frequency range exceeds the filters of the MNE Raw
         raw_filt = raw.copy().filter(1, 20, verbose=0)
@@ -219,6 +221,49 @@ class TestSpectral(unittest.TestCase):
         # Data is too short for the resampling factors
         with pytest.raises(ValueError, match="too short for IRASA"):
             irasa(data=data[: int(5 * sf)], sf=sf, win_sec=4)
+
+        # Per sleep stage, with an integer hypnogram. There is no stage 5 in the hypnogram.
+        freqs, psd_ap, psd_osc, fit_params = irasa(
+            data_full, sf=sf_full, ch_names=chan_full, hypno=hypno_full, include=(2, 3, 5)
+        )
+        assert list(psd_ap) == list(psd_osc) == [2, 3]
+        assert psd_ap[2].shape == psd_osc[3].shape == (len(chan_full), freqs.size)
+        assert fit_params.columns.tolist() == [
+            "Stage", "Chan", "Intercept", "Slope", "R^2", "std(osc)"
+        ]  # fmt: skip
+        assert fit_params["Stage"].tolist() == [2, 2, 2, 3, 3, 3]
+        assert fit_params["Chan"].tolist() == [*chan_full, *chan_full]
+        # Same result as applying IRASA to the samples of the stage
+        _, psd_ap_n2, _, fit_n2 = irasa(data_full[:, hypno_full == 2], sf=sf_full)
+        np.testing.assert_allclose(psd_ap[2], psd_ap_n2)
+        np.testing.assert_allclose(fit_params.iloc[:3, 2:], fit_n2.iloc[:, 1:])
+        # With a Hypnogram and string labels
+        freqs_hyp, psd_ap_hyp, _, fit_hyp = irasa(
+            data_full, sf=sf_full, hypno=hyp_full, include=["N2", "N3"]
+        )
+        assert list(psd_ap_hyp) == ["N2", "N3"]
+        assert fit_hyp["Stage"].unique().tolist() == ["N2", "N3"]
+        np.testing.assert_allclose(freqs_hyp, freqs)
+        # ... gives the same output as a Hypnogram with integer stages
+        _, psd_ap_hyp_int, _, fit_hyp_int = irasa(
+            data_full, sf=sf_full, hypno=hyp_full, include=(2, 3)
+        )
+        assert list(psd_ap_hyp_int) == [2, 3]
+        np.testing.assert_array_equal(psd_ap_hyp["N3"], psd_ap_hyp_int[3])
+        np.testing.assert_array_equal(fit_hyp.iloc[:, 1:], fit_hyp_int.iloc[:, 1:])
+        assert len(irasa(data_full, sf=sf_full, hypno=hyp_full, return_fit=False)) == 3
+        # Stages that are too short are skipped with a warning
+        hypno_short = np.full(data_full.shape[1], 2)
+        hypno_short[:500] = 1  # 5 seconds of N1, shorter than win_sec * max(hset)
+        with self.assertLogs("yasa", level="WARNING") as logs:
+            _, psd_ap, _, fit_params = irasa(
+                data_full, sf=sf_full, hypno=hypno_short, include=(1, 2)
+            )
+        assert any("Stage 1 is shorter" in msg for msg in logs.output)
+        assert list(psd_ap) == [2]
+        assert fit_params["Stage"].unique().tolist() == [2]
+        with pytest.raises(ValueError, match="All the stages"):
+            irasa(data_full, sf=sf_full, hypno=hypno_short, include=1)
 
     def test_stft_power(self):
         """Test function stft_power"""

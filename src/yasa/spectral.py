@@ -345,8 +345,11 @@ def bandpower_from_psd_ndarray(
 
 def irasa(
     data,
+    *,
     sf=None,
     ch_names=None,
+    hypno=None,
+    include=(2, 3),
     band=(1, 30),
     hset=[
         1.1,
@@ -378,6 +381,9 @@ def irasa(
 
     .. versionadded:: 0.1.7
 
+    .. versionchanged:: 0.8.0
+        All the parameters except ``data`` are now keyword-only, e.g. ``irasa(data, sf=sf)``.
+
     Parameters
     ----------
     data : :py:class:`numpy.ndarray` or :py:class:`mne.io.BaseRaw`
@@ -392,6 +398,36 @@ def irasa(
         List of channel names, e.g. ['Cz', 'F3', 'F4', ...], if ``data`` is *array_like*.
         If None, channels will be labelled ['CHAN000', 'CHAN001', ...].
         Should be omitted if ``data`` is a :py:class:`~mne.io.BaseRaw`.
+    hypno : array_like or :py:class:`yasa.Hypnogram`
+        Sleep stage (hypnogram). If the hypnogram is loaded, IRASA is applied separately to the
+        data of each sleep stage defined in ``include``.
+
+        Can be an upsampled integer array (same number of samples as ``data``) or a
+        :py:class:`yasa.Hypnogram` instance (automatically upsampled). To manually upsample an
+        integer array, use :py:meth:`yasa.Hypnogram.upsample_to_data`.
+
+        .. note::
+            When passing an integer array, hypnogram values follow this mapping:
+
+            - -2 = Unscored
+            - -1 = Artefact / Movement
+            - 0 = Wake
+            - 1 = N1 sleep
+            - 2 = N2 sleep
+            - 3 = N3 sleep
+            - 4 = REM sleep
+
+        .. versionadded:: 0.8.0
+    include : tuple, list or int or str
+        Values in ``hypno`` that will be included in the mask. The default is (2, 3), meaning that
+        IRASA is sequentially applied to N2 and N3 sleep. This has no effect when ``hypno`` is
+        None. Stages that are too short for the Welch window and resampling factors are skipped
+        with a warning.
+
+        When ``hypno`` is a :py:class:`yasa.Hypnogram`, string labels can be used instead of
+        integers (e.g. ``["N2", "N3"]``).
+
+        .. versionadded:: 0.8.0
     band : tuple or None
         Broad band frequency range.
         Default is 1 to 30 Hz.
@@ -433,12 +469,16 @@ def irasa(
     -------
     freqs : :py:class:`numpy.ndarray`
         Frequency vector.
-    psd_aperiodic : :py:class:`numpy.ndarray`
-        The fractal (= aperiodic) component of the PSD.
-    psd_oscillatory : :py:class:`numpy.ndarray`
-        The oscillatory (= periodic) component of the PSD.
+    psd_aperiodic : :py:class:`numpy.ndarray` or dict
+        The fractal (= aperiodic) component of the PSD. If ``hypno`` is specified, this is a
+        dictionary with one array per sleep stage, e.g. ``psd_aperiodic["N2"]``.
+    psd_oscillatory : :py:class:`numpy.ndarray` or dict
+        The oscillatory (= periodic) component of the PSD. If ``hypno`` is specified, this is a
+        dictionary with one array per sleep stage.
     fit_params : :py:class:`pandas.DataFrame` (optional)
-        Dataframe of fit parameters. Only if ``return_fit=True``.
+        Dataframe of fit parameters. Only if ``return_fit=True``. If ``hypno`` is specified,
+        the dataframe has one row per sleep stage and channel, and an additional ``Stage``
+        column.
 
     Notes
     -----
@@ -467,6 +507,9 @@ def irasa(
     Note that an estimate of the original PSD can be calculated by simply
     adding ``psd = psd_aperiodic + psd_oscillatory``.
 
+    If ``hypno`` is specified, the samples of each sleep stage are concatenated before applying
+    IRASA, in the same way as in :py:func:`yasa.bandpower`.
+
     For an example of how to use this function, please refer to
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/09_IRASA.ipynb
 
@@ -486,6 +529,19 @@ def irasa(
     [4] https://www.biorxiv.org/content/10.1101/299859v1
 
     [5] https://doi.org/10.1101/2021.10.15.464483
+
+    Examples
+    --------
+    IRASA applied separately to each sleep stage:
+
+    .. code-block:: python
+
+        >>> import yasa
+        >>> hyp = yasa.Hypnogram.from_integers(hypno_30s, freq="30s")  # doctest: +SKIP
+        >>> freqs, psd_ap, psd_osc, fit = yasa.irasa(  # doctest: +SKIP
+        ...     raw, hypno=hyp, include=["N2", "N3", "REM"]
+        ... )
+        >>> psd_ap["N3"]  # Aperiodic PSD in N3 sleep, shape (n_chan, n_freqs)  # doctest: +SKIP
     """
     set_log_level(verbose)
     data, sf, ch_names, raw = _check_data(data, sf, ch_names)
@@ -510,15 +566,6 @@ def irasa(
 
     # Inform about maximum resampled fitting range
     h_max = np.max(hset)
-    # The downsampled signal must be at least as long as the Welch window. Otherwise, Welch
-    # silently shortens the window and the PSDs of the resampled signals have different shapes.
-    # resample_poly(data, down, up) returns ceil(npts * down / up) samples.
-    rat_max = fractions.Fraction(str(h_max))
-    if -(-npts * rat_max.denominator // rat_max.numerator) < win:
-        raise ValueError(
-            f"Data is too short for IRASA: at least win_sec * max(hset) = {win_sec * h_max:.2f} "
-            f"seconds are required. Use a shorter win_sec or a lower max(hset)."
-        )
     band_evaluated = (band[0] / h_max, band[1] * h_max)
     freq_Nyq = sf / 2  # Nyquist frequency
     freq_Nyq_res = freq_Nyq / h_max  # minimum resampled Nyquist frequency
@@ -547,6 +594,62 @@ def irasa(
             f"of the hset ({h_max:.2f})."
         )
 
+    # The downsampled signal must be at least as long as the Welch window. Otherwise, Welch
+    # silently shortens the window and the PSDs of the resampled signals have different shapes.
+    # resample_poly(data, down, up) returns ceil(n_samples * down / up) samples.
+    rat_max = fractions.Fraction(str(h_max))
+
+    def is_too_short(n_samples):
+        return -(-n_samples * rat_max.denominator // rat_max.numerator) < win
+
+    if hypno is None:
+        if is_too_short(npts):
+            raise ValueError(
+                f"Data is too short for IRASA: at least win_sec * max(hset) = "
+                f"{win_sec * h_max:.2f} seconds are required. Use a shorter win_sec or a lower "
+                f"max(hset)."
+            )
+        freqs, psd_aperiodic, psd_osc = _irasa(data, sf, hset, win, band, kwargs_welch)
+        if not return_fit:
+            return freqs, psd_aperiodic, psd_osc
+        return freqs, psd_aperiodic, psd_osc, _irasa_fit(freqs, psd_aperiodic, psd_osc, ch_names)
+
+    # Per each sleep stage defined in ``include``. As in bandpower, the original Raw is passed so
+    # that a Hypnogram with a start time is aligned with the recording using absolute timestamps.
+    hypno, include, int_to_str = _check_hypno_include(
+        hypno, include, raw if raw is not None else data, sf, verbose=verbose
+    )
+    psd_aperiodic, psd_osc, fit_params = {}, {}, []
+    for stage in include:
+        is_stage = hypno == stage
+        if not is_stage.any():
+            continue
+        label = int_to_str.get(stage, stage)
+        if is_too_short(is_stage.sum()):
+            logger.warning(
+                f"Stage {label} is shorter than win_sec * max(hset) = {win_sec * h_max:.2f} "
+                "seconds. Skipping stage."
+            )
+            continue
+        freqs, psd_aperiodic[label], psd_osc[label] = _irasa(
+            data[:, is_stage], sf, hset, win, band, kwargs_welch
+        )
+        if return_fit:
+            fit_stage = _irasa_fit(freqs, psd_aperiodic[label], psd_osc[label], ch_names)
+            fit_stage.insert(0, "Stage", label)
+            fit_params.append(fit_stage)
+    if not psd_aperiodic:
+        raise ValueError(
+            "All the stages in `include` are shorter than win_sec * max(hset) = "
+            f"{win_sec * h_max:.2f} seconds."
+        )
+    if not return_fit:
+        return freqs, psd_aperiodic, psd_osc
+    return freqs, psd_aperiodic, psd_osc, pd.concat(fit_params, ignore_index=True)
+
+
+def _irasa(data, sf, hset, win, band, kwargs_welch):
+    """Apply IRASA to a 2D array of shape (n_chan, n_samples) and crop the PSDs to ``band``."""
     # Calculate the original PSD over the whole data
     freqs, psd = signal.welch(data, sf, nperseg=win, **kwargs_welch)
 
@@ -575,44 +678,39 @@ def irasa(
 
     # Let's crop to the frequencies defined in band
     in_band = np.logical_and(freqs >= band[0], freqs <= band[1])
-    freqs = freqs[in_band]
-    psd_aperiodic = psd_aperiodic[..., in_band]
-    psd_osc = psd_osc[..., in_band]
+    return freqs[in_band], psd_aperiodic[..., in_band], psd_osc[..., in_band]
 
-    if return_fit:
-        # Aperiodic fit in semilog space for each channel
-        intercepts, slopes, r_squared = [], [], []
 
-        def func(t, a, b):
-            # a + log(t^b). See https://github.com/fooof-tools/fooof
-            return a + b * np.log(t)
+def _irasa_fit(freqs, psd_aperiodic, psd_osc, ch_names):
+    """Fit an exponential function to the aperiodic PSD of each channel, in semilog space."""
+    intercepts, slopes, r_squared = [], [], []
 
-        for y in np.atleast_2d(psd_aperiodic):
-            y_log = np.log(y)
-            # Note that here we define bounds for the slope but not for the
-            # intercept.
-            popt, _ = curve_fit(
-                func, freqs, y_log, p0=(2, -1), bounds=((-np.inf, -10), (np.inf, 2))
-            )
-            intercepts.append(popt[0])
-            slopes.append(popt[1])
-            # Calculate R^2: https://stackoverflow.com/q/19189362/10581531
-            residuals = y_log - func(freqs, *popt)
-            ss_res = np.sum(residuals**2)
-            ss_tot = np.sum((y_log - np.mean(y_log)) ** 2)
-            r_squared.append(1 - (ss_res / ss_tot))
+    def func(t, a, b):
+        # a + log(t^b). See https://github.com/fooof-tools/fooof
+        return a + b * np.log(t)
 
-        # Create fit parameters dataframe
-        fit_params = {
-            "Chan": ch_names,
-            "Intercept": intercepts,
-            "Slope": slopes,
-            "R^2": r_squared,
-            "std(osc)": np.std(psd_osc, axis=-1, ddof=1),
-        }
-        return freqs, psd_aperiodic, psd_osc, pd.DataFrame(fit_params)
-    else:
-        return freqs, psd_aperiodic, psd_osc
+    for y in np.atleast_2d(psd_aperiodic):
+        y_log = np.log(y)
+        # Note that here we define bounds for the slope but not for the
+        # intercept.
+        popt, _ = curve_fit(func, freqs, y_log, p0=(2, -1), bounds=((-np.inf, -10), (np.inf, 2)))
+        intercepts.append(popt[0])
+        slopes.append(popt[1])
+        # Calculate R^2: https://stackoverflow.com/q/19189362/10581531
+        residuals = y_log - func(freqs, *popt)
+        ss_res = np.sum(residuals**2)
+        ss_tot = np.sum((y_log - np.mean(y_log)) ** 2)
+        r_squared.append(1 - (ss_res / ss_tot))
+
+    # Create fit parameters dataframe
+    fit_params = {
+        "Chan": ch_names,
+        "Intercept": intercepts,
+        "Slope": slopes,
+        "R^2": r_squared,
+        "std(osc)": np.std(psd_osc, axis=-1, ddof=1),
+    }
+    return pd.DataFrame(fit_params)
 
 
 def stft_power(data, sf, window=2, step=0.2, band=(1, 30), interp=True, norm=False):
