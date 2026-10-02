@@ -11,8 +11,8 @@ import pandas as pd
 import pytest
 from mne.filter import filter_data
 
+from yasa._validation import _check_data_hypno
 from yasa.detection import (
-    _check_data_hypno,
     art_detect,
     compare_detection,
     rem_detect,
@@ -450,6 +450,7 @@ class TestDetection(unittest.TestCase):
         rem2 = rem_detect(loc, roc, sf_rem, remove_outliers=True)
         assert rem.summary().shape[0] > rem2.summary().shape[0]
         assert rem.get_mask().shape == (2, loc.size)
+        rem.plot_detection()
         df_sync = rem.get_sync_events()
         assert df_sync["Channel"].unique().tolist() == ["LOC", "ROC"]
         assert df_sync["Event"].nunique() == rem.summary().shape[0]
@@ -464,6 +465,11 @@ class TestDetection(unittest.TestCase):
         # ... also with a dataframe of annotations without Channel column
         res_df = rem.compare_detection(rem2.summary()[["Start"]])
         pd.testing.assert_frame_equal(res, res_df)
+        # There is a single (combined) channel, so channels cannot be compared
+        with pytest.raises(NotImplementedError):
+            rem.compare_channels()
+        with pytest.raises(NotImplementedError):
+            rem.get_coincidence_matrix()
 
         # With REM hypnogram
         rem = rem_detect(loc, roc, sf_rem, hypno=hypno_rem)

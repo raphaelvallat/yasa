@@ -11,12 +11,11 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
 
-from .evaluation import EpochByEpochAgreement
-from .io import set_log_level
-from .plotting import _plot_hypnogram
+from .io import _restore_log_level
 
 __all__ = [
     "Hypnogram",
+    "load_profusion_hypno",
     "hypno_str_to_int",
     "hypno_int_to_str",
     "hypno_upsample_to_sf",
@@ -481,6 +480,9 @@ class Hypnogram:
             Frequency resolution of the hypnogram. Default is ``"30s"``.
         start : str or datetime, optional
             Optional start datetime of the hypnogram (e.g. ``"2022-12-15 22:30:00"``).
+        tz : str, optional
+            Timezone string to localize a naive ``start`` (e.g. ``"Europe/Paris"``). See
+            :py:class:`Hypnogram` for details.
         scorer : str, optional
             Optional scorer name.
         proba : :py:class:`pandas.DataFrame`, optional
@@ -800,6 +802,11 @@ class Hypnogram:
 
         >>> hyp.mapping = {"WAKE": 0, "NREM": 1, "REM": 2}  # doctest: +SKIP
 
+        Returns
+        -------
+        hypno : :py:class:`pandas.Series`
+            The integer-encoded hypnogram, of dtype int16.
+
         Examples
         --------
         Convert a 2-stage hypnogram to a pandas.Series of integers
@@ -936,7 +943,13 @@ class Hypnogram:
     #######################################################################
 
     def copy(self):
-        """Return a new copy of the current Hypnogram."""
+        """Return a new copy of the current Hypnogram.
+
+        Returns
+        -------
+        hyp : :py:class:`yasa.Hypnogram`
+            A copy of the hypnogram, including its metadata and stage probabilities.
+        """
         return self._replace(self._hypno, proba=self._proba)
 
     def to_dict(self):
@@ -1348,7 +1361,7 @@ class Hypnogram:
     # ALIGNMENT TO DATA
     #######################################################################
 
-    def upsample_to_data(self, data, sf=None, meas_date_is_local=True, verbose=True):
+    def upsample_to_data(self, data, sf=None, meas_date_is_local=True, verbose=False):
         """
         Upsample a hypnogram to a given sampling frequency and fit the resulting hypnogram to
         corresponding EEG data, such that the hypnogram and EEG data have the exact same number of
@@ -1377,6 +1390,9 @@ class Hypnogram:
             Verbose level. Default (False) will only print warning and error messages. The logging
             levels are 'debug', 'info', 'warning', 'error', and 'critical'. For most users the
             choice is between 'info' (or ``verbose=True``) and warning (``verbose=False``).
+
+            .. versionchanged:: 0.8.0
+                The default is now False, as documented. Previously, the default was True.
 
         Returns
         -------
@@ -1766,6 +1782,8 @@ class Hypnogram:
         f1              52.380
         Name: agreement, dtype: float64
         """
+        from .evaluation import EpochByEpochAgreement  # evaluation.py imports this module
+
         return EpochByEpochAgreement([self], [obs_hyp])
 
     #######################################################################
@@ -1821,6 +1839,8 @@ class Hypnogram:
             >>> ax = hyp_a.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[0])
             >>> ax = hyp_b.plot_hypnogram(lw=1, fill_color="whitesmoke", highlight=None, ax=axes[1])
         """
+        from .plotting import _plot_hypnogram  # plotting.py imports this module
+
         return _plot_hypnogram(self, highlight=highlight, fill_color=fill_color, ax=ax, **kwargs)
 
     def plot_hypnodensity(self, palette=None, ax=None):
@@ -2064,14 +2084,14 @@ class Hypnogram:
     # PRIVATE METHODS
     #######################################################################
 
-    def _upsample_to_raw_timestamps(self, raw, meas_date_is_local=True, verbose=True):
+    @_restore_log_level
+    def _upsample_to_raw_timestamps(self, raw, meas_date_is_local=True, verbose=False):
         """Timestamp-aware upsampling for MNE Raw objects with a valid meas_date.
 
         Internal method called by :py:meth:`upsample_to_data` when both ``self.start`` and
         ``raw.meas_date`` are available. Aligns the hypnogram to the recording based on absolute
         timestamps rather than sample count.
         """
-        set_log_level(verbose)
         epoch_dur = 1.0 / self.sampling_frequency  # seconds per epoch, e.g. 30.0
 
         # --- resolve and align timestamps ---
@@ -2306,12 +2326,10 @@ def _hypno_upsample_to_sf(hypno, sf_hypno, sf_data):
     return np.repeat(np.asarray(hypno), repeats)
 
 
-def hypno_fit_to_data(hypno, data, sf=None):
+def _hypno_fit_to_data(hypno, data, sf=None):
     """Crop or pad the hypnogram to fit the length of data.
 
     Hypnogram and data MUST have the SAME sampling frequency.
-
-    This is an internal function.
 
     Parameters
     ----------
@@ -2408,14 +2426,14 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=True):
     return _hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=sf_data, verbose=verbose)
 
 
-def _hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=True):
+@_restore_log_level
+def _hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=False):
     """Upsample an hypnogram and fit it to data. See :py:func:`hypno_upsample_to_data`."""
-    set_log_level(verbose)
     if isinstance(data, mne.io.BaseRaw):
         sf_data = data.info["sfreq"]
         data = data.times
     hypno_up = _hypno_upsample_to_sf(hypno=hypno, sf_hypno=sf_hypno, sf_data=sf_data)
-    return hypno_fit_to_data(hypno=hypno_up, data=data, sf=sf_data)
+    return _hypno_fit_to_data(hypno=hypno_up, data=data, sf=sf_data)
 
 
 #############################################################################

@@ -17,6 +17,8 @@ import pandas as pd
 import scipy.stats as sps
 import sklearn.metrics as skm
 
+from .hypno import Hypnogram
+
 logger = logging.getLogger("yasa")
 
 __all__ = [
@@ -171,8 +173,6 @@ class EpochByEpochAgreement:
     """
 
     def __init__(self, ref_hyps, obs_hyps):
-        from .hypno import Hypnogram  # Avoiding circular import, bc hypno imports this class
-
         assert hasattr(ref_hyps, "__iter__"), "`ref_hyps` must be a an iterable"
         assert hasattr(obs_hyps, "__iter__"), "`obs_hyps` must be a an iterable"
         assert type(ref_hyps) is type(obs_hyps), "`ref_hyps` and `obs_hyps` must be the same type"
@@ -1217,7 +1217,7 @@ class EpochByEpochAgreement:
             summary = (
                 self._agreement_bystage.groupby("stage")
                 .agg(**agg_kwargs)
-                .stack(level=0)
+                .stack(level=0, future_stack=True)
                 .rename_axis(["stage", "metric"])
             )
         else:

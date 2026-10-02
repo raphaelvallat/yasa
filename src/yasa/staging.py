@@ -6,7 +6,6 @@ import logging
 import os
 import re
 
-import antropy as ant
 import joblib
 import matplotlib.pyplot as plt
 import mne
@@ -22,6 +21,8 @@ from .others import sliding_window
 from .spectral import bandpower_from_psd_ndarray
 
 logger = logging.getLogger("yasa")
+
+__all__ = ["SleepStaging"]
 
 
 class SleepStaging:
@@ -273,6 +274,9 @@ class SleepStaging:
         # CALCULATE FEATURES
         #######################################################################
 
+        # Imported here because antropy (numba) roughly doubles the import time of YASA
+        import antropy as ant
+
         features = []
 
         # Filter all channels at once — coefficients are computed once, ~2x faster
@@ -426,7 +430,7 @@ class SleepStaging:
             name = name + "+eog" if "eog" in self.ch_types else name
             name = name + "+emg" if "emg" in self.ch_types else name
             name = name + "+demo" if self.metadata is not None else name
-            # e.g. clf_eeg+eog+emg+demo_lgb_0.4.0.joblib. The "_lgb_" suffix prevents matching
+            # e.g. clf_eeg+eog+emg+demo_lgb_0.5.0.joblib. The "_lgb_" suffix prevents matching
             # other combinations of channels (e.g. "clf_eeg" would otherwise match "clf_eeg+eog").
             all_matching_files = glob.glob(
                 os.path.join(clf_dir, glob.escape(name) + "_lgb_*.joblib")
@@ -512,6 +516,11 @@ class SleepStaging:
         palette : list or tuple
             The color of each column of ``proba``. The default colors are for Wake, N1, N2, N3 and
             REM, in that order.
+
+        Returns
+        -------
+        ax : :py:class:`matplotlib.axes.Axes`
+            Matplotlib Axes.
         """
         if proba is None and not hasattr(self, "_proba"):
             raise ValueError("Must call `.predict` before this function")

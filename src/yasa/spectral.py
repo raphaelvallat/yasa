@@ -14,8 +14,8 @@ from scipy.integrate import simpson
 from scipy.interpolate import RectBivariateSpline
 from scipy.optimize import curve_fit
 
-from .io import set_log_level
-from .others import _check_data, _check_hypno_include
+from ._validation import _check_data, _check_hypno_include
+from .io import _restore_log_level
 
 logger = logging.getLogger("yasa")
 
@@ -187,7 +187,7 @@ def bandpower(
     if bandpass:
         # Apply FIR bandpass filter
         fmin, fmax = _bands_range(bands)
-        data = mne.filter.filter_data(data, sf, fmin, fmax, verbose=0)
+        data = mne.filter.filter_data(data, sf, fmin, fmax, verbose=False)
 
     win = int(win_sec * sf)  # nperseg
 
@@ -202,7 +202,7 @@ def bandpower(
     # e.g. so that ``bp.xs("N3")`` works as documented. The original Raw is passed so that a
     # Hypnogram with a start time is aligned with the recording using absolute timestamps.
     hypno, include, int_to_str = _check_hypno_include(
-        hypno, include, raw if raw is not None else data, sf, verbose=True
+        hypno, include, raw if raw is not None else data, sf, verbose=None
     )
     bp_stages = []
     for stage in include:
@@ -343,6 +343,7 @@ def bandpower_from_psd_ndarray(
     return bp
 
 
+@_restore_log_level
 def irasa(
     data,
     *,
@@ -543,7 +544,6 @@ def irasa(
         ... )
         >>> psd_ap["N3"]  # Aperiodic PSD in N3 sleep, shape (n_chan, n_freqs)  # doctest: +SKIP
     """
-    set_log_level(verbose)
     data, sf, ch_names, raw = _check_data(data, sf, ch_names)
     nchan, npts = data.shape
     assert nchan < npts, "Data must be of shape (nchan, n_samples)."

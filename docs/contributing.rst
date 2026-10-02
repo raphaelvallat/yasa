@@ -10,18 +10,17 @@ Code guidelines
 
 Before starting new code, we highly recommend opening an issue on `GitHub <https://github.com/raphaelvallat/yasa>`_ to discuss potential changes.
 
-* Please use standard `pep8 <https://pypi.org/project/pycodestyle/>`_ and `flake8 <https://flake8.pycqa.org/en/latest/>`_ Python style guidelines. YASA uses `ruff <https://github.com/astral-sh/ruff>`_ for linting and code formatting, enforced via a `pre-commit <https://pre-commit.com/>`_ hook. To install it:
+* YASA uses `ruff <https://github.com/astral-sh/ruff>`_ for linting and code formatting, enforced via a `pre-commit <https://pre-commit.com/>`_ hook. To install it with `uv <https://docs.astral.sh/uv/>`_:
 
 .. code-block:: bash
 
-    $ pip install pre-commit
-    $ pre-commit install
+    $ uvx pre-commit install
 
 Once installed, the hook will automatically run ``ruff`` (linting with auto-fix) and ``ruff-format`` on every commit. You can also run it manually at any time with:
 
 .. code-block:: bash
 
-    $ pre-commit run --all-files
+    $ uvx pre-commit run --all-files
 
 * Use `NumPy style <https://numpydoc.readthedocs.io/en/latest/format.html>`_ for docstrings. Follow existing examples for simplest guidance.
 

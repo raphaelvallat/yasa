@@ -7,7 +7,7 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 For the full list of extension configuration values, see respective sites.
 """
 import inspect
-import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -16,8 +16,21 @@ import yasa
 # Configure for source links
 GITHUB_USER = "raphaelvallat"
 GITHUB_REPO = "yasa"
-GITHUB_BRANCH = "master"
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _git_commit():
+    """Return the current commit, so that source links point to the code that was documented."""
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, check=True
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return "master"
+    return out.stdout.strip()
+
+
+GITHUB_REF = _git_commit()
 
 
 # -- Path setup --------------------------------------------------------------
@@ -252,8 +265,8 @@ html_theme_options = {
         "alt_text": f"{project} - Home",  # read first by screen readers
         "text": f"{project} v{release}",  # optional text placed alongside logo image
         # If these are the same, can just set one with sphinx's `html_logo`
-        "image_light": "https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/yasa_128x128.png",
-        "image_dark": "https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/yasa_128x128.png",
+        "image_light": "_static/yasa_128x128.png",
+        "image_dark": "_static/yasa_128x128.png",
         # "link": "",  # optional URL location to override default of index
     },
 
@@ -346,7 +359,7 @@ html_context = {
     "github_user": "raphaelvallat",
     "github_repo": "yasa",
     "github_version": "master",
-    "doc_path": "doc",
+    "doc_path": "docs",
 
     # PyData theme uses this to set the initial dark/light theme.
     # Options: "auto" (default) | "light" | "dark"
@@ -357,13 +370,13 @@ html_context = {
 # It is placed at the top of the sidebar; its width should therefore not exceed 200 pixels.
 # Defaults to ""
 # See ``html_theme_options['logo']`` to set this separately for light and dark themes in PyData theme.
-html_logo = "https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/yasa_128x128.png"
+html_logo = "_static/yasa_128x128.png"
 
 # If given, this must be a filename or URL that points to the favicon of the documentation.
 # Browsers use this as the icon for tabs, windows and bookmarks.
 # It should be a 16-by-16 pixel icon in the PNG, SVG, GIF, or ICO file formats.
 # Defaults to ""
-html_favicon = "https://raw.githubusercontent.com/raphaelvallat/yasa/refs/tags/v0.6.5/docs/pictures/favicon.ico"
+html_favicon = "_static/favicon.ico"
 
 # A list of CSS files.
 # The entry must be a filename string or a tuple containing the filename string and the attributes dictionary.
@@ -579,7 +592,7 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable", None),
     "mne": ("https://mne.tools/stable", None),
     "numpy": ("https://numpy.org/doc/stable", None),
-    "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
+    "pandas": ("https://pandas.pydata.org/docs", None),
     "pyriemann": ("https://pyriemann.readthedocs.io/en/latest", None),
     "python": ("https://docs.python.org/3", None),
     "scipy": ("https://docs.scipy.org/doc/scipy", None),
@@ -685,6 +698,10 @@ numpydoc_class_members_toctree = True
 # Options: True (default) | False
 numpydoc_attributes_as_param_list = True
 
+# Docstring checks run by numpydoc on every documented object, reported as Sphinx warnings.
+# PR01: parameters not documented, PR02: unknown parameters, RT01: no Returns section.
+numpydoc_validation_checks = {"PR01", "PR02", "RT01"}
+
 # -- External extensions -----------------------------------------------------
 # -- -> Options for notfound.extension -------------------------------------------------
 # https://sphinx-notfound-page.readthedocs.io/en/latest/configuration.html
@@ -750,29 +767,16 @@ def linkcode_resolve(domain, info):
     except (TypeError, OSError):
         return None
     source_path = Path(source_file).resolve()
-    relative_path = source_path.relative_to(REPO_ROOT)
+    try:
+        relative_path = source_path.relative_to(REPO_ROOT)
+    except ValueError:
+        # YASA is not installed in editable mode from this repository (e.g. site-packages)
+        return None
 
     end_line = start_line + len(source_lines) - 1
 
     return (
         f"https://github.com/{GITHUB_USER}/{GITHUB_REPO}"
-        f"/blob/{GITHUB_BRANCH}/{relative_path.as_posix()}"
+        f"/blob/{GITHUB_REF}/{relative_path.as_posix()}"
         f"#L{start_line}-L{end_line}"
     )
-
-
-# TEMPORARY: This can be removed after people stop using old links.
-# We need to generate a list of redirects for the old documentation
-# that was hosted under relative paths behind buid/html.
-# Create a sphinx extension that will find all docs and generate a
-# redirects dictionary that maps build/html/docpath to just docpath.
-def setup(app):
-    app.connect("env-updated", generate_redirects)
-
-def generate_redirects(app, env):
-    redirects = app.config.redirects or {}
-    for docpath in env.found_docs:
-        old_path = f"build/html/{docpath}"
-        new_path = "../" * old_path.count("/") + f"{docpath}.html"
-        redirects[old_path] = new_path
-    app.config.redirects = redirects

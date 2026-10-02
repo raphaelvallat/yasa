@@ -25,6 +25,7 @@ class TestIO(unittest.TestCase):
         set_log_level(False)
         set_log_level(True)
         set_log_level(None)
+        set_log_level(logging.ERROR)
         with pytest.raises(ValueError):
             set_log_level("WRONG")
 

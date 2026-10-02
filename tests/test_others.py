@@ -9,11 +9,11 @@ import pandas as pd
 import pytest
 from mne.filter import filter_data
 
+import yasa
+from yasa._validation import _check_data, _check_hypno_include
 from yasa.fetchers import fetch_sample
 from yasa.hypno import Hypnogram
 from yasa.others import (
-    _check_data,
-    _check_hypno_include,
     _index_to_events,
     _merge_close,
     _zerocrossings,
@@ -347,3 +347,13 @@ class TestOthers(unittest.TestCase):
         # Without the Raw, the hypnogram is aligned with the start of the data
         hypno_out = _check_hypno_include(hyp, ["N2"], raw.get_data(), sf_raw)[0]
         assert (hypno_out[: int(60 * sf_raw)] == 0).all()
+
+
+@pytest.mark.parametrize("name", ["trimbothstd", "get_centered_indices"])
+def test_moved_to_others_deprecated(name):
+    """Test the deprecated access to functions moved out of the top-level namespace."""
+    with pytest.warns(FutureWarning, match=f"yasa.others.{name}"):
+        func = getattr(yasa, name)
+    assert func is getattr(yasa.others, name)
+    with pytest.raises(AttributeError):
+        yasa.does_not_exist
