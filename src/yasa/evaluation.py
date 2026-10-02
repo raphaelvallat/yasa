@@ -353,7 +353,8 @@ class EpochByEpochAgreement:
         sample_weight : None or :py:class:`pandas.Series`
             Sample weights passed to underlying :py:mod:`sklearn.metrics` functions where possible.
             If a :py:class:`pandas.Series`, the index must match exactly that of
-            :py:attr:`~yasa.EpochByEpochAgreement.data`.
+            :py:attr:`~yasa.EpochByEpochAgreement.data`, which excludes ``ART`` and ``UNS``
+            epochs.
         scorers : None, list, or dictionary
             The scorers to be used for evaluating agreement. If None (default), default scorers are
             used. If a list of strings, each ``name`` is mapped to the
