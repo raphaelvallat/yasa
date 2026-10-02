@@ -2490,8 +2490,16 @@ def _read_profusion(fname):
     import xml.etree.ElementTree as ET
 
     root = ET.parse(fname).getroot()
-    epoch_length = float(root[0].text)
-    hypno_int = np.array([int(s.text) for s in root[4]])
+    # Find the elements by tag name: their position in the file is not part of the format
+    epoch_length = root.find("EpochLength")
+    stages = root.find("SleepStages")
+    if epoch_length is None or stages is None:
+        raise ValueError(
+            f"{fname} is not a valid Profusion hypnogram: the root element must contain the "
+            "<EpochLength> and <SleepStages> elements."
+        )
+    epoch_length = float(epoch_length.text)
+    hypno_int = np.array([int(s.text) for s in stages.iter("SleepStage")])
     return hypno_int, epoch_length
 
 
