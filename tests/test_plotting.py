@@ -65,12 +65,12 @@ def test_topoplot_existing_ax():
 
 
 def test_topoplot_input_not_modified():
-    """Test that topoplot does not modify its input or the global font size"""
+    """Test that topoplot does not modify its input or the global rcParams"""
     data = DATA_NEG.copy()
-    fontsize = plt.rcParams["font.size"]
+    rc = {key: plt.rcParams[key] for key in ["font.size", "savefig.bbox", "savefig.transparent"]}
     topoplot(data, fontsize=20)
     pd.testing.assert_series_equal(data, DATA_NEG)
-    assert plt.rcParams["font.size"] == fontsize
+    assert {key: plt.rcParams[key] for key in rc} == rc
     with pytest.raises(AssertionError, match="must be a Pandas Series"):
         topoplot(data.to_numpy())
 
@@ -99,6 +99,17 @@ def test_plot_hypnogram():
     hyp3.hypno.loc["2020-01-01 22:10:00":"2020-01-01 22:15:00"] = "ART"
     hyp3.hypno.loc["2020-01-01 23:30:00":"2020-01-02 01:00:00"] = "ART"
     hyp3.plot_hypnogram(fill_color="peachpuff")
+
+
+def test_plot_hypnogram_restores_fontsize():
+    """The larger font size of plot_hypnogram is restored, even when the plot fails."""
+    fontsize = plt.rcParams["font.size"]
+    hyp = simulate_hypnogram(n_stages=5)
+    hyp.plot_hypnogram()
+    assert plt.rcParams["font.size"] == fontsize
+    with pytest.raises(AttributeError):
+        hyp.plot_hypnogram(ax="not an axis")
+    assert plt.rcParams["font.size"] == fontsize
 
 
 @pytest.mark.parametrize("sf_hypno", [1 / 30, 1])

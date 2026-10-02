@@ -79,14 +79,12 @@ def plot_hypnogram(hyp, sf_hypno=1 / 30, highlight="REM", fill_color=None, ax=No
     return _plot_hypnogram(hyp, highlight=highlight, fill_color=fill_color, ax=ax, **kwargs)
 
 
+# Larger font, restored on exit (even if an error is raised) without touching the global rcParams
+@plt.rc_context({"font.size": 18})
 def _plot_hypnogram(hyp, highlight="REM", fill_color=None, ax=None, **kwargs):
     """Plot a :py:class:`yasa.Hypnogram`. See :py:meth:`yasa.Hypnogram.plot_hypnogram`."""
     # Work with a copy of the Hypnogram to not alter the original
     hyp = hyp.copy()
-
-    # Increase font size while preserving original
-    old_fontsize = plt.rcParams["font.size"]
-    plt.rcParams.update({"font.size": 18})
 
     # Open the figure
     if ax is None:
@@ -153,11 +151,10 @@ def _plot_hypnogram(hyp, highlight="REM", fill_color=None, ax=None, **kwargs):
     if hyp.start is not None:
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
         ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-    # Revert font-size
-    plt.rcParams.update({"font.size": old_fontsize})
     return ax
 
 
+@plt.rc_context({"font.size": 18})
 def plot_spectrogram(
     data,
     sf,
@@ -272,10 +269,6 @@ def plot_spectrogram(
         >>> hyp = yasa.Hypnogram.from_integers(hypno_30s, freq="30s")
         >>> fig = yasa.plot_spectrogram(data, sf, hyp, cmap="Spectral_r")
     """
-    # Increase font size while preserving original
-    old_fontsize = plt.rcParams["font.size"]
-    plt.rcParams.update({"font.size": 18})
-
     # If hypno is a Hypnogram instance, upsample it and keep the original for plotting
     hyp_obj = None
     if isinstance(hypno, Hypnogram):
@@ -351,9 +344,6 @@ def plot_spectrogram(
         # Add colorbar
         cbar = fig.colorbar(im, ax=ax1, shrink=0.95, fraction=0.1, aspect=25)
         cbar.ax.set_ylabel("Log Power (dB / Hz)", rotation=270, labelpad=20)
-
-    # Revert font-size
-    plt.rcParams.update({"font.size": old_fontsize})
     return fig
 
 
@@ -476,12 +466,6 @@ def topoplot(
         >>> fig = yasa.topoplot(data1, ax=axes[0])
         >>> fig = yasa.topoplot(data2, ax=axes[1])
     """
-    # Increase font size while preserving original
-    old_fontsize = plt.rcParams["font.size"]
-    plt.rcParams.update({"font.size": fontsize})
-    plt.rcParams.update({"savefig.bbox": "tight"})
-    plt.rcParams.update({"savefig.transparent": "True"})
-
     # Make sure we don't do any in-place modification
     assert isinstance(data, pd.Series), "`data` must be a Pandas Series"
     data = data.copy()
@@ -536,8 +520,8 @@ def topoplot(
     if kwargs["names"] == "values":
         kwargs["names"] = data.iloc[:, 0][chan].round(2).to_numpy()
 
-    # Start the plot
-    with sns.axes_style("white"):
+    # Start the plot. The font size is restored on exit, even if an error is raised.
+    with sns.axes_style("white"), plt.rc_context({"font.size": fontsize}):
         if ax is None:
             fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
             _ax_provided = False
@@ -574,7 +558,4 @@ def topoplot(
             cax = fig.add_axes([0.95, 0.3, 0.02, 0.5])
             cbar = fig.colorbar(im, cax=cax, ticks=cbar_ticks, fraction=0.5)
         cbar.set_label(cbar_title)
-
-        # Revert font-size
-        plt.rcParams.update({"font.size": old_fontsize})
     return fig
