@@ -6,7 +6,6 @@ import logging
 import os
 import re
 
-import antropy as ant
 import joblib
 import matplotlib.pyplot as plt
 import mne
@@ -22,6 +21,8 @@ from .others import sliding_window
 from .spectral import bandpower_from_psd_ndarray
 
 logger = logging.getLogger("yasa")
+
+__all__ = ["SleepStaging"]
 
 
 class SleepStaging:
@@ -272,6 +273,9 @@ class SleepStaging:
         #######################################################################
         # CALCULATE FEATURES
         #######################################################################
+
+        # Imported here because antropy (numba) roughly doubles the import time of YASA
+        import antropy as ant
 
         features = []
 
