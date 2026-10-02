@@ -54,13 +54,14 @@ jobs:
           path: docs/build/html
 
       - name: Upload Pages artifact
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
         with:
           path: docs/build/html
 
   deploy:
-    if: github.event_name != 'pull_request'
+    # Only deploy from master, including manual runs started from another branch
+    if: github.ref == 'refs/heads/master'
     needs: build
     runs-on: ubuntu-latest
     permissions:
