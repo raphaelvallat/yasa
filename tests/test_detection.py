@@ -450,6 +450,7 @@ class TestDetection(unittest.TestCase):
         rem2 = rem_detect(loc, roc, sf_rem, remove_outliers=True)
         assert rem.summary().shape[0] > rem2.summary().shape[0]
         assert rem.get_mask().shape == (2, loc.size)
+        rem.plot_detection()
         df_sync = rem.get_sync_events()
         assert df_sync["Channel"].unique().tolist() == ["LOC", "ROC"]
         assert df_sync["Event"].nunique() == rem.summary().shape[0]
