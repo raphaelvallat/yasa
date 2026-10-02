@@ -4,79 +4,107 @@ What's new
 ##########
 
 
-v0.8.0 (unreleased)
--------------------
+v0.8.0 (October 2026)
+---------------------
 
-**Evaluation module**
+This is a major release. Its highlight is the evaluation module, which implements the standardized
+framework of Menghini et al. (2021) for evaluating a wearable
+or an automatic sleep staging algorithm against a reference (e.g. polysomnography). It also
+includes many bugfixes and speed improvements, removes the ``numba`` and ``tensorpac``
+dependencies, and requires Python 3.11+.
 
-The evaluation module (:py:class:`yasa.EpochByEpochAgreement` and
-:py:class:`yasa.SleepStatsAgreement`), previously experimental, now follows the standardized
-framework for testing the performance of sleep-tracking technology of Menghini et al. (2021), and
-is validated against the published sample dataset of that paper.
+**New: Evaluation module**
 
-*Epoch-by-epoch agreement*
+YASA now includes a complete pipeline to evaluate a wearable device or an automatic sleep staging
+algorithm against a reference such as polysomnography (PSG) or human scoring. It implements the
+standardized framework of `Menghini et al. (2021) <https://doi.org/10.1093/sleep/zsaa170>`_ and is
+validated against the sample dataset and R pipeline published with that paper. To get started,
+check out the new :ref:`tutorial_evaluation` tutorial, which walks through a complete validation
+study step by step.
 
-* All proportion-based metrics (accuracy, precision, F1, specificity, NPV, ...) are expressed as
-  percentages (0-100), as in the reference framework. ``kappa`` and ``mcc`` keep their -1 to 1
-  scale.
-* :py:meth:`yasa.EpochByEpochAgreement.get_confusion_matrix_proportional` returns the group-level
-  proportional error matrix: the mean, SD, and confidence interval across sessions of the
-  row-normalized per-session confusion matrices (Table 5 of the paper). Confidence intervals use a
-  participant bootstrap (BCa by default; ``basic`` and ``percentile`` available) or a parametric
-  t-interval. Use ``formatted=True`` for a ``"mean (SD) [lower, upper]"`` table.
-* :py:meth:`yasa.EpochByEpochAgreement.get_agreement_bystage` reports specificity and NPV per
-  stage, and leaves metrics that are undefined for a session (e.g. recall for a stage absent from
-  the reference hypnogram) missing rather than counting them as 0, so that they do not bias group
-  averages. The ``zero_division`` parameter controls this behavior.
-* :py:meth:`yasa.EpochByEpochAgreement.get_agreement` can pool all epochs across sessions
-  (``pooled=True``), accept a list of ``sklearn.metrics`` names as ``scorers``, and weight epochs
-  with ``sample_weight``. :py:meth:`~yasa.EpochByEpochAgreement.summary` computes the scores
-  itself if needed.
+The module has two classes, one for each level of the analysis:
 
-*Sleep statistics agreement*
-
-* :py:class:`yasa.SleepStatsAgreement` can be built directly from the output of
-  :py:meth:`yasa.EpochByEpochAgreement.get_sleep_stats`.
-* :py:meth:`yasa.SleepStatsAgreement.report` produces the publication-ready table of the paper:
-  ``mean (SD)`` of both scorers, bias and limits of agreement with confidence intervals, and the
-  assumption checks that drove the method selection. Select statistics with ``sleep_stats`` and
-  omit confidence intervals (and the bootstrap) with ``ci_method=None``.
-* Limits of agreement follow the paper for every combination of assumptions: constant, parallel
-  to a regression bias line at ``± 1.96 SD`` of its residuals (eq. 2), modeled as a function of
-  the reference value (heteroscedasticity), or proportional after a log transformation
-  (``log_transform=True``, Euser et al. 2008). All quantities, including the new
-  ``loa_halfwidth`` and ``loa_log_slope`` variables, are available with confidence intervals in
-  :py:meth:`yasa.SleepStatsAgreement.summary`.
-* :py:attr:`yasa.SleepStatsAgreement.assumptions` gathers, for each assumption test, the test
-  statistic, p-value, effect size (Cohen's d, skew, kurtosis, R²), pass/fail flag, and the method
-  selected when ``'auto'`` is requested, so that the practical relevance of a violation can be
-  judged.
-* :py:meth:`yasa.SleepStatsAgreement.calibrate` corrects new data for the observed bias, using
-  either the mean bias or the inverted bias regression per statistic.
-* :py:meth:`yasa.SleepStatsAgreement.plot_blandaltman` draws a grid of Bland-Altman plots (at
-  most 4 columns) with the bias line, limits of agreement, and their confidence bands.
-* Robust handling of edge cases: sessions with a missing value are dropped per statistic (e.g. REM
-  latency for a night without REM sleep), and statistics containing a zero are excluded from the
-  log transformation with a warning instead of depending on an arbitrary offset.
+* :py:class:`yasa.EpochByEpochAgreement` compares the reference and device hypnograms epoch by
+  epoch, across one or more sessions (nights). It reports overall and per-stage agreement metrics
+  (accuracy, Cohen's kappa, sensitivity, specificity, PPV, NPV, F1, ...), the confusion matrix and
+  the group-level proportional error matrix, with optional bootstrap confidence intervals across
+  sessions. It can also plot the two hypnograms of each session side by side.
+* :py:class:`yasa.SleepStatsAgreement` compares the sleep statistics (TST, SE, WASO, time in each
+  stage, ...) of the two scorers with a Bland-Altman analysis. It estimates the bias and the limits
+  of agreement of each statistic, with their confidence intervals, and tests the assumptions
+  (normality, proportional bias, heteroscedasticity) that determine the most appropriate method.
+  :py:meth:`~yasa.SleepStatsAgreement.report` gives a publication-ready table,
+  :py:meth:`~yasa.SleepStatsAgreement.plot_blandaltman` draws the Bland-Altman plots, and
+  :py:meth:`~yasa.SleepStatsAgreement.calibrate` corrects new data for a constant bias. It can be
+  created directly from the output of :py:meth:`yasa.EpochByEpochAgreement.get_sleep_stats`.
 
 **Bugfixes**
 
-* Fixed a units bug in :py:meth:`yasa.Hypnogram.sleep_statistics`: the Sleep Fragmentation Index
-  (SFI) was incorrectly divided by the number of epochs per minute, which made it depend on the
-  epoch length of the hypnogram. SFI is a *rate* (number of transitions from sleep into WAKE per
-  hour of TST), so it must be excluded from the conversion of epoch counts to minutes, as is
-  already the case for ``SE`` and ``SME`` and as the method's own docstring documents.
+* Fixed the Sleep Fragmentation Index (SFI) in :py:meth:`yasa.Hypnogram.sleep_statistics`, which
+  was incorrectly divided by the number of epochs per minute. (`issue 253 <https://github.com/raphaelvallat/yasa/issues/253>`_, `PR 254 <https://github.com/raphaelvallat/yasa/pull/254>`_)
+* Fixed :py:meth:`yasa.Hypnogram.from_profusion` with Profusion stage 9 (Active/wake).
+  (`issue 241 <https://github.com/raphaelvallat/yasa/issues/241>`_, `PR 242 <https://github.com/raphaelvallat/yasa/pull/242>`_)
+* Fixed :py:func:`yasa.topoplot` with pandas 3 and recent versions of MNE, and
+  :py:func:`yasa.plot_spectrogram` with flat data. (`PR 251 <https://github.com/raphaelvallat/yasa/pull/251>`_, `PR 272 <https://github.com/raphaelvallat/yasa/pull/272>`_)
+* Fixed many smaller bugs in the detection functions (e.g. stage labels in ``get_sync_events``,
+  recall of ``compare_detection``), the :py:class:`yasa.Hypnogram` class (e.g. ``crop``,
+  ``upsample``, custom mappings) and :py:class:`yasa.SleepStaging`.
+  (`PR 264 <https://github.com/raphaelvallat/yasa/pull/264>`_, `PR 265 <https://github.com/raphaelvallat/yasa/pull/265>`_, `PR 273 <https://github.com/raphaelvallat/yasa/pull/273>`_)
 
-.. warning::
+**Improvements**
 
-   **SFI values change for every epoch length other than 60 seconds.** The previously reported
-   SFI was scaled by ``epoch_length / 60``, so it was only correct for 60-second epochs. If you
-   have published or stored SFI values computed with an earlier version of YASA, recompute them,
-   or multiply the old values by ``60 / epoch_length`` to recover the corrected rate.
+* :py:func:`yasa.irasa` accepts a ``hypno`` and ``include`` to compute IRASA separately for each
+  sleep stage, as in :py:func:`yasa.bandpower`. (`issue 25 <https://github.com/raphaelvallat/yasa/issues/25>`_, `PR 267 <https://github.com/raphaelvallat/yasa/pull/267>`_)
+* :py:func:`yasa.bandpower` accepts string stage labels in ``include`` (e.g. ``include=("N2",
+  "N3")``). (`PR 251 <https://github.com/raphaelvallat/yasa/pull/251>`_)
+* Added the ``ax`` parameter to :py:func:`yasa.topoplot`. (`PR 244 <https://github.com/raphaelvallat/yasa/pull/244>`_)
+* Hypnograms with a start time are now aligned to MNE Raw objects using absolute timestamps,
+  including cropped Raw objects. (`PR 264 <https://github.com/raphaelvallat/yasa/pull/264>`_, `PR 265 <https://github.com/raphaelvallat/yasa/pull/265>`_)
+* Faster spindles and slow-waves detection (with lower memory usage), and faster
+  :py:class:`yasa.Hypnogram` methods. (`PR 246 <https://github.com/raphaelvallat/yasa/pull/246>`_, `PR 247 <https://github.com/raphaelvallat/yasa/pull/247>`_, `PR 264 <https://github.com/raphaelvallat/yasa/pull/264>`_, `PR 265 <https://github.com/raphaelvallat/yasa/pull/265>`_)
+* YASA now only configures its own ``"yasa"`` logger instead of the root logger, and the
+  ``verbose`` argument only applies for the duration of the call. (`PR 268 <https://github.com/raphaelvallat/yasa/pull/268>`_)
+* Removed the ``numba`` and ``tensorpac`` dependencies (the ndPAC is now computed by YASA), and
+  reduced the import time of YASA. (`PR 239 <https://github.com/raphaelvallat/yasa/pull/239>`_, `PR 246 <https://github.com/raphaelvallat/yasa/pull/246>`_, `PR 268 <https://github.com/raphaelvallat/yasa/pull/268>`_)
+
+**Deprecations**
+
+The following functions now emit a ``FutureWarning`` and will be removed in v0.9. Use the
+equivalent :py:class:`~yasa.Hypnogram` methods instead (see :ref:`tutorial_migrate`):
+``plot_hypnogram``, ``hypno_int_to_str``, ``hypno_str_to_int``, ``hypno_upsample_to_sf``,
+``hypno_upsample_to_data``, ``hypno_find_periods``, ``load_profusion_hypno``,
+``sleep_statistics`` and ``transition_matrix``. (`PR 258 <https://github.com/raphaelvallat/yasa/pull/258>`_)
+
+In addition, ``yasa.trimbothstd`` and ``yasa.get_centered_indices`` are deprecated in favor of
+``yasa.others.trimbothstd`` and ``yasa.others.get_centered_indices``, and the ``kwargs_welch``
+argument of :py:func:`yasa.bandpower` and :py:func:`yasa.irasa` is renamed ``welch_kwargs``.
+(`PR 268 <https://github.com/raphaelvallat/yasa/pull/268>`_, `PR 270 <https://github.com/raphaelvallat/yasa/pull/270>`_)
+
+**Removed**
+
+* Removed ``SleepStaging.predict_proba``, which was deprecated in v0.7. The stage probabilities
+  are stored in the :py:attr:`~yasa.Hypnogram.proba` attribute of the hypnogram returned by
+  :py:meth:`yasa.SleepStaging.predict`. (`PR 265 <https://github.com/raphaelvallat/yasa/pull/265>`_)
+* Removed the 0.4.0 pre-trained classifiers of :py:class:`yasa.SleepStaging`, which were no longer
+  used (the most recent classifiers are always selected). This reduces the size of the package
+  from ~34 MB to ~27 MB. (`PR 268 <https://github.com/raphaelvallat/yasa/pull/268>`_)
 
 **Dependencies**
 
-* Bumped minimum ``scikit-learn`` version to 1.3.
+* YASA now requires **Python ≥ 3.11**.
+* The minimum version of each dependency is now its first release from 2025 onward: ``numpy >=
+  2.2.2``, ``scipy >= 1.15``, ``pandas >= 2.3``, ``matplotlib >= 3.10.1``, ``mne >= 1.10``,
+  ``scikit-learn >= 1.6.1`` and ``lightgbm >= 4.6``. (`PR 263 <https://github.com/raphaelvallat/yasa/pull/263>`_)
+
+**Contributors**
+
+A special thanks to `Remington Mallett <https://github.com/remrama>`_, who wrote the initial
+version of the evaluation module (`PR 130 <https://github.com/raphaelvallat/yasa/pull/130>`_) and
+added the Bland-Altman plots in this release. Thanks also to all the contributors of this release:
+
+* `Regina Reynolds <https://github.com/RHReynolds>`_
+* `Bhargav Kowshik <https://github.com/bkowshik>`_
+* `Raphael Vallat <https://github.com/raphaelvallat>`_ (creator and core maintainer of YASA)
 
 ----------------------------------------------------------------------------------------
 
