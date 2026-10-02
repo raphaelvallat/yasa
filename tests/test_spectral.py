@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import pytest
 from scipy.signal import welch
 
@@ -154,6 +155,21 @@ def test_bandpower_hypnogram(full_1h):
 ##############################################################################
 
 
+def test_bandpower_welch_kwargs(n2_spindles):
+    """welch_kwargs replaces the default, and the deprecated kwargs_welch still works."""
+    data, sf = n2_spindles.data, n2_spindles.sf
+    bp_default = bandpower(data, sf=sf)
+    bp_hann = bandpower(data, sf=sf, welch_kwargs={"window": "hann"})
+    assert not bp_hann.equals(bp_default)
+    with pytest.warns(FutureWarning, match="`kwargs_welch` argument is deprecated") as record:
+        bp_old = bandpower(data, sf=sf, kwargs_welch={"window": "hann"})
+    # The warning points to the caller of bandpower, not to YASA
+    assert record[0].filename == __file__
+    pd.testing.assert_frame_equal(bp_old, bp_hann)
+    with pytest.raises(TypeError, match="not both"), pytest.warns(FutureWarning):
+        bandpower(data, sf=sf, welch_kwargs={}, kwargs_welch={})
+
+
 def test_bandpower_from_psd_1d(n2_spindles):
     """1-D EEG data."""
     data, sf = n2_spindles.data, n2_spindles.sf
@@ -256,6 +272,17 @@ def test_irasa_1d(n2_spindles):
     assert fit_params.shape[0] == 1
     assert fit_params.at[0, "Slope"] < 0
     assert 0 < fit_params.at[0, "R^2"] <= 1
+
+
+def test_irasa_welch_kwargs(n2_spindles):
+    """irasa also accepts the deprecated kwargs_welch, with the warning pointing to the caller."""
+    data, sf = n2_spindles.data, n2_spindles.sf
+    new = irasa(data, sf=sf, return_fit=False, welch_kwargs={"window": "hann"})
+    with pytest.warns(FutureWarning, match="`kwargs_welch` argument is deprecated") as record:
+        old = irasa(data, sf=sf, return_fit=False, kwargs_welch={"window": "hann"})
+    assert record[0].filename == __file__
+    for a, b in zip(new, old):
+        np.testing.assert_array_equal(a, b)
 
 
 def test_irasa_2d(eo):
