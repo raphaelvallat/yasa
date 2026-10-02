@@ -1,8 +1,8 @@
 """Test the fetchers module."""
 
-import os
-import unittest
-from tempfile import TemporaryDirectory
+from pathlib import Path
+
+import pytest
 
 from yasa import fetchers
 
@@ -25,30 +25,37 @@ ALL_SAMPLE_V1_FILES = [
 ]
 
 
-class TestFetchers(unittest.TestCase):
-    """Test fetchers functions"""
+def test_repository_initialization():
+    """Test that the DOI repo initializer works"""
+    pup = fetchers._init_repository("sample", version="v1")
+    assert sorted(pup.registry_files) == sorted(ALL_SAMPLE_V1_FILES)
 
-    def test_repository_initialization(self):
-        """Test that the DOI repo initializer works"""
-        pup = fetchers._init_repository("sample", version="v1")
-        assert sorted(pup.registry_files) == sorted(ALL_SAMPLE_V1_FILES)
 
-    def test_file_download(self):
-        """Test the download of a single arbitrary file from the samples repo"""
-        with TemporaryDirectory() as tempdir:
-            os.environ["YASA_DATA_DIR"] = tempdir
-            fp = fetchers.fetch_sample(SMALL_SAMPLE_FILE)
-            assert fp.exists()
-            assert fp.is_file()
-            assert os.path.dirname(fp) == tempdir
+def test_repository_data_dir(tmp_path, monkeypatch):
+    """Test that the YASA_DATA_DIR environment variable sets the cache directory"""
+    monkeypatch.setenv("YASA_DATA_DIR", str(tmp_path))
+    pup = fetchers._init_repository("sample", version="v1")
+    assert Path(pup.abspath) == tmp_path
 
-    def test_version_picker(self):
-        """Test the version parameter in sample fetcher"""
-        with self.assertRaisesRegex(AssertionError, "`version` must be one of"):
-            fetchers.fetch_sample(SMALL_SAMPLE_FILE, version="999")
 
-    def test_fetch_kwargs(self):
-        """Test passing of kwargs to Pooch.fetch by printing progress bar"""
-        with TemporaryDirectory() as tempdir:
-            os.environ["YASA_DATA_DIR"] = tempdir
-            fetchers.fetch_sample(SMALL_SAMPLE_FILE, progressbar=True)
+def test_version_picker():
+    """Test the version parameter in sample fetcher"""
+    with pytest.raises(AssertionError, match="`version` must be one of"):
+        fetchers.fetch_sample(SMALL_SAMPLE_FILE, version="999")
+
+
+@pytest.mark.network
+def test_file_download(tmp_path, monkeypatch):
+    """Test the download of a single arbitrary file from the samples repo"""
+    monkeypatch.setenv("YASA_DATA_DIR", str(tmp_path))
+    fp = fetchers.fetch_sample(SMALL_SAMPLE_FILE)
+    assert fp.exists()
+    assert fp.is_file()
+    assert fp.parent == tmp_path
+
+
+@pytest.mark.network
+def test_fetch_kwargs(tmp_path, monkeypatch):
+    """Test passing of kwargs to Pooch.fetch by printing progress bar"""
+    monkeypatch.setenv("YASA_DATA_DIR", str(tmp_path))
+    fetchers.fetch_sample(SMALL_SAMPLE_FILE, progressbar=True)
