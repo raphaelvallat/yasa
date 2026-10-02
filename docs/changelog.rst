@@ -21,7 +21,6 @@ standardized framework of `Menghini et al. (2021) <https://doi.org/10.1093/sleep
 validated against the sample dataset and R pipeline published with that paper. To get started,
 check out the new :ref:`tutorial_evaluation` tutorial, which walks through a complete validation
 study step by step.
-(`PR 228 <https://github.com/raphaelvallat/yasa/pull/228>`_, `PR 245 <https://github.com/raphaelvallat/yasa/pull/245>`_, `PR 248 <https://github.com/raphaelvallat/yasa/pull/248>`_, `PR 249 <https://github.com/raphaelvallat/yasa/pull/249>`_, `PR 252 <https://github.com/raphaelvallat/yasa/pull/252>`_, `PR 255 <https://github.com/raphaelvallat/yasa/pull/255>`_, `PR 257 <https://github.com/raphaelvallat/yasa/pull/257>`_, `PR 260 <https://github.com/raphaelvallat/yasa/pull/260>`_, `PR 261 <https://github.com/raphaelvallat/yasa/pull/261>`_, `PR 274 <https://github.com/raphaelvallat/yasa/pull/274>`_, `PR 275 <https://github.com/raphaelvallat/yasa/pull/275>`_)
 
 The module has two classes, one for each level of the analysis:
 
@@ -96,6 +95,17 @@ argument of :py:func:`yasa.bandpower` and :py:func:`yasa.irasa` is renamed ``wel
 * The minimum version of each dependency is now its first release from 2025 onward: ``numpy >=
   2.2.2``, ``scipy >= 1.15``, ``pandas >= 2.3``, ``matplotlib >= 3.10.1``, ``mne >= 1.10``,
   ``scikit-learn >= 1.6.1`` and ``lightgbm >= 4.6``. (`PR 263 <https://github.com/raphaelvallat/yasa/pull/263>`_)
+
+**Contributors**
+
+A special thanks to `Remington Mallett <https://github.com/remrama>`_, who wrote the initial
+version of the evaluation module (`PR 130 <https://github.com/raphaelvallat/yasa/pull/130>`_) and
+added the Bland-Altman plots in this release. Thanks also to all the contributors of this release:
+
+* `Remington Mallett <https://github.com/remrama>`_
+* `Regina Hertfelder Reynolds <https://github.com/RHReynolds>`_
+* `Bhargav Kowshik <https://github.com/bkowshik>`_
+* `Raphael Vallat <https://github.com/raphaelvallat>`_
 
 ----------------------------------------------------------------------------------------
 
