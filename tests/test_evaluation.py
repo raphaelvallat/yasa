@@ -838,6 +838,18 @@ class TestSleepStatsAgreementInit:
         with pytest.raises(AssertionError):
             SleepStatsAgreement(**kwargs)
 
+    def test_constant_reference(self, ref_stats, obs_stats):
+        # Constant reference values (e.g. no N3 in any night): the stat is kept with a flat
+        # bias regression, so the parametric bias and LoA are used
+        ref = ref_stats.assign(N3=0.0)
+        ssa_const = SleepStatsAgreement(
+            ref, obs_stats, bootstrap_kwargs={"n_resamples": 100, "method": "basic"}
+        )
+        assert "N3" in ssa_const.sleep_statistics
+        assumptions = ssa_const.assumptions.loc["N3"]
+        assert assumptions["constant_bias", "passed"] and assumptions["homoscedastic", "passed"]
+        assert ssa_const.summary(ci_method="boot").loc["N3"].notna().any()
+
 
 class TestSleepStatsAgreementAssumptions:
     def test_structure(self, ssa):
@@ -1270,6 +1282,18 @@ class TestSleepStatsAgreementLogTransform:
             expected = 2 * (np.exp(z) - 1) / (np.exp(z) + 1)
             assert np.isclose(slope[stat], expected) and slope[stat] >= 0
         assert SleepStatsAgreement._euser_slope_scalar(0.0, 1.96) == 0.0
+
+    def test_loa_log_slope_param_ci(self, ssa_log, log_stats):
+        # The SE of a limit, sqrt(3 * SD^2 / n), is added on the z = 1.96 * SD scale, as in the
+        # reference pipeline of Menghini et al. (2021). The lower bound is clamped at 0.
+        ci = ssa_log._loa_log_ci
+        for stat in log_stats:
+            d = np.log(ssa_log.data.loc[stat, OBS_SCORER] / ssa_log.data.loc[stat, REF_SCORER])
+            sd, n = d.std(ddof=1), d.size
+            t = sps.t.ppf((1 + ssa_log._confidence) / 2, n - 1)
+            z = 1.96 * sd + np.array([-1, 1]) * t * np.sqrt(3 * sd**2 / n)
+            expected = 2 * (np.exp(z.clip(0)) - 1) / (np.exp(z.clip(0)) + 1)
+            np.testing.assert_allclose(ci.loc[stat, ["param_lower", "param_upper"]], expected)
 
     def test_summary_log_slope_column(self, ssa_log):
         s = ssa_log.summary(ci_method="param")["loa_log_slope"].dropna()

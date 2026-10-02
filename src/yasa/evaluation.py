@@ -1346,7 +1346,11 @@ class SleepStatsAgreement:
         ``slope`` is derived from the standard deviation of log-ratio differences. This is
         appropriate when measurement variability is proportional to the measurement magnitude
         (heteroscedasticity), which is common for duration statistics such as TST, SOL, and WASO.
-        When ``True``, ``loa_method='auto'`` in :py:meth:`report` and
+        As in the reference pipeline of Menghini et al. (2021), ``bias`` is the mean difference on
+        the original scale and the slope is multiplied by the reference value. This is an
+        approximation: Euser et al. (2008) derived the slope for differences relative to the mean
+        of both scorers, and the exact back-transformed limits relative to the reference value
+        are slightly asymmetric. When ``True``, ``loa_method='auto'`` in :py:meth:`report` and
         :py:meth:`plot_blandaltman` will automatically select the Euser method for all
         statistics, bypassing the homoscedasticity assumption test. Statistics with a value of
         exactly zero in either scorer (e.g. SOL for a subject who fell asleep in the first epoch)
@@ -1649,18 +1653,19 @@ class SleepStatsAgreement:
                 sd = np.std(log_d, ddof=1)
                 # t critical value for the parametric slope CI (Bland & Altman 1999).
                 t_log = sps.t.ppf((1 + confidence) / 2, n[stat] - 1)
-                # SE of the SD of log-ratios: sqrt(SD^2 * 3 / n)  (Bland & Altman 1999).
-                # Used to propagate uncertainty in SD into the slope CI.
-                se = np.sqrt(sd**2 * 3 / n[stat])
+                # SE of a limit of agreement (Bland & Altman 1999): sqrt(3 * SD^2 / n). It is
+                # already on the scale of z = agreement * SD, so it is added to z directly, as in
+                # the reference pipeline of Menghini et al. (2021).
+                se_z = np.sqrt(sd**2 * 3 / n[stat])
                 # Point estimate: back-transform SD of log-ratios to a proportional slope.
                 loa_log_slope[stat] = self._euser_slope_scalar(sd, agreement)
-                # Parametric CI: apply _euser_slope_scalar to the CI bounds of SD.
-                # Clamp the lower SD bound at 0 so the slope stays non-negative.
+                # Parametric CI: back-transform the CI bounds of z (converted to SD units).
+                # Clamp the lower bound at 0 so the slope stays non-negative.
                 loa_log_ci.at[stat, "param_lower"] = self._euser_slope_scalar(
-                    max(sd - t_log * se, 0.0), agreement
+                    max(sd - t_log * se_z / agreement, 0.0), agreement
                 )
                 loa_log_ci.at[stat, "param_upper"] = self._euser_slope_scalar(
-                    sd + t_log * se, agreement
+                    sd + t_log * se_z / agreement, agreement
                 )
 
         ########################################################################
@@ -1905,6 +1910,7 @@ class SleepStatsAgreement:
         Converts the SD of log-ratio differences back to a proportional LoA slope in the original
         scale. The limits of agreement are then ``bias ± slope × ref``, where ``slope`` grows with
         the variability of the log-ratios. When SD is 0, ``z = 0`` and the slope is 0 (no spread).
+        Using ``ref`` (rather than the mean of both scorers) follows Menghini et al. (2021).
         """
         z = agreement * sd
         return 2.0 * (np.exp(z) - 1.0) / (np.exp(z) + 1.0)
@@ -1917,7 +1923,23 @@ class SleepStatsAgreement:
         not included when converting the named tuple, so this allows it to be included when using
         something like groupby.
         """
-        x, y = df.iloc[:, 0].to_numpy(), df.iloc[:, 1].to_numpy()
+        return SleepStatsAgreement._linregress(df.iloc[:, 0].to_numpy(), df.iloc[:, 1].to_numpy())
+
+    @staticmethod
+    def _linregress(x, y):
+        """Run :py:func:`scipy.stats.linregress` and return a dictionary of the results."""
+        if np.ptp(x) == 0:
+            # Constant reference values (e.g. N3 = 0 in every night): the slope is not
+            # identifiable. Use a flat line through the mean of y (no proportional effect), so that
+            # the assumption tests pass and the parametric methods are used.
+            return {
+                "slope": 0.0,
+                "intercept": np.mean(y),
+                "rvalue": 0.0,
+                "pvalue": 1.0,
+                "stderr": np.nan,
+                "intercept_stderr": np.nan,
+            }
         regr = sps.linregress(x, y)
         return {
             "slope": regr.slope,
@@ -2010,11 +2032,14 @@ class SleepStatsAgreement:
             """A function to get all variables at once and avoid redundant stats.bootstrap calls."""
             bias_mean = np.mean(diff_arr)
             loa_lower, loa_upper = self._arr_to_loa(diff_arr, self._agreement)
-            bias_slope, bias_inter = sps.linregress(ref_arr, diff_arr)[:2]
+            # A resample can have constant reference values, see _linregress
+            regr = self._linregress(ref_arr, diff_arr)
+            bias_slope, bias_inter = regr["slope"], regr["intercept"]
             resid = diff_arr - (bias_inter + bias_slope * ref_arr)
             loa_halfwidth = self._agreement * np.std(resid, ddof=1)
             # Note this is NOT recalculating residuals each time for the next regression
-            loa_slope, loa_inter = sps.linregress(ref_arr, rabs_arr)[:2]
+            regr = self._linregress(ref_arr, rabs_arr)
+            loa_slope, loa_inter = regr["slope"], regr["intercept"]
             return (
                 bias_mean,
                 loa_lower,

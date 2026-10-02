@@ -41,6 +41,9 @@ What is tested
 - Proportional error matrix (Section 3.1, ``error_matrices["_condition_staging"]["proportional_avg"]``):
   mean and SD across subjects of each row-normalized cell, and the 95% CIs from R's "basic"
   bootstrap, compared against YASA's ``method="basic"`` with a looser tolerance.
+- Log-transformed LoA slope of Euser et al. (2008) and its parametric CI, against the
+  ``groupDiscr(..., logTransf=TRUE, CI.type="classic")`` function of the R pipeline
+  (``Functions/groupDiscr.R``), run on the per-subject sleep statistics of this dataset.
 
 What is NOT tested
 ------------------
@@ -134,6 +137,19 @@ _CM_COLS = {
 }
 # All (reference_label, device_label) cells of the 4 x 4 confusion matrix
 _CM_CELLS = [(r, c) for r in _CM_ROWS for c in _CM_COLS]
+
+# Euser LoA slope (center, CI lower, CI upper) from groupDiscr.R (logTransf=TRUE,
+# CI.type="classic", digits=6), run on the output of EpochByEpochAgreement.get_sleep_stats().
+# R adds 0.0001 to all values before the log transform, hence the small tolerance (_ATOL_LOG).
+_LOG_SLOPE = {
+    "TST": (0.138645, 0.067987, 0.208958),
+    "SE": (0.138645, 0.067987, 0.208957),
+    "WASO": (1.017238, 0.535973, 1.379037),
+    "LIGHT": (0.492789, 0.245183, 0.725293),
+    "DEEP": (0.926904, 0.481774, 1.279419),
+    "REM": (1.236893, 0.679571, 1.594574),
+}
+_ATOL_LOG = 1e-5
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -451,6 +467,18 @@ class TestSRIProportionalConfusionMatrix:
         expected = {cell: values[pos] for cell, values in sri_cm_expected.items()}
         actual = pd.Series({cell: sri_cm_basic.at[cell, column] for cell in _CM_CELLS})
         _assert_close(actual, expected, atol, f"Proportional confusion matrix {column}")
+
+
+class TestSRILogTransformLoA:
+    """Euser LoA slope and parametric CI must match groupDiscr.R with ``logTransf=TRUE``."""
+
+    @pytest.mark.parametrize("column, pos", [("center", 0), ("lower", 1), ("upper", 2)])
+    def test_log_slope(self, sri_sleep_stats, column, pos):
+        ssa = SleepStatsAgreement(sri_sleep_stats, log_transform=True)
+        slope = ssa.summary(ci_method="param")["loa_log_slope"]
+        expected = {stat: values[pos] for stat, values in _LOG_SLOPE.items()}
+        actual = slope.loc[list(_LOG_SLOPE), column]
+        _assert_close(actual, expected, _ATOL_LOG, f"Log-transformed LoA slope {column}")
 
 
 def test_dataset_and_shapes(sri_ebe, sri_bystage, sri_bystage_sw, sri_ebe_pooled):
