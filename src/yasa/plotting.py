@@ -2,6 +2,7 @@
 Plotting functions of YASA.
 """
 
+import logging
 import warnings
 
 import matplotlib.dates as mdates
@@ -16,6 +17,8 @@ from matplotlib.colors import ListedColormap, Normalize
 from .hypno import Hypnogram, _hypno_int_to_str
 
 __all__ = ["plot_hypnogram", "plot_spectrogram", "topoplot"]
+
+logger = logging.getLogger("yasa")
 
 
 def plot_hypnogram(hyp, sf_hypno=1 / 30, highlight="REM", fill_color=None, ax=None, **kwargs):
@@ -297,7 +300,9 @@ def plot_spectrogram(
     nperseg = int(win_sec * sf)
     assert data.size > 2 * nperseg, "`data` length must be at least 2 * `win_sec`."
     f, t, Sxx = spectrogram_lspopt(data, sf, nperseg=nperseg, noverlap=0)
-    Sxx = 10 * np.log10(Sxx)  # Convert uV^2 / Hz --> dB / Hz
+    # Flat data (e.g. disconnected electrode) has zero power, i.e. -inf dB
+    with np.errstate(divide="ignore"):
+        Sxx = 10 * np.log10(Sxx)  # Convert uV^2 / Hz --> dB / Hz
 
     # Select only relevant frequencies (up to 30 Hz)
     good_freqs = np.logical_and(f >= fmin, f <= fmax)
@@ -305,9 +310,21 @@ def plot_spectrogram(
     f = f[good_freqs]
     t /= 3600  # Convert t to hours
 
-    # Normalization
+    is_finite = np.isfinite(Sxx)
+    if not is_finite.any():
+        raise ValueError("`data` has zero power in the selected frequency range (flat signal?).")
+    if not is_finite.all():
+        logger.warning(
+            "%.1f%% of the spectrogram has zero power, which typically indicates flat data "
+            "(e.g. disconnected electrode). These values are excluded from the colormap "
+            "normalization.",
+            100 * (1 - is_finite.mean()),
+        )
+
+    # Normalization. Percentiles are computed on finite values only, because -inf values
+    # would otherwise return a NaN vmin when they exceed ``trimperc`` percent of the data.
     if vmin is None:
-        vmin, vmax = np.percentile(Sxx, [0 + trimperc, 100 - trimperc])
+        vmin, vmax = np.percentile(Sxx[is_finite], [0 + trimperc, 100 - trimperc])
     norm = Normalize(vmin=vmin, vmax=vmax)
 
     # Open figure
@@ -487,6 +504,10 @@ def topoplot(
 
     # Define electrodes coordinates
     Info = mne.create_info(data.index.tolist(), sfreq=100, ch_types="eeg")
+    # MNE 1.13 renamed "standard_1020" to "colin27_1020" (same positions) and deprecated the old
+    # name, which will be removed in MNE 1.14.
+    if montage == "standard_1020" and "colin27_1020" in mne.channels.get_builtin_montages():
+        montage = "colin27_1020"
     Info.set_montage(montage, match_case=False, on_missing="ignore")
     chan = Info.ch_names
 
