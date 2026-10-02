@@ -8,7 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-# build/
+build/
 develop-eggs/
 dist/
 downloads/
@@ -131,3 +131,6 @@ notebooks/20_catch_errors.ipynb
 */.virtual_documents/
 notebooks/debug*
 notebooks/my_hypno.csv
+
+# Claude Code
+.claude/
