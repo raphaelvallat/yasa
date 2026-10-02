@@ -1783,9 +1783,6 @@ class Hypnogram:
         and the observed hypnogram (i.e., ``obs_hyp``) might be a hypnogram from actigraphy, a
         wearable device, or an automated scorer (e.g., :py:meth:`yasa.SleepStaging.predict`).
 
-        .. warning:: **Experimental** — this method returns a :py:class:`yasa.EpochByEpochAgreement`
-            object whose API may change before the full release planned for v0.8.0.
-
         Parameters
         ----------
         obs_hyp : :py:class:`yasa.Hypnogram`
