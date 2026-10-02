@@ -430,7 +430,7 @@ class SleepStaging:
             name = name + "+eog" if "eog" in self.ch_types else name
             name = name + "+emg" if "emg" in self.ch_types else name
             name = name + "+demo" if self.metadata is not None else name
-            # e.g. clf_eeg+eog+emg+demo_lgb_0.4.0.joblib. The "_lgb_" suffix prevents matching
+            # e.g. clf_eeg+eog+emg+demo_lgb_0.5.0.joblib. The "_lgb_" suffix prevents matching
             # other combinations of channels (e.g. "clf_eeg" would otherwise match "clf_eeg+eog").
             all_matching_files = glob.glob(
                 os.path.join(clf_dir, glob.escape(name) + "_lgb_*.joblib")
