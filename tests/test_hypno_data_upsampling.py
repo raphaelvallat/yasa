@@ -285,8 +285,10 @@ def test_ts_hypno_longer_than_data(hyp_utc):
     assert np.all(result[-SPE:] == 4)  # epoch 7: REM
 
 
-def test_non_whole_epoch_offset_warns(caplog):
+def test_non_whole_epoch_offset_warns(caplog, monkeypatch):
     # 45 s offset → 1.5 epochs at 30 s/epoch → non-whole → warning emitted
+    # The "yasa" logger does not propagate to the root logger, where caplog listens
+    monkeypatch.setattr(logging.getLogger("yasa"), "propagate", True)
     hyp = Hypnogram(["W"] * 10, start="2024-01-01 23:00:00")
     raw = make_raw(
         10, meas_date=datetime.datetime(2024, 1, 1, 23, 0, 45, tzinfo=datetime.timezone.utc)

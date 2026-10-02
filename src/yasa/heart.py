@@ -12,13 +12,14 @@ import pandas as pd
 
 from .detection import _check_data_hypno
 from .hypno import _hypno_find_periods
-from .io import is_sleepecg_installed, set_log_level
+from .io import _restore_log_level, is_sleepecg_installed
 
 logger = logging.getLogger("yasa")
 
 __all__ = ["hrv_stage"]
 
 
+@_restore_log_level
 def hrv_stage(
     data,
     sf,
@@ -121,7 +122,6 @@ def hrv_stage(
     * Shaffer, F., & Ginsberg, J. P. (2017). An overview of heart rate variability metrics and
       norms. Frontiers in public health, 258.
     """
-    set_log_level(verbose)
     is_sleepecg_installed()
     from sleepecg import detect_heartbeats
 

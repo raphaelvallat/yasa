@@ -19,7 +19,7 @@ from scipy.fftpack import next_fast_len
 from scipy.stats import circmean
 from sklearn.ensemble import IsolationForest
 
-from .io import is_pyriemann_installed, set_log_level
+from .io import _restore_log_level, is_pyriemann_installed
 from .others import (
     _check_data,
     _check_hypno_include,
@@ -524,6 +524,7 @@ class _DetectionResults(object):
 #############################################################################
 
 
+@_restore_log_level
 def spindles_detect(
     data,
     sf=None,
@@ -727,7 +728,6 @@ def spindles_detect(
 
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/04_spindles_slow_fast.ipynb
     """
-    set_log_level(verbose)
 
     (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan) = _check_data_hypno(
         data, sf, ch_names, hypno, include, verbose=verbose
@@ -749,7 +749,7 @@ def spindles_detect(
     # Filtering
     nfast = next_fast_len(n_samples)
     # 1) Broadband bandpass filter (optional -- careful of lower freq for PAC)
-    data_broad = filter_data(data, sf, freq_broad[0], freq_broad[1], method="fir", verbose=0)
+    data_broad = filter_data(data, sf, freq_broad[0], freq_broad[1], method="fir", verbose=False)
     # 2) Sigma bandpass filter
     # The width of the transition band is set to 1.5 Hz on each side,
     # meaning that for freq_sp = (12, 15 Hz), the -6 dB points are located at
@@ -762,7 +762,7 @@ def spindles_detect(
         l_trans_bandwidth=1.5,
         h_trans_bandwidth=1.5,
         method="fir",
-        verbose=0,
+        verbose=False,
     )
 
     # Number of oscillations (number of peaks separated by at least 60 ms)
@@ -1312,6 +1312,7 @@ class SpindlesResults(_DetectionResults):
 #############################################################################
 
 
+@_restore_log_level
 def sw_detect(
     data,
     sf=None,
@@ -1551,7 +1552,6 @@ def sw_detect(
     For a full walkthrough, please refer to the tutorial:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/05_sw_detection.ipynb
     """
-    set_log_level(verbose)
 
     (data, sf, ch_names, hypno, include, mask, n_chan, n_samples, bad_chan) = _check_data_hypno(
         data, sf, ch_names, hypno, include, verbose=verbose
@@ -1569,7 +1569,7 @@ def sw_detect(
         freq_sw[0],
         freq_sw[1],
         method="fir",
-        verbose=0,
+        verbose=False,
         l_trans_bandwidth=0.2,
         h_trans_bandwidth=0.2,
     )
@@ -1594,7 +1594,7 @@ def sw_detect(
             method="fir",
             l_trans_bandwidth=1.5,
             h_trans_bandwidth=1.5,
-            verbose=0,
+            verbose=False,
         )
         nfast = next_fast_len(n_samples)
         # Epoch around the negative peak of each slow-wave
@@ -2211,6 +2211,7 @@ class SWResults(_DetectionResults):
 #############################################################################
 
 
+@_restore_log_level
 def rem_detect(
     loc,
     roc,
@@ -2375,7 +2376,6 @@ def rem_detect(
     For a full walkthrough, please refer to:
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/07_REMs_detection.ipynb
     """
-    set_log_level(verbose)
     # Safety checks
     loc = np.squeeze(np.asarray(loc))
     roc = np.squeeze(np.asarray(roc))
@@ -2394,7 +2394,7 @@ def rem_detect(
         return None
 
     # Bandpass filter
-    data_filt = filter_data(data, sf, freq_rem[0], freq_rem[1], verbose=0)
+    data_filt = filter_data(data, sf, freq_rem[0], freq_rem[1], verbose=False)
 
     # Calculate the negative product of LOC and ROC, maximal during REM.
     negp = -data_filt[0, :] * data_filt[1, :]
@@ -2647,6 +2647,7 @@ class REMResults(_DetectionResults):
 #############################################################################
 
 
+@_restore_log_level
 def art_detect(
     data,
     sf=None,
@@ -2850,7 +2851,6 @@ def art_detect(
     ###########################################################################
     # PREPROCESSING
     ###########################################################################
-    set_log_level(verbose)
 
     (data, sf, _, hypno, include, _, n_chan, n_samples, _) = _check_data_hypno(
         data, sf, ch_names=None, hypno=hypno, include=include, check_amp=False, verbose=verbose

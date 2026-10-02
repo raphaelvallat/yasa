@@ -12,7 +12,7 @@ import pandas as pd
 from pandas.api.types import CategoricalDtype
 
 from .evaluation import EpochByEpochAgreement
-from .io import set_log_level
+from .io import _restore_log_level
 from .plotting import _plot_hypnogram
 
 __all__ = [
@@ -1348,7 +1348,7 @@ class Hypnogram:
     # ALIGNMENT TO DATA
     #######################################################################
 
-    def upsample_to_data(self, data, sf=None, meas_date_is_local=True, verbose=True):
+    def upsample_to_data(self, data, sf=None, meas_date_is_local=True, verbose=False):
         """
         Upsample a hypnogram to a given sampling frequency and fit the resulting hypnogram to
         corresponding EEG data, such that the hypnogram and EEG data have the exact same number of
@@ -1377,6 +1377,9 @@ class Hypnogram:
             Verbose level. Default (False) will only print warning and error messages. The logging
             levels are 'debug', 'info', 'warning', 'error', and 'critical'. For most users the
             choice is between 'info' (or ``verbose=True``) and warning (``verbose=False``).
+
+            .. versionchanged:: 0.8.0
+                The default is now False, as documented. Previously, the default was True.
 
         Returns
         -------
@@ -2064,14 +2067,14 @@ class Hypnogram:
     # PRIVATE METHODS
     #######################################################################
 
-    def _upsample_to_raw_timestamps(self, raw, meas_date_is_local=True, verbose=True):
+    @_restore_log_level
+    def _upsample_to_raw_timestamps(self, raw, meas_date_is_local=True, verbose=False):
         """Timestamp-aware upsampling for MNE Raw objects with a valid meas_date.
 
         Internal method called by :py:meth:`upsample_to_data` when both ``self.start`` and
         ``raw.meas_date`` are available. Aligns the hypnogram to the recording based on absolute
         timestamps rather than sample count.
         """
-        set_log_level(verbose)
         epoch_dur = 1.0 / self.sampling_frequency  # seconds per epoch, e.g. 30.0
 
         # --- resolve and align timestamps ---
@@ -2408,9 +2411,9 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=True):
     return _hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=sf_data, verbose=verbose)
 
 
-def _hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=True):
+@_restore_log_level
+def _hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=False):
     """Upsample an hypnogram and fit it to data. See :py:func:`hypno_upsample_to_data`."""
-    set_log_level(verbose)
     if isinstance(data, mne.io.BaseRaw):
         sf_data = data.info["sfreq"]
         data = data.times
