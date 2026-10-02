@@ -217,6 +217,7 @@ def test_from_profusion_kwargs(profusion_xml):
     "func, args, expected",
     [
         ("hypno_str_to_int", (HYPNO_TXT,), HYPNO),
+        ("hypno_str_to_int", (["W", "Sleep"], {"w": 0, "sleep": 1}), [0, 1]),
         ("hypno_int_to_str", (HYPNO,), ["W", "W", "W", "N1", "N2", "N2", "N3", "N3", "R"]),
     ],
 )

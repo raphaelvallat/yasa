@@ -156,7 +156,7 @@ def transition_matrix(hypno):
 #############################################################################
 
 
-def sleep_statistics(hypno, sf_hyp):
+def sleep_statistics(hypno, sf_hyp=None):
     """Compute standard sleep statistics from an hypnogram.
 
     .. deprecated:: 0.8.0
@@ -167,25 +167,31 @@ def sleep_statistics(hypno, sf_hyp):
 
     Parameters
     ----------
-    hypno : array_like
+    hypno : array_like or :py:class:`yasa.Hypnogram`
         Hypnogram, assumed to be already cropped to time in bed (TIB,
         also referred to as Total Recording Time,
-        i.e. "lights out" to "lights on").
+        i.e. "lights out" to "lights on"). Can be either:
 
-        .. note::
-            Hypnogram values are integers with the following mapping:
+        * An integer array with the following mapping:
 
-            - -2 = Unscored
-            - -1 = Artefact / Movement
-            - 0 = Wake
-            - 1 = N1 sleep
-            - 2 = N2 sleep
-            - 3 = N3 sleep
-            - 4 = REM sleep
+          - -2 = Unscored
+          - -1 = Artefact / Movement
+          - 0 = Wake
+          - 1 = N1 sleep
+          - 2 = N2 sleep
+          - 3 = N3 sleep
+          - 4 = REM sleep
+        * A :py:class:`yasa.Hypnogram` instance. This is equivalent to calling
+          :py:meth:`yasa.Hypnogram.sleep_statistics` directly. Note that the method returns
+          a slightly different set of statistics (e.g. ``SFI`` and ``SOL_5min``, but no
+          ``NREM`` or ``Lat_N1``).
+
+          .. versionadded:: 0.8.0
     sf_hyp : float
         The sampling frequency of the hypnogram. Should be 1/30 if there is one
         value per 30-seconds, 1/20 if there is one value per 20-seconds,
-        1 if there is one value per second, and so on.
+        1 if there is one value per second, and so on. Required for an integer array, ignored
+        for a :py:class:`yasa.Hypnogram`.
 
     Returns
     -------
@@ -267,6 +273,9 @@ def sleep_statistics(hypno, sf_hyp):
         FutureWarning,
         stacklevel=2,
     )
+    if isinstance(hypno, Hypnogram):
+        return hypno.sleep_statistics()
+    assert sf_hyp is not None, "sf_hyp is required when hypno is not a yasa.Hypnogram."
     stats = {}
     hypno = np.asarray(hypno)
     assert hypno.ndim == 1, "hypno must have only one dimension."
