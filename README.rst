@@ -2,8 +2,8 @@
 
 |
 
-.. image:: https://badge.fury.io/py/yasa.svg
-    :target: https://badge.fury.io/py/yasa
+.. image:: https://img.shields.io/pypi/v/yasa.svg
+    :target: https://pypi.org/project/yasa/
 
 .. image:: https://img.shields.io/github/license/raphaelvallat/yasa.svg
     :target: https://github.com/raphaelvallat/yasa/blob/master/LICENSE
@@ -55,8 +55,8 @@ Some features require optional dependencies. Install them with extras:
 
     pip install "yasa[full]"    # all optional dependencies
 
-Development
------------
+Install from source
+-------------------
 
 To build and install from source, clone this repository and install in editable mode with `uv <https://docs.astral.sh/uv/>`_
 

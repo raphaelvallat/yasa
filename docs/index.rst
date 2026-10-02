@@ -67,6 +67,8 @@ The core dependencies of YASA are:
 * `LightGBM <https://lightgbm.readthedocs.io/>`_ >= 4.6
 * `Antropy <https://github.com/raphaelvallat/antropy>`_ >= 0.1.9
 * `lspopt <https://github.com/hbldh/lspopt>`_ >= 1.4
+* `joblib <https://joblib.readthedocs.io/>`_
+* `Pooch <https://www.fatiando.org/pooch/>`_ >= 1.8
 
 Some features require optional dependencies (`SleepECG <https://sleepecg.readthedocs.io/>`_,
 `PyRiemann <https://pyriemann.readthedocs.io/>`_,
@@ -99,8 +101,8 @@ YASA can be easily installed using pip, conda, or uv:
 
             conda install -c conda-forge yasa
 
-Development
------------
+Install from source
+-------------------
 
 To build and install from source, clone this repository and install in editable mode with `uv <https://docs.astral.sh/uv/>`_
 

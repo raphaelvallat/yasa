@@ -51,16 +51,14 @@ Spectral analyses
     bandpower_from_psd
     bandpower_from_psd_ndarray
     irasa
-    moving_transform
     plot_spectrogram
-    sliding_window
     stft_power
     topoplot
 
 Heart rate analysis
 -------------------
 
-.. _others:
+.. _heart:
 
 .. autosummary::
     :toctree: generated/
@@ -78,3 +76,5 @@ Utilities
     :nosignatures:
 
     fetch_sample
+    moving_transform
+    sliding_window
