@@ -1,18 +1,9 @@
 """Test the functions in the yasa/heart.py file."""
 
-import logging
-
 import numpy as np
 import pytest
 
 from yasa.heart import hrv_stage
-
-
-@pytest.fixture
-def yasa_caplog(caplog, monkeypatch):
-    """caplog that also captures the messages of the YASA logger (which does not propagate)."""
-    monkeypatch.setattr(logging.getLogger("yasa"), "propagate", True)
-    return caplog
 
 
 @pytest.fixture(scope="module")
@@ -78,24 +69,24 @@ def test_hrv_stage_no_hypno_equal_length(ecg_8hrs):
     assert epochs_nohypno.shape[0] == data.size / (2 * 60 * sf)  # 2 minutes
 
 
-def test_hrv_stage_too_few_heartbeats(ecg_8hrs, yasa_caplog):
+def test_hrv_stage_too_few_heartbeats(ecg_8hrs, caplog):
     """Epochs with fewer than 30 detected heartbeats per minute are skipped (NaN)."""
     sf = ecg_8hrs.sf
     # 2 minutes of ECG, then 10 seconds of ECG followed by noise (9 detected heartbeats)
     data = ecg_8hrs.data[: 4 * 60 * sf].copy()
     data[130 * sf :] = np.random.default_rng(0).normal(size=110 * sf)
     epochs, rpeaks = hrv_stage(data, sf, equal_length=True, verbose="INFO")
-    assert "Too few detected heartbeats in epoch 1 of stage 0" in yasa_caplog.text
+    assert "Too few detected heartbeats in epoch 1 of stage 0" in caplog.text
     assert len(rpeaks) == 2
     assert epochs.loc[(0, 0), ["hr_mean", "hr_std", "hrv_rmssd"]].notna().all()
     assert epochs.loc[(0, 1), ["hr_mean", "hr_std", "hrv_rmssd"]].isna().all()
 
 
-def test_hrv_stage_invalid_rr(ecg_8hrs, yasa_caplog):
+def test_hrv_stage_invalid_rr(ecg_8hrs, caplog):
     """Epochs where the RR intervals cannot be interpolated are skipped."""
     sf = ecg_8hrs.sf
     # All the RR intervals are outside of rr_limit
     epochs, rpeaks = hrv_stage(ecg_8hrs.data[: 2 * 60 * sf], sf, rr_limit=(0, 1), verbose="INFO")
-    assert "Invalid RR intervals in epoch 0 of stage 0" in yasa_caplog.text
+    assert "Invalid RR intervals in epoch 0 of stage 0" in caplog.text
     assert len(rpeaks) == 1
     assert epochs.columns.tolist() == ["start", "duration"]

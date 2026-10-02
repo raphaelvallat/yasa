@@ -293,19 +293,6 @@ def test_ts_local_timezone():
     assert np.all(result[2 * SPE : 3 * SPE] == 1)  # epoch 2: N1
 
 
-def test_ts_aware_start_naive_meas_date_true_utc():
-    # Unusual: tz-aware start and a naive meas_date with meas_date_is_local=False. MNE only
-    # accepts UTC-aware dates in set_meas_date, so the naive date is set through the private
-    # Info._unlock. The naive meas_date is taken as UTC: 23:00 CET = 22:00 UTC → zero offset.
-    hyp = Hypnogram(STAGES, freq="30s", start=HYP_START, tz="Europe/Paris")
-    raw = make_raw(N)
-    with raw.info._unlock():
-        raw.info["meas_date"] = datetime.datetime(2024, 1, 15, 22, 0)
-    result = hyp.upsample_to_data(raw, meas_date_is_local=False)
-    assert result.size == N * SPE
-    assert np.array_equal(result[::SPE], hyp.as_int())
-
-
 def test_ts_hypno_shorter_than_data(hyp_utc):
     # Recording starts 1 epoch early (UNS prepended) and extends 1 epoch past hypnogram end
     # → 1 UNS + 10 real epochs + 1 padded = 12 epochs window

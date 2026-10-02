@@ -16,14 +16,6 @@ from yasa.io import (
 logger = logging.getLogger("yasa")
 
 
-@pytest.fixture(autouse=True)
-def _reset_log_level():
-    """Restore the level of the YASA logger after each test."""
-    old_level = logger.level
-    yield
-    logger.setLevel(old_level)
-
-
 @pytest.mark.parametrize(
     "verbose, expected",
     [

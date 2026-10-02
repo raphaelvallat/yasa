@@ -69,14 +69,18 @@ def full_6hrs_9ch():
 
 
 @pytest.fixture(scope="session")
-def _raw_sub02():
+def raw_sub02_shared():
+    """Polysomnography of sub-02 as a preloaded MNE Raw, shared by all tests: never modify it.
+
+    Use it in module-scoped fixtures, or call ``.copy()`` before cropping or picking channels.
+    """
     return mne.io.read_raw_fif(fetch_sample("sub-02_mne_raw.fif"), preload=True, verbose=False)
 
 
 @pytest.fixture
-def raw_sub02(_raw_sub02):
+def raw_sub02(raw_sub02_shared):
     """Polysomnography of sub-02 as a preloaded MNE Raw (a new copy for each test)."""
-    return _raw_sub02.copy()
+    return raw_sub02_shared.copy()
 
 
 @pytest.fixture(scope="session")
@@ -106,11 +110,12 @@ def ecg_8hrs():
 
 
 @pytest.fixture(scope="session")
-def _raw_resting_eo():
+def raw_resting_eo_shared():
+    """Resting-state EEG with eyes open as an MNE Raw, shared by all tests: never modify it."""
     return mne.io.read_raw_fif(fetch_sample("resting_EO_200Hz_raw.fif"), verbose=False)
 
 
 @pytest.fixture
-def raw_resting_eo(_raw_resting_eo):
+def raw_resting_eo(raw_resting_eo_shared):
     """Resting-state EEG with eyes open as a (not preloaded) MNE Raw (a new copy for each test)."""
-    return _raw_resting_eo.copy()
+    return raw_resting_eo_shared.copy()

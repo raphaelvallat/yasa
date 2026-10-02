@@ -26,27 +26,14 @@ sf = 100
 
 
 @contextmanager
-def assert_logs(level="WARNING", logged=True):
-    """Check that the yasa logger emits (or not) a message of at least ``level``.
-
-    Same as ``unittest.TestCase.assertLogs`` / ``assertNoLogs``. The yasa logger does not
-    propagate to the root logger, so the ``caplog`` fixture of pytest cannot be used directly.
-    """
-    logger = logging.getLogger("yasa")
-    level = logging.getLevelName(level)
-    records = []
-    handler = logging.Handler(level)
-    handler.emit = records.append
-    old_handlers, old_level = logger.handlers[:], logger.level
-    logger.handlers = [handler]
-    logger.setLevel(level)
-    try:
-        yield records
-    finally:
-        logger.handlers = old_handlers
-        logger.setLevel(old_level)
+def assert_logs(caplog, level="WARNING", logged=True):
+    """Check that the code in the block logs (or not) a YASA message of at least ``level``."""
+    caplog.clear()
+    yield
+    levelno = logging.getLevelName(level)
+    records = [r for r in caplog.records if r.name == "yasa" and r.levelno >= levelno]
     if logged:
-        assert records, f"No log of level {logging.getLevelName(level)} or higher"
+        assert records, f"No log of level {level} or higher"
     else:
         assert not records, f"Unexpected logs: {[r.getMessage() for r in records]}"
 
@@ -100,12 +87,12 @@ def full(full_6hrs):
 
 
 @pytest.fixture(scope="module")
-def mne_n2n3(_raw_sub02, hypno_sub02):
+def mne_n2n3(raw_sub02_shared, hypno_sub02):
     """MNE Raw: 10 minutes of N2 and N3 sleep (epochs 60 to 80 of the hypnogram).
 
     The detection functions do not modify the Raw, so it is shared by all the tests.
     """
-    raw = _raw_sub02.copy().pick("eeg").crop(1800, 2400, include_tmax=False)
+    raw = raw_sub02_shared.copy().pick("eeg").crop(1800, 2400, include_tmax=False)
     hyp = Hypnogram(hypno_sub02[60:80], freq="30s")
     return SimpleNamespace(raw=raw, hyp=hyp, hypno=hyp.upsample_to_data(raw))
 
@@ -162,9 +149,9 @@ def sw_coupling(full):
 
 
 @pytest.mark.parametrize("kwargs", [{"sf": 999}, {"ch_names": ["CH999"]}])
-def test_check_data_hypno_mne_ignored_args(mne_n2n3, kwargs):
+def test_check_data_hypno_mne_ignored_args(mne_n2n3, kwargs, caplog):
     """With a MNE Raw, sf and ch_names are ignored with a warning."""
-    with assert_logs("WARNING"):
+    with assert_logs(caplog, "WARNING"):
         _check_data_hypno(mne_n2n3.raw, **kwargs)
 
 
@@ -229,7 +216,7 @@ def sp_default(data):
     return spindles_detect(data, sf, verbose=True)
 
 
-def test_spindles_single_channel(sp_default, data):
+def test_spindles_single_channel(sp_default, data, caplog):
     """Default single-channel detection and methods of the SpindlesResults."""
     sp = sp_default
     assert sp.summary().shape[0] == 2
@@ -237,7 +224,7 @@ def test_spindles_single_channel(sp_default, data):
     df_sync = sp.get_sync_events()
     assert set(df_sync["Event"]) == {0, 1}
     # Invalid time window: the events are skipped and an error is logged
-    with assert_logs("ERROR"):
+    with assert_logs(caplog, "ERROR"):
         assert sp.get_sync_events(time_before=20).empty
     sp.plot_average(errorbar=None, filt=(None, 30))  # Skip bootstrapping
     np.testing.assert_array_equal(np.squeeze(sp._data), data)
@@ -307,20 +294,20 @@ def test_spindles_flat_segment(data):
     assert sp.shape[0] == 2
 
 
-def test_spindles_no_spindles(data_n3):
+def test_spindles_no_spindles(data_n3, caplog):
     """N3 sleep without spindles: warnings, and None if no spindle is found at all."""
-    with assert_logs("WARNING"):
+    with assert_logs(caplog, "WARNING"):
         spindles_detect(data_n3, sf)
     # Ensure that the two warnings are tested
-    with assert_logs("WARNING"):
+    with assert_logs(caplog, "WARNING"):
         sp = spindles_detect(data_n3, sf, thresh={"corr": 0.95})
     assert sp is None
 
 
 @pytest.mark.parametrize("factor", [1e-6, 1e6])
-def test_spindles_wrong_amplitude(data_n3, factor):
+def test_spindles_wrong_amplitude(data_n3, factor, caplog):
     """Data with a wrong amplitude logs an error and returns None."""
-    with assert_logs("ERROR"):
+    with assert_logs(caplog, "ERROR"):
         sp = spindles_detect(data_n3 * factor, sf)
     assert sp is None
 
@@ -479,9 +466,9 @@ def test_sw_single_channel(sw_n3):
     assert sw._sf == sf
 
 
-def test_sw_flat(sw_n3):
+def test_sw_flat(sw_n3, caplog):
     """All channels are flat: an error is logged and None is returned."""
-    with assert_logs("ERROR"):
+    with assert_logs(caplog, "ERROR"):
         sw = sw_detect(sw_n3.data * 0, sf)
     assert sw is None
 
@@ -702,9 +689,9 @@ def test_rem_hypno(eog):
 
 
 @pytest.mark.parametrize("loc_factor, roc_factor", [(1e-8, 1), (1, 1e8)])
-def test_rem_wrong_amplitude(eog, loc_factor, roc_factor):
+def test_rem_wrong_amplitude(eog, loc_factor, roc_factor, caplog):
     """Data with a wrong amplitude on LOC or ROC logs an error and returns None."""
-    with assert_logs("ERROR"):
+    with assert_logs(caplog, "ERROR"):
         rem = rem_detect(eog.loc * loc_factor, eog.roc * roc_factor, eog.sf)
     assert rem is None
 
@@ -778,9 +765,9 @@ def test_art_single_channel(art_data):
 
 
 @pytest.mark.parametrize("n_chan, logged", [(4, False), (3, True)])
-def test_art_covar_n_chan(art_data, n_chan, logged):
+def test_art_covar_n_chan(art_data, n_chan, logged, caplog):
     """Exactly 4 channels is enough for method="covar", otherwise a warning is logged."""
-    with assert_logs("WARNING", logged=logged):
+    with assert_logs(caplog, "WARNING", logged=logged):
         art_detect(art_data.data[:n_chan, :360_000], sf, window=10, method="covar")
 
 
@@ -789,11 +776,11 @@ def test_art_invalid_method(art_data):
         art_detect(art_data.data, sf, method="wrong")
 
 
-def test_art_not_enough_epochs(art_data):
+def test_art_not_enough_epochs(art_data, caplog):
     """Not enough epochs for stage: a warning is logged."""
     hypno_9 = art_data.hypno.copy()
     hypno_9[:100] = 6
-    with assert_logs("WARNING"):
+    with assert_logs(caplog, "WARNING"):
         art_detect(
             art_data.data,
             sf,
@@ -806,10 +793,10 @@ def test_art_not_enough_epochs(art_data):
         )
 
 
-def test_art_flat_channel(art_data):
+def test_art_flat_channel(art_data, caplog):
     """A flat channel is removed with a warning."""
     data_with_flat = np.vstack((art_data.data, np.zeros(art_data.data.shape[-1])))
-    with assert_logs("WARNING"):
+    with assert_logs(caplog, "WARNING"):
         _, zscores = art_detect(data_with_flat, sf, method="std", n_chan_reject=5)
     assert zscores.shape[1] == art_data.data.shape[0]
 

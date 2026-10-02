@@ -26,13 +26,6 @@ BANDS = ["Delta", "Theta", "Alpha", "Sigma", "Beta", "Gamma"]
 ##############################################################################
 
 
-@pytest.fixture
-def yasa_caplog(caplog, monkeypatch):
-    """caplog that also captures the messages of the YASA logger (which does not propagate)."""
-    monkeypatch.setattr(logging.getLogger("yasa"), "propagate", True)
-    return caplog
-
-
 def _has_warning(caplog):
     return any(r.levelno == logging.WARNING for r in caplog.records)
 
@@ -53,9 +46,9 @@ def full_1h(full_6hrs):
 
 
 @pytest.fixture(scope="module")
-def raw_eeg(_raw_sub02):
+def raw_eeg(raw_sub02_shared):
     """EEG channels of sub-02, as a MNE Raw."""
-    return _raw_sub02.copy().pick("eeg")
+    return raw_sub02_shared.copy().pick("eeg")
 
 
 @pytest.fixture(scope="module")
@@ -65,9 +58,9 @@ def raw_eeg_5min(raw_eeg):
 
 
 @pytest.fixture(scope="module")
-def eo(_raw_resting_eo):
+def eo(raw_resting_eo_shared):
     """Eyes-open 6 minutes resting-state, 2 channels, 200 Hz."""
-    raw = _raw_resting_eo
+    raw = raw_resting_eo_shared
     data = raw.get_data(units=dict(eeg="uV", emg="uV", eog="uV", ecg="uV"))
     return SimpleNamespace(data=data, sf=raw.info["sfreq"], chan=raw.ch_names)
 
@@ -124,10 +117,10 @@ def test_bandpower_raw_hypno(raw_eeg, hypno_sub02):
     assert bp.shape[0] == len(raw_eeg.ch_names)
 
 
-def test_bandpower_short_stage_skipped(full_1h, hypno_short_n1, yasa_caplog):
+def test_bandpower_short_stage_skipped(full_1h, hypno_short_n1, caplog):
     """Stages shorter than the Welch window are skipped with a warning."""
     bp = bandpower(full_1h.data, sf=full_1h.sf, hypno=hypno_short_n1, include=(1, 2))
-    assert _has_warning(yasa_caplog)
+    assert _has_warning(caplog)
     assert bp.index.get_level_values("Stage").unique().tolist() == [2]
 
 
@@ -242,12 +235,12 @@ def test_bandpower_from_psd_ndarray():
 
 
 @pytest.mark.parametrize("func", [bandpower_from_psd, bandpower_from_psd_ndarray])
-def test_bandpower_from_psd_negative(func, yasa_caplog):
+def test_bandpower_from_psd_negative(func, caplog):
     """With negative values: we should get a logger warning."""
     freqs = np.arange(0, 50.5, 0.5)
     psd = np.random.normal(size=(6, freqs.size))
     func(psd, freqs)
-    assert _has_warning(yasa_caplog)
+    assert _has_warning(caplog)
 
 
 ##############################################################################
@@ -288,29 +281,29 @@ def test_irasa_raw(raw_eeg_5min):
     assert fit_params["Chan"].tolist() == raw.ch_names
 
 
-def test_irasa_verbose(n2_spindles, yasa_caplog):
+def test_irasa_verbose(n2_spindles, caplog):
     """Messages are sent to the yasa logger."""
     irasa(data=n2_spindles.data, sf=n2_spindles.sf, verbose=True)
-    assert "Fitting range" in yasa_caplog.text
+    assert "Fitting range" in caplog.text
 
 
-def test_irasa_band_beyond_nyquist(n2_spindles, yasa_caplog):
+def test_irasa_band_beyond_nyquist(n2_spindles, caplog):
     """Warning when the band is beyond the resampled Nyquist frequency."""
     irasa(data=n2_spindles.data, sf=n2_spindles.sf, band=(1, 80))
-    assert _has_warning(yasa_caplog)
+    assert _has_warning(caplog)
 
 
-def test_irasa_band_within_nyquist(n2_spindles, yasa_caplog):
+def test_irasa_band_within_nyquist(n2_spindles, caplog):
     """No warning when the band is within the resampled Nyquist frequency."""
     irasa(data=n2_spindles.data, sf=n2_spindles.sf, band=(1, 20))
-    assert not _has_warning(yasa_caplog)
+    assert not _has_warning(caplog)
 
 
-def test_irasa_raw_filter_warnings(raw_eeg_5min, yasa_caplog):
+def test_irasa_raw_filter_warnings(raw_eeg_5min, caplog):
     """Warnings when the evaluated frequency range exceeds the filters of the MNE Raw."""
     raw_filt = raw_eeg_5min.copy().filter(1, 20, verbose=0)
     irasa(raw_filt, band=(1, 30))
-    warnings = [r.getMessage() for r in yasa_caplog.records if r.levelno == logging.WARNING]
+    warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
     assert any("highpass" in msg for msg in warnings)
     assert any("lowpass" in msg for msg in warnings)
 
@@ -365,12 +358,12 @@ def test_irasa_hypnogram(full_1h, irasa_stages):
     assert len(irasa(data, sf=sf, hypno=hyp, return_fit=False)) == 3
 
 
-def test_irasa_hypno_short_stage(full_1h, yasa_caplog):
+def test_irasa_hypno_short_stage(full_1h, caplog):
     """Stages that are too short are skipped with a warning."""
     hypno_short = np.full(full_1h.data.shape[1], 2)
     hypno_short[:500] = 1  # 5 seconds of N1, shorter than win_sec * max(hset)
     _, psd_ap, _, fit_params = irasa(full_1h.data, sf=full_1h.sf, hypno=hypno_short, include=(1, 2))
-    assert "Stage 1 is shorter" in yasa_caplog.text
+    assert "Stage 1 is shorter" in caplog.text
     assert list(psd_ap) == [2]
     assert fit_params["Stage"].unique().tolist() == [2]
     with pytest.raises(ValueError, match="All the stages"):

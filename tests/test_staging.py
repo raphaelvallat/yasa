@@ -19,13 +19,6 @@ from yasa.staging import SleepStaging
 ##############################################################################
 
 
-@pytest.fixture
-def yasa_caplog(caplog, monkeypatch):
-    """caplog that also captures the messages of the YASA logger (which does not propagate)."""
-    monkeypatch.setattr(logging.getLogger("yasa"), "propagate", True)
-    return caplog
-
-
 @pytest.fixture(scope="module")
 def y_true(hypno_sub02):
     """Human-scored hypnogram of sub-02."""
@@ -33,11 +26,11 @@ def y_true(hypno_sub02):
 
 
 @pytest.fixture(scope="module")
-def sls_full(_raw_sub02):
+def sls_full(raw_sub02_shared):
     """SleepStaging with EEG, EOG, EMG and metadata, after predict()."""
     # SleepStaging does not modify the Raw in place
     sls = SleepStaging(
-        _raw_sub02,
+        raw_sub02_shared,
         eeg_name="C4",
         eog_name="EOG1",
         emg_name="EMG1",
@@ -49,9 +42,9 @@ def sls_full(_raw_sub02):
 
 
 @pytest.fixture(scope="module")
-def sls_eeg(_raw_sub02):
+def sls_eeg(raw_sub02_shared):
     """SleepStaging with only the EEG, after fit()."""
-    sls = SleepStaging(_raw_sub02, eeg_name="C4")
+    sls = SleepStaging(raw_sub02_shared, eeg_name="C4")
     sls.fit()
     return sls
 
@@ -101,15 +94,15 @@ def test_plot_predict_proba(sls_full):
     ],
     ids=["no_metadata", "no_emg", "eeg_only"],
 )
-def test_sleep_staging_predictors(_raw_sub02, kwargs):
+def test_sleep_staging_predictors(raw_sub02_shared, kwargs):
     """Same with different combinations of predictors."""
-    SleepStaging(_raw_sub02, eeg_name="C4", **kwargs).fit()
+    SleepStaging(raw_sub02_shared, eeg_name="C4", **kwargs).fit()
 
 
-def test_short_data_warning(raw_sub02, yasa_caplog):
+def test_short_data_warning(raw_sub02, caplog):
     """Test that a warning is raised for recordings shorter than 5 minutes."""
     SleepStaging(raw_sub02.crop(tmax=200), eeg_name="C4")
-    assert any(r.levelno == logging.WARNING for r in yasa_caplog.records)
+    assert any(r.levelno == logging.WARNING for r in caplog.records)
 
 
 def test_validate_predict_errors(sls_eeg):
@@ -126,9 +119,9 @@ def test_validate_predict_errors(sls_eeg):
         sls_eeg._validate_predict(clf_mock)
 
 
-def test_plot_predict_proba_no_predict(_raw_sub02):
+def test_plot_predict_proba_no_predict(raw_sub02_shared):
     """Test that plot_predict_proba raises ValueError before predict is called."""
-    sls = SleepStaging(_raw_sub02, eeg_name="C4")
+    sls = SleepStaging(raw_sub02_shared, eeg_name="C4")
     with pytest.raises(ValueError):
         sls.plot_predict_proba()
     sls.fit()
@@ -136,20 +129,20 @@ def test_plot_predict_proba_no_predict(_raw_sub02):
         sls.plot_predict_proba()
 
 
-def test_metadata_not_modified(_raw_sub02):
+def test_metadata_not_modified(raw_sub02_shared):
     """Test that the metadata dict of the caller is not modified, and that {} = None."""
     metadata = dict(age=21, male=True)
-    SleepStaging(_raw_sub02, eeg_name="C4", metadata=metadata)
+    SleepStaging(raw_sub02_shared, eeg_name="C4", metadata=metadata)
     assert metadata["male"] is True
-    assert SleepStaging(_raw_sub02, eeg_name="C4", metadata={}).metadata is None
+    assert SleepStaging(raw_sub02_shared, eeg_name="C4", metadata={}).metadata is None
 
 
 @pytest.mark.parametrize(
     "metadata, expected", [(dict(age=21), {"age": 21}), (dict(male=True), {"male": 1})]
 )
-def test_partial_metadata(_raw_sub02, metadata, expected):
+def test_partial_metadata(raw_sub02_shared, metadata, expected):
     """Partial metadata."""
-    assert SleepStaging(_raw_sub02, eeg_name="C4", metadata=metadata).metadata == expected
+    assert SleepStaging(raw_sub02_shared, eeg_name="C4", metadata=metadata).metadata == expected
 
 
 def test_very_short_data(raw_sub02):

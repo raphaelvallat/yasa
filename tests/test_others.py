@@ -28,13 +28,6 @@ MT_METHODS = ["mean", "min", "max", "ptp", "rms", "prop_above_zero", "slope", "c
 ##############################################################################
 
 
-@pytest.fixture
-def yasa_caplog(caplog, monkeypatch):
-    """caplog that also captures the messages of the YASA logger (which does not propagate)."""
-    monkeypatch.setattr(logging.getLogger("yasa"), "propagate", True)
-    return caplog
-
-
 @pytest.fixture(scope="module")
 def data_sigma(n2_spindles):
     """N2 data filtered in the sigma band."""
@@ -42,9 +35,9 @@ def data_sigma(n2_spindles):
 
 
 @pytest.fixture(scope="module")
-def raw_eeg(_raw_sub02):
+def raw_eeg(raw_sub02_shared):
     """EEG channels of sub-02."""
-    return _raw_sub02.copy().pick("eeg")
+    return raw_sub02_shared.copy().pick("eeg")
 
 
 @pytest.fixture(scope="module")
@@ -331,10 +324,10 @@ def test_check_data_sf_required(n2_spindles):
         _check_data(n2_spindles.data)
 
 
-def test_check_data_mne(raw_eeg, yasa_caplog):
+def test_check_data_mne(raw_eeg, caplog):
     """MNE Raw: data is converted to uV, sf and ch_names are ignored with a warning."""
     data_mne_uv, sf_out, ch_names, raw = _check_data(raw_eeg, sf=999, ch_names=["A"])
-    assert any(r.levelno == logging.WARNING for r in yasa_caplog.records)
+    assert any(r.levelno == logging.WARNING for r in caplog.records)
     np.testing.assert_allclose(data_mne_uv, raw_eeg.get_data() * 1e6)
     assert sf_out == raw_eeg.info["sfreq"] and ch_names == raw_eeg.ch_names
     assert raw is raw_eeg
@@ -399,9 +392,9 @@ def test_check_hypno_include_errors(full_6hrs, hypno_int, include, n_crop, match
         _check_hypno_include(hypno, include, full_6hrs.data, full_6hrs.sf)
 
 
-def test_check_hypno_include_timestamps(_raw_sub02):
+def test_check_hypno_include_timestamps(raw_sub02_shared):
     """A Hypnogram with a start time is aligned to a MNE Raw using absolute timestamps."""
-    raw = _raw_sub02.copy().pick(["F3"]).crop(0, 600, include_tmax=False)
+    raw = raw_sub02_shared.copy().pick(["F3"]).crop(0, 600, include_tmax=False)
     sf_raw = raw.info["sfreq"]
     # meas_date is treated as a local time, and the hypnogram starts 60 s (2 epochs) before
     raw_start = pd.Timestamp(raw.info["meas_date"]).replace(tzinfo=None)
