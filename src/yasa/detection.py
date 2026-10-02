@@ -96,7 +96,8 @@ def _specialize_method(func, cls, defaults):
     new.__kwdefaults__ = func.__kwdefaults__
     new.__module__ = func.__module__
     new.__qualname__ = f"{cls.__name__}.{func.__name__}"
-    new.__doc__ = func.__doc__.format(**cls._doc_params)
+    # Docstrings are stripped when Python runs with -OO
+    new.__doc__ = func.__doc__.format(**cls._doc_params) if func.__doc__ else None
     return new
 
 
