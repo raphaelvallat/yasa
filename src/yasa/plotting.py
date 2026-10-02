@@ -487,6 +487,10 @@ def topoplot(
 
     # Define electrodes coordinates
     Info = mne.create_info(data.index.tolist(), sfreq=100, ch_types="eeg")
+    # MNE 1.13 renamed "standard_1020" to "colin27_1020" (same positions) and deprecated the old
+    # name, which will be removed in MNE 1.14.
+    if montage == "standard_1020" and "colin27_1020" in mne.channels.get_builtin_montages():
+        montage = "colin27_1020"
     Info.set_montage(montage, match_case=False, on_missing="ignore")
     chan = Info.ch_names
 

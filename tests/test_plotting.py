@@ -1,5 +1,7 @@
 """Test the functions in the yasa/plotting.py file."""
 
+import warnings
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -44,6 +46,13 @@ def test_topoplot(data, kwargs):
     """Test topoplot"""
     fig = topoplot(data, **kwargs)
     assert isinstance(fig, plt.Figure)
+
+
+def test_topoplot_montage_no_warning():
+    """The default montage does not trigger the MNE >= 1.13 deprecation of 'standard_1020'"""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", FutureWarning)
+        topoplot(DATA_POS)
 
 
 def test_topoplot_mask():
