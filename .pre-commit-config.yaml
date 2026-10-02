@@ -1,7 +1,9 @@
+# Single source of the ruff version, used by the pre-commit hook and the Ruff CI workflow.
+# Keep the `dev` dependency group of pyproject.toml in sync.
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.0
+    rev: v0.16.10
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix]
       - id: ruff-format

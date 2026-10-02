@@ -1,6 +1,8 @@
 name: Ruff
+
 on:
   push:
+    branches: [master]
     paths-ignore:
       - '*.rst'
       - 'docs/**'
@@ -8,13 +10,34 @@ on:
     paths-ignore:
       - '*.rst'
       - 'docs/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ruff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
-      - name: "Linting"
-        run: uvx ruff check
-      - name: "Formatting"
-        run: uvx ruff format --check
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+        with:
+          enable-cache: true
+          prune-cache: false
+          cache-dependency-glob: ".pre-commit-config.yaml"
+          cache-suffix: pre-commit
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      # The ruff version is pinned in .pre-commit-config.yaml, the same hooks run locally
+      - name: Lint and format check
+        run: uvx pre-commit run --all-files --show-diff-on-failure
