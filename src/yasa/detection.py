@@ -1215,10 +1215,11 @@ def spindles_detect(
     )
 
 
-# Description of the "Channel" column in the docstring of compare_detection
+# Description of the "Channel" column in the docstring of compare_detection. Kept on a single
+# line because Python >= 3.13 dedents docstrings, so a hardcoded indent would not match.
 _CHANNEL_COLUMN_DOC = (
-    'It must also contain the "Channel" column, with channel names that match the output of\n'
-    "            the summary() method."
+    'It must also contain the "Channel" column, with channel names that match the output of '
+    "the summary() method."
 )
 
 
