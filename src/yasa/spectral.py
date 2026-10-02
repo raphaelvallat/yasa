@@ -5,6 +5,7 @@ This file contains several helper functions to calculate spectral power from
 
 import fractions
 import logging
+import warnings
 
 import mne
 import numpy as np
@@ -21,15 +22,59 @@ logger = logging.getLogger("yasa")
 
 __all__ = ["bandpower", "bandpower_from_psd", "bandpower_from_psd_ndarray", "irasa", "stft_power"]
 
-# Default frequency bands (lower frequency, upper frequency, name). Never modified in-place.
-DEFAULT_BANDS = [
+# Default frequency bands (lower frequency, upper frequency, name). A tuple, so that it can
+# safely be used as a default argument.
+DEFAULT_BANDS = (
     (0.5, 4, "Delta"),
     (4, 8, "Theta"),
     (8, 12, "Alpha"),
     (12, 16, "Sigma"),
     (16, 30, "Beta"),
     (30, 40, "Gamma"),
-]
+)
+
+# Default resampling factors of irasa: 1.1 to 1.9 with an increment of 0.05
+_DEFAULT_HSET = (
+    1.1,
+    1.15,
+    1.2,
+    1.25,
+    1.3,
+    1.35,
+    1.4,
+    1.45,
+    1.5,
+    1.55,
+    1.6,
+    1.65,
+    1.7,
+    1.75,
+    1.8,
+    1.85,
+    1.9,
+)
+
+# Default keyword arguments of scipy.signal.welch in bandpower and irasa
+_DEFAULT_WELCH_KWARGS = {"average": "median", "window": "hamming"}
+
+
+def _check_welch_kwargs(welch_kwargs, kwargs_welch, stacklevel):
+    """Return the keyword arguments of :py:func:`scipy.signal.welch`.
+
+    ``kwargs_welch`` is the name used before v0.8.0. ``stacklevel`` points the FutureWarning to
+    the caller of the public function.
+    """
+    if kwargs_welch is not None:
+        warnings.warn(
+            "The `kwargs_welch` argument is deprecated and will be removed in v0.9. "
+            "Please use `welch_kwargs` instead.",
+            FutureWarning,
+            stacklevel=stacklevel,
+        )
+        if welch_kwargs is not None:
+            raise TypeError("Use either `welch_kwargs` or the deprecated `kwargs_welch`, not both.")
+        welch_kwargs = kwargs_welch
+    return dict(_DEFAULT_WELCH_KWARGS) if welch_kwargs is None else welch_kwargs
 
 
 def _bands_range(bands):
@@ -89,7 +134,9 @@ def bandpower(
     relative=True,
     bandpass=False,
     bands=DEFAULT_BANDS,
-    kwargs_welch=dict(average="median", window="hamming"),
+    welch_kwargs=None,
+    *,
+    kwargs_welch=None,
 ):
     """
     Calculate the Welch bandpower for each channel and, if specified, for each sleep stage.
@@ -149,8 +196,15 @@ def bandpower(
     bands : list of tuples
         List of frequency bands of interests. Each tuple must contain the lower and upper
         frequencies, as well as the band name (e.g. (0.5, 4, 'Delta')).
-    kwargs_welch : dict
+    welch_kwargs : dict or None
         Optional keywords arguments that are passed to the :py:func:`scipy.signal.welch` function.
+        Default is ``{"average": "median", "window": "hamming"}``.
+
+        .. versionadded:: 0.8.0
+            Replaces ``kwargs_welch``.
+    kwargs_welch : dict or None
+        .. deprecated:: 0.8.0
+            Use ``welch_kwargs`` instead. This argument will be removed in v0.9.
 
     Returns
     -------
@@ -178,7 +232,8 @@ def bandpower(
     https://github.com/raphaelvallat/yasa/blob/master/notebooks/08_bandpower.ipynb
     """
     # Type checks
-    assert isinstance(bands, list), "bands must be a list of tuple(s)"
+    welch_kwargs = _check_welch_kwargs(welch_kwargs, kwargs_welch, stacklevel=3)
+    assert isinstance(bands, (list, tuple)), "bands must be a list of tuple(s)"
     assert isinstance(relative, bool), "relative must be a boolean"
     assert isinstance(bandpass, bool), "bandpass must be a boolean"
 
@@ -193,7 +248,7 @@ def bandpower(
 
     if hypno is None:
         # Calculate the PSD over the whole data
-        freqs, psd = signal.welch(data, sf, nperseg=win, **kwargs_welch)
+        freqs, psd = signal.welch(data, sf, nperseg=win, **welch_kwargs)
         bp = bandpower_from_psd(psd, freqs, ch_names, bands=bands, relative=relative)
         return bp.set_index("Chan")
 
@@ -216,7 +271,7 @@ def bandpower(
                 f"({win_sec} seconds). Skipping stage."
             )
             continue
-        freqs, psd = signal.welch(data[:, is_stage], sf, nperseg=win, **kwargs_welch)
+        freqs, psd = signal.welch(data[:, is_stage], sf, nperseg=win, **welch_kwargs)
         bp_stage = bandpower_from_psd(psd, freqs, ch_names, bands=bands, relative=relative)
         bp_stage["Stage"] = int_to_str.get(stage, stage)
         bp_stages.append(bp_stage)
@@ -262,7 +317,7 @@ def bandpower_from_psd(
         Bandpower dataframe, in which each row is a channel and each column a spectral band.
     """
     # Type checks
-    assert isinstance(bands, list), "bands must be a list of tuple(s)"
+    assert isinstance(bands, (list, tuple)), "bands must be a list of tuple(s)"
     assert isinstance(relative, bool), "relative must be a boolean"
 
     # Safety checks
@@ -290,7 +345,7 @@ def bandpower_from_psd(
     bp["Relative"] = relative
     bp.insert(0, "Chan", ch_names)
     # Add hidden attributes
-    bp.bands_ = str(bands)
+    bp.bands_ = str(list(bands))
     return bp
 
 
@@ -328,7 +383,7 @@ def bandpower_from_psd_ndarray(
         Bandpower array of shape *(n_bands, ...)*.
     """
     # Type checks
-    assert isinstance(bands, list), "bands must be a list of tuple(s)"
+    assert isinstance(bands, (list, tuple)), "bands must be a list of tuple(s)"
     assert isinstance(relative, bool), "relative must be a boolean"
 
     # Safety checks
@@ -352,29 +407,12 @@ def irasa(
     hypno=None,
     include=(2, 3),
     band=(1, 30),
-    hset=[
-        1.1,
-        1.15,
-        1.2,
-        1.25,
-        1.3,
-        1.35,
-        1.4,
-        1.45,
-        1.5,
-        1.55,
-        1.6,
-        1.65,
-        1.7,
-        1.75,
-        1.8,
-        1.85,
-        1.9,
-    ],
+    hset=_DEFAULT_HSET,
     return_fit=True,
     win_sec=4,
-    kwargs_welch=dict(average="median", window="hamming"),
+    welch_kwargs=None,
     verbose=False,
+    kwargs_welch=None,
 ):
     r"""
     Separate the aperiodic (= fractal, or 1/f) and oscillatory component
@@ -432,7 +470,7 @@ def irasa(
     band : tuple or None
         Broad band frequency range.
         Default is 1 to 30 Hz.
-    hset : list or :py:class:`numpy.ndarray`
+    hset : tuple, list or :py:class:`numpy.ndarray`
         Resampling factors used in IRASA calculation. Default is to use a range
         of values from 1.1 to 1.9 with an increment of 0.05.
     return_fit : boolean
@@ -453,9 +491,12 @@ def irasa(
         the lower frequency of interest (e.g. for a lower frequency of interest
         of 0.5 Hz, the window length should be at least 2 * 1 / 0.5 =
         4 seconds).
-    kwargs_welch : dict
-        Optional keywords arguments that are passed to the
-        :py:func:`scipy.signal.welch` function.
+    welch_kwargs : dict or None
+        Optional keywords arguments that are passed to the :py:func:`scipy.signal.welch` function.
+        Default is ``{"average": "median", "window": "hamming"}``.
+
+        .. versionadded:: 0.8.0
+            Replaces ``kwargs_welch``.
     verbose : bool or str
         Verbose level. Default (False) will only print warning and error
         messages. The logging levels are 'debug', 'info', 'warning', 'error',
@@ -465,6 +506,9 @@ def irasa(
         .. versionchanged:: 0.8.0
             The default is now False, as documented. Previously, the default was True, but the
             info messages were not shown because they were sent to the root logger.
+    kwargs_welch : dict or None
+        .. deprecated:: 0.8.0
+            Use ``welch_kwargs`` instead. This argument will be removed in v0.9.
 
     Returns
     -------
@@ -555,6 +599,7 @@ def irasa(
         lp = sf / 2  # Lowpass filter unknown -> set to Nyquist
 
     # Check the other arguments
+    welch_kwargs = _check_welch_kwargs(welch_kwargs, kwargs_welch, stacklevel=4)
     hset = np.asarray(hset)
     assert hset.ndim == 1, "hset must be 1D."
     assert hset.size > 1, "2 or more resampling fators are required."
@@ -609,7 +654,7 @@ def irasa(
                 f"{win_sec * h_max:.2f} seconds are required. Use a shorter win_sec or a lower "
                 f"max(hset)."
             )
-        freqs, psd_aperiodic, psd_osc = _irasa(data, sf, hset, win, band, kwargs_welch)
+        freqs, psd_aperiodic, psd_osc = _irasa(data, sf, hset, win, band, welch_kwargs)
         if not return_fit:
             return freqs, psd_aperiodic, psd_osc
         return freqs, psd_aperiodic, psd_osc, _irasa_fit(freqs, psd_aperiodic, psd_osc, ch_names)
@@ -632,7 +677,7 @@ def irasa(
             )
             continue
         freqs, psd_aperiodic[label], psd_osc[label] = _irasa(
-            data[:, is_stage], sf, hset, win, band, kwargs_welch
+            data[:, is_stage], sf, hset, win, band, welch_kwargs
         )
         if return_fit:
             fit_stage = _irasa_fit(freqs, psd_aperiodic[label], psd_osc[label], ch_names)
@@ -648,10 +693,10 @@ def irasa(
     return freqs, psd_aperiodic, psd_osc, pd.concat(fit_params, ignore_index=True)
 
 
-def _irasa(data, sf, hset, win, band, kwargs_welch):
+def _irasa(data, sf, hset, win, band, welch_kwargs):
     """Apply IRASA to a 2D array of shape (n_chan, n_samples) and crop the PSDs to ``band``."""
     # Calculate the original PSD over the whole data
-    freqs, psd = signal.welch(data, sf, nperseg=win, **kwargs_welch)
+    freqs, psd = signal.welch(data, sf, nperseg=win, **welch_kwargs)
 
     # Start the IRASA procedure
     psds = np.zeros((len(hset), *psd.shape))
@@ -664,8 +709,8 @@ def _irasa(data, sf, hset, win, band, kwargs_welch):
         data_up = signal.resample_poly(data, up, down, axis=-1)
         data_down = signal.resample_poly(data, down, up, axis=-1)
         # Calculate the PSD using same params as original
-        _, psd_up = signal.welch(data_up, h * sf, nperseg=win, **kwargs_welch)
-        _, psd_dw = signal.welch(data_down, sf / h, nperseg=win, **kwargs_welch)
+        _, psd_up = signal.welch(data_up, h * sf, nperseg=win, **welch_kwargs)
+        _, psd_dw = signal.welch(data_down, sf / h, nperseg=win, **welch_kwargs)
         # Geometric mean of h and 1/h
         psds[i] = np.sqrt(psd_up * psd_dw)
 

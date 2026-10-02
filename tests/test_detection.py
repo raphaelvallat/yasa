@@ -1,6 +1,7 @@
 """Test the functions in yasa/detection.py."""
 
 import copy
+import inspect
 import logging
 from contextlib import contextmanager
 from types import SimpleNamespace
@@ -13,6 +14,10 @@ from scipy.stats import hmean
 
 from yasa._validation import _check_data_hypno
 from yasa.detection import (
+    REMResults,
+    SpindlesResults,
+    SWResults,
+    _DetectionResults,
     art_detect,
     compare_detection,
     rem_detect,
@@ -588,6 +593,25 @@ def test_get_sync_events_edges(sw_n3):
     np.testing.assert_array_equal(
         df_sync.loc[df_sync["Time"] == 0, "Amplitude"], sw_n3.data[[2000, 4000]]
     )
+
+
+def test_results_methods_documented():
+    """Each Results class gets its own copy of the shared methods, with its own docstring."""
+    for cls, event, center in [
+        (SpindlesResults, "spindle", "Peak"),
+        (SWResults, "slow-wave", "NegPeak"),
+        (REMResults, "REM", "Peak"),
+    ]:
+        for name in ["get_sync_events", "compare_detection", "plot_detection"]:
+            method = getattr(cls, name)
+            assert method.__qualname__ == f"{cls.__name__}.{name}"
+            assert event in method.__doc__ and "{" not in method.__doc__
+        assert inspect.signature(cls.get_sync_events).parameters["center"].default == center
+    # The base class is untouched
+    assert (
+        inspect.signature(_DetectionResults.get_sync_events).parameters["time_after"].default == 1
+    )
+    assert inspect.signature(SWResults.plot_average).parameters["time_after"].default == 0.8
 
 
 def test_get_mask_rounding(data):

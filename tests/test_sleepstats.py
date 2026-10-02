@@ -131,3 +131,12 @@ def test_sleep_statistics_values():
         "SME": 100.0,
     }
     assert sleep_statistics(hypno, sf_hyp=1 / 30) == expected
+
+
+@pytest.mark.filterwarnings("ignore::FutureWarning")
+def test_sleep_statistics_hypnogram():
+    """The deprecated sleep_statistics dispatches a Hypnogram to its method."""
+    hyp = Hypnogram.from_integers([0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 2, 3, 3, 4, 4, 4, 4, 0, 0])
+    assert sleep_statistics(hyp) == hyp.sleep_statistics()
+    with pytest.raises(AssertionError, match="sf_hyp is required"):
+        sleep_statistics(hyp.as_int().to_numpy())

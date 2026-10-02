@@ -48,6 +48,24 @@ _CONSOLIDATION_MAPPINGS = {
 }
 # Default integer to string mapping of legacy integer hypnograms
 _DEFAULT_INT_TO_STR = {0: "W", 1: "N1", 2: "N2", 3: "N3", 4: "R", -1: "Art", -2: "Uns"}
+# Default mapping of the deprecated hypno_str_to_int, in lowercase
+_DEFAULT_STR_TO_INT = {
+    "w": 0,
+    "wake": 0,
+    "n1": 1,
+    "s1": 1,
+    "n2": 2,
+    "s2": 2,
+    "n3": 3,
+    "s3": 3,
+    "s4": 3,
+    "r": 4,
+    "rem": 4,
+    "art": -1,
+    "mt": -1,
+    "uns": -2,
+    "nd": -2,
+}
 # Compumedics Profusion integer stages to YASA: S4 -> N3, REM (5) -> 4, Active (9) -> WAKE
 _PROFUSION_TO_YASA = {4: 3, 5: 4, 9: 0}
 _TIME_TYPES = (str, pd.Timestamp, datetime.datetime)
@@ -538,6 +556,13 @@ class Hypnogram:
         >>> hyp = Hypnogram.from_integers([1, 3, 4, 5, 2], mapping=custom_mapping)
         """
         str_hypno = _hypno_int_to_str(values, mapping_dict=mapping)
+        # Values that are not in the mapping are converted to NaN by _hypno_int_to_str
+        unmapped = pd.unique(np.asarray(values, dtype=int)[pd.isna(str_hypno)])
+        if unmapped.size:
+            raise ValueError(
+                f"Integer value(s) {sorted(unmapped.tolist())} are not in the mapping "
+                f"{mapping}. Use the `mapping` argument to convert non-standard integers."
+            )
         return cls(
             str_hypno, n_stages=n_stages, freq=freq, start=start, tz=tz, scorer=scorer, proba=proba
         )
@@ -2176,26 +2201,7 @@ class Hypnogram:
 #############################################################################
 
 
-def hypno_str_to_int(
-    hypno,
-    mapping_dict={
-        "w": 0,
-        "wake": 0,
-        "n1": 1,
-        "s1": 1,
-        "n2": 2,
-        "s2": 2,
-        "n3": 3,
-        "s3": 3,
-        "s4": 3,
-        "r": 4,
-        "rem": 4,
-        "art": -1,
-        "mt": -1,
-        "uns": -2,
-        "nd": -2,
-    },
-):
+def hypno_str_to_int(hypno, mapping_dict=None):
     """Convert a string hypnogram array to integer.
 
     ['W', 'N2', 'N2', 'N3', 'R'] ==> [0, 2, 2, 3, 4]
@@ -2210,9 +2216,10 @@ def hypno_str_to_int(
     ----------
     hypno : array_like
         The sleep staging (hypnogram) 1D array.
-    mapping_dict : dict
+    mapping_dict : dict or None
         The mapping dictionnary, in lowercase. Note that this function is essentially a wrapper
-        around :py:meth:`pandas.Series.map`.
+        around :py:meth:`pandas.Series.map`. Default (None) maps the usual labels, e.g.
+        ``'w'`` and ``'wake'`` to 0, ``'n1'`` and ``'s1'`` to 1, or ``'r'`` and ``'rem'`` to 4.
 
     Returns
     -------
@@ -2228,6 +2235,8 @@ def hypno_str_to_int(
     assert isinstance(hypno, (list, np.ndarray, pd.Series)), "Not an array."
     hypno = pd.Series(np.asarray(hypno, dtype=str))
     assert not hypno.str.isnumeric().any(), "Hypno contains numeric values."
+    if mapping_dict is None:
+        mapping_dict = _DEFAULT_STR_TO_INT
     return hypno.str.lower().map(mapping_dict).values
 
 
@@ -2481,8 +2490,16 @@ def _read_profusion(fname):
     import xml.etree.ElementTree as ET
 
     root = ET.parse(fname).getroot()
-    epoch_length = float(root[0].text)
-    hypno_int = np.array([int(s.text) for s in root[4]])
+    # Find the elements by tag name: their position in the file is not part of the format
+    epoch_length = root.find("EpochLength")
+    stages = root.find("SleepStages")
+    if epoch_length is None or stages is None:
+        raise ValueError(
+            f"{fname} is not a valid Profusion hypnogram: the root element must contain the "
+            "<EpochLength> and <SleepStages> elements."
+        )
+    epoch_length = float(epoch_length.text)
+    hypno_int = np.array([int(s.text) for s in stages.iter("SleepStage")])
     return hypno_int, epoch_length
 
 

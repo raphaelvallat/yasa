@@ -239,6 +239,12 @@ def test_moving_transform_corr_covar_requires_y(method):
         moving_transform(x, None, 100.0, 0.5, 0.1, method)
 
 
+def test_moving_transform_requires_sf():
+    """sf has no default: YASA used to silently assume 100 Hz."""
+    with pytest.raises(TypeError, match="missing required argument: 'sf'"):
+        moving_transform(np.zeros(100), method="rms")
+
+
 def test_trimbothstd():
     """Test function trimbothstd"""
     x = [4, 5, 7, 0, 18, 6, 7, 8, 9, 10]

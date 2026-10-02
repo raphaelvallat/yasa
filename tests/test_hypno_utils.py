@@ -156,27 +156,51 @@ PROFUSION_STAGES = [0, 1, 2, 3, 4, 5, 9, 2]
 PROFUSION_TO_YASA = [0, 1, 2, 3, 3, 4, 0, 2]
 
 
-@pytest.fixture
-def profusion_xml(tmp_path):
-    """Write a minimal Compumedics Profusion XML file and return its path.
-
-    The parser reads the epoch length from the first child of the root and the sleep stages
-    from the fifth child, as in the NSRR files.
-    """
-    stages = "".join(f"<SleepStage>{s}</SleepStage>" for s in PROFUSION_STAGES)
+def _write_profusion(path, children):
+    """Write a Compumedics Profusion XML file with the given children of the root element."""
     xml = (
         '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n'
-        "<CMPStudyConfig>"
-        "<EpochLength>20</EpochLength>"
-        "<StepChannels/>"
-        "<ScoredEvents/>"
-        "<Montage/>"
-        f"<SleepStages>{stages}</SleepStages>"
-        "</CMPStudyConfig>"
+        f"<CMPStudyConfig>{''.join(children)}</CMPStudyConfig>"
     )
-    fname = tmp_path / "hypnogram.xml"
-    fname.write_text(xml)
-    return fname
+    path.write_text(xml)
+    return path
+
+
+PROFUSION_EPOCH_LENGTH = "<EpochLength>20</EpochLength>"
+PROFUSION_SLEEP_STAGES = (
+    "<SleepStages>"
+    + "".join(f"<SleepStage>{s}</SleepStage>" for s in PROFUSION_STAGES)
+    + "</SleepStages>"
+)
+
+
+@pytest.fixture
+def profusion_xml(tmp_path):
+    """A minimal Profusion XML file, with the elements in the same order as the NSRR files."""
+    children = [
+        PROFUSION_EPOCH_LENGTH,
+        "<StepChannels/>",
+        "<ScoredEvents/>",
+        "<Montage/>",
+        PROFUSION_SLEEP_STAGES,
+    ]
+    return _write_profusion(tmp_path / "hypnogram.xml", children)
+
+
+def test_from_profusion_tag_order(tmp_path, profusion_xml):
+    """The elements are found by tag name, not by position."""
+    children = ["<ScoredEvents/>", PROFUSION_SLEEP_STAGES, PROFUSION_EPOCH_LENGTH]
+    hyp = Hypnogram.from_profusion(_write_profusion(tmp_path / "reordered.xml", children))
+    assert hyp.freq == "20s"
+    assert (hyp == Hypnogram.from_profusion(profusion_xml)).all()
+
+
+@pytest.mark.parametrize(
+    "children", [[PROFUSION_EPOCH_LENGTH], [PROFUSION_SLEEP_STAGES]], ids=["stages", "epoch"]
+)
+def test_from_profusion_missing_element(tmp_path, children):
+    with pytest.raises(ValueError, match="not a valid Profusion hypnogram"):
+        Hypnogram.from_profusion(_write_profusion(tmp_path / "invalid.xml", children))
 
 
 @pytest.mark.parametrize(
@@ -217,6 +241,7 @@ def test_from_profusion_kwargs(profusion_xml):
     "func, args, expected",
     [
         ("hypno_str_to_int", (HYPNO_TXT,), HYPNO),
+        ("hypno_str_to_int", (["W", "Sleep"], {"w": 0, "sleep": 1}), [0, 1]),
         ("hypno_int_to_str", (HYPNO,), ["W", "W", "W", "N1", "N2", "N2", "N3", "N3", "R"]),
     ],
 )

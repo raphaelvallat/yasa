@@ -245,9 +245,8 @@ def test_from_integers_custom_mapping():
 
 
 def test_from_integers_invalid_raises():
-    # Integers that are not in the mapping are left as-is, and then rejected by the constructor
-    with pytest.raises(AssertionError, match="expects strings"):
-        Hypnogram.from_integers([0, 99])
+    with pytest.raises(ValueError, match=r"\[7, 99\] are not in the mapping"):
+        Hypnogram.from_integers([0, 99, 7, 99])
 
 
 ###############################################################################
