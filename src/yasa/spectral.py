@@ -467,7 +467,7 @@ def irasa(
         integers (e.g. ``["N2", "N3"]``).
 
         .. versionadded:: 0.8.0
-    band : tuple or None
+    band : tuple
         Broad band frequency range.
         Default is 1 to 30 Hz.
     hset : tuple, list or :py:class:`numpy.ndarray`

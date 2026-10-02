@@ -249,6 +249,11 @@ def test_from_integers_invalid_raises():
         Hypnogram.from_integers([0, 99, 7, 99])
 
 
+def test_from_integers_nan_raises():
+    with pytest.raises(ValueError, match="NaN"):
+        Hypnogram.from_integers(np.array([0, 1, np.nan]))
+
+
 ###############################################################################
 # __len__, __eq__, __getitem__
 ###############################################################################
@@ -549,6 +554,12 @@ def test_crop_empty_raises():
         Hypnogram(_STAGES).crop(start=5, end=3)
 
 
+def test_crop_mixed_types_raises():
+    hyp = Hypnogram(_STAGES, start="2024-01-01 23:00:00")
+    with pytest.raises(TypeError, match="mix"):
+        hyp.crop(start=1, end="2024-01-01 23:02:00")
+
+
 ###############################################################################
 # pad
 ###############################################################################
@@ -824,6 +835,11 @@ def test_simulate_similar_edge_cases():
     default = simulate_hypnogram(tib=480, seed=42).transition_matrix()[1]
     sim = hyp.simulate_similar(trans_probas=default, seed=0)
     assert sim.n_epochs == hyp.n_epochs
+    # ART and UNS are excluded from the simulated transitions
+    hyp = Hypnogram(["W", "ART", "N1", "N2", "UNS", "N2", "N3", "REM", "W"])
+    sim = hyp.simulate_similar(seed=0)
+    assert sim.n_epochs == hyp.n_epochs
+    assert not sim.hypno.isin(["ART", "UNS"]).any()
 
 
 ###############################################################################

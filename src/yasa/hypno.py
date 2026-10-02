@@ -1087,6 +1087,10 @@ class Hypnogram:
         """
         n = self.n_epochs
         if isinstance(start, _TIME_TYPES) or isinstance(end, _TIME_TYPES):
+            if not all(x is None or isinstance(x, _TIME_TYPES) for x in (start, end)):
+                raise TypeError(
+                    "`start` and `end` must both be integers or both be datetimes, not a mix."
+                )
             if self._start is None:
                 raise ValueError(
                     "Time-based crop requires the Hypnogram to have a `start` datetime set."
@@ -1434,11 +1438,11 @@ class Hypnogram:
             construction: ``Hypnogram(..., tz='Europe/Paris')``. This error cannot occur with
             the default ``meas_date_is_local=True``.
 
-        Warns
+        Notes
         -----
-        UserWarning
-            If the hypnogram is shorter or longer than the data and needs to be padded or
-            cropped. Silenced by passing ``verbose='error'``.
+        If the hypnogram is shorter or longer than the data, it is padded or cropped and a
+        warning is logged via the ``yasa`` logger (not a Python :py:class:`UserWarning`). This
+        message can be silenced by passing ``verbose='error'``.
 
         Examples
         --------
@@ -2067,9 +2071,14 @@ class Hypnogram:
             "because they must match properties of the current Hypnogram."
         )
         trans_probas = self.transition_matrix()[1]
-        # A stage that only occurs at the very last epoch has no outgoing transition, and
-        # therefore undefined (NaN) transition probabilities. Like in the original hypnogram, we
-        # assume that the simulated hypnogram stays in that stage.
+        # ART and UNS are not simulated: drop them and renormalize the remaining transitions
+        trans_probas = trans_probas.drop(
+            index=["ART", "UNS"], columns=["ART", "UNS"], errors="ignore"
+        )
+        trans_probas = trans_probas.div(trans_probas.sum(axis=1).replace(0, np.nan), axis=0)
+        # A stage that only occurs at the very last epoch (or only transitions to ART/UNS) has no
+        # outgoing transition, and therefore undefined (NaN) transition probabilities. Like in the
+        # original hypnogram, we assume that the simulated hypnogram stays in that stage.
         for st in trans_probas.index[trans_probas.isna().all(axis=1)]:
             trans_probas.loc[st] = (trans_probas.columns == st).astype(float)
         simulate_hypnogram_kwargs = {
@@ -2281,6 +2290,9 @@ def hypno_int_to_str(hypno, mapping_dict=_DEFAULT_INT_TO_STR):
 def _hypno_int_to_str(hypno, mapping_dict=_DEFAULT_INT_TO_STR):
     """Convert an integer hypnogram array to a string array. See :py:func:`hypno_int_to_str`."""
     assert isinstance(hypno, (list, np.ndarray, pd.Series)), "Not an array."
+    # Casting NaN to int is platform-dependent (e.g. 0 = WAKE on ARM), so reject it explicitly
+    if pd.isna(np.asarray(hypno, dtype=float)).any():
+        raise ValueError("Integer hypnogram must not contain NaN values.")
     hypno = pd.Series(np.asarray(hypno, dtype=int))
     return hypno.map(mapping_dict).values
 
@@ -2409,7 +2421,7 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=True):
         The sampling frequency of ``data``, in Hz (e.g. 100 Hz, 256 Hz, ...).
         Can be omitted if ``data`` is a :py:class:`mne.io.BaseRaw`.
     verbose : bool or str
-        Verbose level. Default (False) will only print warning and error
+        Verbose level. Default (True) will print info, warning and error
         messages. The logging levels are 'debug', 'info', 'warning', 'error',
         and 'critical'. For most users the choice is between 'info'
         (or ``verbose=True``) and warning (``verbose=False``).
@@ -2419,12 +2431,11 @@ def hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=True):
     hypno : array_like
         The hypnogram, upsampled to ``sf_data`` and cropped/padded to ``max(data.shape)``.
 
-    Warns
+    Notes
     -----
-    UserWarning
-        If the upsampled ``hypno`` is shorter / longer than ``max(data.shape)``
-        and therefore needs to be padded/cropped respectively. This output can be disabled by
-        passing ``verbose='ERROR'``.
+    If the upsampled ``hypno`` is shorter / longer than ``max(data.shape)``, it is padded/cropped
+    and a warning is logged via the ``yasa`` logger (not a Python :py:class:`UserWarning`). This
+    output can be disabled by passing ``verbose='ERROR'``.
     """
     warnings.warn(
         "The `yasa.hypno_upsample_to_data` function is deprecated and will be removed in v0.9. "
@@ -2716,7 +2727,7 @@ def simulate_hypnogram(
     tib : int, float
         Total duration of the hypnogram (i.e., time in bed), expressed in minutes.
         Returned hypnogram will be slightly shorter if ``tib`` is not evenly divisible by ``freq``.
-        Default is 480 minutes (= 8 hours).
+        Default is 300 minutes (= 5 hours).
 
         .. seealso:: :py:meth:`yasa.Hypnogram.sleep_statistics`
     trans_probas : :py:class:`pandas.DataFrame` or None

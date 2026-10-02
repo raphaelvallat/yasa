@@ -1831,7 +1831,10 @@ class SWResults(_DetectionResults):
     def _get_aggdict(self, aggfunc):
         aggdict = super()._get_aggdict(aggfunc)
         if "PhaseAtSigmaPeak" in self._events:
-            aggdict["PhaseAtSigmaPeak"] = lambda x: circmean(x, low=-np.pi, high=np.pi)
+            # Slow-waves too close to the edges have NaN coupling and are ignored, like with ndPAC
+            aggdict["PhaseAtSigmaPeak"] = lambda x: circmean(
+                x, low=-np.pi, high=np.pi, nan_policy="omit"
+            )
             aggdict["ndPAC"] = aggfunc
         if "CooccurringSpindle" in self._events:
             # We do not average "CooccurringSpindlePeak"
@@ -2168,6 +2171,11 @@ def rem_detect(
 
     if remove_outliers:
         df = _remove_outliers(df, REMResults._features)
+
+    # Peaks were found, but none of them passed the sign / duration criteria
+    if df.empty:
+        logger.warning("No REMs were found in data. Returning None.")
+        return None
 
     logger.info("%i REMs were found in data.", df.shape[0])
     df = df.reset_index(drop=True)

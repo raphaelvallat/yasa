@@ -281,6 +281,18 @@ def test_sliding_window():
     t, sl = sliding_window(x_2d, sf=100.0, window=4.0, step=None)
     assert np.array_equal(t, [0.0, 4.0])
     assert np.array_equal(sl.shape, (2, 2, 400))
+    # Window equal to the signal length
+    t, sl = sliding_window(np.arange(20), sf=1, window=20)
+    assert np.array_equal(t, [0.0])
+    assert np.array_equal(sl, np.arange(20)[None, :])
+    # Slide over the first axis
+    x_t = np.arange(40).reshape(20, 2)
+    t, sl = sliding_window(x_t, sf=1, window=5, axis=0)
+    assert np.array_equal(t, [0.0, 5.0, 10.0, 15.0])
+    assert np.array_equal(sl.shape, (4, 2, 5))
+    assert np.array_equal(sl, sliding_window(x_t.T, sf=1, window=5)[1])
+    with pytest.raises(AssertionError, match="out of range"):
+        sliding_window(x_t, sf=1, window=5, axis=2)
 
 
 def test_get_centered_indices():

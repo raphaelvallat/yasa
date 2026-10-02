@@ -533,6 +533,10 @@ def test_sw_coupling(sw_coupling):
     assert sw_sum["PhaseAtSigmaPeak"].between(-np.pi, np.pi).all()
     # There should be some zero in the ndPAC (full dataframe)
     assert sw_coupling._events[sw_coupling._events["ndPAC"] == 0].shape[0] > 0
+    # Edge slow-waves have NaN coupling, which is ignored when averaging (like ndPAC)
+    sw = copy.deepcopy(sw_coupling)
+    sw._events.loc[0, "PhaseAtSigmaPeak"] = np.nan
+    assert sw.summary(grp_chan=True)["PhaseAtSigmaPeak"].notna().all()
 
 
 def test_sw_cooccurring_spindles(sw_coupling, sp_full_hypno):
@@ -718,6 +722,13 @@ def test_rem_wrong_amplitude(eog, loc_factor, roc_factor, caplog):
     with assert_logs(caplog, "ERROR"):
         rem = rem_detect(eog.loc * loc_factor, eog.roc * roc_factor, eog.sf)
     assert rem is None
+
+
+def test_rem_no_valid_events(eog, caplog):
+    """Peaks are found but none of them pass the duration criteria: return None."""
+    rem = rem_detect(eog.loc, eog.roc, eog.sf, duration=(1.19, 1.2))
+    assert rem is None
+    assert "No REMs were found" in caplog.text
 
 
 def test_rem_hypnogram_str_include(eog):
