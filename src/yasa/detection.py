@@ -8,6 +8,7 @@ slow-waves, and rapid eye movements from sleep EEG recordings.
 """
 
 import logging
+import types
 from itertools import product
 
 import mne
@@ -80,7 +81,26 @@ def _remove_outliers(df, features, ch_name=None):
 #############################################################################
 
 
-class _DetectionResults(object):
+def _specialize_method(func, cls, defaults):
+    """Return a copy of the method ``func`` for the subclass ``cls``.
+
+    The copy shares the code of ``func``, but its docstring is formatted with ``cls._doc_params``
+    and the default values of the arguments in ``defaults`` are replaced.
+    """
+    code = func.__code__
+    # __defaults__ holds the default values of the last positional arguments
+    old_defaults = func.__defaults__ or ()
+    names = code.co_varnames[code.co_argcount - len(old_defaults) : code.co_argcount]
+    new_defaults = tuple(defaults.get(name, value) for name, value in zip(names, old_defaults))
+    new = types.FunctionType(code, func.__globals__, func.__name__, new_defaults, func.__closure__)
+    new.__kwdefaults__ = func.__kwdefaults__
+    new.__module__ = func.__module__
+    new.__qualname__ = f"{cls.__name__}.{func.__name__}"
+    new.__doc__ = func.__doc__.format(**cls._doc_params)
+    return new
+
+
+class _DetectionResults:
     """Main class for detection results."""
 
     # Event features, used as the averaged columns of summary() and for outlier removal
@@ -89,6 +109,33 @@ class _DetectionResults(object):
     _title = ""
     # Channel label used when the events are not detected on a single channel (e.g. REMs)
     _channel_label = None
+    # Words used in the docstrings of the templated methods below, e.g. {"events": "spindles"}
+    _doc_params = {}
+    # Default center, time_before and time_after of get_sync_events() and plot_average()
+    _sync_defaults = {}
+    # Methods with a templated docstring. Each subclass gets its own copy, see __init_subclass__.
+    _templated_methods = (
+        "summary",
+        "get_sync_events",
+        "get_coincidence_matrix",
+        "compare_channels",
+        "compare_detection",
+        "plot_average",
+        "plot_detection",
+    )
+
+    def __init_subclass__(cls, **kwargs):
+        """Document the methods of each subclass with its own event names and defaults.
+
+        Without this, each subclass would need to override every method only to change a few
+        words of the docstring (e.g. "spindles" instead of "slow-waves") and to call super().
+        Methods that are defined in the subclass itself are left untouched.
+        """
+        super().__init_subclass__(**kwargs)
+        for name in _DetectionResults._templated_methods:
+            if name not in cls.__dict__:
+                func = getattr(_DetectionResults, name)
+                setattr(cls, name, _specialize_method(func, cls, cls._sync_defaults))
 
     def __init__(self, events, data, sf, ch_names, hypno, data_filt):
         self._events = events
@@ -125,10 +172,30 @@ class _DetectionResults(object):
     def _get_aggdict(self, aggfunc):
         return {"Start": "count", **dict.fromkeys(self._features, aggfunc)}
 
-    def summary(self, grp_chan=False, grp_stage=False, aggfunc="mean", sort=True, mask=None):
-        """Return the detected events, optionally grouped by channel and/or stage.
+    def summary(self, grp_chan=False, grp_stage=False, mask=None, aggfunc="mean", sort=True):
+        """Return a summary of the {events} detection, optionally grouped across channels and/or
+        stage.
 
-        See full documentation in the methods of the subclasses.
+        Parameters
+        ----------
+        grp_chan : bool
+            If True, group by channel (for multi-channels detection only).
+        grp_stage : bool
+            If True, group by sleep stage (provided that an hypnogram was used).
+        mask : array_like or None
+            Custom boolean mask. Only the detected events for which mask is True will be
+            included in the summary. Default is None, i.e. no masking (all events are included).
+        aggfunc : str or function
+            Averaging function (e.g. ``'mean'`` or ``'median'``).
+        sort : bool
+            If True, sort group keys when grouping.
+
+        Returns
+        -------
+        summary : :py:class:`pandas.DataFrame`
+            One row per detected event or, if grouping, one row per group with the number of
+            events (``Count``), the density per minute of each stage (``Density``, only when
+            grouping by stage with an hypnogram) and the averaged features.
         """
         # Check masking
         mask = self._check_mask(mask)
@@ -165,7 +232,15 @@ class _DetectionResults(object):
         return df_grp.set_index(grouper)
 
     def get_mask(self):
-        """Return an array of 0 and 1 indicating which samples are part of a detected event."""
+        """Return an array indicating for each sample in data if this sample is part of a
+        detected event (1) or not (0).
+
+        Returns
+        -------
+        mask : :py:class:`numpy.ndarray`
+            Array of 0 and 1 with the same shape as data, where 1 indicates that the sample is
+            part of a detected event.
+        """
         mask = np.zeros(self._data.shape, dtype=int)
         for i, ev_chan in self._iter_channels(self._events):
             # Round (not truncate) to recover the sample indices, e.g. 0.29 * 100 = 28.999...
@@ -182,9 +257,51 @@ class _DetectionResults(object):
         )
 
     def get_sync_events(
-        self, center, time_before, time_after, filt=(None, None), mask=None, as_dataframe=True
+        self,
+        center="Peak",
+        time_before=1,
+        time_after=1,
+        filt=(None, None),
+        mask=None,
+        as_dataframe=True,
     ):
-        """Get_sync_events"""
+        """
+        Return the raw or filtered data of each detected event after centering to a specific
+        timepoint.
+
+        Parameters
+        ----------
+        center : str
+            Landmark of the event to synchronize the timing on. Default is to use {center}.
+        time_before : float
+            Time (in seconds) before ``center``.
+        time_after : float
+            Time (in seconds) after ``center``.
+        filt : tuple
+            Optional filtering to apply to data. For instance, ``filt=(1, 30)``
+            will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
+            will apply a 40 Hz lowpass filter. Filtering is done using default
+            parameters in the :py:func:`mne.filter.filter_data` function.
+        mask : array_like or None
+            Custom boolean mask. Only the detected events for which mask is True will be
+            included. Default is None, i.e. no masking (all events are included).
+        as_dataframe : boolean
+            If True (default), returns a long-format pandas dataframe. If False, returns a list of
+            numpy arrays. Each element of the list a unique channel, and the shape of the numpy
+            arrays within the list is (n_events, n_times).
+
+        Returns
+        -------
+        df_sync : :py:class:`pandas.DataFrame` or list
+            Ouput long-format dataframe (if ``as_dataframe=True``)::
+
+            'Event' : Event number
+            'Time' : Timing of the events (in seconds)
+            'Amplitude' : Raw or filtered data for event
+            'Channel' : Channel
+            'IdxChannel' : Index of channel in data
+            'Stage': Sleep stage in which the events occured (if available)
+        """
         assert time_before >= 0
         assert time_after >= 0
         bef = int(self._sf * time_before)
@@ -243,9 +360,51 @@ class _DetectionResults(object):
         return output
 
     def get_coincidence_matrix(self, scaled=True):
-        """Return the coincidence matrix of the detected events across channels.
+        """Return the (scaled) coincidence matrix.
 
-        See full documentation in the methods of SpindlesResults and SWResults.
+        Parameters
+        ----------
+        scaled : bool
+            If True (default), the coincidence matrix is scaled (see Notes).
+
+        Returns
+        -------
+        coincidence : pd.DataFrame
+            A symmetric matrix with the (scaled) coincidence values.
+
+        Notes
+        -----
+        Do {events} occur at the same time? One way to measure this is to
+        calculate the coincidence matrix, which gives, for each pair of
+        channel, the number of samples that were marked as a {event} in both
+        channels. The output is a symmetric matrix, in which the diagonal is
+        simply the number of data points that were marked as a {event} in the
+        channel.
+
+        The coincidence matrix can be scaled (default) by dividing the output
+        by the product of the sum of each individual binary mask, as shown in
+        the example below. It can then be used to define functional
+        networks or quickly find outlier channels.
+
+        Examples
+        --------
+        Calculate the coincidence of two binary mask:
+
+        >>> import numpy as np
+        >>> x = np.array([0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1])
+        >>> y = np.array([0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1])
+        >>> x * y
+        array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])
+
+        >>> int((x * y).sum())  # Unscaled coincidence
+        3
+
+        >>> float((x * y).sum() / (x.sum() * y.sum()))  # Scaled coincidence
+        0.12
+
+        References
+        ----------
+        - https://github.com/Mark-Kramer/Sleep-Networks-2021
         """
         if len(self._ch_names) < 2:
             raise ValueError("At least 2 channels are required to calculate coincidence.")
@@ -278,8 +437,41 @@ class _DetectionResults(object):
 
     def compare_channels(self, score="f1", max_distance_sec=0):
         """
-        Compare detected events across channels.
-        See full documentation in the methods of SpindlesResults and SWResults.
+        Compare detected {events} across channels.
+
+        This is a wrapper around the :py:func:`yasa.compare_detection` function. Please
+        refer to the documentation of this function for more details.
+
+        Parameters
+        ----------
+        score : str
+            The performance metric to compute. Accepted values are "precision", "recall"
+            (aka sensitivity) and "f1" (default). The F1-score is the harmonic mean of precision
+            and recall, and is usually the preferred metric to evaluate the agreement between
+            two channels. All three metrics are bounded by 0 and 1, where 1 indicates perfect
+            agreement.
+        max_distance_sec : float
+            The maximum distance between {events}, in seconds, to consider as the same event.
+
+            .. warning:: To reduce computation cost, YASA rounds the start time of each {event}
+                to the nearest decisecond (= 100 ms). This means that the lowest possible
+                resolution is 100 ms, regardless of the sampling frequency of the data. Two
+                {events} starting at 500 ms and 540 ms on their respective channels will therefore
+                always be considered the same event, even when max_distance_sec=0.
+
+        Returns
+        -------
+        scores : :py:class:`pandas.DataFrame`
+            A Pandas DataFrame with the output scores, of shape (n_chan, n_chan).
+
+        Notes
+        -----
+        Some use cases of this function:
+
+        1. What proportion of {events} detected in one channel are also detected on
+           another channel (if using ``score="recall"``).
+        2. What is the overall agreement in the detected events between channels?
+        3. Is the agreement better in channels that are close to one another?
         """
         assert score in ["f1", "precision", "recall"], f"Invalid scoring metric: {score}"
         # TODO: Only the Start of the event is currently supported. Add more flexibility?
@@ -299,8 +491,56 @@ class _DetectionResults(object):
 
     def compare_detection(self, other, max_distance_sec=0, other_is_groundtruth=True):
         """
-        Compare detected events between two detection methods, or against a ground-truth scoring.
-        See full documentation in the methods of SpindlesResults and SWResults.
+        Compare the detected {events} against either another YASA detection or against custom
+        annotations (e.g. ground-truth human scoring).
+
+        This function is a wrapper around the :py:func:`yasa.compare_detection` function. Please
+        refer to the documentation of this function for more details.
+
+        Parameters
+        ----------
+        other : dataframe or detection results
+            This can be either a) the output of another YASA {events} detection, for example if
+            you want to test the impact of tweaking some parameters on the detected events or b) a
+            pandas DataFrame with custom annotations, obtained by another detection method outside
+            of YASA, or with manual labelling. If b), the dataframe must contain the "Start"
+            column, with the start of each event in seconds from the beginning of the recording.
+            {channel_column}
+        max_distance_sec : float
+            The maximum distance between {events}, in seconds, to consider as the same event.
+
+            .. warning:: To reduce computation cost, YASA rounds the start time of each {event}
+                to the nearest decisecond (= 100 ms). This means that the lowest possible
+                resolution is 100 ms, regardless of the sampling frequency of the data.
+        other_is_groundtruth : bool
+            If True (default), ``other`` will be considered as the ground-truth scoring. If False,
+            the current detection will be considered as the ground-truth, and the precision and
+            recall scores will be inverted. This parameter has no effect on the F1-score.
+
+            .. note:: when ``other`` is the ground-truth (default), the recall score is the
+                fraction of events in other that were succesfully detected by the current
+                detection, and the precision score is the proportion of detected events by the
+                current detection that are also present in other.
+
+        Returns
+        -------
+        scores : :py:class:`pandas.DataFrame`
+            A Pandas DataFrame with the channel names as index, and the following columns
+
+            * ``precision``: Precision score, aka positive predictive value
+            * ``recall``: Recall score, aka sensitivity
+            * ``f1``: F1-score
+            * ``n_self``: Number of detected events in ``self`` (current method).
+            * ``n_other``: Number of detected events in ``other``.
+
+        Notes
+        -----
+        Some use cases of this function:
+
+        1. How well does YASA events detection perform against ground-truth human annotations?
+        2. If I change the threshold(s) of the events detection, do the detected events match
+           those obtained with the default parameters?
+        3. Which detection thresholds give the highest agreement with the ground-truth scoring?
         """
         if isinstance(other, _DetectionResults):
             groundtruth = other._summary_with_channel()
@@ -359,7 +599,38 @@ class _DetectionResults(object):
         figsize=(6, 4.5),
         **kwargs,
     ):
-        """Plot the average event"""
+        """
+        Plot the average {event}.
+
+        Parameters
+        ----------
+        center : str
+            Landmark of the event to synchronize the timing on. Default is to use {center}.
+        hue : str
+            Grouping variable that will produce lines with different colors.
+            Can be either 'Channel' or 'Stage'.
+        time_before : float
+            Time (in seconds) before ``center``.
+        time_after : float
+            Time (in seconds) after ``center``.
+        filt : tuple
+            Optional filtering to apply to data. For instance, ``filt=(1, 30)``
+            will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
+            will apply a 40 Hz lowpass filter. Filtering is done using the default
+            parameters in the :py:func:`mne.filter.filter_data` function.
+        mask : array_like or None
+            Custom boolean mask. Only the detected events for which mask is True will be
+            plotted. Default is None, i.e. no masking (all events are included).
+        figsize : tuple
+            Figure size in inches.
+        **kwargs : dict
+            Optional argument that are passed to :py:func:`seaborn.lineplot`.
+
+        Returns
+        -------
+        ax : :py:class:`matplotlib.axes.Axes`
+            Matplotlib Axes.
+        """
         import matplotlib.pyplot as plt
         import seaborn as sns
 
@@ -384,7 +655,22 @@ class _DetectionResults(object):
         return ax
 
     def plot_detection(self):
-        """Plot an overlay of the detected events on the signal."""
+        """Plot an overlay of the detected {events} on {signal}.
+
+        This only works in Jupyter and it requires the ipywidgets
+        (https://ipywidgets.readthedocs.io/en/latest/) package.
+
+        To activate the interactive mode, make sure to run:
+
+        >>> %matplotlib widget  # doctest: +SKIP
+
+        .. versionadded:: 0.4.0
+
+        Returns
+        -------
+        widget
+            The interactive widget, see :py:func:`ipywidgets.interact`.
+        """
         import ipywidgets as ipy
         import matplotlib.pyplot as plt
 
@@ -488,7 +774,7 @@ def spindles_detect(
     freq_broad=(1, 30),
     duration=(0.5, 2),
     min_distance=500,
-    thresh={"rel_pow": 0.2, "corr": 0.65, "rms": 1.5},
+    thresh=None,
     multi_only=False,
     remove_outliers=False,
     verbose=False,
@@ -552,8 +838,9 @@ def spindles_detect(
     min_distance : int
         If two spindles are closer than ``min_distance`` (in ms), they are
         merged into a single spindles. Default is 500 ms.
-    thresh : dict
-        Detection thresholds:
+    thresh : dict or None
+        Detection thresholds. Missing keys are set to their default value, and None uses all the
+        defaults (``{'rel_pow': 0.2, 'corr': 0.65, 'rms': 1.5}``):
 
         * ``'rel_pow'``: Relative power (= power ratio freq_sp / freq_broad).
         * ``'corr'``: Moving correlation between original signal and
@@ -692,7 +979,7 @@ def spindles_detect(
         return None
 
     # Check detection thresholds. Missing keys are set to their default value.
-    thresh = {"rel_pow": 0.20, "corr": 0.65, "rms": 1.5, **thresh}
+    thresh = {"rel_pow": 0.20, "corr": 0.65, "rms": 1.5, **(thresh or {})}
     do_rel_pow = thresh["rel_pow"] not in [None, "none", "None"]
     do_corr = thresh["corr"] not in [None, "none", "None"]
     do_rms = thresh["rms"] not in [None, "none", "None"]
@@ -927,6 +1214,13 @@ def spindles_detect(
     )
 
 
+# Description of the "Channel" column in the docstring of compare_detection
+_CHANNEL_COLUMN_DOC = (
+    'It must also contain the "Channel" column, with channel names that match the output of\n'
+    "            the summary() method."
+)
+
+
 class SpindlesResults(_DetectionResults):
     """Output class for spindles detection.
 
@@ -960,329 +1254,14 @@ class SpindlesResults(_DetectionResults):
         "Symmetry",
     )
     _title = "Average spindle"
-
-    def summary(self, grp_chan=False, grp_stage=False, mask=None, aggfunc="mean", sort=True):
-        """Return a summary of the spindles detection, optionally grouped
-        across channels and/or stage.
-
-        Parameters
-        ----------
-        grp_chan : bool
-            If True, group by channel (for multi-channels detection only).
-        grp_stage : bool
-            If True, group by sleep stage (provided that an hypnogram was
-            used).
-        mask : array_like or None
-            Custom boolean mask. Only the detected events for which mask is True will be
-            included in the summary dataframe. Default is None, i.e. no masking
-            (all events are included).
-        aggfunc : str or function
-            Averaging function (e.g. ``'mean'`` or ``'median'``).
-        sort : bool
-            If True, sort group keys when grouping.
-
-        Returns
-        -------
-        summary : :py:class:`pandas.DataFrame`
-            One row per detected event or, if grouping, one row per group with the number of
-            events (``Count``), the density per minute of each stage (``Density``, only when
-            grouping by stage with an hypnogram) and the averaged features.
-        """
-        return super().summary(
-            grp_chan=grp_chan,
-            grp_stage=grp_stage,
-            aggfunc=aggfunc,
-            sort=sort,
-            mask=mask,
-        )
-
-    def get_coincidence_matrix(self, scaled=True):
-        """Return the (scaled) coincidence matrix.
-
-        Parameters
-        ----------
-        scaled : bool
-            If True (default), the coincidence matrix is scaled (see Notes).
-
-        Returns
-        -------
-        coincidence : pd.DataFrame
-            A symmetric matrix with the (scaled) coincidence values.
-
-        Notes
-        -----
-        Do spindles occur at the same time? One way to measure this is to
-        calculate the coincidence matrix, which gives, for each pair of
-        channel, the number of samples that were marked as a spindle in both
-        channels. The output is a symmetric matrix, in which the diagonal is
-        simply the number of data points that were marked as a spindle in the
-        channel.
-
-        The coincidence matrix can be scaled (default) by dividing the output
-        by the product of the sum of each individual binary mask, as shown in
-        the example below. It can then be used to define functional
-        networks or quickly find outlier channels.
-
-        Examples
-        --------
-        Calculate the coincidence of two binary mask:
-
-        >>> import numpy as np
-        >>> x = np.array([0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1])
-        >>> y = np.array([0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1])
-        >>> x * y
-        array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])
-
-        >>> int((x * y).sum())  # Unscaled coincidence
-        3
-
-        >>> float((x * y).sum() / (x.sum() * y.sum()))  # Scaled coincidence
-        0.12
-
-        References
-        ----------
-        - https://github.com/Mark-Kramer/Sleep-Networks-2021
-        """
-        return super().get_coincidence_matrix(scaled=scaled)
-
-    def compare_channels(self, score="f1", max_distance_sec=0):
-        """
-        Compare detected spindles across channels.
-
-        This is a wrapper around the :py:func:`yasa.compare_detection` function. Please
-        refer to the documentation of this function for more details.
-
-        Parameters
-        ----------
-        score : str
-            The performance metric to compute. Accepted values are "precision", "recall"
-            (aka sensitivity) and "f1" (default). The F1-score is the harmonic mean of precision
-            and recall, and is usually the preferred metric to evaluate the agreement between
-            two channels. All three metrics are bounded by 0 and 1, where 1 indicates perfect
-            agreement.
-        max_distance_sec : float
-            The maximum distance between spindles, in seconds, to consider as the same event.
-
-            .. warning:: To reduce computation cost, YASA rounds the start time of each spindle to
-                the nearest decisecond (= 100 ms). This means that the lowest possible resolution
-                is 100 ms, regardless of the sampling frequency of the data. Two spindles starting
-                at 500 ms and 540 ms on their respective channels will therefore always be
-                considered the same event, even when max_distance_sec=0.
-
-        Returns
-        -------
-        scores : :py:class:`pandas.DataFrame`
-            A Pandas DataFrame with the output scores, of shape (n_chan, n_chan).
-
-        Notes
-        -----
-        Some use cases of this function:
-
-        1. What proportion of spindles detected in one channel are also detected on
-           another channel (if using ``score="recall"``).
-        2. What is the overall agreement in the detected events between channels?
-        3. Is the agreement better in channels that are close to one another?
-        """
-        return super().compare_channels(score, max_distance_sec)
-
-    def compare_detection(self, other, max_distance_sec=0, other_is_groundtruth=True):
-        """
-        Compare the detected spindles against either another YASA detection or against custom
-        annotations (e.g. ground-truth human scoring).
-
-        This function is a wrapper around the :py:func:`yasa.compare_detection` function. Please
-        refer to the documentation of this function for more details.
-
-        Parameters
-        ----------
-        other : dataframe or detection results
-            This can be either a) the output of another YASA detection, for example if you want to
-            test the impact of tweaking some parameters on the detected events or b) a pandas
-            DataFrame with custom annotations, obtained by another detection method outside
-            of YASA, or with manual labelling. If b), the dataframe must contain the "Start" and
-            "Channel" columns, with the start of each event in seconds from the beginning
-            of the recording and the channel name, respectively. The channel names should match
-            the output of the summary() method.
-        max_distance_sec : float
-            The maximum distance between spindles, in seconds, to consider as the same event.
-
-            .. warning:: To reduce computation cost, YASA rounds the start time of each spindle to
-                the nearest decisecond (= 100 ms). This means that the lowest possible resolution
-                is 100 ms, regardless of the sampling frequency of the data.
-        other_is_groundtruth : bool
-            If True (default), ``other`` will be considered as the ground-truth scoring. If False,
-            the current detection will be considered as the ground-truth, and the precision and
-            recall scores will be inverted. This parameter has no effect on the F1-score.
-
-            .. note:: when ``other`` is the ground-truth (default), the recall score is the
-                fraction of events in other that were succesfully detected by the current
-                detection, and the precision score is the proportion of detected events by the
-                current detection that are also present in other.
-
-        Returns
-        -------
-        scores : :py:class:`pandas.DataFrame`
-            A Pandas DataFrame with the channel names as index, and the following columns
-
-            * ``precision``: Precision score, aka positive predictive value
-            * ``recall``: Recall score, aka sensitivity
-            * ``f1``: F1-score
-            * ``n_self``: Number of detected events in ``self`` (current method).
-            * ``n_other``: Number of detected events in ``other``.
-
-        Notes
-        -----
-        Some use cases of this function:
-
-        1. How well does YASA events detection perform against ground-truth human annotations?
-        2. If I change the threshold(s) of the events detection, do the detected events match
-           those obtained with the default parameters?
-        3. Which detection thresholds give the highest agreement with the ground-truth scoring?
-        """
-        return super().compare_detection(other, max_distance_sec, other_is_groundtruth)
-
-    def get_mask(self):
-        """
-        Return an array indicating for each sample in data if this sample is part of a
-        detected event (1) or not (0).
-
-        Returns
-        -------
-        mask : :py:class:`numpy.ndarray`
-            Array of 0 and 1 with the same shape as data, where 1 indicates that the sample is
-            part of a detected event.
-        """
-        return super().get_mask()
-
-    def get_sync_events(
-        self,
-        center="Peak",
-        time_before=1,
-        time_after=1,
-        filt=(None, None),
-        mask=None,
-        as_dataframe=True,
-    ):
-        """
-        Return the raw or filtered data of each detected event after
-        centering to a specific timepoint.
-
-        Parameters
-        ----------
-        center : str
-            Landmark of the event to synchronize the timing on.
-            Default is to use the center peak of the spindles.
-        time_before : float
-            Time (in seconds) before ``center``.
-        time_after : float
-            Time (in seconds) after ``center``.
-        filt : tuple
-            Optional filtering to apply to data. For instance, ``filt=(1, 30)``
-            will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
-            will apply a 40 Hz lowpass filter. Filtering is done using default
-            parameters in the :py:func:`mne.filter.filter_data` function.
-        mask : array_like or None
-            Custom boolean mask. Only the detected events for which mask is True will be
-            included. Default is None, i.e. no masking (all events are included).
-        as_dataframe : boolean
-            If True (default), returns a long-format pandas dataframe. If False, returns a list of
-            numpy arrays. Each element of the list a unique channel, and the shape of the numpy
-            arrays within the list is (n_events, n_times).
-
-        Returns
-        -------
-        df_sync : :py:class:`pandas.DataFrame`
-            Ouput long-format dataframe (if ``as_dataframe=True``)::
-
-            'Event' : Event number
-            'Time' : Timing of the events (in seconds)
-            'Amplitude' : Raw or filtered data for event
-            'Channel' : Channel
-            'IdxChannel' : Index of channel in data
-            'Stage': Sleep stage in which the events occured (if available)
-        """
-        return super().get_sync_events(
-            center=center,
-            time_before=time_before,
-            time_after=time_after,
-            filt=filt,
-            mask=mask,
-            as_dataframe=as_dataframe,
-        )
-
-    def plot_average(
-        self,
-        center="Peak",
-        hue="Channel",
-        time_before=1,
-        time_after=1,
-        filt=(None, None),
-        mask=None,
-        figsize=(6, 4.5),
-        **kwargs,
-    ):
-        """
-        Plot the average spindle.
-
-        Parameters
-        ----------
-        center : str
-            Landmark of the event to synchronize the timing on.
-            Default is to use the most prominent peak of the spindle.
-        hue : str
-            Grouping variable that will produce lines with different colors.
-            Can be either 'Channel' or 'Stage'.
-        time_before : float
-            Time (in seconds) before ``center``.
-        time_after : float
-            Time (in seconds) after ``center``.
-        filt : tuple
-            Optional filtering to apply to data. For instance, ``filt=(12, 16)``
-            will apply a 12 to 16 Hz bandpass filter, and ``filt=(None, 40)``
-            will apply a 40 Hz lowpass filter. Filtering is done using the default
-            parameters in the :py:func:`mne.filter.filter_data` function.
-        mask : array_like or None
-            Custom boolean mask. Only the detected events for which mask is True will be
-            plotted. Default is None, i.e. no masking (all events are included).
-        figsize : tuple
-            Figure size in inches.
-        **kwargs : dict
-            Optional argument that are passed to :py:func:`seaborn.lineplot`.
-
-        Returns
-        -------
-        ax : :py:class:`matplotlib.axes.Axes`
-            Matplotlib Axes.
-        """
-        return super().plot_average(
-            center=center,
-            hue=hue,
-            time_before=time_before,
-            time_after=time_after,
-            filt=filt,
-            mask=mask,
-            figsize=figsize,
-            **kwargs,
-        )
-
-    def plot_detection(self):
-        """Plot an overlay of the detected spindles on the EEG signal.
-
-        This only works in Jupyter and it requires the ipywidgets
-        (https://ipywidgets.readthedocs.io/en/latest/) package.
-
-        To activate the interactive mode, make sure to run:
-
-        >>> %matplotlib widget  # doctest: +SKIP
-
-        .. versionadded:: 0.4.0
-
-        Returns
-        -------
-        widget
-            The interactive widget, see :py:func:`ipywidgets.interact`.
-        """
-        return super().plot_detection()
+    _doc_params = {
+        "event": "spindle",
+        "events": "spindles",
+        "center": "the most prominent peak of the spindle",
+        "signal": "the EEG signal",
+        "channel_column": _CHANNEL_COLUMN_DOC,
+    }
+    _sync_defaults = {"center": "Peak", "time_before": 1, "time_after": 1}
 
 
 #############################################################################
@@ -1337,7 +1316,7 @@ def sw_detect(
     amp_pos=(10, 150),
     amp_ptp=(75, 350),
     coupling=False,
-    coupling_params={"freq_sp": (12, 16), "time": 1, "p": 0.05},
+    coupling_params=None,
     remove_outliers=False,
     verbose=False,
 ):
@@ -1449,8 +1428,9 @@ def sw_detect(
 
         .. versionadded:: 0.2.0
 
-    coupling_params : dict
-        Parameters for the phase-amplitude coupling.
+    coupling_params : dict or None
+        Parameters for the phase-amplitude coupling. Missing keys are set to their default value,
+        and None uses all the defaults (``{'freq_sp': (12, 16), 'time': 1, 'p': 0.05}``).
 
         * ``freq_sp`` is a tuple or list that defines the spindles-related frequency of interest.
           The default is 12 to 16 Hz, with a wide transition bandwidth of 1.5 Hz.
@@ -1588,8 +1568,8 @@ def sw_detect(
     # Extract the spindles-related sigma signal for coupling
     if coupling:
         # Missing keys are set to their default value.
-        assert isinstance(coupling_params, dict)
-        coupling_params = {"freq_sp": (12, 16), "time": 1, "p": 0.05, **coupling_params}
+        assert isinstance(coupling_params, (dict, type(None)))
+        coupling_params = {"freq_sp": (12, 16), "time": 1, "p": 0.05, **(coupling_params or {})}
         # The width of the transition band is set to 1.5 Hz on each side,
         # meaning that for freq_sp = (12, 15 Hz), the -6 dB points are located
         # at 11.25 and 15.75 Hz. The frequency band for the amplitude signal
@@ -1837,6 +1817,14 @@ class SWResults(_DetectionResults):
 
     _features = ("Duration", "ValNegPeak", "ValPosPeak", "PTP", "Slope", "Frequency")
     _title = "Average SW"
+    _doc_params = {
+        "event": "slow-wave",
+        "events": "slow-waves",
+        "center": "the negative peak of the slow-wave",
+        "signal": "the EEG signal",
+        "channel_column": _CHANNEL_COLUMN_DOC,
+    }
+    _sync_defaults = {"center": "NegPeak", "time_before": 0.4, "time_after": 0.8}
 
     def _get_aggdict(self, aggfunc):
         aggdict = super()._get_aggdict(aggfunc)
@@ -1848,39 +1836,6 @@ class SWResults(_DetectionResults):
             aggdict["CooccurringSpindle"] = aggfunc
             aggdict["DistanceSpindleToSW"] = aggfunc
         return aggdict
-
-    def summary(self, grp_chan=False, grp_stage=False, mask=None, aggfunc="mean", sort=True):
-        """Return a summary of the SW detection, optionally grouped across
-        channels and/or stage.
-
-        Parameters
-        ----------
-        grp_chan : bool
-            If True, group by channel (for multi-channels detection only).
-        grp_stage : bool
-            If True, group by sleep stage (provided that an hypnogram was used).
-        mask : array_like or None
-            Custom boolean mask. Only the detected events for which mask is True will be
-            included in the summary. Default is None, i.e. no masking (all events are included).
-        aggfunc : str or function
-            Averaging function (e.g. ``'mean'`` or ``'median'``).
-        sort : bool
-            If True, sort group keys when grouping.
-
-        Returns
-        -------
-        summary : :py:class:`pandas.DataFrame`
-            One row per detected event or, if grouping, one row per group with the number of
-            events (``Count``), the density per minute of each stage (``Density``, only when
-            grouping by stage with an hypnogram) and the averaged features.
-        """
-        return super().summary(
-            grp_chan=grp_chan,
-            grp_stage=grp_stage,
-            aggfunc=aggfunc,
-            sort=sort,
-            mask=mask,
-        )
 
     def find_cooccurring_spindles(self, spindles, lookaround=1.2):
         """Given a spindles detection summary dataframe, find slow-waves that co-occur with
@@ -1954,292 +1909,6 @@ class SWResults(_DetectionResults):
         self._events["CooccurringSpindle"] = ~np.isnan(cooccurring_spindle_peaks)
         self._events["CooccurringSpindlePeak"] = cooccurring_spindle_peaks
         self._events["DistanceSpindleToSW"] = cooccurring_spindle_peaks - sw_peaks
-
-    def compare_channels(self, score="f1", max_distance_sec=0):
-        """
-        Compare detected slow-waves across channels.
-
-        This is a wrapper around the :py:func:`yasa.compare_detection` function. Please
-        refer to the documentation of this function for more details.
-
-        Parameters
-        ----------
-        score : str
-            The performance metric to compute. Accepted values are "precision", "recall"
-            (aka sensitivity) and "f1" (default). The F1-score is the harmonic mean of precision
-            and recall, and is usually the preferred metric to evaluate the agreement between
-            two channels. All three metrics are bounded by 0 and 1, where 1 indicates perfect
-            agreement.
-        max_distance_sec : float
-            The maximum distance between slow-waves, in seconds, to consider as the same event.
-
-            .. warning:: To reduce computation cost, YASA rounds the start time of each spindle to
-                the nearest decisecond (= 100 ms). This means that the lowest possible resolution
-                is 100 ms, regardless of the sampling frequency of the data. Two slow-waves
-                starting at 500 ms and 540 ms on their respective channels will therefore always be
-                considered the same event, even when max_distance_sec=0.
-
-        Returns
-        -------
-        scores : :py:class:`pandas.DataFrame`
-            A Pandas DataFrame with the output scores, of shape (n_chan, n_chan).
-
-        Notes
-        -----
-        Some use cases of this function:
-
-        1. What proportion of slow-waves detected in one channel are also detected on
-           another channel (if using ``score="recall"``).
-        2. What is the overall agreement in the detected events between channels?
-        3. Is the agreement better in channels that are close to one another?
-        """
-        return super().compare_channels(score, max_distance_sec)
-
-    def compare_detection(self, other, max_distance_sec=0, other_is_groundtruth=True):
-        """
-        Compare the detected slow-waves against either another YASA detection or against custom
-        annotations (e.g. ground-truth human scoring).
-
-        This function is a wrapper around the :py:func:`yasa.compare_detection` function. Please
-        refer to the documentation of this function for more details.
-
-        Parameters
-        ----------
-        other : dataframe or detection results
-            This can be either a) the output of another YASA detection, for example if you want to
-            test the impact of tweaking some parameters on the detected events or b) a pandas
-            DataFrame with custom annotations, obtained by another detection method outside
-            of YASA, or with manual labelling. If b), the dataframe must contain the "Start" and
-            "Channel" columns, with the start of each event in seconds from the beginning
-            of the recording and the channel name, respectively. The channel names should match
-            the output of the summary() method.
-        max_distance_sec : float
-            The maximum distance between slow-waves, in seconds, to consider as the same event.
-
-            .. warning:: To reduce computation cost, YASA rounds the start time of each slow-wave
-                to the nearest decisecond (= 100 ms). This means that the lowest possible
-                resolution is 100 ms, regardless of the sampling frequency of the data.
-        other_is_groundtruth : bool
-            If True (default), ``other`` will be considered as the ground-truth scoring. If False,
-            the current detection will be considered as the ground-truth, and the precision and
-            recall scores will be inverted. This parameter has no effect on the F1-score.
-
-            .. note:: when ``other`` is the ground-truth (default), the recall score is the
-                fraction of events in other that were succesfully detected by the current
-                detection, and the precision score is the proportion of detected events by the
-                current detection that are also present in other.
-
-        Returns
-        -------
-        scores : :py:class:`pandas.DataFrame`
-            A Pandas DataFrame with the channel names as index, and the following columns
-
-            * ``precision``: Precision score, aka positive predictive value
-            * ``recall``: Recall score, aka sensitivity
-            * ``f1``: F1-score
-            * ``n_self``: Number of detected events in ``self`` (current method).
-            * ``n_other``: Number of detected events in ``other``.
-
-        Notes
-        -----
-        Some use cases of this function:
-
-        1. How well does YASA events detection perform against ground-truth human annotations?
-        2. If I change the threshold(s) of the events detection, do the detected events match
-           those obtained with the default parameters?
-        3. Which detection thresholds give the highest agreement with the ground-truth scoring?
-        """
-        return super().compare_detection(other, max_distance_sec, other_is_groundtruth)
-
-    def get_coincidence_matrix(self, scaled=True):
-        """Return the (scaled) coincidence matrix.
-
-        Parameters
-        ----------
-        scaled : bool
-            If True (default), the coincidence matrix is scaled (see Notes).
-
-        Returns
-        -------
-        coincidence : pd.DataFrame
-            A symmetric matrix with the (scaled) coincidence values.
-
-        Notes
-        -----
-        Do slow-waves occur at the same time? One way to measure this is to
-        calculate the coincidence matrix, which gives, for each pair of
-        channel, the number of samples that were marked as a slow-waves in both
-        channels. The output is a symmetric matrix, in which the diagonal is
-        simply the number of data points that were marked as a slow-waves in
-        the channel.
-
-        The coincidence matrix can be scaled (default) by dividing the output
-        by the product of the sum of each individual binary mask, as shown in
-        the example below. It can then be used to define functional
-        networks or quickly find outlier channels.
-
-        Examples
-        --------
-        Calculate the coincidence of two binary mask:
-
-        >>> import numpy as np
-        >>> x = np.array([0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1])
-        >>> y = np.array([0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1])
-        >>> x * y
-        array([0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1])
-
-        >>> int((x * y).sum())  # Coincidence
-        3
-
-        >>> float((x * y).sum() / (x.sum() * y.sum()))  # Scaled coincidence
-        0.12
-
-        References
-        ----------
-        - https://github.com/Mark-Kramer/Sleep-Networks-2021
-        """
-        return super().get_coincidence_matrix(scaled=scaled)
-
-    def get_mask(self):
-        """Return an array indicating for each sample in data if this sample is part of a
-        detected event (1) or not (0).
-
-        Returns
-        -------
-        mask : :py:class:`numpy.ndarray`
-            Array of 0 and 1 with the same shape as data, where 1 indicates that the sample is
-            part of a detected event.
-        """
-        return super().get_mask()
-
-    def get_sync_events(
-        self,
-        center="NegPeak",
-        time_before=0.4,
-        time_after=0.8,
-        filt=(None, None),
-        mask=None,
-        as_dataframe=True,
-    ):
-        """
-        Return the raw data of each detected event after centering to a specific timepoint.
-
-        Parameters
-        ----------
-        center : str
-            Landmark of the event to synchronize the timing on.
-            Default is to use the negative peak of the slow-wave.
-        time_before : float
-            Time (in seconds) before ``center``.
-        time_after : float
-            Time (in seconds) after ``center``.
-        filt : tuple
-            Optional filtering to apply to data. For instance, ``filt=(1, 30)``
-            will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
-            will apply a 40 Hz lowpass filter. Filtering is done using default
-            parameters in the :py:func:`mne.filter.filter_data` function.
-        mask : array_like or None
-            Custom boolean mask. Only the detected events for which mask is True will be
-            included. Default is None, i.e. no masking (all events are included).
-        as_dataframe : boolean
-            If True (default), returns a long-format pandas dataframe. If False, returns a list of
-            numpy arrays. Each element of the list a unique channel, and the shape of the numpy
-            arrays within the list is (n_events, n_times).
-
-        Returns
-        -------
-        df_sync : :py:class:`pandas.DataFrame` or list
-            Ouput long-format dataframe (if ``as_dataframe=True``)::
-
-            'Event' : Event number
-            'Time' : Timing of the events (in seconds)
-            'Amplitude' : Raw or filtered data for event
-            'Channel' : Channel
-            'IdxChannel' : Index of channel in data
-            'Stage': Sleep stage in which the events occured (if available)
-        """
-        return super().get_sync_events(
-            center=center,
-            time_before=time_before,
-            time_after=time_after,
-            filt=filt,
-            mask=mask,
-            as_dataframe=as_dataframe,
-        )
-
-    def plot_average(
-        self,
-        center="NegPeak",
-        hue="Channel",
-        time_before=0.4,
-        time_after=0.8,
-        filt=(None, None),
-        mask=None,
-        figsize=(6, 4.5),
-        **kwargs,
-    ):
-        """
-        Plot the average slow-wave.
-
-        Parameters
-        ----------
-        center : str
-            Landmark of the event to synchronize the timing on. The default is to use the negative
-            peak of the slow-wave.
-        hue : str
-            Grouping variable that will produce lines with different colors.
-            Can be either 'Channel' or 'Stage'.
-        time_before : float
-            Time (in seconds) before ``center``.
-        time_after : float
-            Time (in seconds) after ``center``.
-        filt : tuple
-            Optional filtering to apply to data. For instance, ``filt=(1, 30)``
-            will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
-            will apply a 40 Hz lowpass filter. Filtering is done using default
-            parameters in the :py:func:`mne.filter.filter_data` function.
-        mask : array_like or None
-            Custom boolean mask. Only the detected events for which mask is True will be
-            plotted. Default is None, i.e. no masking (all events are included).
-        figsize : tuple
-            Figure size in inches.
-        **kwargs : dict
-            Optional argument that are passed to :py:func:`seaborn.lineplot`.
-
-        Returns
-        -------
-        ax : :py:class:`matplotlib.axes.Axes`
-            Matplotlib Axes.
-        """
-        return super().plot_average(
-            center=center,
-            hue=hue,
-            time_before=time_before,
-            time_after=time_after,
-            filt=filt,
-            mask=mask,
-            figsize=figsize,
-            **kwargs,
-        )
-
-    def plot_detection(self):
-        """Plot an overlay of the detected slow-waves on the EEG signal.
-
-        This only works in Jupyter and it requires the ipywidgets
-        (https://ipywidgets.readthedocs.io/en/latest/) package.
-
-        To activate the interactive mode, make sure to run:
-
-        >>> %matplotlib widget  # doctest: +SKIP
-
-        .. versionadded:: 0.4.0
-
-        Returns
-        -------
-        widget
-            The interactive widget, see :py:func:`ipywidgets.interact`.
-        """
-        return super().plot_detection()
 
 
 #############################################################################
@@ -2540,6 +2209,14 @@ class REMResults(_DetectionResults):
     _title = "Average REM"
     # REMs are detected on the product of LOC and ROC, so there is a single "channel"
     _channel_label = "LOC-ROC"
+    _doc_params = {
+        "event": "REM",
+        "events": "REMs",
+        "center": "the peak of the REM",
+        "signal": "the LOC and ROC signals",
+        "channel_column": 'The optional "Channel" column defaults to "LOC-ROC".',
+    }
+    _sync_defaults = {"center": "Peak", "time_before": 0.4, "time_after": 0.4}
 
     def _iter_channels(self, events):
         """Each REM is present on both the LOC and ROC channels."""
@@ -2577,73 +2254,6 @@ class REMResults(_DetectionResults):
             aggfunc=aggfunc,
             sort=sort,
             mask=mask,
-        )
-
-    def get_mask(self):
-        """Return an array indicating for each sample in data if this sample is part of a
-        detected event (1) or not (0).
-
-        Returns
-        -------
-        mask : :py:class:`numpy.ndarray`
-            Array of 0 and 1 with the same shape as data, where 1 indicates that the sample is
-            part of a detected event.
-        """
-        return super().get_mask()
-
-    def get_sync_events(
-        self,
-        center="Peak",
-        time_before=0.4,
-        time_after=0.4,
-        filt=(None, None),
-        mask=None,
-        as_dataframe=True,
-    ):
-        """
-        Return the raw or filtered data of each detected event after centering to a specific
-        timepoint.
-
-        Parameters
-        ----------
-        center : str
-            Landmark of the event to synchronize the timing on.
-            Default is to use the peak of the REM.
-        time_before : float
-            Time (in seconds) before ``center``.
-        time_after : float
-            Time (in seconds) after ``center``.
-        filt : tuple
-            Optional filtering to apply to data. For instance, ``filt=(1, 30)``
-            will apply a 1 to 30 Hz bandpass filter, and ``filt=(None, 40)``
-            will apply a 40 Hz lowpass filter. Filtering is done using default
-            parameters in the :py:func:`mne.filter.filter_data` function.
-        mask : array_like or None
-            Custom boolean mask. Only the detected events for which mask is True will be
-            included. Default is None, i.e. no masking (all events are included).
-        as_dataframe : boolean
-            If True (default), returns a long-format pandas dataframe. If False, returns a list of
-            two numpy arrays (LOC and ROC) of shape (n_events, n_times).
-
-        Returns
-        -------
-        df_sync : :py:class:`pandas.DataFrame` or list
-            Ouput long-format dataframe (if ``as_dataframe=True``)::
-
-            'Event' : Event number
-            'Time' : Timing of the events (in seconds)
-            'Amplitude' : Raw or filtered data for event
-            'Channel' : Channel
-            'IdxChannel' : Index of channel in data
-            'Stage': Sleep stage in which the events occured (if available)
-        """
-        return super().get_sync_events(
-            center=center,
-            time_before=time_before,
-            time_after=time_after,
-            filt=filt,
-            mask=mask,
-            as_dataframe=as_dataframe,
         )
 
     def plot_average(
@@ -2732,64 +2342,6 @@ class REMResults(_DetectionResults):
         raise NotImplementedError(
             "REMs are detected on the combination of LOC and ROC: there is a single channel."
         )
-
-    def compare_detection(self, other, max_distance_sec=0, other_is_groundtruth=True):
-        """
-        Compare the detected REMs against either another YASA detection or against custom
-        annotations (e.g. ground-truth human scoring).
-
-        This function is a wrapper around the :py:func:`yasa.compare_detection` function. Please
-        refer to the documentation of this function for more details.
-
-        Parameters
-        ----------
-        other : dataframe or detection results
-            This can be either a) the output of another YASA REMs detection, for example if you
-            want to test the impact of tweaking some parameters on the detected events or b) a
-            pandas DataFrame with custom annotations, obtained by another detection method outside
-            of YASA, or with manual labelling. If b), the dataframe must contain the "Start"
-            column, with the start of each event in seconds from the beginning of the recording.
-            The optional "Channel" column defaults to "LOC-ROC".
-        max_distance_sec : float
-            The maximum distance between REMs, in seconds, to consider as the same event.
-
-            .. warning:: To reduce computation cost, YASA rounds the start time of each REM to
-                the nearest decisecond (= 100 ms). This means that the lowest possible resolution
-                is 100 ms, regardless of the sampling frequency of the data.
-        other_is_groundtruth : bool
-            If True (default), ``other`` will be considered as the ground-truth scoring. If False,
-            the current detection will be considered as the ground-truth, and the precision and
-            recall scores will be inverted. This parameter has no effect on the F1-score.
-
-        Returns
-        -------
-        scores : :py:class:`pandas.DataFrame`
-            A Pandas DataFrame with a single row ("LOC-ROC") and the following columns
-
-            * ``precision``: Precision score, aka positive predictive value
-            * ``recall``: Recall score, aka sensitivity
-            * ``f1``: F1-score
-            * ``n_self``: Number of detected events in ``self`` (current method).
-            * ``n_other``: Number of detected events in ``other``.
-        """
-        return super().compare_detection(other, max_distance_sec, other_is_groundtruth)
-
-    def plot_detection(self):
-        """Plot an overlay of the detected REMs on the LOC and ROC signals.
-
-        This only works in Jupyter and it requires the ipywidgets
-        (https://ipywidgets.readthedocs.io/en/latest/) package.
-
-        To activate the interactive mode, make sure to run:
-
-        >>> %matplotlib widget  # doctest: +SKIP
-
-        Returns
-        -------
-        widget
-            The interactive widget, see :py:func:`ipywidgets.interact`.
-        """
-        return super().plot_detection()
 
 
 #############################################################################
