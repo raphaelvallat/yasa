@@ -102,10 +102,9 @@ A special thanks to `Remington Mallett <https://github.com/remrama>`_, who wrote
 version of the evaluation module (`PR 130 <https://github.com/raphaelvallat/yasa/pull/130>`_) and
 added the Bland-Altman plots in this release. Thanks also to all the contributors of this release:
 
-* `Remington Mallett <https://github.com/remrama>`_
-* `Regina Hertfelder Reynolds <https://github.com/RHReynolds>`_
+* `Regina Reynolds <https://github.com/RHReynolds>`_
 * `Bhargav Kowshik <https://github.com/bkowshik>`_
-* `Raphael Vallat <https://github.com/raphaelvallat>`_
+* `Raphael Vallat <https://github.com/raphaelvallat>`_ (creator and core maintainer of YASA)
 
 ----------------------------------------------------------------------------------------
 
