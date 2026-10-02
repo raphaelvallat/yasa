@@ -140,8 +140,8 @@ def fetch_sample(fname, version="v1", **kwargs):
     You can also set the ``YASA_DATA_DIR`` environment variable to a custom location.
 
     >>> import os
-    >>> os.environ["YASA_DATA_DIR"] = "~/Desktop/my_yasa_data"
-    >>> fpath = yasa.fetch_sample("night_young_hypno.csv")
+    >>> os.environ["YASA_DATA_DIR"] = "~/Desktop/my_yasa_data"  # doctest: +SKIP
+    >>> fpath = yasa.fetch_sample("night_young_hypno.csv")  # doctest: +SKIP
     """
     allowed_versions = set(REGISTRY["sample"].keys())
     assert isinstance(fname, str), "`fname` must be a string"

@@ -543,7 +543,7 @@ class Hypnogram:
         )
 
     @classmethod
-    def from_profusion(cls, fname, *, start=None, tz=None, scorer=None):  # pragma: no cover
+    def from_profusion(cls, fname, *, start=None, tz=None, scorer=None):
         """Create a :py:class:`Hypnogram` from a Compumedics Profusion hypnogram (.xml).
 
         The Compumedics Profusion hypnogram format is one of the two hypnogram formats found on
@@ -2126,7 +2126,7 @@ class Hypnogram:
                 # Both timestamps are local absolute timestamps — strip tz label without
                 # UTC conversion so the stored values can be compared directly.
                 hyp_start = hyp_start.replace(tzinfo=None)
-            else:
+            else:  # pragma: no cover (MNE only accepts timezone-aware meas_date)
                 # Unusual: hypnogram aware, meas_date naive — convert to UTC for arithmetic
                 hyp_start = hyp_start.tz_convert("UTC").tz_localize(None)
         # else: both naive or both aware — subtraction works directly
@@ -2441,7 +2441,7 @@ def _hypno_upsample_to_data(hypno, sf_hypno, data, sf_data=None, verbose=False):
 #############################################################################
 
 
-def load_profusion_hypno(fname, replace=True):  # pragma: no cover
+def load_profusion_hypno(fname, replace=True):
     """Load a Compumedics Profusion hypnogram (.xml).
 
     .. deprecated:: 0.7.0
@@ -2476,7 +2476,7 @@ def load_profusion_hypno(fname, replace=True):  # pragma: no cover
     return hypno, 1 / epoch_length
 
 
-def _read_profusion(fname):  # pragma: no cover
+def _read_profusion(fname):
     """Read the raw integer stages and epoch length (in seconds) of a Profusion XML file."""
     import xml.etree.ElementTree as ET
 

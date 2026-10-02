@@ -51,7 +51,7 @@ full  = ["yasa[heart,art,plot]"]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.9",
+    "ruff==0.16.10",  # Keep in sync with .pre-commit-config.yaml
 ]
 test = [
     "pytest>=6",
@@ -101,7 +101,9 @@ filterwarnings = [
     # ... except those of YASA's own deprecated functions, called in their docstring examples
     "ignore:The `yasa\\..*` function is deprecated",
 ]
-markers = ["slow"]
+markers = [
+    "network: downloads data from Zenodo, bypassing the local cache (deselect with -m \"not network\")",
+]
 
 [tool.coverage.run]
 branch = true

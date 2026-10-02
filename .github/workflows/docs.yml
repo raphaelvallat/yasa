@@ -1,42 +1,80 @@
-name: Build documentation and upload as artifact to GitHub Actions
+name: Documentation
 
+# Build the documentation on every pull request (uploaded as an artifact) and deploy it to GitHub
+# Pages on every push to master
 on:
   push:
     branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  docs:
+  build:
     runs-on: ubuntu-latest
     env:
       FORCE_COLOR: true
       UV_SYSTEM_PYTHON: 1
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version-file: "pyproject.toml"
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
         with:
           enable-cache: true
           prune-cache: false
+          cache-dependency-glob: "pyproject.toml"
           cache-suffix: docs
 
       - name: Install dependencies
         run: uv pip install --group=docs --editable .
 
+      # Treat warnings as errors, but report all of them before failing
       - name: Build documentation
         run: |
           make -C docs clean
-          make -C docs html
+          make -C docs html SPHINXOPTS="-W --keep-going"
 
       - name: Upload documentation artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: docs-artifact
           path: docs/build/html
+
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
+        with:
+          path: docs/build/html
+
+  deploy:
+    # Only deploy from master, including manual runs started from another branch
+    if: github.ref == 'refs/heads/master'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # Never cancel a Pages deployment halfway, queue the next one instead
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1

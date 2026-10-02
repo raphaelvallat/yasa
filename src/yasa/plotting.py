@@ -490,6 +490,8 @@ def topoplot(
     if mask is not None:
         assert isinstance(mask, pd.Series), "`mask` must be a Pandas Series"
         assert mask.dtype.kind in "bi", "`mask` must be True/False or 0/1."
+        # The name is required to join the mask to ``data`` below
+        mask = mask.rename("mask")
     else:
         mask = pd.Series(1, index=data.index, name="mask")
 
