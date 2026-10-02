@@ -73,7 +73,7 @@ def _index_to_events(x):
     return index
 
 
-def moving_transform(x, y=None, sf=100, window=0.3, step=0.1, method="corr", interp=False):
+def moving_transform(x, y=None, sf=None, window=0.3, step=0.1, method="corr", interp=False):
     """Moving transformation of one or two time-series.
 
     Parameters
@@ -83,7 +83,10 @@ def moving_transform(x, y=None, sf=100, window=0.3, step=0.1, method="corr", int
     y : array_like, optional
         Second single-channel data (only used if method in ['corr', 'covar']).
     sf : float
-        Sampling frequency.
+        Sampling frequency, in Hz.
+
+        .. versionchanged:: 0.8.0
+            ``sf`` is now required. Previously, it silently defaulted to 100 Hz.
     window : int
         Window size in seconds.
     step : int
@@ -122,6 +125,8 @@ def moving_transform(x, y=None, sf=100, window=0.3, step=0.1, method="corr", int
     Wonambi package (https://github.com/wonambi-python/wonambi).
     """
     # Safety checks
+    if sf is None:
+        raise TypeError("moving_transform() missing required argument: 'sf'")
     assert method in [
         "mean",
         "min",
