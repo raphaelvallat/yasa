@@ -2071,11 +2071,13 @@ class Hypnogram:
             "because they must match properties of the current Hypnogram."
         )
         trans_probas = self.transition_matrix()[1]
-        # ART and UNS are not simulated: drop them and renormalize the remaining transitions
-        trans_probas = trans_probas.drop(
-            index=["ART", "UNS"], columns=["ART", "UNS"], errors="ignore"
-        )
-        trans_probas = trans_probas.div(trans_probas.sum(axis=1).replace(0, np.nan), axis=0)
+        # ART and UNS are not simulated: drop them and renormalize the remaining transitions. This
+        # is only done when needed, because renormalizing can change the last digit of the
+        # probabilities, and therefore the simulated hypnogram.
+        excluded = trans_probas.columns.intersection(["ART", "UNS"])
+        if excluded.size:
+            trans_probas = trans_probas.drop(index=excluded, columns=excluded, errors="ignore")
+            trans_probas = trans_probas.div(trans_probas.sum(axis=1).replace(0, np.nan), axis=0)
         # A stage that only occurs at the very last epoch (or only transitions to ART/UNS) has no
         # outgoing transition, and therefore undefined (NaN) transition probabilities. Like in the
         # original hypnogram, we assume that the simulated hypnogram stays in that stage.
