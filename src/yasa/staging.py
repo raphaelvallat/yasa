@@ -516,6 +516,11 @@ class SleepStaging:
         palette : list or tuple
             The color of each column of ``proba``. The default colors are for Wake, N1, N2, N3 and
             REM, in that order.
+
+        Returns
+        -------
+        ax : :py:class:`matplotlib.axes.Axes`
+            Matplotlib Axes.
         """
         if proba is None and not hasattr(self, "_proba"):
             raise ValueError("Must call `.predict` before this function")

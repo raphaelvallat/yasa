@@ -126,7 +126,10 @@ class _DetectionResults(object):
         return {"Start": "count", **dict.fromkeys(self._features, aggfunc)}
 
     def summary(self, grp_chan=False, grp_stage=False, aggfunc="mean", sort=True, mask=None):
-        """Summary"""
+        """Return the detected events, optionally grouped by channel and/or stage.
+
+        See full documentation in the methods of the subclasses.
+        """
         # Check masking
         mask = self._check_mask(mask)
 
@@ -162,7 +165,7 @@ class _DetectionResults(object):
         return df_grp.set_index(grouper)
 
     def get_mask(self):
-        """get_mask"""
+        """Return an array of 0 and 1 indicating which samples are part of a detected event."""
         mask = np.zeros(self._data.shape, dtype=int)
         for i, ev_chan in self._iter_channels(self._events):
             # Round (not truncate) to recover the sample indices, e.g. 0.29 * 100 = 28.999...
@@ -240,7 +243,10 @@ class _DetectionResults(object):
         return output
 
     def get_coincidence_matrix(self, scaled=True):
-        """get_coincidence_matrix"""
+        """Return the coincidence matrix of the detected events across channels.
+
+        See full documentation in the methods of SpindlesResults and SWResults.
+        """
         if len(self._ch_names) < 2:
             raise ValueError("At least 2 channels are required to calculate coincidence.")
         mask = self.get_mask().astype(np.float64)
@@ -924,19 +930,21 @@ def spindles_detect(
 class SpindlesResults(_DetectionResults):
     """Output class for spindles detection.
 
-    Attributes
+    The parameters are stored as private attributes, e.g. ``self._events``.
+
+    Parameters
     ----------
-    _events : :py:class:`pandas.DataFrame`
+    events : :py:class:`pandas.DataFrame`
         Output detection dataframe
-    _data : array_like
+    data : array_like
         Original EEG data of shape *(n_chan, n_samples)*.
-    _data_filt : array_like
+    data_filt : array_like
         Sigma-filtered EEG data of shape *(n_chan, n_samples)*.
-    _sf : float
+    sf : float
         Sampling frequency of data.
-    _ch_names : list
+    ch_names : list
         Channel names.
-    _hypno : array_like or None
+    hypno : array_like or None
         Sleep staging vector.
     """
 
@@ -972,6 +980,13 @@ class SpindlesResults(_DetectionResults):
             Averaging function (e.g. ``'mean'`` or ``'median'``).
         sort : bool
             If True, sort group keys when grouping.
+
+        Returns
+        -------
+        summary : :py:class:`pandas.DataFrame`
+            One row per detected event or, if grouping, one row per group with the number of
+            events (``Count``), the density per minute of each stage (``Density``, only when
+            grouping by stage with an hypnogram) and the averaged features.
         """
         return super().summary(
             grp_chan=grp_chan,
@@ -1128,8 +1143,14 @@ class SpindlesResults(_DetectionResults):
 
     def get_mask(self):
         """
-        Return a boolean array indicating for each sample in data if this
-        sample is part of a detected event (True) or not (False).
+        Return an array indicating for each sample in data if this sample is part of a
+        detected event (1) or not (0).
+
+        Returns
+        -------
+        mask : :py:class:`numpy.ndarray`
+            Array of 0 and 1 with the same shape as data, where 1 indicates that the sample is
+            part of a detected event.
         """
         return super().get_mask()
 
@@ -1227,6 +1248,11 @@ class SpindlesResults(_DetectionResults):
             Figure size in inches.
         **kwargs : dict
             Optional argument that are passed to :py:func:`seaborn.lineplot`.
+
+        Returns
+        -------
+        ax : :py:class:`matplotlib.axes.Axes`
+            Matplotlib Axes.
         """
         return super().plot_average(
             center=center,
@@ -1250,6 +1276,11 @@ class SpindlesResults(_DetectionResults):
         >>> %matplotlib widget  # doctest: +SKIP
 
         .. versionadded:: 0.4.0
+
+        Returns
+        -------
+        widget
+            The interactive widget, see :py:func:`ipywidgets.interact`.
         """
         return super().plot_detection()
 
@@ -1786,19 +1817,21 @@ def sw_detect(
 class SWResults(_DetectionResults):
     """Output class for slow-waves detection.
 
-    Attributes
+    The parameters are stored as private attributes, e.g. ``self._events``.
+
+    Parameters
     ----------
-    _events : :py:class:`pandas.DataFrame`
+    events : :py:class:`pandas.DataFrame`
         Output detection dataframe
-    _data : array_like
+    data : array_like
         EEG data of shape *(n_chan, n_samples)*.
-    _data_filt : array_like
+    data_filt : array_like
         Slow-wave filtered EEG data of shape *(n_chan, n_samples)*.
-    _sf : float
+    sf : float
         Sampling frequency of data.
-    _ch_names : list
+    ch_names : list
         Channel names.
-    _hypno : array_like or None
+    hypno : array_like or None
         Sleep staging vector.
     """
 
@@ -1833,6 +1866,13 @@ class SWResults(_DetectionResults):
             Averaging function (e.g. ``'mean'`` or ``'median'``).
         sort : bool
             If True, sort group keys when grouping.
+
+        Returns
+        -------
+        summary : :py:class:`pandas.DataFrame`
+            One row per detected event or, if grouping, one row per group with the number of
+            events (``Count``), the density per minute of each stage (``Density``, only when
+            grouping by stage with an hypnogram) and the averaged features.
         """
         return super().summary(
             grp_chan=grp_chan,
@@ -2061,8 +2101,14 @@ class SWResults(_DetectionResults):
         return super().get_coincidence_matrix(scaled=scaled)
 
     def get_mask(self):
-        """Return a boolean array indicating for each sample in data if this
-        sample is part of a detected event (True) or not (False).
+        """Return an array indicating for each sample in data if this sample is part of a
+        detected event (1) or not (0).
+
+        Returns
+        -------
+        mask : :py:class:`numpy.ndarray`
+            Array of 0 and 1 with the same shape as data, where 1 indicates that the sample is
+            part of a detected event.
         """
         return super().get_mask()
 
@@ -2159,6 +2205,11 @@ class SWResults(_DetectionResults):
             Figure size in inches.
         **kwargs : dict
             Optional argument that are passed to :py:func:`seaborn.lineplot`.
+
+        Returns
+        -------
+        ax : :py:class:`matplotlib.axes.Axes`
+            Matplotlib Axes.
         """
         return super().plot_average(
             center=center,
@@ -2182,6 +2233,11 @@ class SWResults(_DetectionResults):
         >>> %matplotlib widget  # doctest: +SKIP
 
         .. versionadded:: 0.4.0
+
+        Returns
+        -------
+        widget
+            The interactive widget, see :py:func:`ipywidgets.interact`.
         """
         return super().plot_detection()
 
@@ -2452,21 +2508,23 @@ def rem_detect(
 class REMResults(_DetectionResults):
     """Output class for REMs detection.
 
-    Attributes
+    The parameters are stored as private attributes, e.g. ``self._events``.
+
+    Parameters
     ----------
-    _events : :py:class:`pandas.DataFrame`
+    events : :py:class:`pandas.DataFrame`
         Output detection dataframe
-    _data : array_like
+    data : array_like
         EOG data of shape *(n_chan, n_samples)*, where the two channels are
         LOC and ROC.
-    _data_filt : array_like
+    data_filt : array_like
         Filtered EOG data of shape *(n_chan, n_samples)*, where the two
         channels are LOC and ROC.
-    _sf : float
+    sf : float
         Sampling frequency of data.
-    _ch_names : list
+    ch_names : list
         Channel names (= ``['LOC', 'ROC']``)
-    _hypno : array_like or None
+    hypno : array_like or None
         Sleep staging vector.
     """
 
@@ -2503,6 +2561,13 @@ class REMResults(_DetectionResults):
             Averaging function (e.g. ``'mean'`` or ``'median'``).
         sort : bool
             If True, sort group keys when grouping.
+
+        Returns
+        -------
+        summary : :py:class:`pandas.DataFrame`
+            One row per detected event or, if grouping, one row per stage with the number of
+            events (``Count``), the density per minute of each stage (``Density``, only with an
+            hypnogram) and the averaged features.
         """
         # ``grp_chan`` is always False for REM detection because the
         # REMs are always detected on a combination of LOC and ROC.
@@ -2515,8 +2580,14 @@ class REMResults(_DetectionResults):
         )
 
     def get_mask(self):
-        """Return a boolean array indicating for each sample in data if this
-        sample is part of a detected event (True) or not (False).
+        """Return an array indicating for each sample in data if this sample is part of a
+        detected event (1) or not (0).
+
+        Returns
+        -------
+        mask : :py:class:`numpy.ndarray`
+            Array of 0 and 1 with the same shape as data, where 1 indicates that the sample is
+            part of a detected event.
         """
         return super().get_mask()
 
@@ -2609,6 +2680,11 @@ class REMResults(_DetectionResults):
             Figure size in inches.
         **kwargs : dict
             Optional argument that are passed to :py:func:`seaborn.lineplot`.
+
+        Returns
+        -------
+        ax : :py:class:`matplotlib.axes.Axes`
+            Matplotlib Axes.
         """
         return super().plot_average(
             center=center,
@@ -2620,6 +2696,100 @@ class REMResults(_DetectionResults):
             figsize=figsize,
             **kwargs,
         )
+
+    def get_coincidence_matrix(self, scaled=True):
+        """Not available for REMs, which are detected on the combination of LOC and ROC.
+
+        Parameters
+        ----------
+        scaled : bool
+            Unused.
+
+        Raises
+        ------
+        NotImplementedError
+            Always.
+        """
+        raise NotImplementedError(
+            "REMs are detected on the combination of LOC and ROC: there is a single channel."
+        )
+
+    def compare_channels(self, score="f1", max_distance_sec=0):
+        """Not available for REMs, which are detected on the combination of LOC and ROC.
+
+        Parameters
+        ----------
+        score : str
+            Unused.
+        max_distance_sec : float
+            Unused.
+
+        Raises
+        ------
+        NotImplementedError
+            Always.
+        """
+        raise NotImplementedError(
+            "REMs are detected on the combination of LOC and ROC: there is a single channel."
+        )
+
+    def compare_detection(self, other, max_distance_sec=0, other_is_groundtruth=True):
+        """
+        Compare the detected REMs against either another YASA detection or against custom
+        annotations (e.g. ground-truth human scoring).
+
+        This function is a wrapper around the :py:func:`yasa.compare_detection` function. Please
+        refer to the documentation of this function for more details.
+
+        Parameters
+        ----------
+        other : dataframe or detection results
+            This can be either a) the output of another YASA REMs detection, for example if you
+            want to test the impact of tweaking some parameters on the detected events or b) a
+            pandas DataFrame with custom annotations, obtained by another detection method outside
+            of YASA, or with manual labelling. If b), the dataframe must contain the "Start"
+            column, with the start of each event in seconds from the beginning of the recording.
+            The optional "Channel" column defaults to "LOC-ROC".
+        max_distance_sec : float
+            The maximum distance between REMs, in seconds, to consider as the same event.
+
+            .. warning:: To reduce computation cost, YASA rounds the start time of each REM to
+                the nearest decisecond (= 100 ms). This means that the lowest possible resolution
+                is 100 ms, regardless of the sampling frequency of the data.
+        other_is_groundtruth : bool
+            If True (default), ``other`` will be considered as the ground-truth scoring. If False,
+            the current detection will be considered as the ground-truth, and the precision and
+            recall scores will be inverted. This parameter has no effect on the F1-score.
+
+        Returns
+        -------
+        scores : :py:class:`pandas.DataFrame`
+            A Pandas DataFrame with a single row ("LOC-ROC") and the following columns
+
+            * ``precision``: Precision score, aka positive predictive value
+            * ``recall``: Recall score, aka sensitivity
+            * ``f1``: F1-score
+            * ``n_self``: Number of detected events in ``self`` (current method).
+            * ``n_other``: Number of detected events in ``other``.
+        """
+        return super().compare_detection(other, max_distance_sec, other_is_groundtruth)
+
+    def plot_detection(self):
+        """Plot an overlay of the detected REMs on the LOC and ROC signals.
+
+        This only works in Jupyter and it requires the ipywidgets
+        (https://ipywidgets.readthedocs.io/en/latest/) package.
+
+        To activate the interactive mode, make sure to run:
+
+        >>> %matplotlib widget  # doctest: +SKIP
+
+        Returns
+        -------
+        widget
+            The interactive widget, see :py:func:`ipywidgets.interact`.
+        """
+        return super().plot_detection()
 
 
 #############################################################################

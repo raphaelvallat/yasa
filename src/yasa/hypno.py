@@ -480,6 +480,9 @@ class Hypnogram:
             Frequency resolution of the hypnogram. Default is ``"30s"``.
         start : str or datetime, optional
             Optional start datetime of the hypnogram (e.g. ``"2022-12-15 22:30:00"``).
+        tz : str, optional
+            Timezone string to localize a naive ``start`` (e.g. ``"Europe/Paris"``). See
+            :py:class:`Hypnogram` for details.
         scorer : str, optional
             Optional scorer name.
         proba : :py:class:`pandas.DataFrame`, optional
@@ -799,6 +802,11 @@ class Hypnogram:
 
         >>> hyp.mapping = {"WAKE": 0, "NREM": 1, "REM": 2}  # doctest: +SKIP
 
+        Returns
+        -------
+        hypno : :py:class:`pandas.Series`
+            The integer-encoded hypnogram, of dtype int16.
+
         Examples
         --------
         Convert a 2-stage hypnogram to a pandas.Series of integers
@@ -935,7 +943,13 @@ class Hypnogram:
     #######################################################################
 
     def copy(self):
-        """Return a new copy of the current Hypnogram."""
+        """Return a new copy of the current Hypnogram.
+
+        Returns
+        -------
+        hyp : :py:class:`yasa.Hypnogram`
+            A copy of the hypnogram, including its metadata and stage probabilities.
+        """
         return self._replace(self._hypno, proba=self._proba)
 
     def to_dict(self):

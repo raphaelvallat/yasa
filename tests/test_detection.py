@@ -464,6 +464,11 @@ class TestDetection(unittest.TestCase):
         # ... also with a dataframe of annotations without Channel column
         res_df = rem.compare_detection(rem2.summary()[["Start"]])
         pd.testing.assert_frame_equal(res, res_df)
+        # There is a single (combined) channel, so channels cannot be compared
+        with pytest.raises(NotImplementedError):
+            rem.compare_channels()
+        with pytest.raises(NotImplementedError):
+            rem.get_coincidence_matrix()
 
         # With REM hypnogram
         rem = rem_detect(loc, roc, sf_rem, hypno=hypno_rem)
