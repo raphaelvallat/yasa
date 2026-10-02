@@ -482,6 +482,21 @@ def test_plot_spectrogram(spectro_30min, hypno, kwargs):
     plt.close("all")
 
 
+def test_plot_spectrogram_flat_data(spectro_30min, caplog):
+    """Flat data has -inf dB power: it must not give a NaN colormap or a numpy warning."""
+    sf = spectro_30min.sf
+    # 5 min of flat data out of 35 min, i.e. more than trimperc=2.5% of the spectrogram
+    data = np.concatenate([spectro_30min.data, np.zeros(int(5 * 60 * sf))])
+    with np.errstate(all="raise"):
+        fig = plot_spectrogram(data, sf)
+    norm = fig.axes[0].collections[0].norm
+    assert np.isfinite([norm.vmin, norm.vmax]).all()
+    assert _has_warning(caplog)
+    plt.close("all")
+    with pytest.raises(ValueError, match="zero power"):
+        plot_spectrogram(np.zeros_like(spectro_30min.data), sf)
+
+
 @pytest.mark.parametrize("vlim", [dict(vmin=-50), dict(vmax=100)])
 def test_plot_spectrogram_vmin_vmax(spectro_30min, vlim):
     """vmin and vmax must be both provided or neither."""
