@@ -3,6 +3,15 @@
 What's new
 ##########
 
+Development version
+-------------------
+
+* Added ``method="intersection"`` to :py:func:`yasa.compare_detection` and the detection-results
+  wrappers. This mode compares event intervals by intersection-over-union (IoU), with configurable
+  threshold and maximum-cardinality one-to-one matching. It uses event endpoints directly,
+  without rounding or resampling. The default distance-based comparison is unchanged.
+  (`issue 88 <https://github.com/raphaelvallat/yasa/issues/88>`_)
+
 
 v0.8.0 (October 2026)
 ---------------------

@@ -952,3 +952,160 @@ def test_compare_detection_errors():
     with pytest.raises(AssertionError):
         # max_distance must be a positive integer
         compare_detection(DETECTED, GRNDTRTH, max_distance=-1)
+
+
+def test_compare_detection_intersection():
+    """IoU uses both endpoints, not just event onsets or overlap duration."""
+    detected = [[10.25, 11.25], [0, 3], [20, 22], [30, 31]]
+    groundtruth = [[10.25, 11.25], [2, 5], [19, 23], [31, 32], [40, 41]]
+    res = compare_detection(detected, groundtruth, method="intersection")
+    np.testing.assert_array_equal(res["tp"], detected[:3])
+    np.testing.assert_array_equal(res["fp"], [[30, 31]])
+    np.testing.assert_array_equal(res["fn"], [[31, 32], [40, 41]])
+    assert res["precision"] == 3 / 4
+    assert res["recall"] == 3 / 5
+    assert res["f1"] == pytest.approx(2 / 3)
+
+
+@pytest.mark.parametrize("threshold, n_matches", [(0, 1), (0.2, 1), (0.2001, 0), (1, 0)])
+def test_compare_detection_intersection_threshold(threshold, n_matches):
+    """IoU == threshold counts, but a shared boundary never counts as overlap."""
+    res = compare_detection(
+        [[0, 3], [10, 11]], [[2, 5], [11, 12]], method="intersection", iou_threshold=threshold
+    )
+    assert len(res["tp"]) == n_matches
+    assert len(res["fp"]) == len(res["fn"]) == 2 - n_matches
+    assert res["f1"] == n_matches / 2
+    exact = compare_detection([[0, 3]], [[0, 3]], method="intersection", iou_threshold=1)
+    assert exact["f1"] == 1
+
+
+@pytest.mark.parametrize(
+    "detected, groundtruth, precision, recall",
+    [
+        ([[0, 2], [2, 4]], [[0, 4]], 0.5, 1),  # Split detection
+        ([[0, 4]], [[0, 2], [2, 4]], 1, 0.5),  # Merged detection
+        ([[0, 2], [0, 2]], [[0, 2]], 0.5, 1),  # Duplicate detections stay distinct
+    ],
+)
+def test_compare_detection_intersection_one_to_one(detected, groundtruth, precision, recall):
+    res = compare_detection(detected, groundtruth, method="intersection")
+    assert len(res["tp"]) == 1
+    assert res["precision"] == precision
+    assert res["recall"] == recall
+    assert res["f1"] == pytest.approx(2 / 3)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_compare_detection_intersection_maximum_matching(reverse):
+    """Greedily taking the best IoU would leave only one match instead of two."""
+    detected = np.array([[1, 3], [0, 2]])
+    groundtruth = np.array([[1, 3], [2.4, 3.4]])
+    if reverse:
+        detected, groundtruth = detected[::-1], groundtruth[::-1]
+    res = compare_detection(detected, groundtruth, method="intersection")
+    np.testing.assert_array_equal(res["tp"], detected)
+    assert res["fp"].shape == res["fn"].shape == (0, 2)
+    assert res["precision"] == res["recall"] == res["f1"] == 1
+
+
+def test_compare_detection_intersection_swapped():
+    detected, groundtruth = [[0, 2], [2, 4]], [[0, 4], [10, 11], [20, 21]]
+    res = compare_detection(detected, groundtruth, method="intersection")
+    swapped = compare_detection(groundtruth, detected, method="intersection")
+    assert res["precision"] == swapped["recall"] == 0.5
+    assert res["recall"] == swapped["precision"] == 1 / 3
+    assert res["f1"] == swapped["f1"] == 0.4
+
+
+@pytest.mark.parametrize("detected, groundtruth", [([], []), ([], [[0, 1]]), ([[0, 1]], [])])
+def test_compare_detection_intersection_empty(detected, groundtruth):
+    res = compare_detection(detected, groundtruth, method="intersection")
+    assert res["tp"].shape == (0, 2)
+    np.testing.assert_array_equal(res["fp"], np.array(detected).reshape(-1, 2))
+    np.testing.assert_array_equal(res["fn"], np.array(groundtruth).reshape(-1, 2))
+    assert res["precision"] == res["recall"] == res["f1"] == 0
+
+
+@pytest.mark.parametrize(
+    "bad", [[0, 1], [[0, 1, 2]], [[], []], [[1, 1]], [[2, 1]], [[0, np.nan]], [[0, np.inf]]]
+)
+@pytest.mark.parametrize("side", ["detected", "groundtruth"])
+def test_compare_detection_intersection_invalid_intervals(bad, side):
+    detected, groundtruth = (bad, [[0, 1]]) if side == "detected" else ([[0, 1]], bad)
+    with pytest.raises(AssertionError):
+        compare_detection(detected, groundtruth, method="intersection")
+
+
+@pytest.mark.parametrize("threshold", [-0.1, 1.1, np.nan, np.inf])
+def test_compare_detection_intersection_invalid_threshold(threshold):
+    with pytest.raises(AssertionError, match="iou_threshold"):
+        compare_detection([[0, 1]], [[0, 1]], method="intersection", iou_threshold=threshold)
+
+
+def test_compare_detection_invalid_method():
+    with pytest.raises(ValueError, match="method"):
+        compare_detection([0], [0], method="unknown")
+    with pytest.raises(ValueError, match="max_distance"):
+        compare_detection([[0, 1]], [[0, 1]], max_distance=1, method="intersection")
+
+
+@pytest.mark.parametrize("cls", [SpindlesResults, SWResults, REMResults])
+def test_results_compare_detection_intersection(cls):
+    """Wrappers retain sub-decisecond endpoints and do not require a shared sampling rate."""
+    events = pd.DataFrame({"Start": [0.01, 2, 2], "End": [0.03, 3, 3]})
+    if cls is not REMResults:
+        events["Channel"] = "Cz"
+    data = np.zeros((1, 500))
+    detected = cls(events, data, 100, ["Cz"], None, data)
+    reference_events = events.iloc[[0, 1]].copy()
+    reference_events.loc[0, ["Start", "End"]] = [0.04, 0.06]
+    reference = cls(reference_events, data, 200, ["Cz"], None, data)
+    before = reference_events.copy(deep=True)
+    res = detected.compare_detection(reference, method="intersection")
+    from_df = detected.compare_detection(reference_events, method="intersection")
+    pd.testing.assert_frame_equal(res, from_df)
+    pd.testing.assert_frame_equal(reference_events, before)
+    assert res.index.tolist() == ["LOC-ROC" if cls is REMResults else "Cz"]
+    assert res.iloc[0].to_dict() == {
+        "precision": 1 / 3,
+        "recall": 0.5,
+        "f1": 0.4,
+        "n_self": 3,
+        "n_other": 2,
+    }
+    swapped = detected.compare_detection(
+        reference, method="intersection", other_is_groundtruth=False
+    )
+    assert swapped.iloc[0]["precision"] == 0.5
+    assert swapped.iloc[0]["recall"] == 1 / 3
+    with pytest.raises(AssertionError, match="End"):
+        detected.compare_detection(reference_events.drop(columns="End"), method="intersection")
+    with pytest.raises(ValueError, match="max_distance_sec"):
+        detected.compare_detection(reference, max_distance_sec=0.01, method="intersection")
+    with pytest.raises(ValueError, match="method"):
+        detected.compare_detection(reference, method="unknown")
+
+
+def test_results_compare_detection_intersection_channels():
+    """Do not match events across channels; pass the IoU threshold through unchanged."""
+    events = pd.DataFrame({"Start": [0, 10], "End": [3, 11], "Channel": ["Cz", "Fz"]})
+    data = np.zeros((2, 2000))
+    detected = SpindlesResults(events, data, 100, ["Cz", "Fz"], None, data)
+    reference = pd.DataFrame(
+        {"Start": [2, 0, 10], "End": [5, 3, 11], "Channel": ["Cz", "Fz", "Pz"]}
+    )
+    expected = pd.DataFrame(
+        {
+            "precision": [1.0, 0.0],
+            "recall": [1.0, 0.0],
+            "f1": [1.0, 0.0],
+            "n_self": [1, 1],
+            "n_other": [1, 1],
+        },
+        index=pd.Index(["Cz", "Fz"], name="Channel"),
+    )
+    res = detected.compare_detection(reference, method="intersection", iou_threshold=0.2)
+    pd.testing.assert_frame_equal(res, expected)
+    stricter = detected.compare_detection(reference, method="intersection", iou_threshold=0.3)
+    assert (stricter[["precision", "recall", "f1"]] == 0).all().all()
