@@ -1413,3 +1413,537 @@ class TestSleepStatsAgreementLogTransform:
         assert s.loc[stats, ["lower", "upper"]].notna().all().all()
         g = fresh.plot_blandaltman(loa_method="log", ci_method="boot", sleep_stats=stats)
         assert all(len(ax.collections) == 3 for ax in g.axes.flat)
+
+
+# ---------------------------------------------------------------------------
+# Repeated measures (several nights per subject)
+# ---------------------------------------------------------------------------
+
+RM_NIGHTS = (2, 3, 2, 4, 2, 3)  # nights per subject, unbalanced on purpose
+RM_SUBJECTS = [f"sbj{i:02d}" for i, m in enumerate(RM_NIGHTS) for _ in range(m)]
+N_RM_SESSIONS = len(RM_SUBJECTS)
+RM_BOOT_KWARGS = {"n_resamples": 200, "method": "percentile"}
+
+
+def _simulate_repeated_stats(nights=(2, 3, 4, 2, 3, 3, 2, 4), sd_between=20, sd_within=10, seed=0):
+    """Synthetic sleep statistics with a subject-level offset in the device - reference differences.
+
+    Returns (ref, obs, subjects): the differences are ``5 + offset_subject + noise_night``.
+    """
+    rng = np.random.default_rng(seed)
+    subjects = np.repeat([f"sbj{i:02d}" for i in range(len(nights))], nights)
+    n = subjects.size
+    offsets = np.repeat(rng.normal(0, sd_between, len(nights)), nights)
+    ref = pd.DataFrame(
+        {
+            "TST": rng.normal(400, 40, n),
+            "WASO": rng.normal(60, 20, n),
+            "SE": rng.uniform(70, 95, n),
+        }
+    )
+    diff = pd.DataFrame({c: 5 + offsets + rng.normal(0, sd_within, n) for c in ref.columns})
+    return ref, ref + diff, subjects
+
+
+def _anova_components(values, subjects):
+    """Hand-computed one-way ANOVA variance components (Bland & Altman 2007)."""
+    df = pd.DataFrame({"d": values, "s": subjects})
+    grand = df["d"].mean()
+    by_subj = df.groupby("s")["d"].agg(["mean", "count"])
+    n_subj, n_pairs = len(by_subj), len(df)
+    msw = ((df["d"] - df["s"].map(by_subj["mean"])) ** 2).sum() / (n_pairs - n_subj)
+    msb = (by_subj["count"] * (by_subj["mean"] - grand) ** 2).sum() / (n_subj - 1)
+    m0 = (n_pairs - (by_subj["count"] ** 2).sum() / n_pairs) / (n_subj - 1)
+    var_between = max(0.0, (msb - msw) / m0)
+    return {"msb": msb, "msw": msw, "m0": m0, "var_between": var_between, "var_within": msw}
+
+
+@pytest.fixture(scope="module")
+def hyps_rm():
+    return _simulate_pairs(N_RM_SESSIONS, tib=480, seed_offset=200)
+
+
+@pytest.fixture(scope="module")
+def ebe_rm(hyps_rm):
+    return EpochByEpochAgreement(*hyps_rm, subjects=RM_SUBJECTS)
+
+
+@pytest.fixture(scope="module")
+def sstats_rm(ebe_rm):
+    return ebe_rm.get_sleep_stats()
+
+
+@pytest.fixture(scope="module")
+def ssa_rm(sstats_rm):
+    pytest.importorskip("statsmodels")
+    return SleepStatsAgreement(sstats_rm, bootstrap_kwargs=RM_BOOT_KWARGS)
+
+
+@pytest.fixture(scope="module")
+def rm_stats():
+    return _simulate_repeated_stats()
+
+
+@pytest.fixture(scope="module")
+def ssa_rm_synth(rm_stats):
+    pytest.importorskip("statsmodels")
+    ref, obs, subjects = rm_stats
+    return SleepStatsAgreement(ref, obs, subjects=subjects, bootstrap_kwargs=RM_BOOT_KWARGS)
+
+
+class TestEpochByEpochAgreementRepeated:
+    def test_attributes(self, ebe_rm):
+        assert ebe_rm.n_sessions == N_RM_SESSIONS
+        assert ebe_rm.n_subjects == len(RM_NIGHTS)
+        assert f"from {len(RM_NIGHTS)} subjects" in repr(ebe_rm)
+        # The per-session data and scores are unchanged
+        assert ebe_rm.data.index.names == ["sleep_id", "Epoch"]
+        assert len(ebe_rm.get_agreement()) == N_RM_SESSIONS
+
+    def test_subjects_inputs_equivalent(self, hyps_rm, ebe_rm):
+        ref, obs = hyps_rm
+        expected = ebe_rm.summary()
+        # dict keyed by the automatic sleep IDs (1, 2, ...)
+        as_dict = dict(zip(range(1, N_RM_SESSIONS + 1), RM_SUBJECTS))
+        pd.testing.assert_frame_equal(
+            EpochByEpochAgreement(ref, obs, subjects=as_dict).summary(), expected
+        )
+        # dict hypnograms with a dict of subjects keyed alike, in a different order
+        keys = [f"night{i}" for i in range(N_RM_SESSIONS)]
+        ref_d, obs_d = dict(zip(keys, ref)), dict(zip(keys, obs))
+        subj_d = dict(zip(keys, RM_SUBJECTS))
+        subj_d = dict(reversed(list(subj_d.items())))
+        pd.testing.assert_frame_equal(
+            EpochByEpochAgreement(ref_d, obs_d, subjects=subj_d).summary(), expected
+        )
+        # pandas Series and numpy array
+        pd.testing.assert_frame_equal(
+            EpochByEpochAgreement(ref, obs, subjects=pd.Series(as_dict)).summary(), expected
+        )
+        pd.testing.assert_frame_equal(
+            EpochByEpochAgreement(ref, obs, subjects=np.array(RM_SUBJECTS)).summary(), expected
+        )
+
+    @pytest.mark.parametrize(
+        "subjects",
+        [
+            pytest.param(RM_SUBJECTS[:-1], id="too_short"),
+            pytest.param(dict(zip(range(N_RM_SESSIONS), RM_SUBJECTS)), id="wrong_keys"),
+            pytest.param([np.nan] + RM_SUBJECTS[1:], id="missing"),
+            pytest.param(np.array([RM_SUBJECTS, RM_SUBJECTS]), id="2d"),
+        ],
+    )
+    def test_invalid_subjects_raise(self, hyps_rm, subjects):
+        with pytest.raises(AssertionError):
+            EpochByEpochAgreement(*hyps_rm, subjects=subjects)
+
+    def test_single_night_per_subject_equals_no_subjects(self, ref_hyps, obs_hyps, ebe):
+        unique = EpochByEpochAgreement(ref_hyps, obs_hyps, subjects=list("abcde"))
+        assert unique.n_subjects == N_SESSIONS
+        pd.testing.assert_frame_equal(unique.summary(), ebe.summary())
+        pd.testing.assert_frame_equal(unique.summary(by_stage=True), ebe.summary(by_stage=True))
+        pd.testing.assert_frame_equal(
+            unique.get_confusion_matrix_proportional(ci_method=None).drop(columns="n_subjects"),
+            ebe.get_confusion_matrix_proportional(ci_method=None),
+        )
+        sstats = unique.get_sleep_stats()
+        assert sstats.index.names == ["scorer", "subject_id", "sleep_id"]
+        pd.testing.assert_frame_equal(sstats.droplevel("subject_id"), ebe.get_sleep_stats())
+
+    def test_get_sleep_stats_index(self, sstats_rm):
+        assert sstats_rm.index.names == ["scorer", "subject_id", "sleep_id"]
+        assert len(sstats_rm) == 2 * N_RM_SESSIONS
+        for scorer in (REF_SCORER, OBS_SCORER):
+            idx = sstats_rm.loc[scorer].index
+            assert idx.get_level_values("subject_id").tolist() == RM_SUBJECTS
+            assert idx.get_level_values("sleep_id").tolist() == list(range(1, N_RM_SESSIONS + 1))
+
+    def test_summary_is_subject_then_group_mean(self, ebe_rm):
+        agr = ebe_rm.get_agreement()
+        by_subject = agr.groupby(pd.Series(RM_SUBJECTS, index=agr.index)).mean()
+        summ = ebe_rm.summary()
+        pd.testing.assert_series_equal(summ["mean"], by_subject.mean(), check_names=False)
+        pd.testing.assert_series_equal(summ["std"], by_subject.std(), check_names=False)
+        pd.testing.assert_series_equal(summ["min"], by_subject.min(), check_names=False)
+        # Not the mean across nights (subjects with more nights would weigh more)
+        assert not np.allclose(summ["mean"], agr.mean())
+
+    def test_summary_by_stage_is_subject_then_group_mean(self, ebe_rm):
+        agr = ebe_rm.get_agreement_bystage()
+        subj = agr.index.get_level_values("sleep_id").map(dict(enumerate(RM_SUBJECTS, start=1)))
+        by_subject = agr.groupby([agr.index.get_level_values("stage"), subj]).mean()
+        summ = ebe_rm.summary(by_stage=True)
+        expected = by_subject.groupby(level=0).mean().stack()
+        pd.testing.assert_series_equal(
+            summ["mean"].sort_index(), expected.sort_index(), check_names=False
+        )
+
+    def test_summary_boot_ci(self, ebe_rm):
+        kwargs = RM_BOOT_KWARGS | {"rng": 0}
+        out = ebe_rm.summary(ci_method="boot", bootstrap_kwargs=kwargs)
+        assert (out["ci_lower"] <= out["mean"]).all() and (out["ci_upper"] >= out["mean"]).all()
+        pd.testing.assert_frame_equal(
+            out, ebe_rm.summary(ci_method="boot", bootstrap_kwargs=kwargs)
+        )
+        # The CI is a subject-level bootstrap: re-implement the percentile version by hand
+        agr = ebe_rm.get_agreement()
+        by_subject = agr.groupby(pd.Series(RM_SUBJECTS, index=agr.index)).mean().to_numpy()
+        rng = np.random.default_rng(0)
+        n_subj = len(RM_NIGHTS)
+        idx = rng.integers(0, n_subj, size=(RM_BOOT_KWARGS["n_resamples"], n_subj))
+        lo, hi = np.nanpercentile(np.nanmean(by_subject[idx], axis=1), [2.5, 97.5], axis=0)
+        np.testing.assert_allclose(out["ci_lower"].to_numpy(), lo)
+        np.testing.assert_allclose(out["ci_upper"].to_numpy(), hi)
+
+    def test_bca_warning_counts_subjects(self, ebe_rm):
+        with pytest.warns(RuntimeWarning, match=f"n_subjects={len(RM_NIGHTS)}"):
+            ebe_rm.summary(ci_method="boot", bootstrap_kwargs={"n_resamples": 50})
+
+    def test_proportional_matrix(self, ebe_rm):
+        out = ebe_rm.get_confusion_matrix_proportional(ci_method="param")
+        assert out.columns.tolist() == [
+            "mean", "std", "ci_lower", "ci_upper", "n_sessions", "n_subjects"
+        ]  # fmt: skip
+        assert (out["n_sessions"] <= N_RM_SESSIONS).all()
+        assert (out["n_subjects"] <= len(RM_NIGHTS)).all()
+        assert (out["n_subjects"] <= out["n_sessions"]).all()
+        # Subject-then-group mean of the row-normalized per-session matrices
+        cms = ebe_rm.get_confusion_matrix()
+        props = 100 * cms.div(cms.sum(axis=1), axis=0)
+        subj = props.index.get_level_values("sleep_id").map(dict(enumerate(RM_SUBJECTS, start=1)))
+        by_subject = props.groupby([subj, props.index.get_level_values(REF_SCORER)]).mean()
+        expected = by_subject.groupby(level=1).mean().stack()
+        expected.index.names = [REF_SCORER, OBS_SCORER]
+        pd.testing.assert_series_equal(
+            out["mean"].sort_index(), expected.sort_index(), check_names=False
+        )
+        # Parametric CI uses the number of subjects
+        row = out.iloc[0]
+        half = sps.t.ppf(0.975, row["n_subjects"] - 1) * row["std"] / np.sqrt(row["n_subjects"])
+        assert row["ci_upper"] == pytest.approx(min(row["mean"] + half, 100))
+        # Formatted output and bootstrap CI
+        fmt = ebe_rm.get_confusion_matrix_proportional(
+            formatted=True, bootstrap_kwargs=RM_BOOT_KWARGS | {"rng": 0}
+        )
+        assert fmt.map(lambda s: bool(re.fullmatch(_FMT_CI, s))).all().all()
+
+
+class TestSleepStatsAgreementRepeated:
+    def test_attributes(self, ssa_rm):
+        assert ssa_rm.n_sessions == N_RM_SESSIONS
+        assert ssa_rm.n_subjects == len(RM_NIGHTS)
+        assert f"from {len(RM_NIGHTS)} subjects" in repr(ssa_rm)
+        assert sorted(ssa_rm.data.columns) == sorted([OBS_SCORER, REF_SCORER, "subject_id"])
+        assert ssa_rm.data.index.names == ["sleep_stat", "sleep_id"]
+        assert ssa_rm.data["subject_id"].isin(RM_SUBJECTS).all()
+
+    def test_subjects_inputs_equivalent(self, sstats_rm, ssa_rm):
+        flat = sstats_rm.droplevel("subject_id")
+        ref, obs = flat.loc[REF_SCORER], flat.loc[OBS_SCORER]
+        expected = ssa_rm.summary(ci_method="param")
+        kwargs = dict(ref_scorer=REF_SCORER, obs_scorer=OBS_SCORER)
+        for subjects in (
+            RM_SUBJECTS,
+            np.array(RM_SUBJECTS),
+            dict(zip(ref.index, RM_SUBJECTS)),
+            pd.Series(RM_SUBJECTS, index=ref.index).iloc[::-1],
+        ):
+            ssa = SleepStatsAgreement(ref, obs, subjects=subjects, **kwargs)
+            pd.testing.assert_frame_equal(ssa.summary(ci_method="param"), expected)
+            pd.testing.assert_frame_equal(ssa.variance_components, ssa_rm.variance_components)
+
+    @pytest.mark.parametrize(
+        "subjects",
+        [
+            pytest.param(RM_SUBJECTS[:-1], id="too_short"),
+            pytest.param(dict(zip(range(N_RM_SESSIONS), RM_SUBJECTS)), id="wrong_keys"),
+            pytest.param([None] + RM_SUBJECTS[1:], id="missing"),
+        ],
+    )
+    def test_invalid_subjects_raise(self, sstats_rm, subjects):
+        flat = sstats_rm.droplevel("subject_id")
+        with pytest.raises(AssertionError):
+            SleepStatsAgreement(flat.loc[REF_SCORER], flat.loc[OBS_SCORER], subjects=subjects)
+
+    def test_subject_level_and_subjects_arg_raise(self, sstats_rm):
+        with pytest.raises(AssertionError, match="subject level"):
+            SleepStatsAgreement(sstats_rm, subjects=RM_SUBJECTS)
+        # The (subject, session) pairs must be the same for the two scorers
+        bad = sstats_rm.copy()
+        new_index = bad.index.to_frame()
+        new_index.loc[OBS_SCORER, "subject_id"] = "other"
+        bad.index = pd.MultiIndex.from_frame(new_index)
+        with pytest.raises(AssertionError, match="identical"):
+            SleepStatsAgreement(bad)
+
+    def test_single_night_per_subject_warns_and_matches(self, ref_stats, obs_stats, ssa, caplog):
+        with caplog.at_level("WARNING", logger="yasa"):
+            unique = SleepStatsAgreement(
+                ref_stats,
+                obs_stats,
+                ref_scorer=REF_SCORER,
+                obs_scorer=OBS_SCORER,
+                subjects=list("abcde"),
+            )
+        assert "single session" in caplog.text
+        assert unique.n_subjects == N_SESSIONS and not unique._repeated
+        pd.testing.assert_frame_equal(unique.summary(ci_method="param"), ssa.summary("param"))
+        pd.testing.assert_frame_equal(unique.assumptions, ssa.assumptions)
+        vc = unique.variance_components
+        assert vc[["sd_between", "sd_within"]].isna().all().all()
+        assert "subject_id" in unique.data
+
+    def test_variance_components_without_subjects(self, ssa, valid_arrays):
+        vc = ssa.variance_components
+        assert vc.columns.tolist() == ["sd_between", "sd_within", "sd_total", "n_subjects", "n_sessions"]  # fmt: skip
+        assert vc[["sd_between", "sd_within"]].isna().all().all()
+        assert (vc["n_subjects"] == vc["n_sessions"]).all()
+        _, diff = valid_arrays("TST")
+        assert vc.at["TST", "sd_total"] == pytest.approx(np.std(diff, ddof=1))
+        assert vc.at["TST", "n_sessions"] == len(diff)
+
+    def test_loa_matches_manual_anova(self, ssa_rm_synth, rm_stats):
+        ref, obs, subjects = rm_stats
+        for stat in ("TST", "WASO", "SE"):
+            diff = (obs[stat] - ref[stat]).to_numpy()
+            manual = _anova_components(diff, subjects)
+            sd_total = np.sqrt(manual["var_between"] + manual["var_within"])
+            vals = ssa_rm_synth.summary(ci_method=None).loc[stat]
+            assert vals[("bias_mean", "center")] == pytest.approx(diff.mean())
+            assert vals[("loa_upper", "center")] == pytest.approx(diff.mean() + 1.96 * sd_total)
+            assert vals[("loa_lower", "center")] == pytest.approx(diff.mean() - 1.96 * sd_total)
+            vc = ssa_rm_synth.variance_components.loc[stat]
+            assert vc["sd_between"] == pytest.approx(np.sqrt(manual["var_between"]))
+            assert vc["sd_within"] == pytest.approx(np.sqrt(manual["var_within"]))
+            assert vc["sd_total"] == pytest.approx(sd_total)
+            assert (vc["n_subjects"], vc["n_sessions"]) == (len(np.unique(subjects)), len(diff))
+        # With a strong subject effect, both components are substantial
+        assert (ssa_rm_synth.variance_components["sd_between"] > 5).all()
+
+    def test_variance_components_balanced_matches_reml(self):
+        # On a balanced design, the ANOVA estimators equal the REML estimates of the
+        # random-intercept model (when the between-subject variance is positive)
+        from statsmodels.regression.mixed_linear_model import MixedLM
+
+        ref, obs, subjects = _simulate_repeated_stats(nights=(3,) * 8, seed=1)
+        diff = (obs["TST"] - ref["TST"]).to_numpy()
+        vc = SleepStatsAgreement._variance_components(diff, subjects)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            res = MixedLM(diff, np.ones((diff.size, 1)), groups=subjects).fit(reml=True)
+        assert vc["var_between"] == pytest.approx(float(np.ravel(res.cov_re)[0]), rel=1e-3)
+        assert vc["var_within"] == pytest.approx(res.scale, rel=1e-3)
+        assert vc["m0"] == pytest.approx(3) if "m0" in vc else True
+        assert vc["var_total"] == pytest.approx(vc["var_between"] + vc["var_within"])
+
+    def test_variance_components_clip_negative_between(self):
+        # Subject means closer to each other than expected by chance: MSB < MSW, the between
+        # component is set to 0 and the total variance equals the within variance (B&A 2007)
+        values = np.array([0.0, 10.0, 0.0, 10.0, 0.0, 10.0])
+        subjects = np.array([1, 1, 2, 2, 3, 3])
+        vc = SleepStatsAgreement._variance_components(values, subjects)
+        assert vc["msb"] == 0 and vc["var_between"] == 0
+        assert vc["var_total"] == vc["var_within"] == pytest.approx(50.0)
+        lower, upper = SleepStatsAgreement._variance_ci(vc, 0.95)
+        assert lower <= vc["var_total"] <= upper
+
+    def test_variance_components_fallbacks(self):
+        values = np.arange(5, dtype=float)
+        expected = np.var(values, ddof=1)
+        for subjects in (None, np.arange(5), np.zeros(5)):
+            vc = SleepStatsAgreement._variance_components(values, subjects)
+            assert vc["var_total"] == pytest.approx(expected)
+            assert np.isnan(vc["var_between"]) and np.isnan(vc["var_within"])
+            assert (vc["a"], vc["b"]) == (1.0, 0.0)
+        # Without repeated measures, the variance CI is the plain chi-square interval
+        vc = SleepStatsAgreement._variance_components(values, None)
+        lower, upper = SleepStatsAgreement._variance_ci(vc, 0.95)
+        dof = values.size - 1
+        assert lower == pytest.approx(expected * dof / sps.chi2.ppf(0.975, dof))
+        assert upper == pytest.approx(expected * dof / sps.chi2.ppf(0.025, dof))
+
+    def test_bias_ci_and_ttest(self, ssa_rm_synth, rm_stats):
+        ref, obs, subjects = rm_stats
+        diff = (obs["TST"] - ref["TST"]).to_numpy()
+        manual = _anova_components(diff, subjects)
+        counts = pd.Series(subjects).value_counts()
+        n, n_subj = diff.size, counts.size
+        se = np.sqrt(manual["var_between"] * (counts**2).sum() / n**2 + manual["var_within"] / n)
+        t_crit = sps.t.ppf(0.975, n_subj - 1)
+        vals = ssa_rm_synth.summary(ci_method="param").loc["TST", "bias_mean"]
+        assert vals["lower"] == pytest.approx(diff.mean() - t_crit * se)
+        assert vals["upper"] == pytest.approx(diff.mean() + t_crit * se)
+        asmp = ssa_rm_synth.assumptions.loc["TST", "unbiased"]
+        assert asmp["t"] == pytest.approx(diff.mean() / se)
+        assert asmp["pvalue"] == pytest.approx(2 * sps.t.sf(abs(diff.mean() / se), n_subj - 1))
+        sd_total = np.sqrt(manual["var_between"] + manual["var_within"])
+        assert asmp["cohen_d"] == pytest.approx(diff.mean() / sd_total)
+
+    def test_param_ci_wider_than_naive(self, rm_stats):
+        # Treating the 23 nights as independent understates the uncertainty of the bias and LoA
+        ref, obs, subjects = rm_stats
+        naive = SleepStatsAgreement(ref, obs).summary(ci_method="param")
+        rm = SleepStatsAgreement(ref, obs, subjects=subjects).summary(ci_method="param")
+        for var in ("bias_mean", "loa_lower", "loa_upper", "loa_halfwidth"):
+            width_naive = naive[(var, "upper")] - naive[(var, "lower")]
+            width_rm = rm[(var, "upper")] - rm[(var, "lower")]
+            assert (width_rm > width_naive).all(), var
+        # ... while the point estimates of the bias are identical
+        pd.testing.assert_series_equal(rm[("bias_mean", "center")], naive[("bias_mean", "center")])
+
+    def test_mover_loa_ci(self, ssa_rm_synth):
+        # The MOVER interval brackets every LoA and is asymmetric (wider away from the bias)
+        summ = ssa_rm_synth.summary(ci_method="param")
+        for var in ("loa_lower", "loa_upper", "loa_halfwidth", "bias_mean"):
+            assert (summ[(var, "lower")] < summ[(var, "center")]).all()
+            assert (summ[(var, "upper")] > summ[(var, "center")]).all()
+        up = summ["loa_upper"]
+        assert ((up["upper"] - up["center"]) > (up["center"] - up["lower"])).all()
+        lo = summ["loa_lower"]
+        assert ((lo["center"] - lo["lower"]) > (lo["upper"] - lo["center"])).all()
+        # Scalar check of the formulas (Zou 2013)
+        out = SleepStatsAgreement._mover_loa_ci(2.0, 1.0, 3.0, 4.0, 3.0, 6.0, 1.96)
+        upper = 2 + 1.96 * 4
+        assert out[2] == pytest.approx(upper - np.sqrt(1 + (1.96 * 1) ** 2))
+        assert out[3] == pytest.approx(upper + np.sqrt(1 + (1.96 * 2) ** 2))
+        lower = 2 - 1.96 * 4
+        assert out[0] == pytest.approx(lower - np.sqrt(1 + (1.96 * 2) ** 2))
+        assert out[1] == pytest.approx(lower + np.sqrt(1 + (1.96 * 1) ** 2))
+
+    def test_mixed_model_matches_statsmodels(self, ssa_rm_synth, rm_stats):
+        from statsmodels.regression.mixed_linear_model import MixedLM
+
+        ref, obs, subjects = rm_stats
+        x = ref["TST"].to_numpy()
+        y = (obs["TST"] - ref["TST"]).to_numpy()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            res = MixedLM(y, np.column_stack([np.ones_like(x), x]), groups=subjects).fit(reml=True)
+        regr = ssa_rm_synth._regr.loc[("bias", "TST")]
+        assert regr["method"] == "mixed"
+        assert regr["intercept"] == pytest.approx(res.fe_params[0])
+        assert regr["slope"] == pytest.approx(res.fe_params[1])
+        assert regr["intercept_stderr"] == pytest.approx(res.bse_fe[0])
+        assert regr["stderr"] == pytest.approx(res.bse_fe[1])
+        assert regr["pvalue"] == pytest.approx(np.asarray(res.pvalues)[1])
+        assert regr["rvalue"] == pytest.approx(np.corrcoef(x, y)[0, 1])
+        # Wald CI with a t quantile on n_subjects - 2 degrees of freedom
+        ci = ssa_rm_synth.summary(ci_method="param").loc["TST", "bias_slope"]
+        t_crit = sps.t.ppf(0.975, ssa_rm_synth.n_subjects - 2)
+        assert ci["lower"] == pytest.approx(res.fe_params[1] - t_crit * res.bse_fe[1])
+        assert ci["upper"] == pytest.approx(res.fe_params[1] + t_crit * res.bse_fe[1])
+        # The absolute residuals of the fixed-effects line feed the LoA regression
+        resid_abs = np.abs(y - (res.fe_params[0] + res.fe_params[1] * x))
+        np.testing.assert_allclose(
+            ssa_rm_synth._data.loc["TST", "residuals_abs"].to_numpy(), resid_abs
+        )
+        assert ssa_rm_synth._regr.loc[("loa", "TST"), "method"] == "mixed"
+
+    def test_regress_fallbacks(self):
+        rng = np.random.default_rng(0)
+        x, y = rng.normal(size=12), rng.normal(size=12)
+        ols = SleepStatsAgreement._linregress(x, y)
+        assert ols["method"] == "ols"
+        # No subjects, every subject unique, or a single subject: OLS
+        for subjects in (None, np.arange(12), np.zeros(12)):
+            assert SleepStatsAgreement._regress(x, y, subjects) == ols
+        # Constant predictor: flat line, with or without subjects
+        flat = SleepStatsAgreement._regress(np.ones(12), y, np.repeat([1, 2, 3], 4))
+        assert flat["method"] == "constant" and flat["slope"] == 0
+        # Non-finite mixed-model output falls back to OLS
+        mixed = SleepStatsAgreement._regress(x, y, np.repeat([1, 2, 3], 4))
+        assert mixed["method"] in ("mixed", "ols")
+        assert np.isfinite([mixed["slope"], mixed["stderr"], mixed["pvalue"]]).all()
+
+    def test_cluster_bootstrap(self):
+        subjects = np.array(["a", "a", "b", "c", "c", "c"])
+        values = np.arange(6, dtype=float)
+        calls = []
+
+        def statistic(v, clusters=None):
+            calls.append((v.copy(), clusters.copy()))
+            return v.mean()
+
+        res = SleepStatsAgreement._cluster_bootstrap(
+            subjects, (values,), statistic, n_resamples=20, method="percentile", vectorized=False
+        )
+        assert np.isfinite(res.confidence_interval.low)
+        sizes = {"a": 2, "b": 1, "c": 3}
+        for v, clusters in calls:
+            # Each replicate concatenates the rows of the 3 drawn subjects, which form 3 clusters
+            assert np.unique(clusters).size == 3 or v.size == 6  # the full-sample evaluation
+            drawn = [subjects[int(i)] for i in v[np.r_[True, np.diff(clusters) != 0]]]
+            assert v.size == sum(sizes[s] for s in drawn)
+            # Rows of a cluster are contiguous and belong to one subject
+            for k in np.unique(clusters):
+                assert np.unique(subjects[v[clusters == k].astype(int)]).size == 1
+
+    def test_boot_ci(self, ssa_rm_synth):
+        boot = ssa_rm_synth.summary(ci_method="boot")
+        param = ssa_rm_synth.summary(ci_method="param")
+        for var in ("bias_mean", "loa_lower", "loa_upper", "loa_halfwidth", "bias_slope"):
+            assert (boot[(var, "lower")] <= boot[(var, "center")]).all(), var
+            assert (boot[(var, "upper")] >= boot[(var, "center")]).all(), var
+            assert (boot[(var, "upper")] > boot[(var, "lower")]).all(), var
+        # The bias and LoA are bootstrapped (subject-level), the regression coefficients are not:
+        # their "boot" CIs are the Wald CIs of the mixed model
+        for var in ("bias_mean", "loa_lower", "loa_upper", "loa_halfwidth"):
+            assert not np.allclose(boot[var], param[var]), var
+        for var in ("bias_intercept", "bias_slope", "loa_intercept", "loa_slope"):
+            pd.testing.assert_frame_equal(boot[var], param[var])
+        rpt = ssa_rm_synth.report(ci_method="boot")
+        assert rpt[f"Bias [{PCT}% CI]"].str.contains(r"\[").all()
+
+    def test_boot_halfwidth_uses_reported_bias_line(self, rm_stats):
+        # The half-width replicates measure the spread around the full-sample mixed-model line.
+        # Re-implement the percentile cluster bootstrap by hand with the same resamples.
+        ref, obs, subjects = rm_stats
+        ssa = SleepStatsAgreement(
+            ref, obs, subjects=subjects, bootstrap_kwargs=RM_BOOT_KWARGS | {"rng": 0}
+        )
+        stat = "TST"
+        boot = ssa.summary(ci_method="boot", sleep_stats=[stat]).loc[stat, "loa_halfwidth"]
+        b0, b1 = ssa.summary(ci_method=None).loc[stat, ["bias_intercept", "bias_slope"]]
+        x = ref[stat].to_numpy()
+        d = (obs[stat] - ref[stat]).to_numpy()
+        resid = d - (b0 + b1 * x)
+
+        def statistic(r, clusters=None):
+            return 1.96 * np.sqrt(
+                SleepStatsAgreement._variance_components(r, clusters)["var_total"]
+            )
+
+        res = SleepStatsAgreement._cluster_bootstrap(
+            subjects, (resid,), statistic, vectorized=False, rng=0, **RM_BOOT_KWARGS
+        )
+        assert boot["lower"] == pytest.approx(res.confidence_interval.low)
+        assert boot["upper"] == pytest.approx(res.confidence_interval.high)
+
+    def test_log_transform(self, rm_stats):
+        ref, obs, subjects = rm_stats
+        ssa_log = SleepStatsAgreement(
+            ref, obs, subjects=subjects, log_transform=True, bootstrap_kwargs=RM_BOOT_KWARGS
+        )
+        diff = np.log(obs["TST"]) - np.log(ref["TST"])
+        manual = _anova_components(diff.to_numpy(), subjects)
+        sd = np.sqrt(manual["var_between"] + manual["var_within"])
+        expected = SleepStatsAgreement._euser_slope_scalar(sd, 1.96)
+        summ = ssa_log.summary(ci_method="param")["loa_log_slope"]
+        assert summ.at["TST", "center"] == pytest.approx(expected)
+        assert summ.at["TST", "lower"] < expected < summ.at["TST", "upper"]
+        boot = ssa_log.summary(ci_method="boot")["loa_log_slope"]
+        assert boot.at["TST", "lower"] <= expected <= boot.at["TST", "upper"]
+        assert ssa_log.report(loa_method="log", ci_method="param").shape[0] == 3
+
+    def test_report_calibrate_and_plot(self, ssa_rm_synth):
+        rpt = ssa_rm_synth.report(ci_method="param")
+        assert rpt.shape == (3, 5)
+        assert rpt["Assumptions"].str.contains("normal").all()
+        new = pd.DataFrame({"TST": [400.0, 410.0]})
+        bias = ssa_rm_synth.summary(ci_method=None).at["TST", ("bias_mean", "center")]
+        pd.testing.assert_frame_equal(ssa_rm_synth.calibrate(new, bias_method="param"), new - bias)
+        g = ssa_rm_synth.plot_blandaltman(ci_method="param")
+        assert len(g.axes.flat) == 3 and g.legend is None
+        g = ssa_rm_synth.plot_blandaltman(ci_method="param", hue="subject_id")
+        assert g.legend is not None
+        assert len(g.legend.get_texts()) == ssa_rm_synth.n_subjects

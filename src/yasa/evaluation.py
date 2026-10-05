@@ -9,6 +9,7 @@ See the following resources:
 - https://github.com/SRI-human-sleep/sleep-trackers-performance
 """
 
+import functools
 import logging
 import warnings
 
@@ -18,6 +19,7 @@ import scipy.stats as sps
 import sklearn.metrics as skm
 
 from .hypno import Hypnogram
+from .io import is_statsmodels_installed
 
 logger = logging.getLogger("yasa")
 
@@ -25,6 +27,42 @@ __all__ = [
     "EpochByEpochAgreement",
     "SleepStatsAgreement",
 ]
+
+
+def _subjects_to_series(subjects, index):
+    """Convert a user-supplied ``subjects`` argument to a Series of subject IDs indexed by session.
+
+    Parameters
+    ----------
+    subjects : None, dict, pandas.Series, or array-like
+        A dict (or Series) keyed by the session IDs in ``index``, or a 1D array-like with one
+        subject ID per session, in the order of ``index``.
+    index : array-like
+        The session IDs.
+
+    Returns
+    -------
+    subjects : pandas.Series or None
+        Subject IDs indexed by session ID, named ``"subject_id"``. None if ``subjects`` is None.
+    """
+    if subjects is None:
+        return None
+    index = pd.Index(index)
+    if isinstance(subjects, (dict, pd.Series)):
+        subjects = pd.Series(subjects)
+        assert subjects.index.is_unique and set(subjects.index) == set(index), (
+            "the keys of `subjects` must be the session IDs"
+        )
+        subjects = subjects.reindex(index)
+    else:
+        # Object dtype, so that a missing value among strings stays NaN (instead of "nan")
+        subjects = np.asarray(subjects, dtype=object)
+        assert subjects.ndim == 1 and subjects.size == index.size, (
+            "`subjects` must have exactly one subject ID per session"
+        )
+        subjects = pd.Series(subjects, index=index).infer_objects()
+    assert subjects.notna().all(), "`subjects` must not contain missing values"
+    return subjects.rename("subject_id").rename_axis(index.name)
 
 
 ################################################################################
@@ -71,6 +109,20 @@ class EpochByEpochAgreement:
             scorers.
 
         .. seealso:: For comparing just two hypnograms, use :py:meth:`yasa.Hypnogram.evaluate`.
+    subjects : None, dict, or array-like
+        Subject of each sleep session, for datasets with several nights per subject (repeated
+        measures). Either a ``dict`` mapping each sleep session ID (the keys of ``ref_hyps``, or
+        ``1, 2, ...`` for a list) to a subject ID, or a list/array with one subject ID per
+        hypnogram, in the same order as ``ref_hyps``. If ``None`` (default), each session is
+        treated as an independent subject.
+
+        When given, the group-level statistics of :py:meth:`summary` and
+        :py:meth:`get_confusion_matrix_proportional` are first averaged across the nights of each
+        subject and then across subjects, so that every subject weighs equally, and the bootstrap
+        confidence intervals resample subjects rather than nights. The subject IDs are also carried
+        over to :py:meth:`get_sleep_stats`, and from there to :py:class:`SleepStatsAgreement`.
+
+        .. versionadded:: 0.8.1
 
     Notes
     -----
@@ -182,7 +234,7 @@ class EpochByEpochAgreement:
     N3        24   0   1   3
     """
 
-    def __init__(self, ref_hyps, obs_hyps):
+    def __init__(self, ref_hyps, obs_hyps, subjects=None):
         assert hasattr(ref_hyps, "__iter__"), "`ref_hyps` must be a an iterable"
         assert hasattr(obs_hyps, "__iter__"), "`obs_hyps` must be a an iterable"
         assert type(ref_hyps) is type(obs_hyps), "`ref_hyps` and `obs_hyps` must be the same type"
@@ -228,6 +280,10 @@ class EpochByEpochAgreement:
         # Convert ref_hyps and obs_hyps to dictionaries with sleep_id keys and hypnogram values
         ref_hyps = {s: h for s, h in zip(sleep_ids, ref_hyps)}
         obs_hyps = {s: h for s, h in zip(sleep_ids, obs_hyps)}
+        # Subject of each session (repeated measures), as a Series indexed by sleep_id, or None
+        subjects = _subjects_to_series(subjects, pd.Index(sleep_ids, name="sleep_id"))
+        if subjects is not None and subjects.nunique() == len(sleep_ids):
+            logger.info("Each subject has a single session: `subjects` has no effect.")
 
         # Merge all hypnograms into a single MultiIndexed dataframe
         ref = pd.concat(pd.concat({s: h.as_int()}, names=["sleep_id"]) for s, h in ref_hyps.items())
@@ -259,6 +315,7 @@ class EpochByEpochAgreement:
         # Set attributes
         self._data = data
         self._sleep_ids = sleep_ids
+        self._subjects = subjects
         self._ref_hyps = ref_hyps
         self._obs_hyps = obs_hyps
         self._ref_scorer = ref_hyps[sleep_ids[0]].scorer
@@ -270,10 +327,11 @@ class EpochByEpochAgreement:
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
         s = "s" if self.n_sessions > 1 else ""
+        subjects = f" from {self.n_subjects} subjects" if self._subjects is not None else ""
         return (
             f"<EpochByEpochAgreement | Observed hypnogram{s} scored by {self.obs_scorer} "
             f"evaluated against reference hypnogram{s} scored by {self.ref_scorer}, "
-            f"{self.n_sessions} sleep session{s}>\n"
+            f"{self.n_sessions} sleep session{s}{subjects}>\n"
             " - Use `.get_agreement()` to get agreement measures as a pandas DataFrame or Series\n"
             " - Use `.plot_hypnograms()` to plot two overlaid hypnograms\n"
             "See the online documentation for more details."
@@ -294,6 +352,15 @@ class EpochByEpochAgreement:
         return len(self._sleep_ids)
 
     @property
+    def n_subjects(self):
+        """The number of unique subjects (equal to :py:attr:`n_sessions` when ``subjects`` was not
+        given).
+
+        .. versionadded:: 0.8.1
+        """
+        return self.n_sessions if self._subjects is None else self._subjects.nunique()
+
+    @property
     def ref_scorer(self):
         """The name of the reference scorer."""
         return self._ref_scorer
@@ -302,6 +369,19 @@ class EpochByEpochAgreement:
     def obs_scorer(self):
         """The name of the observed scorer."""
         return self._obs_scorer
+
+    def _mean_by_subject(self, wide):
+        """Average per-session values within each subject.
+
+        ``wide`` is a DataFrame with one row per session (indexed by ``sleep_id``) and one column
+        per quantity. When ``subjects`` was given, the rows of the same subject are averaged
+        (ignoring NaN), and the result has one row per subject. The rows of the result are the
+        units that are resampled by the bootstrap of :py:meth:`summary` and
+        :py:meth:`get_confusion_matrix_proportional`. Otherwise, ``wide`` is returned unchanged.
+        """
+        if self._subjects is None:
+            return wide
+        return wide.groupby(self._subjects.reindex(wide.index)).mean()
 
     @staticmethod
     def multi_scorer(df, scorers):
@@ -841,7 +921,15 @@ class EpochByEpochAgreement:
         than being counted as zeros. The number of contributing sessions is returned in the
         ``n_sessions`` column.
 
+        When ``subjects`` was given (several nights per subject), the per-session percentages
+        are first averaged within each subject, and the mean, SD and CI are then computed across
+        subjects, which are the independent units. The number of contributing subjects is
+        returned in an additional ``n_subjects`` column.
+
         .. versionadded:: 0.8.0
+
+        .. versionchanged:: 0.8.1
+            Support for several nights per subject (``subjects``).
 
         Parameters
         ----------
@@ -849,7 +937,8 @@ class EpochByEpochAgreement:
             Method used to compute the confidence interval of the group mean of each cell.
 
             * ``'boot'`` (default) — non-parametric bootstrap across sessions (i.e., sessions are
-              resampled with replacement, a "participant bootstrap"). The same resampled sessions
+              resampled with replacement, a "participant bootstrap"), or across subjects when
+              ``subjects`` was given. The same resampled sessions
               are used for all cells, so that each bootstrapped matrix remains row-normalized.
               Replicates in which a reference stage is absent from every resampled session are
               undefined and are excluded from the percentiles of that row.
@@ -884,9 +973,9 @@ class EpochByEpochAgreement:
             If ``formatted=False``, a long-format :py:class:`~pandas.DataFrame` with a
             :py:class:`~pandas.MultiIndex` of (reference stage, observed stage) pairs as rows and
             columns ``mean``, ``std``, ``ci_lower``, ``ci_upper`` (the latter two only when
-            ``ci_method`` is not None), and ``n_sessions``. All values except ``n_sessions`` are
-            percentages (0-100). Use e.g. ``conf_matr["mean"].unstack()`` to get the mean matrix
-            in square format.
+            ``ci_method`` is not None), ``n_sessions`` and, when ``subjects`` was given,
+            ``n_subjects``. All values except the counts are percentages (0-100). Use e.g.
+            ``conf_matr["mean"].unstack()`` to get the mean matrix in square format.
 
             If ``formatted=True``, a square :py:class:`~pandas.DataFrame` with stages from the
             reference scorer as index and stages from the observed scorer as columns, where each
@@ -923,8 +1012,9 @@ class EpochByEpochAgreement:
         ... ]  # doctest: +SKIP
         '31.6 (9.3) [26.6, 38.0]'
         """
-        assert self.n_sessions > 1, (
-            "A proportional confusion matrix can not be computed with only one hypnogram pair."
+        assert self.n_subjects > 1, (
+            "A proportional confusion matrix can not be computed with only one hypnogram pair "
+            "or one subject."
         )
         assert ci_method is None or ci_method in ("boot", "param"), (
             "`ci_method` must be one of 'boot', 'param', or None"
@@ -945,17 +1035,19 @@ class EpochByEpochAgreement:
         # 0 / 0 = NaN, and are deliberately kept as NaN (unlike sklearn's normalize="true", which
         # zero-fills).
         props = 100 * cms.div(cms.sum(axis=1), axis=0)
-        # Stack into a 3D array of shape (n_sessions, n_stages, n_stages)
-        arr = np.stack(
-            [
-                grp.droplevel("sleep_id").loc[stages, stages].to_numpy(dtype=float)
-                for _, grp in props.groupby(level="sleep_id", sort=False)
-            ]
+        # Flatten the stage dimensions into one row per session, each column being one cell of
+        # the matrix (shape (n_sessions, n_stages * n_stages))
+        wide = pd.DataFrame.from_dict(
+            {
+                sid: grp.droplevel("sleep_id").loc[stages, stages].to_numpy(dtype=float).ravel()
+                for sid, grp in props.groupby(level="sleep_id", sort=False)
+            },
+            orient="index",
         )
-        n_stages = len(stages)
-        n_cells = n_stages * n_stages
-        # Flatten stage dimensions so that each column is one cell of the matrix
-        arr2d = arr.reshape(self.n_sessions, n_cells)
+        n_sessions_valid = wide.notna().sum().to_numpy()
+        # With several nights per subject, average within subject first: the rows are then the
+        # subjects, i.e. the independent units for the mean, SD, CI and bootstrap
+        arr2d = self._mean_by_subject(wide).to_numpy(dtype=float)
         n_valid = np.sum(~np.isnan(arr2d), axis=0)
 
         with warnings.catch_warnings():
@@ -984,7 +1076,9 @@ class EpochByEpochAgreement:
         if ci_method is not None:
             out["ci_lower"] = ci_lower
             out["ci_upper"] = ci_upper
-        out["n_sessions"] = n_valid
+        out["n_sessions"] = n_sessions_valid
+        if self._subjects is not None:
+            out["n_subjects"] = n_valid
         if not formatted:
             return out
 
@@ -1012,7 +1106,10 @@ class EpochByEpochAgreement:
         -------
         sstats : :py:class:`pandas.DataFrame`
             A :py:class:`~pandas.DataFrame` with sleep statistics as columns and two rows for each
-            individual (one for reference scorer and another for observed scorer).
+            session (one for reference scorer and another for observed scorer), indexed by
+            ``(scorer, sleep_id)``. When ``subjects`` was given, a ``subject_id`` level is inserted
+            between the two, i.e. ``(scorer, subject_id, sleep_id)``, so that
+            :py:class:`SleepStatsAgreement` can account for the repeated measures.
         """
         # Get all sleep statistics
         ref_sstats = pd.DataFrame({s: h.sleep_statistics() for s, h in self._ref_hyps.items()})
@@ -1028,6 +1125,11 @@ class EpochByEpochAgreement:
         # Remove the MultiIndex if just one session being evaluated
         if self.n_sessions == 1:
             sstats = sstats.reset_index(level=1, drop=True)
+        elif self._subjects is not None:
+            # Insert the subject level: (scorer, subject_id, sleep_id)
+            subj = sstats.index.get_level_values("sleep_id").map(self._subjects)
+            sstats = sstats.set_index(pd.Index(subj, name="subject_id"), append=True)
+            sstats = sstats.reorder_levels(["scorer", "subject_id", "sleep_id"])
         return sstats
 
     def plot_hypnograms(
@@ -1131,7 +1233,7 @@ class EpochByEpochAgreement:
             will include agreement scores for each sleep stage, derived from one-vs-rest metrics.
         ci_method : str or None
             Method used to compute a confidence interval of the mean of each metric across
-            sessions.
+            sessions (or across subjects, see below).
 
             * ``None`` (default) — no confidence interval is computed.
             * ``'boot'`` — non-parametric bootstrap across sessions. The same resampled sessions
@@ -1173,6 +1275,14 @@ class EpochByEpochAgreement:
             When ``ci_method`` is not ``None``, two extra columns ``ci_lower`` and ``ci_upper``
             are appended. They are left missing for ``support``, which is not an agreement
             score.
+
+            When ``subjects`` was given (several nights per subject), the per-session scores are
+            first averaged within each subject, and the descriptive statistics and the bootstrap
+            are computed across subjects (the independent units) rather than across sessions.
+            ``support`` is then the mean number of epochs per night of each subject.
+
+            .. versionchanged:: 0.8.1
+                Support for several nights per subject (``subjects``).
 
         Examples
         --------
@@ -1222,8 +1332,8 @@ class EpochByEpochAgreement:
         precision     28.26     22.50     34.03
         f1            27.97     22.60     33.13
         """
-        assert self.n_sessions > 1, (
-            "Summary scores can not be computed with only one hypnogram pair."
+        assert self.n_subjects > 1, (
+            "Summary scores can not be computed with only one hypnogram pair or one subject."
         )
         assert isinstance(by_stage, bool), "`by_stage` must be True or False"
         assert ci_method is None or ci_method == "boot", "`ci_method` must be 'boot' or None"
@@ -1242,36 +1352,43 @@ class EpochByEpochAgreement:
 
         # Merge default and user kwargs
         agg_kwargs = {"func": [mad, "mean", "std", "min", "median", "max"]} | kwargs
+        # Reshape so that rows are sessions and columns are the quantities to summarize. With
+        # several nights per subject, the rows are then averaged within subject, so that the
+        # descriptive statistics and the bootstrap are computed across subjects.
+        if by_stage:
+            wide = self._agreement_bystage.unstack("stage")  # columns are (metric, stage)
+        else:
+            wide = self._agreement
+        wide = self._mean_by_subject(wide)
         if by_stage:
             summary = (
-                self._agreement_bystage.groupby("stage")
+                wide.stack("stage", future_stack=True)
+                .groupby("stage")
                 .agg(**agg_kwargs)
                 .stack(level=0, future_stack=True)
                 .rename_axis(["stage", "metric"])
             )
         else:
-            summary = self._agreement.agg(**agg_kwargs).T.rename_axis("metric")
+            summary = wide.agg(**agg_kwargs).T.rename_axis("metric")
         if ci_method is None:
             return summary
 
-        if boot_method == "BCa" and self.n_sessions < 20:
+        if boot_method == "BCa" and self.n_subjects < 20:
+            unit = "sessions" if self._subjects is None else "subjects"
             warnings.warn(
-                "The BCa bootstrap interval can be unstable with few sessions "
-                f"(n_sessions={self.n_sessions}). Consider "
+                f"The BCa bootstrap interval can be unstable with few {unit} "
+                f"(n_{unit}={self.n_subjects}). Consider "
                 "bootstrap_kwargs={'method': 'percentile'} or the parametric "
                 "summary(func=['mean', 'sem']) instead.",
                 RuntimeWarning,
                 stacklevel=2,
             )
-        # Reshape so that rows are sessions and columns are the quantities to summarize, which is
-        # what `_bootstrap_ci_mean` expects: sessions are the resampling unit and the same
-        # resampled sessions are used for every column.
+        # The rows of `wide` (sessions, or subjects) are the resampling unit of
+        # `_bootstrap_ci_mean`, and the same resampled rows are used for every column.
         if by_stage:
-            wide = self._agreement_bystage.unstack("stage")
             # Columns are (metric, stage); reorder to match the (stage, metric) summary index
             ci_index = wide.columns.swaplevel().rename(["stage", "metric"])
         else:
-            wide = self._agreement
             ci_index = pd.Index(wide.columns, name="metric")
         arr2d = wide.to_numpy(dtype=float)
         with warnings.catch_warnings():
@@ -1337,6 +1454,16 @@ class SleepStatsAgreement:
         Name of the reference scorer. Ignored when ``obs_data`` is ``None``.
     obs_scorer : str
         Name of the observed scorer. Ignored when ``obs_data`` is ``None``.
+    subjects : None, dict, or array-like
+        Subject of each session, for datasets with several nights per subject (repeated
+        measures). Either a ``dict`` (or :py:class:`pandas.Series`) mapping each session ID (the
+        index of ``ref_data``) to a subject ID, or an array-like with one subject ID per row of
+        ``ref_data``, in the same order. Not needed when ``ref_data`` is the output of
+        :py:meth:`EpochByEpochAgreement.get_sleep_stats` with a ``subject_id`` level: the subjects
+        are then read from the index. If ``None`` (default), each session is treated as an
+        independent subject. See the Notes for the methods used with repeated measures.
+
+        .. versionadded:: 0.8.1
     confidence : float
         Confidence level (between 0 and 1) for the confidence intervals applied to bias and limits
         of agreement. Default is 0.95 (i.e., 95%). The same level is used for both parametric and
@@ -1394,12 +1521,60 @@ class SleepStatsAgreement:
     separately for each sleep statistic, with a warning, so the number of sessions can differ
     between statistics.
 
+    **Several nights per subject.** When ``subjects`` is given and at least one subject has
+    several nights, the nights of a subject are not independent, and the following
+    repeated-measures methods are used instead of the standard ones (which would give
+    confidence intervals and p-values that are too small):
+
+    * The variance of the differences is decomposed into a between-subject and a within-subject
+      component with a one-way random-effects ANOVA (Bland & Altman 2007, the case where the true
+      value varies between the repeated measurements), which handles unequal numbers of nights per
+      subject. The limits of agreement are ``bias ± 1.96 × sd_total``, where ``sd_total`` is the
+      SD of a single new difference, from a new night of a new subject (see
+      :py:attr:`variance_components`). The bias is the mean of all differences.
+    * The parametric confidence intervals of the bias and of the limits of agreement use the
+      model-based standard error of the bias (with ``n_subjects - 1`` degrees of freedom) and the
+      MOVER method of Zou (2013) for the limits of agreement. The same applies to the half-width
+      of the constant LoA around a regression bias line, and to the Euser LoA slope.
+    * The regressions behind the proportional-bias and heteroscedasticity assumption tests, and
+      behind the regression bias and LoA, are linear mixed models with a random intercept per
+      subject (fitted with `statsmodels <https://www.statsmodels.org/>`_, which must be
+      installed: ``pip install yasa[stats]``). The residuals are taken from the fixed effects
+      only, so that they describe a new night of a new subject. The confidence intervals of the
+      regression coefficients are Wald intervals with a ``t(n_subjects - 2)`` quantile, whatever
+      ``ci_method`` is: a bootstrap over a handful of subjects is too narrow for a slope.
+    * The bootstrap of the bias, limits of agreement, LoA half-width and Euser slope resamples
+      subjects rather than nights (cluster bootstrap).
+    * The normality test (Shapiro-Wilk) is applied to all differences as usual; its p-value is
+      approximate under clustering, but the dual criterion with the skewness and kurtosis gates
+      limits the consequences.
+
+    This follows Myles & Cui (2007), who advocate random-effects models for Bland-Altman
+    analyses of repeated measures, and Parker et al. (2016). Averaging the nights of each subject
+    before the analysis is not an alternative: the bias would be unchanged but the limits of
+    agreement would be too narrow, because averaging removes part of the night-to-night error.
+
     References
     ----------
     .. [Menghini2021] Menghini, L., Cellini, N., Goldstone, A., Baker, F. C., & de Zambotti, M.
                       (2021). A standardized framework for testing the performance of sleep-tracking
                       technology: step-by-step guidelines and open-source code. SLEEP, 44(2),
                       zsaa170. https://doi.org/10.1093/sleep/zsaa170
+    .. [BlandAltman2007] Bland, J. M., & Altman, D. G. (2007). Agreement between methods of
+                         measurement with multiple observations per individual. Journal of
+                         Biopharmaceutical Statistics, 17(4), 571-582.
+                         https://doi.org/10.1080/10543400701329422
+    .. [Zou2013] Zou, G. Y. (2013). Confidence interval estimation for the Bland-Altman limits of
+                 agreement with multiple observations per individual. Statistical Methods in
+                 Medical Research, 22(6), 630-642. https://doi.org/10.1177/0962280211402548
+    .. [Parker2016] Parker, R. A., Weir, C. J., Rubio, N., et al. (2016). Application of mixed
+                    effects limits of agreement in the presence of multiple sources of variability:
+                    exemplar from the comparison of several devices to measure respiratory rate in
+                    COPD patients. PLoS ONE, 11(12), e0168321.
+                    https://doi.org/10.1371/journal.pone.0168321
+    .. [MylesCui2007] Myles, P. S., & Cui, J. (2007). Using the Bland-Altman method to measure
+                      agreement with repeated measures. British Journal of Anaesthesia, 99(3),
+                      309-311. https://doi.org/10.1093/bja/aem214
 
     Examples
     --------
@@ -1460,6 +1635,21 @@ class SleepStatsAgreement:
     3  56.6  475.2  117.5
     4  70.6  536.8   66.5
 
+    With several nights per subject, pass the subject of each night to
+    :py:class:`EpochByEpochAgreement` (or directly to this class with ``subjects``). Here, 4
+    subjects with 3 nights each:
+
+    >>> ref_hyps = [yasa.simulate_hypnogram(tib=480, scorer="PSG", seed=i) for i in range(12)]
+    >>> obs_hyps = [h.simulate_similar(scorer="Device", seed=i) for i, h in enumerate(ref_hyps)]
+    >>> subjects = [f"S{i // 3}" for i in range(12)]
+    >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps, subjects=subjects)
+    >>> ssa = yasa.SleepStatsAgreement(ebe.get_sleep_stats())  # doctest: +SKIP
+    >>> ssa.variance_components.loc[["TST", "WASO", "N3"]].round(1)  # doctest: +SKIP
+                sd_between  sd_within  sd_total  n_subjects  n_sessions
+    sleep_stat
+    TST                0.0       55.0      55.0           4          12
+    WASO               0.0       56.8      56.8           4          12
+    N3                 6.8       41.5      42.0           4          12
     """
 
     _bias_method_opts = ("param", "regr", "auto")
@@ -1479,6 +1669,7 @@ class SleepStatsAgreement:
         *,
         ref_scorer="Reference",
         obs_scorer="Observed",
+        subjects=None,
         confidence=0.95,
         alpha=0.05,
         effect_size_gates=None,
@@ -1491,14 +1682,27 @@ class SleepStatsAgreement:
 
         assert isinstance(ref_data, pd.DataFrame), "`ref_data` must be a pandas DataFrame"
         if obs_data is None:
-            # Output of EpochByEpochAgreement.get_sleep_stats(): (scorer, session) MultiIndex
-            assert ref_data.index.nlevels == 2, (
-                "`ref_data` must have a (scorer, session) MultiIndex when `obs_data` is None"
+            # Output of EpochByEpochAgreement.get_sleep_stats(): (scorer, session) MultiIndex, or
+            # (scorer, subject, session) when it was given the subject of each session
+            assert ref_data.index.nlevels in (2, 3), (
+                "`ref_data` must have a (scorer, session) or (scorer, subject, session) MultiIndex "
+                "when `obs_data` is None"
             )
             scorers = ref_data.index.get_level_values(0).unique().tolist()
             assert len(scorers) == 2, f"`ref_data` must contain exactly two scorers, got {scorers}"
             ref_scorer, obs_scorer = scorers
             ref_data, obs_data = ref_data.loc[ref_scorer], ref_data.loc[obs_scorer]
+            if ref_data.index.nlevels == 2:
+                assert subjects is None, (
+                    "`subjects` must be None when `ref_data` already has a subject level"
+                )
+                assert ref_data.index.equals(obs_data.index), (
+                    "the (subject, session) index must be identical for the two scorers"
+                )
+                subjects = pd.Series(
+                    ref_data.index.get_level_values(0), index=ref_data.index.get_level_values(1)
+                )
+                ref_data, obs_data = ref_data.droplevel(0), obs_data.droplevel(0)
         assert isinstance(obs_data, pd.DataFrame), "`obs_data` must be a pandas DataFrame"
         assert np.array_equal(ref_data.index, obs_data.index), (
             "`ref_data` and `obs_data` index values must be identical"
@@ -1537,6 +1741,19 @@ class SleepStatsAgreement:
         session_key = "session_id" if ref_data.index.name is None else ref_data.index.name
         ref_data, obs_data = ref_data.rename_axis(session_key), obs_data.rename_axis(session_key)
 
+        # Subject of each session (repeated measures), as a Series indexed by session, or None.
+        # The repeated-measures methods are only used when at least one subject has several
+        # sessions; otherwise the sessions are independent and the standard methods apply.
+        subjects = _subjects_to_series(subjects, ref_data.index)
+        repeated = subjects is not None and subjects.nunique() < subjects.size
+        if subjects is not None and not repeated:
+            logger.warning(
+                "Each subject has a single session: `subjects` has no effect and the sessions are "
+                "treated as independent."
+            )
+        if repeated:
+            is_statsmodels_installed()
+
         # Reshape to long format DataFrame with 2 columns (observed, reference) and MultiIndex
         data = (
             pd.concat([obs_data, ref_data], keys=[obs_scorer, ref_scorer], names=["scorer"])
@@ -1545,6 +1762,9 @@ class SleepStatsAgreement:
             .rename_axis(columns=None)
             .sort_index()
         )
+        if subjects is not None:
+            data["subject_id"] = data.index.get_level_values(session_key).map(subjects).to_numpy()
+        subj_col = "subject_id" if repeated else None
 
         # Remove sessions with a missing value in either scorer, separately for each sleep stat
         # (e.g. Lat_REM is NaN for a night without REM sleep)
@@ -1567,40 +1787,96 @@ class SleepStatsAgreement:
         n_sessions = data.index.get_level_values(session_key).nunique()
         n = grouper.size()
 
+        def _vc_frame(col):
+            """Variance components of column ``col`` (one-way ANOVA by subject), per sleep stat."""
+            return grouper.apply(
+                lambda df: pd.Series(
+                    self._variance_components(
+                        df[col].to_numpy(), None if subj_col is None else df[subj_col].to_numpy()
+                    )
+                )
+            )
+
+        def _regr_cols(col):
+            """Columns passed to the regression of ``col`` on the reference values."""
+            return [ref_scorer, col] + ([] if subj_col is None else [subj_col])
+
         ########################################################################
         # Generate parametric Bias and LoA for all sleep stats
         ########################################################################
-        # Parametric Bias
+        # Parametric Bias: mean difference
         param_vals = grouper["difference"].mean().to_frame("bias_mean")
+        # SD of a single new difference. Without repeated measures, this is the sample SD. With
+        # several sessions per subject, it is the total SD from the one-way ANOVA decomposition
+        # into between- and within-subject variance (Bland & Altman 2007).
+        vc_diff = _vc_frame("difference")
+        sd_diff = np.sqrt(vc_diff["var_total"])
         # Parametric LoA
-        param_vals["loa_lower"], param_vals["loa_upper"] = zip(
-            *grouper["difference"].apply(self._arr_to_loa, agreement=agreement), strict=True
-        )
+        param_vals["loa_lower"] = param_vals["bias_mean"] - agreement * sd_diff
+        param_vals["loa_upper"] = param_vals["bias_mean"] + agreement * sd_diff
 
         ########################################################################
         # Generate standard CIs for parametric Bias and LoA for all sleep stats
         ########################################################################
-        # Get critical t and standard error used to calculate parametric CIs for parametric Bias/LoA
-        t_param = pd.Series(sps.t.ppf((1 + confidence) / 2, n - 1), index=n.index)
-        sem = grouper["difference"].sem(ddof=1)
-        # Parametric CIs for parametric Bias and LoA
-        param_ci = pd.DataFrame(
-            {
-                "bias_mean-lower": param_vals["bias_mean"] - sem * t_param,
-                "bias_mean-upper": param_vals["bias_mean"] + sem * t_param,
-                "loa_lower-lower": param_vals["loa_lower"] - sem * t_param * np.sqrt(3),
-                "loa_lower-upper": param_vals["loa_lower"] + sem * t_param * np.sqrt(3),
-                "loa_upper-lower": param_vals["loa_upper"] - sem * t_param * np.sqrt(3),
-                "loa_upper-upper": param_vals["loa_upper"] + sem * t_param * np.sqrt(3),
-            }
-        )
+        if repeated:
+            # SE of the grand mean difference under the random-intercept model:
+            # Var(mean) = var_between * sum(m_i^2) / N^2 + var_within / N, with m_i the number of
+            # sessions of subject i and N the total number of sessions (Zou 2013). The critical t
+            # has n_subjects - 1 degrees of freedom.
+            n_subj = vc_diff["n_subjects"]
+            se_bias = np.sqrt(
+                vc_diff["var_between"] * vc_diff["sum_m2"] / n**2 + vc_diff["var_within"] / n
+            )
+            t_param = pd.Series(sps.t.ppf((1 + confidence) / 2, n_subj - 1), index=n.index)
+            bias_lower = param_vals["bias_mean"] - se_bias * t_param
+            bias_upper = param_vals["bias_mean"] + se_bias * t_param
+            # MOVER CI of the LoA (Zou 2013): combines the CI of the bias with the chi-square CI
+            # of the total variance, itself a MOVER combination of the two mean squares.
+            var_lower, var_upper = self._variance_ci(vc_diff, confidence)
+            loa_ci = self._mover_loa_ci(
+                param_vals["bias_mean"],
+                bias_lower,
+                bias_upper,
+                sd_diff,
+                np.sqrt(var_lower),
+                np.sqrt(var_upper),
+                agreement,
+            )
+            param_ci = pd.DataFrame(
+                {
+                    "bias_mean-lower": bias_lower,
+                    "bias_mean-upper": bias_upper,
+                    "loa_lower-lower": loa_ci[0],
+                    "loa_lower-upper": loa_ci[1],
+                    "loa_upper-lower": loa_ci[2],
+                    "loa_upper-upper": loa_ci[3],
+                }
+            )
+        else:
+            # Get critical t and standard error used to calculate parametric CIs (Bland & Altman
+            # 1999): SE of the bias = SD / sqrt(n), SE of a LoA = sqrt(3) * SD / sqrt(n)
+            t_param = pd.Series(sps.t.ppf((1 + confidence) / 2, n - 1), index=n.index)
+            se_bias = grouper["difference"].sem(ddof=1)
+            param_ci = pd.DataFrame(
+                {
+                    "bias_mean-lower": param_vals["bias_mean"] - se_bias * t_param,
+                    "bias_mean-upper": param_vals["bias_mean"] + se_bias * t_param,
+                    "loa_lower-lower": param_vals["loa_lower"] - se_bias * t_param * np.sqrt(3),
+                    "loa_lower-upper": param_vals["loa_lower"] + se_bias * t_param * np.sqrt(3),
+                    "loa_upper-lower": param_vals["loa_upper"] - se_bias * t_param * np.sqrt(3),
+                    "loa_upper-upper": param_vals["loa_upper"] + se_bias * t_param * np.sqrt(3),
+                }
+            )
 
         ########################################################################
         # Generate regression/modeled (slope and intercept) Bias and LoA for all sleep stats
         ########################################################################
-        # Run regression used to (a) model bias and (b) test for proportional/constant bias
-        bias_regr = grouper[[ref_scorer, "difference"]].apply(self._linregr_dict).apply(pd.Series)
-        # Get absolute residuals from this regression bc they are used in the next regression
+        # Run regression used to (a) model bias and (b) test for proportional/constant bias. With
+        # repeated measures, this is a random-intercept mixed model (see `_regress`).
+        bias_regr = grouper[_regr_cols("difference")].apply(self._linregr_dict).apply(pd.Series)
+        # Get absolute residuals from this regression bc they are used in the next regression.
+        # With a mixed model these are the marginal residuals (from the fixed effects only), so
+        # that they describe the deviation of a new night of a new subject from the bias line.
         idx = data.index.get_level_values("sleep_stat")
         slopes = bias_regr.loc[idx, "slope"].to_numpy()
         intercepts = bias_regr.loc[idx, "intercept"].to_numpy()
@@ -1608,17 +1884,28 @@ class SleepStatsAgreement:
         data["residuals"] = data["difference"].to_numpy() - predicted_values
         data["residuals_abs"] = data["residuals"].abs()
         # Run regression used to (a) model LoA and (b) test for heteroscedasticity/homoscedasticity
-        loa_regr = grouper[[ref_scorer, "residuals_abs"]].apply(self._linregr_dict).apply(pd.Series)
+        loa_regr = grouper[_regr_cols("residuals_abs")].apply(self._linregr_dict).apply(pd.Series)
         # Stack the two regression dataframes together
         regr = pd.concat({"bias": bias_regr, "loa": loa_regr}, axis=0)
 
         ########################################################################
         # Generate parametric CIs for regression/modeled Bias and LoA for all sleep stats
         ########################################################################
-        # Get critical t used used to calculate parametric CIs for regression Bias/LoA
-        # dof=n-2 for regression; align the per-stat t values with the stacked (bias/loa) index
+        # Critical value for the regression CIs: t with dof=n-2 for OLS. For the Wald CIs of the
+        # mixed model, a t with dof=n_subjects-2 instead of the normal quantile: it accounts for
+        # the estimated variance components and restores the nominal coverage with few subjects
+        # (checked by simulation; the normal quantile covers ~90% with 8-20 subjects). Aligned
+        # with the stacked (bias/loa) index.
         t_regr = pd.Series(sps.t.ppf((1 + confidence) / 2, n - 2), index=n.index)
-        t_stacked = t_regr.reindex(regr.index.get_level_values("sleep_stat")).to_numpy()
+        t_mixed = pd.Series(
+            sps.t.ppf((1 + confidence) / 2, vc_diff["n_subjects"] - 2), index=n.index
+        )
+        stacked_stats = regr.index.get_level_values("sleep_stat")
+        t_stacked = np.where(
+            regr["method"].to_numpy() == "mixed",
+            t_mixed.reindex(stacked_stats).to_numpy(),
+            t_regr.reindex(stacked_stats).to_numpy(),
+        )
         # Parametric CIs for modeled Bias and LoA
         regr_ci = pd.DataFrame(
             {
@@ -1631,11 +1918,18 @@ class SleepStatsAgreement:
         # Constant LoA around the regression bias line: bias_i ± agreement × SD of the residuals
         # of the bias regression (Menghini et al. 2021, eq. 2). Used when the bias is proportional
         # but the differences are homoscedastic.
-        param_vals["loa_halfwidth"] = agreement * grouper["residuals"].std(ddof=1)
-        # Parametric CI: the SE of a standard deviation is ~ SD / sqrt(2n) (Bland & Altman 1999)
-        halfwidth_se = param_vals["loa_halfwidth"] / np.sqrt(2 * n)
-        param_ci["loa_halfwidth-lower"] = param_vals["loa_halfwidth"] - halfwidth_se * t_regr
-        param_ci["loa_halfwidth-upper"] = param_vals["loa_halfwidth"] + halfwidth_se * t_regr
+        vc_resid = _vc_frame("residuals")
+        param_vals["loa_halfwidth"] = agreement * np.sqrt(vc_resid["var_total"])
+        if repeated:
+            # Chi-square (MOVER) CI of the total variance of the residuals
+            var_lower, var_upper = self._variance_ci(vc_resid, confidence)
+            param_ci["loa_halfwidth-lower"] = agreement * np.sqrt(var_lower)
+            param_ci["loa_halfwidth-upper"] = agreement * np.sqrt(var_upper)
+        else:
+            # Parametric CI: the SE of a standard deviation is ~ SD / sqrt(2n) (Bland & Altman 1999)
+            halfwidth_se = param_vals["loa_halfwidth"] / np.sqrt(2 * n)
+            param_ci["loa_halfwidth-lower"] = param_vals["loa_halfwidth"] - halfwidth_se * t_regr
+            param_ci["loa_halfwidth-upper"] = param_vals["loa_halfwidth"] + halfwidth_se * t_regr
 
         ########################################################################
         # Log-transform analysis (Euser et al. 2008)
@@ -1677,24 +1971,32 @@ class SleepStatsAgreement:
                 data.loc[is_log, ref_scorer]
             )
             for stat in log_transform_stats:
-                log_d = data.loc[stat, "log_difference"].to_numpy()
-                sd = np.std(log_d, ddof=1)
-                # t critical value for the parametric slope CI (Bland & Altman 1999).
-                t_log = sps.t.ppf((1 + confidence) / 2, n[stat] - 1)
-                # SE of a limit of agreement (Bland & Altman 1999): sqrt(3 * SD^2 / n). It is
-                # already on the scale of z = agreement * SD, so it is added to z directly, as in
-                # the reference pipeline of Menghini et al. (2021).
-                se_z = np.sqrt(sd**2 * 3 / n[stat])
-                # Point estimate: back-transform SD of log-ratios to a proportional slope.
+                sub = data.loc[stat]
+                vc = self._variance_components(
+                    sub["log_difference"].to_numpy(),
+                    None if subj_col is None else sub[subj_col].to_numpy(),
+                )
+                # SD of the log-ratios (total SD with repeated measures)
+                sd = np.sqrt(vc["var_total"])
+                if repeated:
+                    # Chi-square (MOVER) CI of the total variance, converted to SD units
+                    var_lower, var_upper = self._variance_ci(vc, confidence)
+                    sd_lower, sd_upper = np.sqrt(var_lower), np.sqrt(var_upper)
+                else:
+                    # t critical value for the parametric slope CI (Bland & Altman 1999).
+                    t_log = sps.t.ppf((1 + confidence) / 2, n[stat] - 1)
+                    # SE of a limit of agreement (Bland & Altman 1999): sqrt(3 * SD^2 / n). It is
+                    # already on the scale of z = agreement * SD, so it is added to z directly, as
+                    # in the reference pipeline of Menghini et al. (2021). Clamp the lower bound at
+                    # 0 so the slope stays non-negative.
+                    se_z = np.sqrt(sd**2 * 3 / n[stat])
+                    sd_lower = max(sd - t_log * se_z / agreement, 0.0)
+                    sd_upper = sd + t_log * se_z / agreement
+                # Point estimate: back-transform SD of log-ratios to a proportional slope, and
+                # back-transform the CI bounds of the SD the same way.
                 loa_log_slope[stat] = self._euser_slope_scalar(sd, agreement)
-                # Parametric CI: back-transform the CI bounds of z (converted to SD units).
-                # Clamp the lower bound at 0 so the slope stays non-negative.
-                loa_log_ci.at[stat, "param_lower"] = self._euser_slope_scalar(
-                    max(sd - t_log * se_z / agreement, 0.0), agreement
-                )
-                loa_log_ci.at[stat, "param_upper"] = self._euser_slope_scalar(
-                    sd + t_log * se_z / agreement, agreement
-                )
+                loa_log_ci.at[stat, "param_lower"] = self._euser_slope_scalar(sd_lower, agreement)
+                loa_log_ci.at[stat, "param_upper"] = self._euser_slope_scalar(sd_upper, agreement)
 
         ########################################################################
         # Test all statistical assumptions
@@ -1707,7 +2009,17 @@ class SleepStatsAgreement:
         def _test_series(res):
             return pd.Series({"statistic": res.statistic, "pvalue": res.pvalue})
 
-        ttest = grouper["difference"].apply(lambda a: _test_series(sps.ttest_1samp(a, 0))).unstack()
+        if repeated:
+            # Test of the bias against zero accounting for the repeated measures: t = bias / SE,
+            # with the model-based SE and n_subjects - 1 degrees of freedom
+            with np.errstate(divide="ignore", invalid="ignore"):
+                t_stat = param_vals["bias_mean"] / se_bias
+            ttest = pd.DataFrame(
+                {"statistic": t_stat, "pvalue": 2 * sps.t.sf(np.abs(t_stat), n_subj - 1)}
+            )
+        else:
+            ttest = grouper["difference"].apply(lambda a: _test_series(sps.ttest_1samp(a, 0)))
+            ttest = ttest.unstack()
         shapiro = grouper["difference"].apply(
             lambda a: (
                 _test_series(sps.shapiro(a))
@@ -1770,8 +2082,7 @@ class SleepStatsAgreement:
             {
                 ("unbiased", "t"): ttest["statistic"],
                 ("unbiased", "pvalue"): ttest["pvalue"],
-                ("unbiased", "cohen_d"): param_vals["bias_mean"]
-                / grouper["difference"].std(ddof=1),
+                ("unbiased", "cohen_d"): param_vals["bias_mean"] / sd_diff,
                 ("unbiased", "passed"): unbiased,
                 ("normal", "W"): shapiro["statistic"],
                 ("normal", "pvalue"): shapiro["pvalue"],
@@ -1814,11 +2125,24 @@ class SleepStatsAgreement:
         ci = pd.concat({"param": ci, "boot": empty_df}, names=["ci_method"], axis=1)
         ci = ci.sort_index(axis=1)  # Sort MultiIndex columns for cleanliness
 
+        # Between-, within-subject and total SD of the differences, per sleep statistic
+        variance_components = pd.DataFrame(
+            {
+                "sd_between": np.sqrt(vc_diff["var_between"]),
+                "sd_within": np.sqrt(vc_diff["var_within"]),
+                "sd_total": sd_diff,
+                "n_subjects": vc_diff["n_subjects"].astype(int),
+                "n_sessions": n,
+            }
+        )
+
         # Set attributes
         self._confidence = confidence
         self._effect_size_gates = gates
         self._bootstrap_kwargs = bootstrap_kwargs
         self._n_sessions = n_sessions
+        self._subjects = subjects
+        self._repeated = repeated
         self._ref_scorer = ref_scorer
         self._obs_scorer = obs_scorer
         self._data = data
@@ -1826,6 +2150,7 @@ class SleepStatsAgreement:
         self._regr = regr
         self._vals = vals
         self._ci = ci
+        self._vc = variance_components
         self._log_transform = log_transform
         self._log_transform_stats = log_transform_stats
         self._loa_log_slope = loa_log_slope
@@ -1847,6 +2172,40 @@ class SleepStatsAgreement:
         return self._n_sessions
 
     @property
+    def n_subjects(self):
+        """The number of unique subjects (equal to :py:attr:`n_sessions` when ``subjects`` was not
+        given).
+
+        .. versionadded:: 0.8.1
+        """
+        return self._n_sessions if self._subjects is None else self._subjects.nunique()
+
+    @property
+    def variance_components(self):
+        """Decomposition of the differences into between- and within-subject variability.
+
+        A :py:class:`pandas.DataFrame` with one row per sleep statistic and columns:
+
+        * ``sd_between`` — SD of the subject-specific mean differences (random intercepts). NaN
+          when ``subjects`` was not given.
+        * ``sd_within`` — SD of the differences within a subject, across nights. NaN when
+          ``subjects`` was not given.
+        * ``sd_total`` — SD of a single new difference, ``sqrt(sd_between² + sd_within²)``, which
+          defines the limits of agreement (``bias ± 1.96 × sd_total``). Without repeated
+          measures, this is the sample SD of the differences.
+        * ``n_subjects`` and ``n_sessions`` — number of subjects and sessions with a valid value.
+
+        The components are estimated with the one-way random-effects ANOVA of Bland & Altman
+        (2007), which handles unequal numbers of nights per subject. Parker et al. (2016)
+        recommend reporting the within-subject and total SD separately, to tell whether the
+        disagreement between scorers comes from stable subject-level offsets or from night-to-night
+        variability.
+
+        .. versionadded:: 0.8.1
+        """
+        return self._vc.copy()
+
+    @property
     def effect_size_gates(self):
         """The effect-size thresholds used together with ``alpha`` in the assumption tests.
 
@@ -1859,7 +2218,8 @@ class SleepStatsAgreement:
         """A long-format :py:class:`pandas.DataFrame` containing all raw sleep statistics from
         ``ref_data`` and ``obs_data``, with a :py:class:`~pandas.MultiIndex` with levels
         ``sleep_stat`` and ``session_id`` (or the original index name from the input data).
-        Columns are the reference and observed scorer names.
+        Columns are the reference and observed scorer names, plus ``subject_id`` when
+        ``subjects`` was given.
         """
         return self._data.drop(
             columns=["difference", "residuals", "residuals_abs", "log_difference"]
@@ -1908,9 +2268,10 @@ class SleepStatsAgreement:
 
     def __repr__(self):
         # TODO v0.8: Keep only the text between < and >
+        subjects = f" from {self.n_subjects} subjects" if self._subjects is not None else ""
         return (
             f"<SleepStatsAgreement | Observed scorer ('{self.obs_scorer}') evaluated against "
-            f"reference scorer ('{self.ref_scorer}'), {self.n_sessions} sleep sessions>\n"
+            f"reference scorer ('{self.ref_scorer}'), {self.n_sessions} sleep sessions{subjects}>\n"
             " - Use `.report()` to get a human-readable summary table\n"
             " - Use `.summary()` to get a numeric dataframe of bias and limits of agreement\n"
             " - Use `.plot_blandaltman()` to get a grid of Bland-Altman plots\n"
@@ -1925,13 +2286,6 @@ class SleepStatsAgreement:
     ############################################################################
 
     @staticmethod
-    def _arr_to_loa(x, agreement):
-        """Return a tuple with lower and upper limits of agreement."""
-        mean = np.mean(x)
-        bound = agreement * np.std(x, ddof=1)
-        return mean - bound, mean + bound
-
-    @staticmethod
     def _euser_slope_scalar(sd, agreement):
         """Euser et al. (2008) antilog LoA slope: 2*(exp(z)-1)/(exp(z)+1), z = agreement * sd.
 
@@ -1944,14 +2298,157 @@ class SleepStatsAgreement:
         return 2.0 * (np.exp(z) - 1.0) / (np.exp(z) + 1.0)
 
     @staticmethod
+    def _variance_components(values, subjects=None):
+        """Decompose the variance of ``values`` into between- and within-subject components.
+
+        One-way random-effects ANOVA with subject as the grouping factor, as recommended by Bland
+        & Altman (2007) for repeated measurements where the true value varies between the
+        occasions (here, the nights). With ``m_i`` values for subject ``i``, ``n`` subjects and
+        ``N = sum(m_i)`` values in total::
+
+            MSW = sum_i sum_j (x_ij - mean_i)^2 / (N - n)      # within-subject mean square
+            MSB = sum_i m_i (mean_i - mean)^2 / (n - 1)        # between-subject mean square
+            m0 = (N - sum_i m_i^2 / N) / (n - 1)               # = m_i for balanced data
+            var_within = MSW
+            var_between = max(0, (MSB - MSW) / m0)
+            var_total = var_between + var_within               # variance of a single new value
+                      = max(MSB / m0 + (1 - 1 / m0) * MSW, MSW)
+
+        ``var_total`` is the variance of a single new value from a new subject, i.e. what the
+        limits of agreement must cover. It is written as ``a * MSB + b * MSW`` so that its
+        chi-square confidence interval can be derived in :py:meth:`_variance_ci`.
+
+        When ``subjects`` is None, or when no subject has more than one value, the sample
+        variance (``ddof=1``) is returned as ``var_total`` (with ``a = 1``, ``b = 0`` and
+        ``N - 1`` degrees of freedom), and the between/within components are NaN.
+
+        Returns
+        -------
+        vc : dict
+            Keys ``var_total``, ``var_between``, ``var_within``, ``msb``, ``msw``, ``a``, ``b``,
+            ``dof_b``, ``dof_w``, ``n_subjects``, ``n_pairs`` and ``sum_m2`` (``sum_i m_i^2``).
+        """
+        values = np.asarray(values, dtype=float)
+        n_pairs = values.size
+        if subjects is not None:
+            _, inverse, counts = np.unique(
+                np.asarray(subjects), return_inverse=True, return_counts=True
+            )
+            n_subjects = counts.size
+        if subjects is None or n_subjects < 2 or n_subjects == n_pairs:
+            var = np.var(values, ddof=1) if n_pairs > 1 else np.nan
+            return {
+                "var_total": var,
+                "var_between": np.nan,
+                "var_within": np.nan,
+                "msb": var,
+                "msw": np.nan,
+                "a": 1.0,
+                "b": 0.0,
+                "dof_b": n_pairs - 1,
+                "dof_w": 0,
+                "n_subjects": n_pairs if subjects is None else n_subjects,
+                "n_pairs": n_pairs,
+                "sum_m2": n_pairs,
+            }
+        grand_mean = values.mean()
+        means = np.bincount(inverse, weights=values) / counts
+        msw = np.sum((values - means[inverse]) ** 2) / (n_pairs - n_subjects)
+        msb = np.sum(counts * (means - grand_mean) ** 2) / (n_subjects - 1)
+        m0 = (n_pairs - np.sum(counts**2) / n_pairs) / (n_subjects - 1)
+        a, b = 1 / m0, 1 - 1 / m0
+        # A negative between-subject estimate (MSB < MSW) is set to zero (Bland & Altman 2007),
+        # so that the total variance is never smaller than the within-subject variance
+        return {
+            "var_total": max(a * msb + b * msw, msw),
+            "var_between": max(0.0, (msb - msw) / m0),
+            "var_within": msw,
+            "msb": msb,
+            "msw": msw,
+            "a": a,
+            "b": b,
+            "dof_b": n_subjects - 1,
+            "dof_w": n_pairs - n_subjects,
+            "n_subjects": n_subjects,
+            "n_pairs": n_pairs,
+            "sum_m2": np.sum(counts**2),
+        }
+
+    @staticmethod
+    def _variance_ci(vc, confidence):
+        """Confidence interval of the total variance ``a * MSB + b * MSW`` of ``vc``.
+
+        Each mean square has an exact chi-square confidence interval. Their linear combination is
+        combined with the MOVER method (method of variance estimates recovery; Zou 2013, eq. 7),
+        which is exact when ``b = 0`` (no repeated measures):
+
+            L = V - sqrt((a * MSB - a * l_B)^2 + (b * MSW - b * l_W)^2)
+            U = V + sqrt((a * u_B - a * MSB)^2 + (b * u_W - b * MSW)^2)
+
+        ``vc`` is a dict of scalars (one statistic) or a DataFrame with one row per statistic
+        (see :py:meth:`_variance_components`). Returns the lower and upper bounds, as arrays.
+        """
+        alpha = 1 - confidence
+        msb, msw = np.asarray(vc["msb"], dtype=float), np.asarray(vc["msw"], dtype=float)
+        a, b = np.asarray(vc["a"], dtype=float), np.asarray(vc["b"], dtype=float)
+        dof_b, dof_w = np.asarray(vc["dof_b"], dtype=float), np.asarray(vc["dof_w"], dtype=float)
+        var = np.asarray(vc["var_total"], dtype=float)  # a * MSB + b * MSW, clipped at MSW
+
+        def _chi2_ci(ms, dof):
+            with np.errstate(divide="ignore", invalid="ignore"):
+                lower = ms * dof / sps.chi2.ppf(1 - alpha / 2, dof)
+                upper = ms * dof / sps.chi2.ppf(alpha / 2, dof)
+            return lower, upper
+
+        l_b, u_b = _chi2_ci(msb, dof_b)
+        l_w, u_w = _chi2_ci(msw, dof_w)
+        # The within term vanishes when b = 0 (no repeated measures): avoid 0 * NaN
+        has_w = b > 0
+        l_w, u_w = np.where(has_w, l_w, 0.0), np.where(has_w, u_w, 0.0)
+        b_msw = np.where(has_w, b * msw, 0.0)
+        # Half-widths of the MOVER interval around the unclipped combination, applied to the
+        # (possibly clipped) point estimate so that the interval always contains it
+        lower = var - np.sqrt((a * msb - a * l_b) ** 2 + (b_msw - b * l_w) ** 2)
+        upper = var + np.sqrt((a * u_b - a * msb) ** 2 + (b * u_w - b_msw) ** 2)
+        return np.maximum(lower, 0.0), upper
+
+    @staticmethod
+    def _mover_loa_ci(bias, bias_lower, bias_upper, sd, sd_lower, sd_upper, agreement):
+        """MOVER confidence intervals of the limits of agreement ``bias ± agreement * sd``.
+
+        Combines the confidence interval of the bias with that of the SD of a single difference
+        (Zou 2013, eq. 10-11). For the upper limit ``U = bias + agreement * sd``::
+
+            U_lower = U - sqrt((bias - bias_lower) ^ 2 + agreement ^ 2(sd - sd_lower) ^ 2)
+            U_upper = U + sqrt((bias_upper - bias) ^ 2 + agreement ^ 2(sd_upper - sd) ^ 2)
+
+        and symmetrically for the lower limit, where a larger SD pushes the limit further down.
+
+        Returns
+        -------
+        lower_lower, lower_upper, upper_lower, upper_upper
+            Bounds of the confidence intervals of the lower and upper limits of agreement.
+        """
+        bias_err_lo, bias_err_hi = bias - bias_lower, bias_upper - bias
+        sd_err_lo, sd_err_hi = agreement * (sd - sd_lower), agreement * (sd_upper - sd)
+        upper, lower = bias + agreement * sd, bias - agreement * sd
+        upper_lower = upper - np.sqrt(bias_err_lo**2 + sd_err_lo**2)
+        upper_upper = upper + np.sqrt(bias_err_hi**2 + sd_err_hi**2)
+        lower_lower = lower - np.sqrt(bias_err_lo**2 + sd_err_hi**2)
+        lower_upper = lower + np.sqrt(bias_err_hi**2 + sd_err_lo**2)
+        return lower_lower, lower_upper, upper_lower, upper_upper
+
+    @staticmethod
     def _linregr_dict(df):
         """
-        A wrapper around :py:func:`scipy.stats.linregress` that returns a dictionary instead of a
-        named tuple. In the normally returned object, ``intercept_stderr`` is an extra field that is
-        not included when converting the named tuple, so this allows it to be included when using
-        something like groupby.
+        A wrapper around :py:meth:`_regress` for use with ``groupby.apply``: the first column of
+        ``df`` is the predictor, the second the response, and the optional third column the
+        subject of each row (repeated measures).
         """
-        return SleepStatsAgreement._linregress(df.iloc[:, 0].to_numpy(), df.iloc[:, 1].to_numpy())
+        subjects = df.iloc[:, 2].to_numpy() if df.shape[1] == 3 else None
+        return SleepStatsAgreement._regress(
+            df.iloc[:, 0].to_numpy(), df.iloc[:, 1].to_numpy(), subjects
+        )
 
     @staticmethod
     def _linregress(x, y):
@@ -1967,6 +2464,7 @@ class SleepStatsAgreement:
                 "pvalue": 1.0,
                 "stderr": np.nan,
                 "intercept_stderr": np.nan,
+                "method": "constant",
             }
         regr = sps.linregress(x, y)
         return {
@@ -1976,6 +2474,57 @@ class SleepStatsAgreement:
             "pvalue": regr.pvalue,
             "stderr": regr.stderr,
             "intercept_stderr": regr.intercept_stderr,
+            "method": "ols",
+        }
+
+    @staticmethod
+    def _regress(x, y, subjects=None):
+        """Regress ``y`` on ``x`` and return a dictionary of the results.
+
+        Without ``subjects`` (or when no subject has more than one observation), this is the
+        ordinary least-squares regression of :py:meth:`_linregress`. With repeated measures, a
+        linear mixed model with a random intercept per subject is fitted instead
+        (:py:class:`statsmodels.regression.mixed_linear_model.MixedLM`, REML), because the OLS
+        p-values treat the correlated nights of a subject as independent observations and are
+        therefore too small. The returned ``slope`` and ``intercept`` are the fixed effects,
+        ``stderr`` and ``intercept_stderr`` their standard errors, and ``pvalue`` the Wald p-value
+        of the slope. ``rvalue`` is the Pearson correlation of ``x`` and ``y`` across all
+        observations, used as a descriptive effect size. If the mixed model can not be fitted
+        (e.g. a singular design), the OLS results are returned with a warning.
+        """
+        if np.ptp(x) == 0 or subjects is None:
+            return SleepStatsAgreement._linregress(x, y)
+        subjects = np.asarray(subjects)
+        if np.unique(subjects).size in (1, subjects.size):
+            return SleepStatsAgreement._linregress(x, y)
+        from statsmodels.regression.mixed_linear_model import MixedLM
+
+        exog = np.column_stack([np.ones_like(x, dtype=float), x])
+        try:
+            with warnings.catch_warnings():
+                # Convergence and singular-matrix warnings are common when the between-subject
+                # variance is close to zero (the model then reduces to OLS) and are not
+                # informative here. The result attributes are lazy, so read them in this block.
+                warnings.simplefilter("ignore")
+                res = MixedLM(np.asarray(y, dtype=float), exog, groups=subjects).fit(reml=True)
+                intercept, slope = np.asarray(res.fe_params, dtype=float)
+                intercept_stderr, stderr = np.asarray(res.bse_fe, dtype=float)
+                pvalue = float(np.asarray(res.pvalues)[1])
+        except (np.linalg.LinAlgError, ValueError) as e:  # pragma: no cover
+            logger.warning(f"Mixed model failed ({e}); using ordinary least squares instead.")
+            return SleepStatsAgreement._linregress(x, y)
+        if not np.isfinite([slope, intercept, stderr, intercept_stderr, pvalue]).all():
+            # Boundary solution (zero between-subject variance): the mixed model is equivalent to
+            # OLS, whose standard errors are well defined
+            return SleepStatsAgreement._linregress(x, y)
+        return {
+            "slope": slope,
+            "intercept": intercept,
+            "rvalue": np.corrcoef(x, y)[0, 1],
+            "pvalue": pvalue,
+            "stderr": stderr,
+            "intercept_stderr": intercept_stderr,
+            "method": "mixed",
         }
 
     def _check_sleep_stats(self, sleep_stats):
@@ -2034,6 +2583,15 @@ class SleepStatsAgreement:
         This operates in-place by concatenating bootstrapped CIs to existing parametric CIs.
         Note that parametric CIs are generated by default during init (bc they are quicker).
 
+        With repeated measures, subjects are resampled (cluster bootstrap), and the regression
+        coefficients (``bias_intercept``, ``bias_slope``, ``loa_intercept``, ``loa_slope``) are
+        not bootstrapped: their "boot" CIs are the Wald CIs of the mixed model. A case bootstrap
+        of 8-20 subjects does not reproduce the tails of the sampling distribution of a slope,
+        and covers the true value ~85-89% of the time at the 95% level (simulation), whereas the
+        Wald CI with a t(n_subjects - 2) quantile is close to nominal. The bootstrap is kept for
+        the bias, LoA, LoA half-width and Euser slope, where normality matters and the replicates
+        reproduce the point estimates exactly.
+
         Parameters
         ----------
         sleep_stats : list
@@ -2056,15 +2614,33 @@ class SleepStatsAgreement:
             "paired": True,  # should stay True, especially if method is BCa
         } | self._bootstrap_kwargs
 
-        def get_vars(ref_arr, diff_arr, rabs_arr):
-            """A function to get all variables at once and avoid redundant stats.bootstrap calls."""
+        agreement = self._agreement
+
+        def get_vars(ref_arr, diff_arr, rabs_arr, clusters=None, bias_line=None):
+            """A function to get all variables at once and avoid redundant stats.bootstrap calls.
+
+            ``clusters`` is the subject of each row of the resample (cluster bootstrap), or None.
+            The SD of the differences and of the residuals is then the ANOVA total SD, as in the
+            point estimates. ``bias_line`` is the ``(intercept, slope)`` of the full-sample
+            (mixed-model) bias line with repeated measures: the half-width is then the spread of
+            the resampled nights around the reported line, and the regression coefficients are
+            not bootstrapped (only the bias, LoA and half-width are returned).
+            """
             bias_mean = np.mean(diff_arr)
-            loa_lower, loa_upper = self._arr_to_loa(diff_arr, self._agreement)
+            sd = np.sqrt(self._variance_components(diff_arr, clusters)["var_total"])
+            loa_lower, loa_upper = bias_mean - agreement * sd, bias_mean + agreement * sd
+            if bias_line is not None:
+                bias_inter, bias_slope = bias_line
+                resid = diff_arr - (bias_inter + bias_slope * ref_arr)
+                loa_halfwidth = agreement * np.sqrt(
+                    self._variance_components(resid, clusters)["var_total"]
+                )
+                return bias_mean, loa_lower, loa_upper, loa_halfwidth
             # A resample can have constant reference values, see _linregress
             regr = self._linregress(ref_arr, diff_arr)
             bias_slope, bias_inter = regr["slope"], regr["intercept"]
             resid = diff_arr - (bias_inter + bias_slope * ref_arr)
-            loa_halfwidth = self._agreement * np.std(resid, ddof=1)
+            loa_halfwidth = agreement * np.std(resid, ddof=1)
             # Note this is NOT recalculating residuals each time for the next regression
             regr = self._linregress(ref_arr, rabs_arr)
             loa_slope, loa_inter = regr["slope"], regr["intercept"]
@@ -2093,14 +2669,32 @@ class SleepStatsAgreement:
             "loa_slope",
             "loa_halfwidth",
         ]
+        regr_variables = ["bias_intercept", "bias_slope", "loa_intercept", "loa_slope"]
+        if self._repeated:
+            variable_order = [v for v in variable_order if v not in regr_variables]
+
+        def _bootstrap(df, statistic, columns):
+            """Bootstrap ``statistic`` over the sessions of one sleep statistic, or over its
+            subjects (cluster bootstrap) with repeated measures."""
+            arrays = tuple(df[columns].to_numpy().T)
+            if not self._repeated:
+                return sps.bootstrap(arrays, statistic, **bs_kwargs)
+            return self._cluster_bootstrap(
+                df["subject_id"].to_numpy(), arrays, statistic, **bs_kwargs
+            )
+
+        def _bootstrap_vars(df):
+            """Bootstrap of the variables of one sleep statistic (``df.name``)."""
+            if self._repeated:
+                line = tuple(self._vals.loc[df.name, ["bias_intercept", "bias_slope"]])
+                return _bootstrap(df, functools.partial(get_vars, bias_line=line), column_order)
+            return _bootstrap(df, get_vars, column_order)
+
         boot_ci = (
-            self._data.loc[
-                sleep_stats, column_order
-            ]  # Extract the relevant sleep stats and columns
+            self._data.loc[sleep_stats]  # Extract the relevant sleep stats
             .groupby("sleep_stat")  # Group so the bootstrapping is applied once to each sleep stat
-            # Apply the bootstrap function, where tuple(df.to_numpy().T) convert the 3 columns
-            # of the passed dataframe to a tuple of 3 1D arrays
-            .apply(lambda df: sps.bootstrap(tuple(df.to_numpy().T), get_vars, **bs_kwargs))
+            # Apply the bootstrap function to the 3 columns, passed as a tuple of 3 1D arrays
+            .apply(_bootstrap_vars)
             .map(lambda res: res.confidence_interval)  # Pull high/low CIs out of the results object
             .explode()  # Break high and low CIs into separate rows
             .to_frame("value")  # Convert to dataframe and name column
@@ -2110,6 +2704,12 @@ class SleepStatsAgreement:
             .pivot(columns=["variable", "interval"], values="value")  # Go long to wide format
             .sort_index(axis=1)  # Sort MultiIndex columns for cleanliness
         )
+        if self._repeated:
+            # Regression coefficients are not bootstrapped (see above): use the Wald CIs
+            param_ci = self._ci.loc[sleep_stats, "param"]
+            for var in regr_variables:
+                for interval in interval_order:
+                    boot_ci[(var, interval)] = param_ci[(var, interval)]
         # Merge with existing CI dataframe
         self._ci["boot"] = self._ci["boot"].fillna(boot_ci)
 
@@ -2121,19 +2721,49 @@ class SleepStatsAgreement:
             if s in self._log_transform_stats and pd.isna(self._loa_log_ci.at[s, "boot_lower"])
         ]
         if log_stats_to_boot:
-            agreement = self._agreement
-
             # Resample function: apply _euser_slope_scalar to each bootstrap replicate's SD.
-            def _euser_resample(d):
-                return self._euser_slope_scalar(np.std(d, ddof=1), agreement)
+            def _euser_resample(d, clusters=None):
+                sd = np.sqrt(self._variance_components(d, clusters)["var_total"])
+                return self._euser_slope_scalar(sd, agreement)
 
             for stat in log_stats_to_boot:
-                log_d = self._data.loc[
-                    self._data.index.get_level_values("sleep_stat") == stat, "log_difference"
-                ].to_numpy()
-                result = sps.bootstrap((log_d,), _euser_resample, **bs_kwargs)
+                df = self._data.loc[[stat]]
+                result = _bootstrap(df, _euser_resample, ["log_difference"])
                 self._loa_log_ci.at[stat, "boot_lower"] = result.confidence_interval.low
                 self._loa_log_ci.at[stat, "boot_upper"] = result.confidence_interval.high
+
+    @staticmethod
+    def _cluster_bootstrap(subjects, arrays, statistic, **bs_kwargs):
+        """Cluster (subject-level) bootstrap with :py:func:`scipy.stats.bootstrap`.
+
+        The resampling units are the subjects: each replicate draws subjects with replacement and
+        concatenates all their rows, so that the within-subject correlation of the nights is
+        preserved. A subject drawn several times counts as that many distinct clusters. The BCa
+        jackknife accordingly leaves one subject out at a time.
+
+        Parameters
+        ----------
+        subjects : array-like
+            Subject of each row of ``arrays``.
+        arrays : tuple of 1D arrays
+            The data columns, all of the same length as ``subjects``.
+        statistic : callable
+            Called as ``statistic(*resampled_arrays, clusters=...)``, where ``clusters`` labels
+            the cluster of each resampled row.
+        **bs_kwargs
+            Passed to :py:func:`scipy.stats.bootstrap`.
+        """
+        _, inverse = np.unique(np.asarray(subjects), return_inverse=True)
+        rows_by_subject = [np.flatnonzero(inverse == k) for k in range(inverse.max() + 1)]
+        sizes = np.array([rows.size for rows in rows_by_subject])
+
+        def _statistic(subject_idx):
+            subject_idx = np.asarray(subject_idx, dtype=int)
+            rows = np.concatenate([rows_by_subject[k] for k in subject_idx])
+            clusters = np.repeat(np.arange(subject_idx.size), sizes[subject_idx])
+            return statistic(*(arr[rows] for arr in arrays), clusters=clusters)
+
+        return sps.bootstrap((np.arange(sizes.size),), _statistic, **bs_kwargs)
 
     def report(
         self,
@@ -2181,7 +2811,9 @@ class SleepStatsAgreement:
             are used (BCa by default, see ``bootstrap_kwargs``). If ``'auto'`` (default), the
             method is chosen per statistic based on the normality assumption test. If ``None``, no
             confidence intervals are computed or shown (the columns are then named ``"Bias"`` and
-            ``"LoA"``).
+            ``"LoA"``). With several nights per subject (``subjects``), the bootstrap resamples
+            subjects, and the coefficients of the regression bias and LoA always use the Wald CI
+            of the mixed model.
         decimals : int
             Number of decimal places. Default is 2.
         sleep_stats : list or None
@@ -2361,6 +2993,12 @@ class SleepStatsAgreement:
             non-normal and using a standard t-distribution otherwise.
             If ``None``, no confidence intervals are computed and only the ``'center'`` interval
             is returned. This avoids the (potentially slow) bootstrap procedure entirely.
+
+            With several nights per subject (``subjects``), the bootstrap resamples subjects
+            (cluster bootstrap) for the bias, limits of agreement, LoA half-width and Euser slope.
+            The regression coefficients (``bias_intercept``, ``bias_slope``, ``loa_intercept``,
+            ``loa_slope``) always use the Wald CI of the mixed model with a ``t(n_subjects - 2)``
+            quantile, because a bootstrap over few subjects is too narrow for a slope.
         sleep_stats : list or None
             List of sleep statistics to include, in the desired row order. Default (None) is to
             include all sleep statistics. Bootstrapped confidence intervals are only computed for
@@ -2557,7 +3195,9 @@ class SleepStatsAgreement:
         scatter_kwargs : dict or None
             Keyword arguments passed to :py:func:`matplotlib.pyplot.scatter`.
         **kwargs : dict
-            Other keyword arguments are passed through to :py:class:`seaborn.FacetGrid`.
+            Other keyword arguments are passed through to :py:class:`seaborn.FacetGrid`. With
+            several nights per subject, ``hue="subject_id"`` colors the nights of each subject
+            alike and adds a legend.
 
         Returns
         -------
@@ -2599,8 +3239,11 @@ class SleepStatsAgreement:
 
         agreement_adj = self._agreement * np.sqrt(np.pi / 2)
 
-        # Select scatterplot arguments and update with optional input
+        # Select scatterplot arguments and update with optional input. With a `hue` (e.g. one color
+        # per subject), the default colors are dropped so that the colors of the hue apply.
         default_scatter_kwargs = dict(s=12, facecolor="none", edgecolor="black", alpha=0.8)
+        if "hue" in kwargs:
+            default_scatter_kwargs = dict(s=12, alpha=0.8)
         scatter_kwargs = default_scatter_kwargs | scatter_kwargs
         # Choose a balanced grid layout with at most 4 columns: use as few rows as possible, then
         # as few columns as needed to fill those rows (e.g. 6 -> 2x3, 8 -> 2x4, 9 -> 3x3).
@@ -2792,6 +3435,8 @@ class SleepStatsAgreement:
         g.set_ylabels(ylabel)
         g.set_xlabels(self.ref_scorer)
         g.set_titles(col_template="{col_name}")
+        if "hue" in kwargs:
+            g.add_legend()
         if hasattr(g.fig, "align_titles"):  # introduced in matplotlib v3.9.0
             g.fig.align_titles()
         g.fig.align_labels()
