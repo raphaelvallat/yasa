@@ -1721,6 +1721,27 @@ class TestSleepStatsAgreementRepeated:
         # With a strong subject effect, both components are substantial
         assert (ssa_rm_synth.variance_components["sd_between"] > 5).all()
 
+    def test_stat_without_repeated_nights(self, rm_stats):
+        # WASO valid on the first night of each subject only: the bias CI falls back to the one
+        # without repeated measures instead of being NaN
+        ref, obs, subjects = rm_stats
+        first = ~pd.Series(subjects).duplicated().to_numpy()
+        obs = obs.copy()
+        obs.loc[~first, "WASO"] = np.nan
+        out = SleepStatsAgreement(ref, obs, subjects=subjects).summary(ci_method="param")
+        alone = SleepStatsAgreement(ref.loc[first, ["WASO"]], obs.loc[first, ["WASO"]])
+        expected = alone.summary(ci_method="param").loc["WASO", "bias_mean"]
+        pd.testing.assert_series_equal(out.loc["WASO", "bias_mean"], expected)
+        assert out.loc["WASO"].notna().all()
+
+    def test_regress_boundary_falls_back_to_ols(self, caplog):
+        # No between-subject variance: OLS fallback with a warning
+        x = np.array([0.2, -0.5, -0.4, -2.4, 1.8, 1.1, -0.3, 0.8])
+        y = np.array([0.3, -0.6, 1.0, -0.3, -0.3, -0.8, 0.5, -0.1])
+        with caplog.at_level("WARNING", logger="yasa"):
+            r = SleepStatsAgreement._regress(x, y, np.repeat(np.arange(4), 2))
+        assert r["method"] == "ols" and "boundary" in caplog.text
+
     def test_variance_components_balanced_matches_reml(self):
         # On a balanced design, the ANOVA estimators equal the REML estimates of the
         # random-intercept model (when the between-subject variance is positive)
@@ -1826,7 +1847,9 @@ class TestSleepStatsAgreementRepeated:
         assert regr["slope"] == pytest.approx(res.fe_params[1])
         assert regr["intercept_stderr"] == pytest.approx(res.bse_fe[0])
         assert regr["stderr"] == pytest.approx(res.bse_fe[1])
-        assert regr["pvalue"] == pytest.approx(np.asarray(res.pvalues)[1])
+        # t-test on n_subjects - 2 dof (as the CIs), not the z-test of statsmodels
+        t_obs = abs(res.fe_params[1] / res.bse_fe[1])
+        assert regr["pvalue"] == pytest.approx(2 * sps.t.sf(t_obs, ssa_rm_synth.n_subjects - 2))
         assert regr["rvalue"] == pytest.approx(np.corrcoef(x, y)[0, 1])
         # Wald CI with a t quantile on n_subjects - 2 degrees of freedom
         ci = ssa_rm_synth.summary(ci_method="param").loc["TST", "bias_slope"]

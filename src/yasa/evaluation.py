@@ -1832,12 +1832,13 @@ class SleepStatsAgreement:
         # Var(mean) = var_between * sum(m_i^2) / N^2 + var_within / N, with m_i the number of
         # sessions of subject i and N the total number of sessions. In both cases the critical t
         # has n_subjects - 1 degrees of freedom (n_subjects = n without repeated measures).
+        # A stat without repeated nights after NaN removal has NaN components: use SD / sqrt(n).
+        se_bias = sd_diff / np.sqrt(n)
         if repeated:
-            se_bias = np.sqrt(
+            se_rm = np.sqrt(
                 vc_diff["var_between"] * vc_diff["sum_m2"] / n**2 + vc_diff["var_within"] / n
             )
-        else:
-            se_bias = sd_diff / np.sqrt(n)
+            se_bias = se_rm.fillna(se_bias)
         n_subj = vc_diff["n_subjects"]
         t_param = pd.Series(sps.t.ppf((1 + confidence) / 2, n_subj - 1), index=n.index)
         param_ci = pd.DataFrame(
@@ -2177,9 +2178,8 @@ class SleepStatsAgreement:
         A :py:class:`pandas.DataFrame` with one row per sleep statistic and columns:
 
         * ``sd_between`` — SD of the subject-specific mean differences (random intercepts). NaN
-          when ``subjects`` was not given.
-        * ``sd_within`` — SD of the differences within a subject, across nights. NaN when
-          ``subjects`` was not given.
+          when no subject has several valid nights for that statistic (e.g. without ``subjects``).
+        * ``sd_within`` — SD of the differences within a subject, across nights. NaN as above.
         * ``sd_total`` — SD of a single new difference, ``sqrt(sd_between² + sd_within²)``, which
           defines the limits of agreement (``bias ± 1.96 × sd_total``). Without repeated
           measures, this is the sample SD of the differences.
@@ -2468,20 +2468,21 @@ class SleepStatsAgreement:
     def _regress(x, y, subjects=None):
         """Regress ``y`` on ``x`` and return a dictionary of the results.
 
-        Without ``subjects`` (or when no subject has more than one observation), this is the
-        ordinary least-squares regression of :py:meth:`_linregress`. With repeated measures, a
+        Without ``subjects`` (or with fewer than 3 subjects, or when no subject has more than one
+        observation), this is the ordinary least-squares regression of :py:meth:`_linregress`. With repeated measures, a
         linear mixed model with a random intercept per subject is fitted instead
         (:py:class:`statsmodels.regression.mixed_linear_model.MixedLM`, REML), because the OLS
         p-values treat the correlated nights of a subject as independent observations and are
         therefore too small. The returned ``slope`` and ``intercept`` are the fixed effects,
-        ``stderr`` and ``intercept_stderr`` their standard errors, and ``pvalue`` the Wald p-value
-        of the slope. ``rvalue`` is the Pearson correlation of ``x`` and ``y`` across all
+        ``stderr`` and ``intercept_stderr`` their standard errors, and ``pvalue`` the Wald t-test
+        p-value of the slope. ``rvalue`` is the Pearson correlation of ``x`` and ``y`` across all
         observations, used as a descriptive effect size, and ``dof = n_subjects - 2`` the degrees
         of freedom of the t critical value of the Wald CIs. If the mixed model can not be fitted
-        (e.g. a singular design), the OLS results are returned with a warning.
+        (e.g. a singular design) or has no between-subject variance, the OLS results are returned
+        with a warning.
         """
         n_subjects = 0 if subjects is None else np.unique(subjects).size
-        if np.ptp(x) == 0 or n_subjects in (0, 1, np.size(subjects)):
+        if np.ptp(x) == 0 or n_subjects < 3 or n_subjects == np.size(subjects):
             return SleepStatsAgreement._linregress(x, y)
         from statsmodels.regression.mixed_linear_model import MixedLM
 
@@ -2496,13 +2497,19 @@ class SleepStatsAgreement:
                 res = res.fit(reml=True)
                 intercept, slope = np.asarray(res.fe_params, dtype=float)
                 intercept_stderr, stderr = np.asarray(res.bse_fe, dtype=float)
-                pvalue = float(np.asarray(res.pvalues)[1])
         except (np.linalg.LinAlgError, ValueError) as e:  # pragma: no cover
             logger.warning(f"Mixed model failed ({e}); using ordinary least squares instead.")
             return SleepStatsAgreement._linregress(x, y)
+        # t-test instead of the z-test of statsmodels, consistent with the t(n_subjects - 2) CIs
+        with np.errstate(divide="ignore", invalid="ignore"):
+            pvalue = 2 * sps.t.sf(np.abs(slope / stderr), n_subjects - 2)
         if not np.isfinite([slope, intercept, stderr, intercept_stderr, pvalue]).all():
             # Boundary solution (zero between-subject variance): the mixed model is equivalent to
             # OLS, whose standard errors are well defined
+            logger.warning(
+                "Mixed model at the boundary (no between-subject variance); using ordinary least "
+                "squares instead, with N - 2 degrees of freedom."
+            )
             return SleepStatsAgreement._linregress(x, y)
         return {
             "slope": slope,
