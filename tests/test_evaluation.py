@@ -1422,6 +1422,7 @@ class TestSleepStatsAgreementLogTransform:
 RM_NIGHTS = (2, 3, 2, 4, 2, 3)  # nights per subject, unbalanced on purpose
 RM_SUBJECTS = [f"sbj{i:02d}" for i, m in enumerate(RM_NIGHTS) for _ in range(m)]
 N_RM_SESSIONS = len(RM_SUBJECTS)
+RM_SUBJECT_BY_SLEEP_ID = dict(enumerate(RM_SUBJECTS, start=1))  # automatic sleep IDs
 RM_BOOT_KWARGS = {"n_resamples": 200, "method": "percentile"}
 
 
@@ -1504,9 +1505,8 @@ class TestEpochByEpochAgreementRepeated:
         ref, obs = hyps_rm
         expected = ebe_rm.summary()
         # dict keyed by the automatic sleep IDs (1, 2, ...)
-        as_dict = dict(zip(range(1, N_RM_SESSIONS + 1), RM_SUBJECTS))
         pd.testing.assert_frame_equal(
-            EpochByEpochAgreement(ref, obs, subjects=as_dict).summary(), expected
+            EpochByEpochAgreement(ref, obs, subjects=RM_SUBJECT_BY_SLEEP_ID).summary(), expected
         )
         # dict hypnograms with a dict of subjects keyed alike, in a different order
         keys = [f"night{i}" for i in range(N_RM_SESSIONS)]
@@ -1518,7 +1518,8 @@ class TestEpochByEpochAgreementRepeated:
         )
         # pandas Series and numpy array
         pd.testing.assert_frame_equal(
-            EpochByEpochAgreement(ref, obs, subjects=pd.Series(as_dict)).summary(), expected
+            EpochByEpochAgreement(ref, obs, subjects=pd.Series(RM_SUBJECT_BY_SLEEP_ID)).summary(),
+            expected,
         )
         pd.testing.assert_frame_equal(
             EpochByEpochAgreement(ref, obs, subjects=np.array(RM_SUBJECTS)).summary(), expected
@@ -1560,7 +1561,7 @@ class TestEpochByEpochAgreementRepeated:
 
     def test_summary_is_subject_then_group_mean(self, ebe_rm):
         agr = ebe_rm.get_agreement()
-        by_subject = agr.groupby(pd.Series(RM_SUBJECTS, index=agr.index)).mean()
+        by_subject = agr.groupby(np.array(RM_SUBJECTS)).mean()
         summ = ebe_rm.summary()
         pd.testing.assert_series_equal(summ["mean"], by_subject.mean(), check_names=False)
         pd.testing.assert_series_equal(summ["std"], by_subject.std(), check_names=False)
@@ -1570,7 +1571,7 @@ class TestEpochByEpochAgreementRepeated:
 
     def test_summary_by_stage_is_subject_then_group_mean(self, ebe_rm):
         agr = ebe_rm.get_agreement_bystage()
-        subj = agr.index.get_level_values("sleep_id").map(dict(enumerate(RM_SUBJECTS, start=1)))
+        subj = agr.index.get_level_values("sleep_id").map(RM_SUBJECT_BY_SLEEP_ID)
         by_subject = agr.groupby([agr.index.get_level_values("stage"), subj]).mean()
         summ = ebe_rm.summary(by_stage=True)
         expected = by_subject.groupby(level=0).mean().stack()
@@ -1587,7 +1588,7 @@ class TestEpochByEpochAgreementRepeated:
         )
         # The CI is a subject-level bootstrap: re-implement the percentile version by hand
         agr = ebe_rm.get_agreement()
-        by_subject = agr.groupby(pd.Series(RM_SUBJECTS, index=agr.index)).mean().to_numpy()
+        by_subject = agr.groupby(np.array(RM_SUBJECTS)).mean().to_numpy()
         rng = np.random.default_rng(0)
         n_subj = len(RM_NIGHTS)
         idx = rng.integers(0, n_subj, size=(RM_BOOT_KWARGS["n_resamples"], n_subj))
@@ -1610,7 +1611,7 @@ class TestEpochByEpochAgreementRepeated:
         # Subject-then-group mean of the row-normalized per-session matrices
         cms = ebe_rm.get_confusion_matrix()
         props = 100 * cms.div(cms.sum(axis=1), axis=0)
-        subj = props.index.get_level_values("sleep_id").map(dict(enumerate(RM_SUBJECTS, start=1)))
+        subj = props.index.get_level_values("sleep_id").map(RM_SUBJECT_BY_SLEEP_ID)
         by_subject = props.groupby([subj, props.index.get_level_values(REF_SCORER)]).mean()
         expected = by_subject.groupby(level=1).mean().stack()
         expected.index.names = [REF_SCORER, OBS_SCORER]
@@ -1909,9 +1910,7 @@ class TestSleepStatsAgreementRepeated:
         resid = d - (b0 + b1 * x)
 
         def statistic(r, clusters=None):
-            return 1.96 * np.sqrt(
-                SleepStatsAgreement._variance_components(r, clusters)["var_total"]
-            )
+            return 1.96 * SleepStatsAgreement._total_sd(r, clusters)
 
         res = SleepStatsAgreement._cluster_bootstrap(
             subjects, (resid,), statistic, vectorized=False, rng=0, **RM_BOOT_KWARGS

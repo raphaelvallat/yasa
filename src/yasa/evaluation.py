@@ -1699,9 +1699,8 @@ class SleepStatsAgreement:
                 assert ref_data.index.equals(obs_data.index), (
                     "the (subject, session) index must be identical for the two scorers"
                 )
-                subjects = pd.Series(
-                    ref_data.index.get_level_values(0), index=ref_data.index.get_level_values(1)
-                )
+                # One subject per row, validated below by `_subjects_to_series`
+                subjects = ref_data.index.get_level_values(0)
                 ref_data, obs_data = ref_data.droplevel(0), obs_data.droplevel(0)
         assert isinstance(obs_data, pd.DataFrame), "`obs_data` must be a pandas DataFrame"
         assert np.array_equal(ref_data.index, obs_data.index), (
@@ -1764,7 +1763,6 @@ class SleepStatsAgreement:
         )
         if subjects is not None:
             data["subject_id"] = data.index.get_level_values(session_key).map(subjects).to_numpy()
-        subj_col = "subject_id" if repeated else None
 
         # Remove sessions with a missing value in either scorer, separately for each sleep stat
         # (e.g. Lat_REM is NaN for a night without REM sleep)
@@ -1787,19 +1785,30 @@ class SleepStatsAgreement:
         n_sessions = data.index.get_level_values(session_key).nunique()
         n = grouper.size()
 
+        def _per_stat(func):
+            """Apply ``func(df)`` to the sessions of each sleep stat and stack the returned dicts
+            into a DataFrame with one row per sleep stat."""
+            frame = pd.DataFrame.from_dict({s: func(df) for s, df in grouper}, orient="index")
+            return frame.rename_axis("sleep_stat")
+
+        def _by_subject(df):
+            """Subject of each row of ``df`` (repeated measures), or None."""
+            return df["subject_id"].to_numpy() if repeated else None
+
         def _vc_frame(col):
             """Variance components of column ``col`` (one-way ANOVA by subject), per sleep stat."""
-            return grouper.apply(
-                lambda df: pd.Series(
-                    self._variance_components(
-                        df[col].to_numpy(), None if subj_col is None else df[subj_col].to_numpy()
-                    )
-                )
+            return _per_stat(
+                lambda df: self._variance_components(df[col].to_numpy(), _by_subject(df))
             )
 
-        def _regr_cols(col):
-            """Columns passed to the regression of ``col`` on the reference values."""
-            return [ref_scorer, col] + ([] if subj_col is None else [subj_col])
+        def _regr_frame(col):
+            """Regression of column ``col`` on the reference values, per sleep stat. With
+            repeated measures, this is a random-intercept mixed model (see `_regress`)."""
+            return _per_stat(
+                lambda df: self._regress(
+                    df[ref_scorer].to_numpy(), df[col].to_numpy(), _by_subject(df)
+                )
+            )
 
         ########################################################################
         # Generate parametric Bias and LoA for all sleep stats
@@ -1818,62 +1827,56 @@ class SleepStatsAgreement:
         ########################################################################
         # Generate standard CIs for parametric Bias and LoA for all sleep stats
         ########################################################################
+        # SE of the bias. Without repeated measures, SD / sqrt(n) (Bland & Altman 1999). With
+        # several sessions per subject, under the random-intercept model (Zou 2013):
+        # Var(mean) = var_between * sum(m_i^2) / N^2 + var_within / N, with m_i the number of
+        # sessions of subject i and N the total number of sessions. In both cases the critical t
+        # has n_subjects - 1 degrees of freedom (n_subjects = n without repeated measures).
         if repeated:
-            # SE of the grand mean difference under the random-intercept model:
-            # Var(mean) = var_between * sum(m_i^2) / N^2 + var_within / N, with m_i the number of
-            # sessions of subject i and N the total number of sessions (Zou 2013). The critical t
-            # has n_subjects - 1 degrees of freedom.
-            n_subj = vc_diff["n_subjects"]
             se_bias = np.sqrt(
                 vc_diff["var_between"] * vc_diff["sum_m2"] / n**2 + vc_diff["var_within"] / n
             )
-            t_param = pd.Series(sps.t.ppf((1 + confidence) / 2, n_subj - 1), index=n.index)
-            bias_lower = param_vals["bias_mean"] - se_bias * t_param
-            bias_upper = param_vals["bias_mean"] + se_bias * t_param
+        else:
+            se_bias = sd_diff / np.sqrt(n)
+        n_subj = vc_diff["n_subjects"]
+        t_param = pd.Series(sps.t.ppf((1 + confidence) / 2, n_subj - 1), index=n.index)
+        param_ci = pd.DataFrame(
+            {
+                "bias_mean-lower": param_vals["bias_mean"] - se_bias * t_param,
+                "bias_mean-upper": param_vals["bias_mean"] + se_bias * t_param,
+            }
+        )
+        if repeated:
             # MOVER CI of the LoA (Zou 2013): combines the CI of the bias with the chi-square CI
             # of the total variance, itself a MOVER combination of the two mean squares.
             var_lower, var_upper = self._variance_ci(vc_diff, confidence)
-            loa_ci = self._mover_loa_ci(
+            (
+                param_ci["loa_lower-lower"],
+                param_ci["loa_lower-upper"],
+                param_ci["loa_upper-lower"],
+                param_ci["loa_upper-upper"],
+            ) = self._mover_loa_ci(
                 param_vals["bias_mean"],
-                bias_lower,
-                bias_upper,
+                param_ci["bias_mean-lower"],
+                param_ci["bias_mean-upper"],
                 sd_diff,
                 np.sqrt(var_lower),
                 np.sqrt(var_upper),
                 agreement,
             )
-            param_ci = pd.DataFrame(
-                {
-                    "bias_mean-lower": bias_lower,
-                    "bias_mean-upper": bias_upper,
-                    "loa_lower-lower": loa_ci[0],
-                    "loa_lower-upper": loa_ci[1],
-                    "loa_upper-lower": loa_ci[2],
-                    "loa_upper-upper": loa_ci[3],
-                }
-            )
         else:
-            # Get critical t and standard error used to calculate parametric CIs (Bland & Altman
-            # 1999): SE of the bias = SD / sqrt(n), SE of a LoA = sqrt(3) * SD / sqrt(n)
-            t_param = pd.Series(sps.t.ppf((1 + confidence) / 2, n - 1), index=n.index)
-            se_bias = grouper["difference"].sem(ddof=1)
-            param_ci = pd.DataFrame(
-                {
-                    "bias_mean-lower": param_vals["bias_mean"] - se_bias * t_param,
-                    "bias_mean-upper": param_vals["bias_mean"] + se_bias * t_param,
-                    "loa_lower-lower": param_vals["loa_lower"] - se_bias * t_param * np.sqrt(3),
-                    "loa_lower-upper": param_vals["loa_lower"] + se_bias * t_param * np.sqrt(3),
-                    "loa_upper-lower": param_vals["loa_upper"] - se_bias * t_param * np.sqrt(3),
-                    "loa_upper-upper": param_vals["loa_upper"] + se_bias * t_param * np.sqrt(3),
-                }
-            )
+            # SE of a LoA = sqrt(3) * SD / sqrt(n) (Bland & Altman 1999)
+            se_loa = se_bias * np.sqrt(3)
+            param_ci["loa_lower-lower"] = param_vals["loa_lower"] - se_loa * t_param
+            param_ci["loa_lower-upper"] = param_vals["loa_lower"] + se_loa * t_param
+            param_ci["loa_upper-lower"] = param_vals["loa_upper"] - se_loa * t_param
+            param_ci["loa_upper-upper"] = param_vals["loa_upper"] + se_loa * t_param
 
         ########################################################################
         # Generate regression/modeled (slope and intercept) Bias and LoA for all sleep stats
         ########################################################################
-        # Run regression used to (a) model bias and (b) test for proportional/constant bias. With
-        # repeated measures, this is a random-intercept mixed model (see `_regress`).
-        bias_regr = grouper[_regr_cols("difference")].apply(self._linregr_dict).apply(pd.Series)
+        # Run regression used to (a) model bias and (b) test for proportional/constant bias
+        bias_regr = _regr_frame("difference")
         # Get absolute residuals from this regression bc they are used in the next regression.
         # With a mixed model these are the marginal residuals (from the fixed effects only), so
         # that they describe the deviation of a new night of a new subject from the bias line.
@@ -1884,28 +1887,20 @@ class SleepStatsAgreement:
         data["residuals"] = data["difference"].to_numpy() - predicted_values
         data["residuals_abs"] = data["residuals"].abs()
         # Run regression used to (a) model LoA and (b) test for heteroscedasticity/homoscedasticity
-        loa_regr = grouper[_regr_cols("residuals_abs")].apply(self._linregr_dict).apply(pd.Series)
+        loa_regr = _regr_frame("residuals_abs")
         # Stack the two regression dataframes together
         regr = pd.concat({"bias": bias_regr, "loa": loa_regr}, axis=0)
 
         ########################################################################
         # Generate parametric CIs for regression/modeled Bias and LoA for all sleep stats
         ########################################################################
-        # Critical value for the regression CIs: t with dof=n-2 for OLS. For the Wald CIs of the
-        # mixed model, a t with dof=n_subjects-2 instead of the normal quantile: it accounts for
-        # the estimated variance components and restores the nominal coverage with few subjects
-        # (checked by simulation; the normal quantile covers ~90% with 8-20 subjects). Aligned
-        # with the stacked (bias/loa) index.
+        # Critical t for the regression CIs, with the degrees of freedom returned by `_regress`:
+        # n-2 for OLS, and n_subjects-2 for the Wald CIs of the mixed model (instead of the normal
+        # quantile: it accounts for the estimated variance components and restores the nominal
+        # coverage with few subjects; checked by simulation, the normal quantile covers ~90% with
+        # 8-20 subjects).
         t_regr = pd.Series(sps.t.ppf((1 + confidence) / 2, n - 2), index=n.index)
-        t_mixed = pd.Series(
-            sps.t.ppf((1 + confidence) / 2, vc_diff["n_subjects"] - 2), index=n.index
-        )
-        stacked_stats = regr.index.get_level_values("sleep_stat")
-        t_stacked = np.where(
-            regr["method"].to_numpy() == "mixed",
-            t_mixed.reindex(stacked_stats).to_numpy(),
-            t_regr.reindex(stacked_stats).to_numpy(),
-        )
+        t_stacked = sps.t.ppf((1 + confidence) / 2, regr["dof"].to_numpy(dtype=float))
         # Parametric CIs for modeled Bias and LoA
         regr_ci = pd.DataFrame(
             {
@@ -1970,33 +1965,31 @@ class SleepStatsAgreement:
             data.loc[is_log, "log_difference"] = np.log(data.loc[is_log, obs_scorer]) - np.log(
                 data.loc[is_log, ref_scorer]
             )
-            for stat in log_transform_stats:
-                sub = data.loc[stat]
-                vc = self._variance_components(
-                    sub["log_difference"].to_numpy(),
-                    None if subj_col is None else sub[subj_col].to_numpy(),
-                )
-                # SD of the log-ratios (total SD with repeated measures)
-                sd = np.sqrt(vc["var_total"])
-                if repeated:
-                    # Chi-square (MOVER) CI of the total variance, converted to SD units
-                    var_lower, var_upper = self._variance_ci(vc, confidence)
-                    sd_lower, sd_upper = np.sqrt(var_lower), np.sqrt(var_upper)
-                else:
-                    # t critical value for the parametric slope CI (Bland & Altman 1999).
-                    t_log = sps.t.ppf((1 + confidence) / 2, n[stat] - 1)
-                    # SE of a limit of agreement (Bland & Altman 1999): sqrt(3 * SD^2 / n). It is
-                    # already on the scale of z = agreement * SD, so it is added to z directly, as
-                    # in the reference pipeline of Menghini et al. (2021). Clamp the lower bound at
-                    # 0 so the slope stays non-negative.
-                    se_z = np.sqrt(sd**2 * 3 / n[stat])
-                    sd_lower = max(sd - t_log * se_z / agreement, 0.0)
-                    sd_upper = sd + t_log * se_z / agreement
-                # Point estimate: back-transform SD of log-ratios to a proportional slope, and
-                # back-transform the CI bounds of the SD the same way.
-                loa_log_slope[stat] = self._euser_slope_scalar(sd, agreement)
-                loa_log_ci.at[stat, "param_lower"] = self._euser_slope_scalar(sd_lower, agreement)
-                loa_log_ci.at[stat, "param_upper"] = self._euser_slope_scalar(sd_upper, agreement)
+            # SD of the log-ratios (total SD with repeated measures), per log-transformed stat
+            vc_log = _vc_frame("log_difference").loc[log_transform_stats]
+            sd = np.sqrt(vc_log["var_total"])
+            if repeated:
+                # Chi-square (MOVER) CI of the total variance, converted to SD units
+                var_lower, var_upper = self._variance_ci(vc_log, confidence)
+                sd_lower, sd_upper = np.sqrt(var_lower), np.sqrt(var_upper)
+            else:
+                # SE of a limit of agreement (Bland & Altman 1999): sqrt(3 * SD^2 / n). It is
+                # already on the scale of z = agreement * SD, so it is added to z directly, as in
+                # the reference pipeline of Menghini et al. (2021), with the t(n - 1) critical
+                # value. Clamp the lower bound at 0 so the slope stays non-negative.
+                t_log = t_param[log_transform_stats]
+                se_z = np.sqrt(sd**2 * 3 / n[log_transform_stats])
+                sd_lower = (sd - t_log * se_z / agreement).clip(lower=0.0)
+                sd_upper = sd + t_log * se_z / agreement
+            # Point estimate: back-transform SD of log-ratios to a proportional slope, and
+            # back-transform the CI bounds of the SD the same way.
+            loa_log_slope[log_transform_stats] = self._euser_slope_scalar(sd, agreement)
+            loa_log_ci.loc[log_transform_stats, "param_lower"] = self._euser_slope_scalar(
+                sd_lower, agreement
+            )
+            loa_log_ci.loc[log_transform_stats, "param_upper"] = self._euser_slope_scalar(
+                sd_upper, agreement
+            )
 
         ########################################################################
         # Test all statistical assumptions
@@ -2009,17 +2002,14 @@ class SleepStatsAgreement:
         def _test_series(res):
             return pd.Series({"statistic": res.statistic, "pvalue": res.pvalue})
 
-        if repeated:
-            # Test of the bias against zero accounting for the repeated measures: t = bias / SE,
-            # with the model-based SE and n_subjects - 1 degrees of freedom
-            with np.errstate(divide="ignore", invalid="ignore"):
-                t_stat = param_vals["bias_mean"] / se_bias
-            ttest = pd.DataFrame(
-                {"statistic": t_stat, "pvalue": 2 * sps.t.sf(np.abs(t_stat), n_subj - 1)}
-            )
-        else:
-            ttest = grouper["difference"].apply(lambda a: _test_series(sps.ttest_1samp(a, 0)))
-            ttest = ttest.unstack()
+        # Test of the bias against zero: t = bias / SE(bias) with n_subjects - 1 degrees of
+        # freedom, i.e. the one-sample t-test without repeated measures, and the model-based SE
+        # with repeated measures
+        with np.errstate(divide="ignore", invalid="ignore"):
+            t_stat = param_vals["bias_mean"] / se_bias
+        ttest = pd.DataFrame(
+            {"statistic": t_stat, "pvalue": 2 * sps.t.sf(np.abs(t_stat), n_subj - 1)}
+        )
         shapiro = grouper["difference"].apply(
             lambda a: (
                 _test_series(sps.shapiro(a))
@@ -2326,7 +2316,7 @@ class SleepStatsAgreement:
         -------
         vc : dict
             Keys ``var_total``, ``var_between``, ``var_within``, ``msb``, ``msw``, ``a``, ``b``,
-            ``dof_b``, ``dof_w``, ``n_subjects``, ``n_pairs`` and ``sum_m2`` (``sum_i m_i^2``).
+            ``dof_b``, ``dof_w``, ``n_subjects`` and ``sum_m2`` (``sum_i m_i^2``).
         """
         values = np.asarray(values, dtype=float)
         n_pairs = values.size
@@ -2348,7 +2338,6 @@ class SleepStatsAgreement:
                 "dof_b": n_pairs - 1,
                 "dof_w": 0,
                 "n_subjects": n_pairs if subjects is None else n_subjects,
-                "n_pairs": n_pairs,
                 "sum_m2": n_pairs,
             }
         grand_mean = values.mean()
@@ -2370,9 +2359,14 @@ class SleepStatsAgreement:
             "dof_b": n_subjects - 1,
             "dof_w": n_pairs - n_subjects,
             "n_subjects": n_subjects,
-            "n_pairs": n_pairs,
             "sum_m2": np.sum(counts**2),
         }
+
+    @staticmethod
+    def _total_sd(values, subjects=None):
+        """SD of a single new value: the square root of the ``var_total`` of
+        :py:meth:`_variance_components` (the sample SD without repeated measures)."""
+        return np.sqrt(SleepStatsAgreement._variance_components(values, subjects)["var_total"])
 
     @staticmethod
     def _variance_ci(vc, confidence):
@@ -2439,20 +2433,11 @@ class SleepStatsAgreement:
         return lower_lower, lower_upper, upper_lower, upper_upper
 
     @staticmethod
-    def _linregr_dict(df):
-        """
-        A wrapper around :py:meth:`_regress` for use with ``groupby.apply``: the first column of
-        ``df`` is the predictor, the second the response, and the optional third column the
-        subject of each row (repeated measures).
-        """
-        subjects = df.iloc[:, 2].to_numpy() if df.shape[1] == 3 else None
-        return SleepStatsAgreement._regress(
-            df.iloc[:, 0].to_numpy(), df.iloc[:, 1].to_numpy(), subjects
-        )
-
-    @staticmethod
     def _linregress(x, y):
-        """Run :py:func:`scipy.stats.linregress` and return a dictionary of the results."""
+        """Run :py:func:`scipy.stats.linregress` and return a dictionary of the results.
+
+        ``dof`` is the degrees of freedom of the t critical value of the coefficient CIs.
+        """
         if np.ptp(x) == 0:
             # Constant reference values (e.g. N3 = 0 in every night): the slope is not
             # identifiable. Use a flat line through the mean of y (no proportional effect), so that
@@ -2464,6 +2449,7 @@ class SleepStatsAgreement:
                 "pvalue": 1.0,
                 "stderr": np.nan,
                 "intercept_stderr": np.nan,
+                "dof": np.nan,
                 "method": "constant",
             }
         regr = sps.linregress(x, y)
@@ -2474,6 +2460,7 @@ class SleepStatsAgreement:
             "pvalue": regr.pvalue,
             "stderr": regr.stderr,
             "intercept_stderr": regr.intercept_stderr,
+            "dof": x.size - 2,
             "method": "ols",
         }
 
@@ -2489,13 +2476,12 @@ class SleepStatsAgreement:
         therefore too small. The returned ``slope`` and ``intercept`` are the fixed effects,
         ``stderr`` and ``intercept_stderr`` their standard errors, and ``pvalue`` the Wald p-value
         of the slope. ``rvalue`` is the Pearson correlation of ``x`` and ``y`` across all
-        observations, used as a descriptive effect size. If the mixed model can not be fitted
+        observations, used as a descriptive effect size, and ``dof = n_subjects - 2`` the degrees
+        of freedom of the t critical value of the Wald CIs. If the mixed model can not be fitted
         (e.g. a singular design), the OLS results are returned with a warning.
         """
-        if np.ptp(x) == 0 or subjects is None:
-            return SleepStatsAgreement._linregress(x, y)
-        subjects = np.asarray(subjects)
-        if np.unique(subjects).size in (1, subjects.size):
+        n_subjects = 0 if subjects is None else np.unique(subjects).size
+        if np.ptp(x) == 0 or n_subjects in (0, 1, np.size(subjects)):
             return SleepStatsAgreement._linregress(x, y)
         from statsmodels.regression.mixed_linear_model import MixedLM
 
@@ -2506,7 +2492,8 @@ class SleepStatsAgreement:
                 # variance is close to zero (the model then reduces to OLS) and are not
                 # informative here. The result attributes are lazy, so read them in this block.
                 warnings.simplefilter("ignore")
-                res = MixedLM(np.asarray(y, dtype=float), exog, groups=subjects).fit(reml=True)
+                res = MixedLM(np.asarray(y, dtype=float), exog, groups=np.asarray(subjects))
+                res = res.fit(reml=True)
                 intercept, slope = np.asarray(res.fe_params, dtype=float)
                 intercept_stderr, stderr = np.asarray(res.bse_fe, dtype=float)
                 pvalue = float(np.asarray(res.pvalues)[1])
@@ -2524,6 +2511,7 @@ class SleepStatsAgreement:
             "pvalue": pvalue,
             "stderr": stderr,
             "intercept_stderr": intercept_stderr,
+            "dof": n_subjects - 2,
             "method": "mixed",
         }
 
@@ -2621,26 +2609,24 @@ class SleepStatsAgreement:
 
             ``clusters`` is the subject of each row of the resample (cluster bootstrap), or None.
             The SD of the differences and of the residuals is then the ANOVA total SD, as in the
-            point estimates. ``bias_line`` is the ``(intercept, slope)`` of the full-sample
-            (mixed-model) bias line with repeated measures: the half-width is then the spread of
-            the resampled nights around the reported line, and the regression coefficients are
-            not bootstrapped (only the bias, LoA and half-width are returned).
+            point estimates. With repeated measures, ``bias_line`` is the ``(intercept, slope)``
+            of the full-sample (mixed-model) bias line: the half-width is then the spread of the
+            resampled nights around the reported line, and the regression coefficients are not
+            bootstrapped (only the bias, LoA and half-width are returned). Otherwise the bias
+            line is the OLS fit of the resample.
             """
             bias_mean = np.mean(diff_arr)
-            sd = np.sqrt(self._variance_components(diff_arr, clusters)["var_total"])
+            sd = self._total_sd(diff_arr, clusters)
             loa_lower, loa_upper = bias_mean - agreement * sd, bias_mean + agreement * sd
-            if bias_line is not None:
-                bias_inter, bias_slope = bias_line
-                resid = diff_arr - (bias_inter + bias_slope * ref_arr)
-                loa_halfwidth = agreement * np.sqrt(
-                    self._variance_components(resid, clusters)["var_total"]
-                )
-                return bias_mean, loa_lower, loa_upper, loa_halfwidth
-            # A resample can have constant reference values, see _linregress
-            regr = self._linregress(ref_arr, diff_arr)
-            bias_slope, bias_inter = regr["slope"], regr["intercept"]
+            if bias_line is None:
+                # A resample can have constant reference values, see _linregress
+                regr = self._linregress(ref_arr, diff_arr)
+                bias_line = regr["intercept"], regr["slope"]
+            bias_inter, bias_slope = bias_line
             resid = diff_arr - (bias_inter + bias_slope * ref_arr)
-            loa_halfwidth = agreement * np.std(resid, ddof=1)
+            loa_halfwidth = agreement * self._total_sd(resid, clusters)
+            if self._repeated:
+                return bias_mean, loa_lower, loa_upper, loa_halfwidth
             # Note this is NOT recalculating residuals each time for the next regression
             regr = self._linregress(ref_arr, rabs_arr)
             loa_slope, loa_inter = regr["slope"], regr["intercept"]
@@ -2706,10 +2692,8 @@ class SleepStatsAgreement:
         )
         if self._repeated:
             # Regression coefficients are not bootstrapped (see above): use the Wald CIs
-            param_ci = self._ci.loc[sleep_stats, "param"]
-            for var in regr_variables:
-                for interval in interval_order:
-                    boot_ci[(var, interval)] = param_ci[(var, interval)]
+            wald_ci = self._ci.loc[sleep_stats, "param"][regr_variables]
+            boot_ci = pd.concat([boot_ci, wald_ci], axis=1)
         # Merge with existing CI dataframe
         self._ci["boot"] = self._ci["boot"].fillna(boot_ci)
 
@@ -2723,8 +2707,7 @@ class SleepStatsAgreement:
         if log_stats_to_boot:
             # Resample function: apply _euser_slope_scalar to each bootstrap replicate's SD.
             def _euser_resample(d, clusters=None):
-                sd = np.sqrt(self._variance_components(d, clusters)["var_total"])
-                return self._euser_slope_scalar(sd, agreement)
+                return self._euser_slope_scalar(self._total_sd(d, clusters), agreement)
 
             for stat in log_stats_to_boot:
                 df = self._data.loc[[stat]]
