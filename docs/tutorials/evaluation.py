@@ -164,6 +164,22 @@ def main(local, outdir):
         report[["LoA [95% CI]", "Assumptions"]].to_string(),
     )
 
+    # Several nights per subject (simulated data, requires statsmodels)
+    ref_rm, obs_rm, subjects = {}, {}, {}
+    for i in range(12):
+        sub = f"sbj{i // 3:02d}"
+        key = f"{sub}_night{i % 3 + 1}"
+        ref_rm[key] = yasa.simulate_hypnogram(tib=480, scorer="PSG", seed=i)
+        obs_rm[key] = ref_rm[key].simulate_similar(scorer="Device", seed=i)
+        subjects[key] = sub
+    ebe_rm = yasa.EpochByEpochAgreement(ref_rm, obs_rm, subjects=subjects)
+    show("ebe (repeated measures)", ebe_rm)
+    ssa_rm = yasa.SleepStatsAgreement(ebe_rm.get_sleep_stats())
+    show(
+        'ssa.variance_components.loc[["TST", "WASO", "N3"]].round(1)',
+        ssa_rm.variance_components.loc[["TST", "WASO", "N3"]].round(1),
+    )
+
     print(f"\nFigures saved to {outdir.resolve()}")
 
 

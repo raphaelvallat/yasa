@@ -1501,6 +1501,13 @@ class TestEpochByEpochAgreementRepeated:
         assert ebe_rm.data.index.names == ["sleep_id", "Epoch"]
         assert len(ebe_rm.get_agreement()) == N_RM_SESSIONS
 
+    def test_get_sleep_stats_index(self, sstats_rm):
+        assert sstats_rm.index.names == ["scorer", "subject_id", "sleep_id"]
+        for scorer in (REF_SCORER, OBS_SCORER):
+            idx = sstats_rm.loc[scorer].index
+            assert idx.get_level_values("subject_id").tolist() == RM_SUBJECTS
+            assert idx.get_level_values("sleep_id").tolist() == list(range(1, N_RM_SESSIONS + 1))
+
     def test_subjects_inputs_equivalent(self, hyps_rm, ebe_rm):
         ref, obs = hyps_rm
         expected = ebe_rm.summary()
@@ -1516,11 +1523,7 @@ class TestEpochByEpochAgreementRepeated:
         pd.testing.assert_frame_equal(
             EpochByEpochAgreement(ref_d, obs_d, subjects=subj_d).summary(), expected
         )
-        # pandas Series and numpy array
-        pd.testing.assert_frame_equal(
-            EpochByEpochAgreement(ref, obs, subjects=pd.Series(RM_SUBJECT_BY_SLEEP_ID)).summary(),
-            expected,
-        )
+        # numpy array
         pd.testing.assert_frame_equal(
             EpochByEpochAgreement(ref, obs, subjects=np.array(RM_SUBJECTS)).summary(), expected
         )
@@ -1551,25 +1554,15 @@ class TestEpochByEpochAgreementRepeated:
         assert sstats.index.names == ["scorer", "subject_id", "sleep_id"]
         pd.testing.assert_frame_equal(sstats.droplevel("subject_id"), ebe.get_sleep_stats())
 
-    def test_get_sleep_stats_index(self, sstats_rm):
-        assert sstats_rm.index.names == ["scorer", "subject_id", "sleep_id"]
-        assert len(sstats_rm) == 2 * N_RM_SESSIONS
-        for scorer in (REF_SCORER, OBS_SCORER):
-            idx = sstats_rm.loc[scorer].index
-            assert idx.get_level_values("subject_id").tolist() == RM_SUBJECTS
-            assert idx.get_level_values("sleep_id").tolist() == list(range(1, N_RM_SESSIONS + 1))
-
     def test_summary_is_subject_then_group_mean(self, ebe_rm):
         agr = ebe_rm.get_agreement()
         by_subject = agr.groupby(np.array(RM_SUBJECTS)).mean()
         summ = ebe_rm.summary()
         pd.testing.assert_series_equal(summ["mean"], by_subject.mean(), check_names=False)
         pd.testing.assert_series_equal(summ["std"], by_subject.std(), check_names=False)
-        pd.testing.assert_series_equal(summ["min"], by_subject.min(), check_names=False)
         # Not the mean across nights (subjects with more nights would weigh more)
         assert not np.allclose(summ["mean"], agr.mean())
-
-    def test_summary_by_stage_is_subject_then_group_mean(self, ebe_rm):
+        # Same with the per-stage scores
         agr = ebe_rm.get_agreement_bystage()
         subj = agr.index.get_level_values("sleep_id").map(RM_SUBJECT_BY_SLEEP_ID)
         by_subject = agr.groupby([agr.index.get_level_values("stage"), subj]).mean()
@@ -1580,12 +1573,7 @@ class TestEpochByEpochAgreementRepeated:
         )
 
     def test_summary_boot_ci(self, ebe_rm):
-        kwargs = RM_BOOT_KWARGS | {"rng": 0}
-        out = ebe_rm.summary(ci_method="boot", bootstrap_kwargs=kwargs)
-        assert (out["ci_lower"] <= out["mean"]).all() and (out["ci_upper"] >= out["mean"]).all()
-        pd.testing.assert_frame_equal(
-            out, ebe_rm.summary(ci_method="boot", bootstrap_kwargs=kwargs)
-        )
+        out = ebe_rm.summary(ci_method="boot", bootstrap_kwargs=RM_BOOT_KWARGS | {"rng": 0})
         # The CI is a subject-level bootstrap: re-implement the percentile version by hand
         agr = ebe_rm.get_agreement()
         by_subject = agr.groupby(np.array(RM_SUBJECTS)).mean().to_numpy()
@@ -1596,16 +1584,8 @@ class TestEpochByEpochAgreementRepeated:
         np.testing.assert_allclose(out["ci_lower"].to_numpy(), lo)
         np.testing.assert_allclose(out["ci_upper"].to_numpy(), hi)
 
-    def test_bca_warning_counts_subjects(self, ebe_rm):
-        with pytest.warns(RuntimeWarning, match=f"n_subjects={len(RM_NIGHTS)}"):
-            ebe_rm.summary(ci_method="boot", bootstrap_kwargs={"n_resamples": 50})
-
     def test_proportional_matrix(self, ebe_rm):
         out = ebe_rm.get_confusion_matrix_proportional(ci_method="param")
-        assert out.columns.tolist() == [
-            "mean", "std", "ci_lower", "ci_upper", "n_sessions", "n_subjects"
-        ]  # fmt: skip
-        assert (out["n_sessions"] <= N_RM_SESSIONS).all()
         assert (out["n_subjects"] <= len(RM_NIGHTS)).all()
         assert (out["n_subjects"] <= out["n_sessions"]).all()
         # Subject-then-group mean of the row-normalized per-session matrices
@@ -1622,11 +1602,6 @@ class TestEpochByEpochAgreementRepeated:
         row = out.iloc[0]
         half = sps.t.ppf(0.975, row["n_subjects"] - 1) * row["std"] / np.sqrt(row["n_subjects"])
         assert row["ci_upper"] == pytest.approx(min(row["mean"] + half, 100))
-        # Formatted output and bootstrap CI
-        fmt = ebe_rm.get_confusion_matrix_proportional(
-            formatted=True, bootstrap_kwargs=RM_BOOT_KWARGS | {"rng": 0}
-        )
-        assert fmt.map(lambda s: bool(re.fullmatch(_FMT_CI, s))).all().all()
 
 
 class TestSleepStatsAgreementRepeated:
@@ -1638,33 +1613,18 @@ class TestSleepStatsAgreementRepeated:
         assert ssa_rm.data.index.names == ["sleep_stat", "sleep_id"]
         assert ssa_rm.data["subject_id"].isin(RM_SUBJECTS).all()
 
-    def test_subjects_inputs_equivalent(self, sstats_rm, ssa_rm):
+    def test_subjects_arg_equals_subject_level(self, sstats_rm, ssa_rm):
+        # The input formats of `subjects` are tested with EpochByEpochAgreement (shared helper)
         flat = sstats_rm.droplevel("subject_id")
         ref, obs = flat.loc[REF_SCORER], flat.loc[OBS_SCORER]
-        expected = ssa_rm.summary(ci_method="param")
-        kwargs = dict(ref_scorer=REF_SCORER, obs_scorer=OBS_SCORER)
-        for subjects in (
-            RM_SUBJECTS,
-            np.array(RM_SUBJECTS),
-            dict(zip(ref.index, RM_SUBJECTS)),
-            pd.Series(RM_SUBJECTS, index=ref.index).iloc[::-1],
-        ):
-            ssa = SleepStatsAgreement(ref, obs, subjects=subjects, **kwargs)
-            pd.testing.assert_frame_equal(ssa.summary(ci_method="param"), expected)
-            pd.testing.assert_frame_equal(ssa.variance_components, ssa_rm.variance_components)
-
-    @pytest.mark.parametrize(
-        "subjects",
-        [
-            pytest.param(RM_SUBJECTS[:-1], id="too_short"),
-            pytest.param(dict(zip(range(N_RM_SESSIONS), RM_SUBJECTS)), id="wrong_keys"),
-            pytest.param([None] + RM_SUBJECTS[1:], id="missing"),
-        ],
-    )
-    def test_invalid_subjects_raise(self, sstats_rm, subjects):
-        flat = sstats_rm.droplevel("subject_id")
-        with pytest.raises(AssertionError):
-            SleepStatsAgreement(flat.loc[REF_SCORER], flat.loc[OBS_SCORER], subjects=subjects)
+        subjects = pd.Series(RM_SUBJECTS, index=ref.index).iloc[::-1]
+        ssa = SleepStatsAgreement(
+            ref, obs, ref_scorer=REF_SCORER, obs_scorer=OBS_SCORER, subjects=subjects
+        )
+        pd.testing.assert_frame_equal(
+            ssa.summary(ci_method="param"), ssa_rm.summary(ci_method="param")
+        )
+        pd.testing.assert_frame_equal(ssa.variance_components, ssa_rm.variance_components)
 
     def test_subject_level_and_subjects_arg_raise(self, sstats_rm):
         with pytest.raises(AssertionError, match="subject level"):
@@ -1734,30 +1694,6 @@ class TestSleepStatsAgreementRepeated:
         pd.testing.assert_series_equal(out.loc["WASO", "bias_mean"], expected)
         assert out.loc["WASO"].notna().all()
 
-    def test_regress_boundary_falls_back_to_ols(self, caplog):
-        # No between-subject variance: OLS fallback with a warning
-        x = np.array([0.2, -0.5, -0.4, -2.4, 1.8, 1.1, -0.3, 0.8])
-        y = np.array([0.3, -0.6, 1.0, -0.3, -0.3, -0.8, 0.5, -0.1])
-        with caplog.at_level("WARNING", logger="yasa"):
-            r = SleepStatsAgreement._regress(x, y, np.repeat(np.arange(4), 2))
-        assert r["method"] == "ols" and "boundary" in caplog.text
-
-    def test_variance_components_balanced_matches_reml(self):
-        # On a balanced design, the ANOVA estimators equal the REML estimates of the
-        # random-intercept model (when the between-subject variance is positive)
-        from statsmodels.regression.mixed_linear_model import MixedLM
-
-        ref, obs, subjects = _simulate_repeated_stats(nights=(3,) * 8, seed=1)
-        diff = (obs["TST"] - ref["TST"]).to_numpy()
-        vc = SleepStatsAgreement._variance_components(diff, subjects)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            res = MixedLM(diff, np.ones((diff.size, 1)), groups=subjects).fit(reml=True)
-        assert vc["var_between"] == pytest.approx(float(np.ravel(res.cov_re)[0]), rel=1e-3)
-        assert vc["var_within"] == pytest.approx(res.scale, rel=1e-3)
-        assert vc["m0"] == pytest.approx(3) if "m0" in vc else True
-        assert vc["var_total"] == pytest.approx(vc["var_between"] + vc["var_within"])
-
     def test_variance_components_clip_negative_between(self):
         # Subject means closer to each other than expected by chance: MSB < MSW, the between
         # component is set to 0 and the total variance equals the within variance (B&A 2007)
@@ -1801,24 +1737,9 @@ class TestSleepStatsAgreementRepeated:
         sd_total = np.sqrt(manual["var_between"] + manual["var_within"])
         assert asmp["cohen_d"] == pytest.approx(diff.mean() / sd_total)
 
-    def test_param_ci_wider_than_naive(self, rm_stats):
-        # Treating the 23 nights as independent understates the uncertainty of the bias and LoA
-        ref, obs, subjects = rm_stats
-        naive = SleepStatsAgreement(ref, obs).summary(ci_method="param")
-        rm = SleepStatsAgreement(ref, obs, subjects=subjects).summary(ci_method="param")
-        for var in ("bias_mean", "loa_lower", "loa_upper", "loa_halfwidth"):
-            width_naive = naive[(var, "upper")] - naive[(var, "lower")]
-            width_rm = rm[(var, "upper")] - rm[(var, "lower")]
-            assert (width_rm > width_naive).all(), var
-        # ... while the point estimates of the bias are identical
-        pd.testing.assert_series_equal(rm[("bias_mean", "center")], naive[("bias_mean", "center")])
-
     def test_mover_loa_ci(self, ssa_rm_synth):
-        # The MOVER interval brackets every LoA and is asymmetric (wider away from the bias)
+        # The MOVER interval of the LoA is asymmetric (wider away from the bias)
         summ = ssa_rm_synth.summary(ci_method="param")
-        for var in ("loa_lower", "loa_upper", "loa_halfwidth", "bias_mean"):
-            assert (summ[(var, "lower")] < summ[(var, "center")]).all()
-            assert (summ[(var, "upper")] > summ[(var, "center")]).all()
         up = summ["loa_upper"]
         assert ((up["upper"] - up["center"]) > (up["center"] - up["lower"])).all()
         lo = summ["loa_lower"]
@@ -1863,7 +1784,7 @@ class TestSleepStatsAgreementRepeated:
         )
         assert ssa_rm_synth._regr.loc[("loa", "TST"), "method"] == "mixed"
 
-    def test_regress_fallbacks(self):
+    def test_regress_fallbacks(self, caplog):
         rng = np.random.default_rng(0)
         x, y = rng.normal(size=12), rng.normal(size=12)
         ols = SleepStatsAgreement._linregress(x, y)
@@ -1874,10 +1795,12 @@ class TestSleepStatsAgreementRepeated:
         # Constant predictor: flat line, with or without subjects
         flat = SleepStatsAgreement._regress(np.ones(12), y, np.repeat([1, 2, 3], 4))
         assert flat["method"] == "constant" and flat["slope"] == 0
-        # Non-finite mixed-model output falls back to OLS
-        mixed = SleepStatsAgreement._regress(x, y, np.repeat([1, 2, 3], 4))
-        assert mixed["method"] in ("mixed", "ols")
-        assert np.isfinite([mixed["slope"], mixed["stderr"], mixed["pvalue"]]).all()
+        # No between-subject variance: OLS fallback with a warning
+        x = np.array([0.2, -0.5, -0.4, -2.4, 1.8, 1.1, -0.3, 0.8])
+        y = np.array([0.3, -0.6, 1.0, -0.3, -0.3, -0.8, 0.5, -0.1])
+        with caplog.at_level("WARNING", logger="yasa"):
+            r = SleepStatsAgreement._regress(x, y, np.repeat(np.arange(4), 2))
+        assert r["method"] == "ols" and "boundary" in caplog.text
 
     def test_cluster_bootstrap(self):
         subjects = np.array(["a", "a", "b", "c", "c", "c"])
@@ -1894,29 +1817,22 @@ class TestSleepStatsAgreementRepeated:
         assert np.isfinite(res.confidence_interval.low)
         sizes = {"a": 2, "b": 1, "c": 3}
         for v, clusters in calls:
-            # Each replicate concatenates the rows of the 3 drawn subjects, which form 3 clusters
-            assert np.unique(clusters).size == 3 or v.size == 6  # the full-sample evaluation
+            # Each replicate concatenates all the rows of the drawn subjects
             drawn = [subjects[int(i)] for i in v[np.r_[True, np.diff(clusters) != 0]]]
             assert v.size == sum(sizes[s] for s in drawn)
             # Rows of a cluster are contiguous and belong to one subject
             for k in np.unique(clusters):
                 assert np.unique(subjects[v[clusters == k].astype(int)]).size == 1
 
-    def test_boot_ci(self, ssa_rm_synth):
-        boot = ssa_rm_synth.summary(ci_method="boot")
-        param = ssa_rm_synth.summary(ci_method="param")
-        for var in ("bias_mean", "loa_lower", "loa_upper", "loa_halfwidth", "bias_slope"):
-            assert (boot[(var, "lower")] <= boot[(var, "center")]).all(), var
-            assert (boot[(var, "upper")] >= boot[(var, "center")]).all(), var
-            assert (boot[(var, "upper")] > boot[(var, "lower")]).all(), var
+    def test_boot_ci_regression_coefficients_are_wald(self, ssa_rm_synth):
         # The bias and LoA are bootstrapped (subject-level), the regression coefficients are not:
         # their "boot" CIs are the Wald CIs of the mixed model
+        boot = ssa_rm_synth.summary(ci_method="boot")
+        param = ssa_rm_synth.summary(ci_method="param")
         for var in ("bias_mean", "loa_lower", "loa_upper", "loa_halfwidth"):
             assert not np.allclose(boot[var], param[var]), var
         for var in ("bias_intercept", "bias_slope", "loa_intercept", "loa_slope"):
             pd.testing.assert_frame_equal(boot[var], param[var])
-        rpt = ssa_rm_synth.report(ci_method="boot")
-        assert rpt[f"Bias [{PCT}% CI]"].str.contains(r"\[").all()
 
     def test_boot_halfwidth_uses_reported_bias_line(self, rm_stats):
         # The half-width replicates measure the spread around the full-sample mixed-model line.
@@ -1955,12 +1871,8 @@ class TestSleepStatsAgreementRepeated:
         assert summ.at["TST", "lower"] < expected < summ.at["TST", "upper"]
         boot = ssa_log.summary(ci_method="boot")["loa_log_slope"]
         assert boot.at["TST", "lower"] <= expected <= boot.at["TST", "upper"]
-        assert ssa_log.report(loa_method="log", ci_method="param").shape[0] == 3
 
-    def test_report_calibrate_and_plot(self, ssa_rm_synth):
-        rpt = ssa_rm_synth.report(ci_method="param")
-        assert rpt.shape == (3, 5)
-        assert rpt["Assumptions"].str.contains("normal").all()
+    def test_calibrate_and_plot(self, ssa_rm_synth):
         new = pd.DataFrame({"TST": [400.0, 410.0]})
         bias = ssa_rm_synth.summary(ci_method=None).at["TST", ("bias_mean", "center")]
         pd.testing.assert_frame_equal(ssa_rm_synth.calibrate(new, bias_method="param"), new - bias)

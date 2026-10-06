@@ -79,8 +79,8 @@ uses the ``scorer`` name to tell the reference from the device in all its output
     ``ref_hyp.evaluate(obs_hyp)`` (see :py:meth:`Hypnogram.evaluate`).
 
     Our dataset has one night per subject. If you have several nights per subject, give each night
-    its own key (e.g. ``"sbj01_night1"``) and pass the subject of each night with the ``subjects``
-    argument, see :ref:`tutorial_evaluation_repeated`.
+    its own key (e.g. ``"sbj01_night1"``) and use the ``subjects`` argument to tell YASA which
+    subject each night belongs to (see :ref:`tutorial_evaluation_repeated`).
 
 Data requirements
 ~~~~~~~~~~~~~~~~~
@@ -682,46 +682,35 @@ Several nights per subject
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Our sample dataset has one night per subject, which is the design assumed by `Menghini et al.`_.
-Validation studies often record several nights per participant, though. Two nights of the same
-person are not independent: a device that overestimates the sleep of a short sleeper on Monday will
-likely do so again on Tuesday. Pooling all nights as if they came from different people therefore
-overstates the sample size. The bias and LoA themselves are barely affected, but their confidence
-intervals and the p-values of the assumption tests become too small (`Bland and Altman, 2007`_,
-`Myles and Cui, 2007`_). Averaging the nights of each subject beforehand is not a good fix either,
-since it removes part of the night-to-night error and narrows the LoA.
+Many validation studies, however, record several nights for each participant. These nights are not independent. If a device overestimates the sleep of a given person on Monday, it will likely do so again on Tuesday. Treating every night as if it came from a different person therefore inflates the sample size. The bias and LoA themselves are barely affected, but their confidence intervals and the p-values of the assumption tests become too small (`Bland and Altman, 2007`_, `Myles and Cui, 2007`_). Averaging the nights of each subject before the analysis is not a good solution either. It removes part of the night-to-night error, and the LoA end up too narrow.
 
-To handle this, give each night its own key and pass the subject of each night with the ``subjects``
-argument. It is accepted by both classes, and :py:meth:`~EpochByEpochAgreement.get_sleep_stats`
-passes it on to :py:class:`SleepStatsAgreement` automatically. The example below uses simulated
-hypnograms, four subjects with three nights each:
+Instead, give each night its own key and tell YASA which subject it belongs to with the ``subjects`` argument. Both classes accept it, and :py:meth:`~EpochByEpochAgreement.get_sleep_stats` passes it on to :py:class:`SleepStatsAgreement` for you. In the example below, we simulate three nights for each of four subjects:
 
 .. code-block:: python
 
-    >>> ref_hyps = {f"sbj{i // 3:02d}_night{i % 3 + 1}": yasa.simulate_hypnogram(tib=480, scorer="PSG", seed=i) for i in range(12)}
-    >>> obs_hyps = {k: h.simulate_similar(scorer="Device", seed=i) for i, (k, h) in enumerate(ref_hyps.items())}
-    >>> subjects = {k: k.split("_")[0] for k in ref_hyps}  # {"sbj00_night1": "sbj00", ...}
+    >>> ref_hyps, obs_hyps, subjects = {}, {}, {}
+    >>> for i in range(12):
+    ...     sub = f"sbj{i // 3:02d}"
+    ...     key = f"{sub}_night{i % 3 + 1}"  # e.g. "sbj00_night1"
+    ...     ref_hyps[key] = yasa.simulate_hypnogram(tib=480, scorer="PSG", seed=i)
+    ...     obs_hyps[key] = ref_hyps[key].simulate_similar(scorer="Device", seed=i)
+    ...     subjects[key] = sub
     >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps, subjects=subjects)
     >>> ebe
     <EpochByEpochAgreement | Observed hypnograms scored by Device evaluated against reference
     hypnograms scored by PSG, 12 sleep sessions from 4 subjects>
     >>> ssa = yasa.SleepStatsAgreement(ebe.get_sleep_stats())
 
-In Part 1, :py:meth:`~EpochByEpochAgreement.summary` and
-:py:meth:`~EpochByEpochAgreement.get_confusion_matrix_proportional` first average the nights of
-each subject, and then average across subjects. Every subject weighs the same regardless of its
-number of nights, and the bootstrap resamples subjects rather than nights. An ``n_subjects`` column
-is added to the proportional error matrix.
+What changes in Part 1? :py:meth:`~EpochByEpochAgreement.summary` and :py:meth:`~EpochByEpochAgreement.get_confusion_matrix_proportional` now average the nights of each subject first, and then average across subjects. This way, every subject counts equally, however many nights they recorded. The bootstrap also resamples subjects instead of nights, and the proportional error matrix gets an extra ``n_subjects`` column.
 
-In Part 2, the SD of the differences is split into a between-subject part (stable offsets of the
-device for a given person) and a within-subject part (night-to-night error), following
-`Bland and Altman, 2007`_. The LoA cover the sum of both, i.e. the error expected on a new night of
-a new person, and their confidence intervals use the method of `Zou, 2013`_. The regressions
-behind the proportional bias and heteroscedasticity tests become mixed models with a random
-intercept per subject (this requires `statsmodels`_, ``pip install yasa[stats]``). The confidence
-intervals of their coefficients are always the Wald intervals of the mixed model, even with
-``ci_method="boot"``, because a bootstrap over a handful of subjects is too narrow for a slope. The two
-components are available in the :py:attr:`~SleepStatsAgreement.variance_components` table, and
-`Parker et al., 2016`_ recommend reporting both:
+In Part 2, the SD of the differences is split into two parts, following `Bland and Altman, 2007`_:
+
+* The **between-subject SD** captures the stable offsets of the device for a given person, e.g. a device that always underestimates the deep sleep of the same participant.
+* The **within-subject SD** captures the night-to-night error.
+
+The LoA combine both, and describe the error that we can expect on a new night of a new person. Their confidence intervals are obtained with the method of `Zou, 2013`_. The regressions behind the proportional bias and heteroscedasticity tests become mixed models with a random intercept per subject, which requires `statsmodels`_ (``pip install yasa[stats]``). Note that the confidence intervals of the regression coefficients are always the Wald intervals of the mixed model, even with ``ci_method="boot"``. With only a handful of subjects, a bootstrap would give intervals that are too narrow for a slope.
+
+`Parker et al., 2016`_ recommend reporting both components. They are available in :py:attr:`~SleepStatsAgreement.variance_components`:
 
 .. code-block:: python
 
@@ -732,12 +721,7 @@ components are available in the :py:attr:`~SleepStatsAgreement.variance_componen
     WASO               0.0       56.8      56.8           4          12
     N3                 6.8       41.5      42.0           4          12
 
-With simulated nights there is no systematic offset per subject, hence the between-subject SD
-close to zero. On real data, a large between-subject SD means that the device is consistently off
-for some people, which calibration by a constant bias cannot fix. The confidence intervals are
-wider than those of the naive analysis, and with only a handful of subjects they can be very wide.
-Finally, ``ssa.plot_blandaltman(hue="subject_id")`` colors the nights of each subject alike,
-which helps to spot such subject-specific offsets.
+Here, the between-subject SD is close to zero, which is expected since the simulated nights have no systematic offset per subject. Real data is often different. A large between-subject SD means that the device is consistently off for some people, and a calibration by a single constant cannot fix that. To spot these subject-specific offsets, ``ssa.plot_blandaltman(hue="subject_id")`` gives the nights of each subject the same color. Finally, expect wider confidence intervals than in the naive analysis, since the effective sample size is now closer to the number of subjects than to the number of nights. With only a few subjects, they can be very wide.
 
 --------
 
@@ -823,6 +807,19 @@ References
 * Bland, J. M., & Altman, D. G. (1999). Measuring agreement in method comparison studies.
   *Statistical Methods in Medical Research*, 8(2), 135–160.
   https://doi.org/10.1177/096228029900800204
+* Bland, J. M., & Altman, D. G. (2007). Agreement between methods of measurement with multiple
+  observations per individual. *Journal of Biopharmaceutical Statistics*, 17(4), 571–582.
+  https://doi.org/10.1080/10543400701329422
+* Myles, P. S., & Cui, J. (2007). Using the Bland-Altman method to measure agreement with repeated
+  measures. *British Journal of Anaesthesia*, 99(3), 309–311. https://doi.org/10.1093/bja/aem214
+* Zou, G. Y. (2013). Confidence interval estimation for the Bland-Altman limits of agreement with
+  multiple observations per individual. *Statistical Methods in Medical Research*, 22(6), 630–642.
+  https://doi.org/10.1177/0962280211402548
+* Parker, R. A., Weir, C. J., Rubio, N., Rabinovich, R., Pinnock, H., Hanley, J., McCloughan, L.,
+  Drost, E. M., Mantoani, L. C., MacNee, W., & McKinstry, B. (2016). Application of mixed effects
+  limits of agreement in the presence of multiple sources of variability: exemplar from the
+  comparison of several devices to measure respiratory rate in COPD patients. *PLoS ONE*, 11(12),
+  e0168321. https://doi.org/10.1371/journal.pone.0168321
 * Euser, A. M., Dekker, F. W., & le Cessie, S. (2008). A practical approach to Bland-Altman plots
   and variation coefficients for log transformed variables. *Journal of Clinical Epidemiology*,
   61(10), 978–982. https://doi.org/10.1016/j.jclinepi.2007.11.003
