@@ -31,10 +31,10 @@ Closes #
 - [ ] The description starts with my own summary
 - [ ] Only necessary tests were added, and all tests pass
 - [ ] The documentation is updated
+- [ ] The changelog was not modified (it is updated by the maintainer before each release)
 
 If AI-assisted:
 
-- [ ] The PR was opened as a draft
 - [ ] The exact model used is reported
 - [ ] An AI review was run, the issues were fixed, and a summary was posted
 - [ ] `/simplify` was run (preferred, Claude Code)
