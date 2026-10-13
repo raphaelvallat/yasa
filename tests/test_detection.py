@@ -980,6 +980,43 @@ def test_compare_detection_intersection_threshold(threshold, n_matches):
     assert exact["f1"] == 1
 
 
+@pytest.mark.parametrize("shift", [0, 1, 10, 43200, 86400])
+@pytest.mark.parametrize("threshold, expected", [(0.2, 1), (0.2 + 1e-9, 0)])
+def test_compare_detection_intersection_decimal_boundary(shift, threshold, expected):
+    """Decimal roundoff must not turn an inclusive IoU boundary into a missed match."""
+    detected = np.array([[0.1, 0.4]]) + shift
+    groundtruth = np.array([[0.3, 0.6]]) + shift
+    res = compare_detection(detected, groundtruth, method="intersection", iou_threshold=threshold)
+    assert res["f1"] == expected
+
+
+def test_compare_detection_intersection_small_iou():
+    """A tolerance must not make genuinely sub-threshold, tiny overlaps count."""
+    res = compare_detection([[0, 1]], [[1 - 1e-12, 2]], method="intersection", iou_threshold=1e-12)
+    assert res["f1"] == 0
+
+
+@pytest.mark.parametrize("dtype", [np.int16, np.int32, np.int64, np.float32, np.float64])
+@pytest.mark.parametrize("empty", [False, True])
+def test_compare_detection_intersection_preserves_dtype(dtype, empty):
+    detected = np.array([[0, 3], [10, 11]], dtype=dtype)
+    groundtruth = np.array([[2, 5], [20, 21]], dtype=np.int64)
+    if empty:
+        detected = detected[:0]
+    res = compare_detection(detected, groundtruth, method="intersection")
+    np.testing.assert_array_equal(res["tp"], detected[:1])
+    np.testing.assert_array_equal(res["fp"], detected[1:])
+    np.testing.assert_array_equal(res["fn"], groundtruth if empty else groundtruth[1:])
+    assert res["tp"].dtype == res["fp"].dtype == detected.dtype
+    assert res["fn"].dtype == groundtruth.dtype
+
+
+@pytest.mark.parametrize("max_distance", [0, 0.0, np.int64(0), np.float64(0)])
+def test_compare_detection_intersection_zero_distance(max_distance):
+    res = compare_detection([[0, 1]], [[0, 1]], method="intersection", max_distance=max_distance)
+    assert res["f1"] == 1
+
+
 @pytest.mark.parametrize(
     "detected, groundtruth, precision, recall",
     [
@@ -1018,7 +1055,10 @@ def test_compare_detection_intersection_swapped():
     assert res["f1"] == swapped["f1"] == 0.4
 
 
-@pytest.mark.parametrize("detected, groundtruth", [([], []), ([], [[0, 1]]), ([[0, 1]], [])])
+@pytest.mark.parametrize(
+    "detected, groundtruth",
+    [([], []), ([], [[0, 1]]), ([[0, 1]], []), (np.empty((0, 2), dtype=object), [[0, 1]])],
+)
 def test_compare_detection_intersection_empty(detected, groundtruth):
     res = compare_detection(detected, groundtruth, method="intersection")
     assert res["tp"].shape == (0, 2)
@@ -1033,13 +1073,13 @@ def test_compare_detection_intersection_empty(detected, groundtruth):
 @pytest.mark.parametrize("side", ["detected", "groundtruth"])
 def test_compare_detection_intersection_invalid_intervals(bad, side):
     detected, groundtruth = (bad, [[0, 1]]) if side == "detected" else ([[0, 1]], bad)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         compare_detection(detected, groundtruth, method="intersection")
 
 
-@pytest.mark.parametrize("threshold", [-0.1, 1.1, np.nan, np.inf])
+@pytest.mark.parametrize("threshold", [-0.1, 1.1, np.nan, np.inf, "0.5", None, [0.5], 0.5j])
 def test_compare_detection_intersection_invalid_threshold(threshold):
-    with pytest.raises(AssertionError, match="iou_threshold"):
+    with pytest.raises(ValueError, match="iou_threshold"):
         compare_detection([[0, 1]], [[0, 1]], method="intersection", iou_threshold=threshold)
 
 
@@ -1079,7 +1119,7 @@ def test_results_compare_detection_intersection(cls):
     )
     assert swapped.iloc[0]["precision"] == 0.5
     assert swapped.iloc[0]["recall"] == 1 / 3
-    with pytest.raises(AssertionError, match="End"):
+    with pytest.raises(ValueError, match="End"):
         detected.compare_detection(reference_events.drop(columns="End"), method="intersection")
     with pytest.raises(ValueError, match="max_distance_sec"):
         detected.compare_detection(reference, max_distance_sec=0.01, method="intersection")
@@ -1109,3 +1149,64 @@ def test_results_compare_detection_intersection_channels():
     pd.testing.assert_frame_equal(res, expected)
     stricter = detected.compare_detection(reference, method="intersection", iou_threshold=0.3)
     assert (stricter[["precision", "recall", "f1"]] == 0).all().all()
+
+
+@pytest.mark.parametrize("side", ["self", "other"])
+@pytest.mark.parametrize("other_is_groundtruth", [False, True])
+@pytest.mark.parametrize(
+    "bad, message", [("missing", "End"), ("nan", "finite"), ("reversed", "start < end")]
+)
+def test_results_compare_detection_invalid_intervals(side, other_is_groundtruth, bad, message):
+    """Errors identify the input object, even when its scoring role is reversed."""
+    events = pd.DataFrame({"Start": [0.0], "End": [1.0], "Channel": ["Cz"]})
+    invalid = events.copy()
+    if bad == "missing":
+        invalid = invalid.drop(columns="End")
+    else:
+        invalid.loc[0, "End"] = np.nan if bad == "nan" else -1
+    data = np.zeros((1, 200))
+    detected = SpindlesResults(invalid if side == "self" else events, data, 100, ["Cz"], None, data)
+    other = invalid if side == "other" else events
+    with pytest.raises(ValueError, match=f"{side}.*{message}"):
+        detected.compare_detection(
+            other, method="intersection", other_is_groundtruth=other_is_groundtruth
+        )
+
+
+@pytest.mark.parametrize("cls", [SpindlesResults, SWResults])
+@pytest.mark.parametrize("score", ["precision", "recall", "f1"])
+def test_results_compare_channels_intersection(cls, score):
+    """Channel matrices use intervals, retain channel order and orient precision/recall."""
+    events = pd.DataFrame(
+        {"Start": [2, 0, 10], "End": [5, 3, 11], "Channel": ["Fz", "Cz", "Fz"]},
+        index=[8, 2, 4],
+    )
+    data = np.zeros((2, 1200))
+    detected = cls(events, data, 100, ["Fz", "Cz"], None, data)
+    values = {
+        "precision": [[1, 1], [0.5, 1]],
+        "recall": [[1, 0.5], [1, 1]],
+        "f1": [[1, 2 / 3], [2 / 3, 1]],
+    }
+    expected = pd.DataFrame(
+        values[score],
+        index=pd.Index(["Fz", "Cz"], name="Channel"),
+        columns=pd.Index(["Fz", "Cz"], name="Channel"),
+        dtype=float,
+    )
+    result = detected.compare_channels(score, method="intersection")
+    pd.testing.assert_frame_equal(result, expected)
+    stricter = detected.compare_channels(score, method="intersection", iou_threshold=0.3)
+    np.testing.assert_array_equal(stricter.to_numpy(), np.eye(2))
+    with pytest.raises(ValueError, match="max_distance_sec"):
+        detected.compare_channels(method="intersection", max_distance_sec=0.01)
+    with pytest.raises(ValueError, match="method"):
+        detected.compare_channels(method="unknown")
+
+
+def test_rem_compare_channels_intersection_not_available():
+    events = pd.DataFrame({"Start": [0], "End": [1]})
+    data = np.zeros((2, 200))
+    detected = REMResults(events, data, 100, ["LOC", "ROC"], None, data)
+    with pytest.raises(NotImplementedError, match="single channel"):
+        detected.compare_channels(method="intersection")
