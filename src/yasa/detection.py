@@ -428,26 +428,30 @@ class _DetectionResults:
         return coinc_mat
 
     @staticmethod
-    def _starts_by_channel(df):
-        """Return a dict with, for each channel, the start of the events in deciseconds.
+    def _events_by_channel(df, method, name):
+        """Return a dict with, for each channel, the events to pass to yasa.compare_detection.
 
-        Start times are rounded to the nearest decisecond (100 ms). This is needed for three
-        reasons: 1) speed up yasa.compare_detection, 2) avoid memory errors and 3) make sure that
-        max_distance works even when the two detections have different sampling frequencies.
+        With ``method="distance"``, these are the start times rounded to the nearest decisecond
+        (100 ms). This is needed for three reasons: 1) speed up yasa.compare_detection, 2) avoid
+        memory errors and 3) make sure that max_distance works even when the two detections have
+        different sampling frequencies. With ``method="intersection"``, these are the validated
+        (Start, End) intervals in seconds, without rounding.
         """
-        starts = (df["Start"] * 10).round().astype(int)
-        return {ch: grp.to_numpy() for ch, grp in starts.groupby(df["Channel"], sort=False)}
-
-    @staticmethod
-    def _intervals_by_channel(df, name):
-        """Return validated event intervals per channel, with input-specific errors."""
-        for column in ("Start", "End", "Channel"):
+        columns = ["Start", "End"] if method == "intersection" else ["Start"]
+        for column in [*columns, "Channel"]:
             if column not in df:
                 raise ValueError(f"{name} must contain a {column} column.")
-        intervals = _validate_intervals(df[["Start", "End"]].to_numpy(), name)
+        # Otherwise, groupby would silently drop these events from the comparison.
+        if df["Channel"].isna().any():
+            raise ValueError(f"{name} must not contain missing Channel values.")
+        if method == "intersection":
+            # Casting here also supports nullable and pyarrow-backed columns; NA becomes NaN.
+            events = df[columns].to_numpy(dtype=float, na_value=np.nan)
+            events = _validate_intervals(events, name)
+        else:
+            events = (df["Start"] * 10).round().astype(int).to_numpy()
         return {
-            ch: intervals[indices]
-            for ch, indices in df.groupby("Channel", sort=False).indices.items()
+            ch: events[indices] for ch, indices in df.groupby("Channel", sort=False).indices.items()
         }
 
     def compare_channels(
@@ -496,18 +500,10 @@ class _DetectionResults:
         3. Is the agreement better in channels that are close to one another?
         """
         assert score in ["f1", "precision", "recall"], f"Invalid scoring metric: {score}"
-        if method not in ("distance", "intersection"):
-            raise ValueError("method must be 'distance' or 'intersection'.")
-        if method == "intersection" and max_distance_sec != 0:
-            raise ValueError("max_distance_sec must be zero with method='intersection'.")
-        summary = self._summary_with_channel()
-        events = (
-            self._starts_by_channel(summary)
-            if method == "distance"
-            else self._intervals_by_channel(summary, "self")
-        )
+        _check_method(method, max_distance_sec, "max_distance_sec")
+        events = self._events_by_channel(self._summary_with_channel(), method, "self")
         chan = list(events)
-        max_distance = int(10 * max_distance_sec)
+        max_distance = round(10 * max_distance_sec)
 
         scores = pd.DataFrame(index=chan, columns=chan, dtype=float)
         scores.index.name = "Channel"
@@ -598,33 +594,22 @@ class _DetectionResults:
            those obtained with the default parameters?
         3. Which detection thresholds give the highest agreement with the ground-truth scoring?
         """
-        if method not in ("distance", "intersection"):
-            raise ValueError("method must be 'distance' or 'intersection'.")
-        if method == "intersection" and max_distance_sec != 0:
-            raise ValueError("max_distance_sec must be zero with method='intersection'.")
+        _check_method(method, max_distance_sec, "max_distance_sec")
         if isinstance(other, _DetectionResults):
             groundtruth = other._summary_with_channel()
         elif isinstance(other, pd.DataFrame):
             groundtruth = other.copy()
             if "Channel" not in groundtruth and self._channel_label is not None:
                 groundtruth["Channel"] = self._channel_label
-            if method == "distance":
-                assert "Start" in groundtruth.columns
-                assert "Channel" in groundtruth.columns
         else:
             raise ValueError(
                 f"Invalid argument other: {other}. It must be a YASA detection output or a Pandas "
-                f"DataFrame with the columns Start and Channels"
+                f"DataFrame with the columns Start, End (with method='intersection') and Channel."
             )
 
-        detected = self._summary_with_channel()
-        if method == "distance":
-            detected = self._starts_by_channel(detected)
-            groundtruth = self._starts_by_channel(groundtruth)
-        else:
-            detected = self._intervals_by_channel(detected, "self")
-            groundtruth = self._intervals_by_channel(groundtruth, "other")
-        max_distance = int(10 * max_distance_sec)
+        detected = self._events_by_channel(self._summary_with_channel(), method, "self")
+        groundtruth = self._events_by_channel(groundtruth, method, "other")
+        max_distance = round(10 * max_distance_sec)
 
         # Find channels that are present in both self and other
         chan_both = np.intersect1d(list(detected), list(groundtruth))  # Sort
@@ -2821,6 +2806,14 @@ def art_detect(
 #############################################################################
 
 
+def _check_method(method, max_distance, name):
+    """Validate the comparison method, and that max_distance is zero with intersection."""
+    if method not in ("distance", "intersection"):
+        raise ValueError("method must be 'distance' or 'intersection'.")
+    if method == "intersection" and (np.ndim(max_distance) != 0 or max_distance != 0):
+        raise ValueError(f"{name} must be zero with method='intersection'.")
+
+
 def _validate_intervals(events, name):
     """Validate interval coordinates without changing the returned endpoint dtype."""
     events = np.asarray(events)
@@ -2838,35 +2831,40 @@ def _validate_intervals(events, name):
     return events
 
 
+def _starts_within(a, b, inclusive):
+    """Return the (i, j) pairs where b[j] starts within a[i], using sorted searches.
+
+    The start bound is inclusive or exclusive, and the end bound is always exclusive.
+    """
+    order = np.argsort(b[:, 0], kind="stable")
+    starts = b[order, 0]
+    lo = np.searchsorted(starts, a[:, 0], side="left" if inclusive else "right")
+    hi = np.searchsorted(starts, a[:, 1], side="left")
+    counts = np.maximum(hi - lo, 0)
+    i = np.repeat(np.arange(len(a)), counts)
+    # Position of each pair within its run, to index the sorted b intervals.
+    offsets = np.arange(counts.sum()) - np.repeat(np.cumsum(counts) - counts, counts)
+    return i, order[np.repeat(lo, counts) + offsets]
+
+
 def _match_intervals(detected, groundtruth, iou_threshold):
     """Return event masks from a maximum-cardinality matching of overlapping intervals."""
-    intervals = (detected.astype(float, copy=False), groundtruth.astype(float, copy=False))
+    detected = detected.astype(float, copy=False)
+    groundtruth = groundtruth.astype(float, copy=False)
+    # In any pair with a positive overlap, one interval starts within the other. The start bound
+    # is inclusive on one side only, so that pairs with the same start are found once. This finds
+    # all the candidate pairs without building sample-wise masks or a dense pairwise IoU matrix.
+    rows_d, cols_d = _starts_within(detected, groundtruth, inclusive=True)
+    cols_g, rows_g = _starts_within(groundtruth, detected, inclusive=False)
+    rows, cols = np.concatenate([rows_d, rows_g]), np.concatenate([cols_d, cols_g])
+    d, g = detected[rows], groundtruth[cols]
+    overlap = np.minimum(d[:, 1], g[:, 1]) - np.maximum(d[:, 0], g[:, 0])
+    union = (d[:, 1] - d[:, 0]) + (g[:, 1] - g[:, 0]) - overlap
     # Accept roundoff at the inclusive boundary, without an absolute tolerance near zero.
-    minimum_iou = iou_threshold * (1 - 1e-9)
-    # Sweep endpoints instead of building sample-wise masks or a dense pairwise IoU matrix.
-    # Endpoints sort before starts at the same time, excluding touching intervals.
-    endpoints = sorted(
-        (time, 1 - endpoint, side, i)
-        for side, events in enumerate(intervals)
-        for i, event in enumerate(events)
-        for endpoint, time in enumerate(event)
+    keep = (overlap > 0) & (overlap >= iou_threshold * (1 - 1e-9) * union)
+    graph = csr_matrix(
+        (np.ones(keep.sum()), (rows[keep], cols[keep])), shape=(len(detected), len(groundtruth))
     )
-    active = (set(), set())
-    rows, cols = [], []
-    for _, is_start, side, i in endpoints:
-        if not is_start:
-            active[side].remove(i)
-            continue
-        candidates = np.fromiter(active[1 - side], dtype=int)
-        start, end = intervals[side][i]
-        other = intervals[1 - side][candidates]
-        overlap = np.minimum(end, other[:, 1]) - np.maximum(start, other[:, 0])
-        union = (end - start) + (other[:, 1] - other[:, 0]) - overlap
-        matches = candidates[(overlap > 0) & (overlap / union >= minimum_iou)]
-        rows.extend(np.full(matches.size, i) if side == 0 else matches)
-        cols.extend(matches if side == 0 else np.full(matches.size, i))
-        active[side].add(i)
-    graph = csr_matrix((np.ones(len(rows)), (rows, cols)), shape=(len(detected), len(groundtruth)))
     matching = maximum_bipartite_matching(graph, perm_type="column")
     detected_tp = matching >= 0
     groundtruth_tp = np.zeros(len(groundtruth), dtype=bool)
@@ -3004,8 +3002,7 @@ def compare_detection(
     (0.5, 1.0)
     """
     # Safety check
-    if method not in ("distance", "intersection"):
-        raise ValueError("method must be 'distance' or 'intersection'.")
+    _check_method(method, max_distance, "max_distance")
     if method == "distance":
         indices_detection = np.asarray(indices_detection, dtype=float)
         indices_groundtruth = np.asarray(indices_groundtruth, dtype=float)
@@ -3019,8 +3016,6 @@ def compare_detection(
         indices_detection = np.unique(indices_detection.astype(int))
         indices_groundtruth = np.unique(indices_groundtruth.astype(int))
     else:
-        if np.ndim(max_distance) != 0 or max_distance != 0:
-            raise ValueError("max_distance must be zero with method='intersection'.")
         threshold = np.asarray(iou_threshold)
         if (
             threshold.ndim != 0
