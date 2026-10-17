@@ -1043,3 +1043,7 @@ def test_results_compare_intersection():
         detected.compare_detection(reference.assign(Channel=["Cz", None, "Fz"]))
     with pytest.raises(ValueError, match="max_distance_sec"):
         detected.compare_detection(reference, max_distance_sec=0.1, method="intersection")
+    # Parameters are validated even with a single channel, i.e. without any pair to compare.
+    single = SpindlesResults(events.iloc[:1], data[:1], 100, ["Cz"], None, data[:1])
+    with pytest.raises(ValueError, match="iou_threshold"):
+        single.compare_channels(method="intersection", iou_threshold=2)

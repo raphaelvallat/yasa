@@ -510,9 +510,12 @@ class _DetectionResults:
         _check_method(method, max_distance_sec, "max_distance_sec")
         max_distance = round(10 * max_distance_sec)
         _check_parameters(method, max_distance, iou_threshold)
-        # Validate and sort the events of each channel once, instead of once per pair of channels.
+        # Prepare the events of each channel once, instead of once per pair of channels.
+        # _events_by_channel already validates the events, and sorts them with intersection.
         events = self._events_by_channel(self._summary_with_channel(), method, "self")
-        events = {ch: _prepare_events(ev, method, "self") for ch, ev in events.items()}
+        if method == "distance":
+            # Sorted unique start times, as in yasa.compare_detection
+            events = {ch: np.unique(ev) for ch, ev in events.items()}
         chan = list(events)
 
         # A channel always perfectly matches itself, so the diagonal is not computed.
@@ -3004,6 +3007,7 @@ def compare_detection(
     >>> res["precision"], res["recall"]
     (0.5, 1.0)
     """
+    _check_method(method, max_distance, "max_distance")
     _check_parameters(method, max_distance, iou_threshold)
     indices_detection = _prepare_events(indices_detection, method, "detection")
     indices_groundtruth = _prepare_events(indices_groundtruth, method, "groundtruth")
@@ -3013,8 +3017,7 @@ def compare_detection(
 
 
 def _check_parameters(method, max_distance, iou_threshold):
-    """Validate the parameters of yasa.compare_detection."""
-    _check_method(method, max_distance, "max_distance")
+    """Validate max_distance and iou_threshold, after checking the method with _check_method."""
     if method == "distance":
         assert isinstance(max_distance, int), "max_distance must be 0 or a positive integer."
         assert max_distance >= 0, "max_distance must be 0 or a positive integer."
@@ -3050,10 +3053,12 @@ def _has_match(x, y, max_distance):
 
 
 def _compare_prepared(indices_detection, indices_groundtruth, max_distance, method, iou_threshold):
-    """Compare events that were already validated with _check_parameters and _prepare_events.
+    """Compare events that were already validated, without checking them again.
 
-    This skips the validation and sorting of yasa.compare_detection, which compare_channels would
-    otherwise repeat for every pair of channels.
+    With method="distance", the indices must be sorted unique integers, as returned by
+    _prepare_events. Otherwise, the results are silently wrong. This skips the validation and
+    sorting of yasa.compare_detection, which compare_channels would otherwise repeat for every
+    pair of channels.
     """
     # Handle cases where indices_detection or indices_groundtruth is empty
     if indices_detection.size == 0 or indices_groundtruth.size == 0:
