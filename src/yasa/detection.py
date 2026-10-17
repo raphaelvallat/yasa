@@ -446,7 +446,7 @@ class _DetectionResults:
             raise ValueError(f"{name} must not contain missing Channel values.")
         by_channel = df.groupby("Channel", sort=False).indices
         if method == "intersection":
-            # Casting here also supports nullable and pyarrow-backed columns; NA becomes NaN.
+            # Casting here also supports nullable and pyarrow-backed columns, and turns NA into NaN.
             events = df[columns].to_numpy(dtype=float, na_value=np.nan)
             events = _validate_intervals(events, name)
             # Sort once by start, so that each comparison in compare_channels does not re-sort.
@@ -477,17 +477,20 @@ class _DetectionResults:
             agreement.
         max_distance_sec : float
             The maximum distance between {events}, in seconds, to consider as the same event.
-            Only used with ``method="distance"``; must be zero with ``method="intersection"``.
+            Only used with ``method="distance"``.
 
-            .. warning:: With ``method="distance"``, YASA rounds start times to the nearest
-                decisecond (= 100 ms). Two {events} starting at 500 ms and 540 ms will therefore
+            .. warning:: To reduce computation cost, YASA rounds the start time of each {event}
+                to the nearest decisecond (= 100 ms). This means that the lowest possible
+                resolution is 100 ms, regardless of the sampling frequency of the data. Two
+                {events} starting at 500 ms and 540 ms on their respective channels will therefore
                 always be considered the same event, even when max_distance_sec=0.
         method : str
-            ``"distance"`` (default) compares rounded start times. ``"intersection"`` compares
-            full event intervals in seconds, without rounding, using one-to-one IoU matching.
+            How to match {events}. ``"distance"`` (default) only compares their start times.
+            ``"intersection"`` compares their full extent, using both the start and end times
+            without rounding. See :py:func:`yasa.compare_detection` for details.
         iou_threshold : float
-            Minimum IoU for a match with ``method="intersection"`` (default 0.2). Ignored with
-            ``method="distance"``. See :py:func:`yasa.compare_detection` for details.
+            Minimum overlap for two {events} to match with ``method="intersection"``, measured as
+            the intersection over union (default 0.2).
 
         Returns
         -------
@@ -549,13 +552,13 @@ class _DetectionResults:
             pandas DataFrame with custom annotations, obtained by another detection method outside
             of YASA, or with manual labelling. If b), the dataframe must contain the "Start"
             column, with the start of each event in seconds from the beginning of the recording.
-            With ``method="intersection"``, an "End" column is also required, in seconds.
+            With ``method="intersection"``, it must also contain the "End" column.
             {channel_column}
         max_distance_sec : float
             The maximum distance between {events}, in seconds, to consider as the same event.
-            Only used with ``method="distance"``; must be zero with ``method="intersection"``.
+            Only used with ``method="distance"``.
 
-            .. warning:: With ``method="distance"``, YASA rounds the start time of each {event}
+            .. warning:: To reduce computation cost, YASA rounds the start time of each {event}
                 to the nearest decisecond (= 100 ms). This means that the lowest possible
                 resolution is 100 ms, regardless of the sampling frequency of the data.
         other_is_groundtruth : bool
@@ -568,15 +571,12 @@ class _DetectionResults:
                 detection, and the precision score is the proportion of detected events by the
                 current detection that are also present in other.
         method : str
-            ``"distance"`` (default) compares rounded event start times, preserving the existing
-            behaviour. ``"intersection"`` compares the full event intervals by intersection-over-
-            union (IoU), without rounding or requiring the same sampling frequency. In this mode,
-            matching is one-to-one and maximizes the number of valid pairs; ``max_distance_sec``
-            must be zero. Only channels present in both detections are compared in either mode.
+            How to match {events}. ``"distance"`` (default) only compares their start times.
+            ``"intersection"`` compares their full extent, using both the start and end times
+            without rounding. See :py:func:`yasa.compare_detection` for details.
         iou_threshold : float
-            Minimum IoU for a match with ``method="intersection"`` (default 0.2, between 0 and 1,
-            inclusive). Intervals must overlap for a positive duration, even at a zero threshold.
-            Ignored with ``method="distance"``. See :py:func:`yasa.compare_detection` for details.
+            Minimum overlap for two {events} to match with ``method="intersection"``, measured as
+            the intersection over union (default 0.2).
 
         Returns
         -------
@@ -2891,44 +2891,41 @@ def compare_detection(
     indices_detection : array_like
         Indices of the detected events. For example, this could be the indices of the
         start of the spindles, or the negative peak of the slow-waves. The indices must be in
-        samples, and not in seconds, with ``method="distance"``. With ``method="intersection"``,
-        pass a two-dimensional array of shape (n_events, 2), containing each event's start and
-        end in the same units as ``indices_groundtruth`` (e.g. seconds). Endpoints must be finite,
-        with start < end. Input order is preserved, and duplicate intervals are separate events.
+        samples, and not in seconds. With ``method="intersection"``, this is instead an array of
+        shape (n_events, 2) with the start and end of each event, in any unit (e.g. seconds).
     indices_groundtruth : array_like
-        Indices of the ground-truth events in samples, or a (n_events, 2) array of intervals with
-        ``method="intersection"``. An empty list is accepted in either mode.
+        The ground-truth events, in the same format and unit as ``indices_detection``.
     max_distance : int, optional
         Maximum distance between indices, in samples, to consider as the same event (default = 0).
         For example, if the sampling frequency of the data is 100 Hz, using `max_distance=100` will
         search for a matching event 1 second before or after the current event.
-        Must be zero with ``method="intersection"``.
+        Only used with ``method="distance"``.
     method : str
-        ``"distance"`` (default) matches event indices within ``max_distance``, allowing several
-        events to match the same event. ``"intersection"`` matches intervals one-to-one using
-        intersection-over-union (IoU), maximizing the number of valid pairs. It does not maximize
-        their summed IoU. If several maximum matchings exist, the selected events may vary, but
-        the number of matches and all three scores remain the same.
+        How to match detected and ground-truth events.
+
+        * ``"distance"`` (default): two events match if their indices are within
+          ``max_distance`` of each other. A single event can match several events.
+        * ``"intersection"``: two events match if they overlap enough (see ``iou_threshold``).
+          Unlike ``"distance"``, this takes the duration of the events into account. Each event
+          can match at most one other event, and YASA keeps the pairing with the most matches.
+          This method requires both the start and end of each event.
     iou_threshold : float
-        Minimum IoU for a match with ``method="intersection"`` (default 0.2, between 0 and 1,
-        inclusive). IoU is the overlap duration divided by the union duration. A pair matches
-        when IoU >= ``iou_threshold`` and the overlap duration is positive; touching boundaries
-        never match, even when the threshold is zero. Equality allows a relative floating-point
-        tolerance of 1e-9 (no absolute tolerance). Ignored with ``method="distance"``.
+        Minimum overlap for two events to match with ``method="intersection"`` (default 0.2).
+        The overlap is measured as the intersection over union (IoU), i.e. the duration of the
+        overlap divided by the total duration covered by the two events. It ranges from 0 to 1,
+        where 1 means that the two events are identical. Events that do not overlap never match.
 
     Returns
     -------
     results : dict
         A dictionary with the comparison results:
 
-        * ``tp``: True positives, the matched detection indices or intervals.
-        * ``fp``: False positives, the unmatched detection indices or intervals.
-        * ``fn``: False negatives, the unmatched ground-truth indices or intervals.
+        * ``tp``: True positives, i.e. detected events that match a ground-truth event.
+        * ``fp``: False positives, i.e. detected events with no matching ground-truth event.
+        * ``fn``: False negatives, i.e. ground-truth events with no matching detected event.
         * ``precision``: Precision score, aka positive predictive value (see Notes)
         * ``recall``: Recall score, aka sensitivity (see Notes)
         * ``f1``: F1-score (see Notes)
-
-        With ``method="intersection"``, each interval array retains its input endpoint dtype.
 
     Notes
     -----
@@ -2936,8 +2933,7 @@ def compare_detection(
       that match a ground-truth event.
     * The recall score is calculated as (N - FN) / N, where N is the number of ground-truth events,
       i.e. the proportion of ground-truth events that match a detected event. This is the same as
-      TP / (TP + FN) when ``max_distance=0``.
-      With ``method="intersection"``, matching is one-to-one, so recall is always TP / (TP + FN).
+      TP / (TP + FN) when ``max_distance=0`` or ``method="intersection"``.
     * The F1-score is the harmonic mean of precision and recall.
 
     This function is inspired by the `sleepecg.compare_heartbeats
