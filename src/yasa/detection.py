@@ -508,21 +508,20 @@ class _DetectionResults:
         """
         assert score in ["f1", "precision", "recall"], f"Invalid scoring metric: {score}"
         _check_method(method, max_distance_sec, "max_distance_sec")
-        events = self._events_by_channel(self._summary_with_channel(), method, "self")
-        chan = list(events)
         max_distance = round(10 * max_distance_sec)
+        _check_parameters(method, max_distance, iou_threshold)
+        # Validate and sort the events of each channel once, instead of once per pair of channels.
+        events = self._events_by_channel(self._summary_with_channel(), method, "self")
+        events = {ch: _prepare_events(ev, method, "self") for ch, ev in events.items()}
+        chan = list(events)
 
         # A channel always perfectly matches itself, so the diagonal is not computed.
         scores = np.eye(len(chan))
         for (i, c_index), (j, c_col) in permutations(enumerate(chan), 2):
             # DANGER: Note how we invert c_col and c_index here. This is because
             # c_index (the index of the dataframe) should be the ground-truth.
-            res = compare_detection(
-                events[c_col],
-                events[c_index],
-                max_distance,
-                method=method,
-                iou_threshold=iou_threshold,
+            res = _compare_prepared(
+                events[c_col], events[c_index], max_distance, method, iou_threshold
             )
             scores[i, j] = res[score]
         index = pd.Index(chan, name="Channel")
@@ -3005,20 +3004,20 @@ def compare_detection(
     >>> res["precision"], res["recall"]
     (0.5, 1.0)
     """
-    # Safety check
+    _check_parameters(method, max_distance, iou_threshold)
+    indices_detection = _prepare_events(indices_detection, method, "detection")
+    indices_groundtruth = _prepare_events(indices_groundtruth, method, "groundtruth")
+    return _compare_prepared(
+        indices_detection, indices_groundtruth, max_distance, method, iou_threshold
+    )
+
+
+def _check_parameters(method, max_distance, iou_threshold):
+    """Validate the parameters of yasa.compare_detection."""
     _check_method(method, max_distance, "max_distance")
     if method == "distance":
-        indices_detection = np.asarray(indices_detection, dtype=float)
-        indices_groundtruth = np.asarray(indices_groundtruth, dtype=float)
         assert isinstance(max_distance, int), "max_distance must be 0 or a positive integer."
         assert max_distance >= 0, "max_distance must be 0 or a positive integer."
-        assert indices_detection.ndim == 1, "detection indices must be a 1D list or array."
-        assert indices_groundtruth.ndim == 1, "groundtruth indices must be a 1D list or array."
-        assert np.all(np.mod(indices_detection, 1) == 0), "detection indices must be integers."
-        assert np.all(np.mod(indices_groundtruth, 1) == 0), "groundtruth indices must be integers."
-        # Sorted unique indices
-        indices_detection = np.unique(indices_detection.astype(int))
-        indices_groundtruth = np.unique(indices_groundtruth.astype(int))
     else:
         threshold = np.asarray(iou_threshold)
         if (
@@ -3028,9 +3027,34 @@ def compare_detection(
             or not 0 <= threshold <= 1
         ):
             raise ValueError("iou_threshold must be a finite number between 0 and 1.")
-        indices_detection = _validate_intervals(indices_detection, "detection")
-        indices_groundtruth = _validate_intervals(indices_groundtruth, "groundtruth")
 
+
+def _prepare_events(events, method, name):
+    """Validate the events of yasa.compare_detection, and sort them with method="distance"."""
+    if method == "intersection":
+        return _validate_intervals(events, name)
+    events = np.asarray(events, dtype=float)
+    assert events.ndim == 1, f"{name} indices must be a 1D list or array."
+    assert np.all(np.mod(events, 1) == 0), f"{name} indices must be integers."
+    # Sorted unique indices
+    return np.unique(events.astype(int))
+
+
+def _has_match(x, y, max_distance):
+    """For each element of x, whether there is an element of sorted y within max_distance."""
+    idx = np.searchsorted(y, x - max_distance, side="left")
+    is_valid = idx < y.size
+    has_match = np.zeros(x.size, dtype=bool)
+    has_match[is_valid] = y[idx[is_valid]] <= x[is_valid] + max_distance
+    return has_match
+
+
+def _compare_prepared(indices_detection, indices_groundtruth, max_distance, method, iou_threshold):
+    """Compare events that were already validated with _check_parameters and _prepare_events.
+
+    This skips the validation and sorting of yasa.compare_detection, which compare_channels would
+    otherwise repeat for every pair of channels.
+    """
     # Handle cases where indices_detection or indices_groundtruth is empty
     if indices_detection.size == 0 or indices_groundtruth.size == 0:
         return dict(
@@ -3042,18 +3066,10 @@ def compare_detection(
             f1=0,
         )
 
-    def _has_match(x, y):
-        """For each element of x, whether there is an element of sorted y within max_distance."""
-        idx = np.searchsorted(y, x - max_distance, side="left")
-        is_valid = idx < y.size
-        has_match = np.zeros(x.size, dtype=bool)
-        has_match[is_valid] = y[idx[is_valid]] <= x[is_valid] + max_distance
-        return has_match
-
     # Determine which events are matched on each side.
     if method == "distance":
-        is_detected_tp = _has_match(indices_detection, indices_groundtruth)
-        is_groundtruth_tp = _has_match(indices_groundtruth, indices_detection)
+        is_detected_tp = _has_match(indices_detection, indices_groundtruth, max_distance)
+        is_groundtruth_tp = _has_match(indices_groundtruth, indices_detection, max_distance)
     else:
         is_detected_tp, is_groundtruth_tp = _match_intervals(
             indices_detection, indices_groundtruth, iou_threshold
