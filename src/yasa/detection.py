@@ -9,7 +9,7 @@ slow-waves, and rapid eye movements from sleep EEG recordings.
 
 import logging
 import types
-from itertools import product
+from itertools import permutations
 
 import mne
 import numpy as np
@@ -444,15 +444,19 @@ class _DetectionResults:
         # Otherwise, groupby would silently drop these events from the comparison.
         if df["Channel"].isna().any():
             raise ValueError(f"{name} must not contain missing Channel values.")
+        by_channel = df.groupby("Channel", sort=False).indices
         if method == "intersection":
             # Casting here also supports nullable and pyarrow-backed columns; NA becomes NaN.
             events = df[columns].to_numpy(dtype=float, na_value=np.nan)
             events = _validate_intervals(events, name)
+            # Sort once by start, so that each comparison in compare_channels does not re-sort.
+            by_channel = {
+                ch: indices[np.argsort(events[indices, 0], kind="stable")]
+                for ch, indices in by_channel.items()
+            }
         else:
             events = (df["Start"] * 10).round().astype(int).to_numpy()
-        return {
-            ch: events[indices] for ch, indices in df.groupby("Channel", sort=False).indices.items()
-        }
+        return {ch: events[indices] for ch, indices in by_channel.items()}
 
     def compare_channels(
         self, score="f1", max_distance_sec=0, *, method="distance", iou_threshold=0.2
@@ -505,10 +509,9 @@ class _DetectionResults:
         chan = list(events)
         max_distance = round(10 * max_distance_sec)
 
-        scores = pd.DataFrame(index=chan, columns=chan, dtype=float)
-        scores.index.name = "Channel"
-        scores.columns.name = "Channel"
-        for c_index, c_col in product(chan, repeat=2):
+        # A channel always perfectly matches itself, so the diagonal is not computed.
+        scores = np.eye(len(chan))
+        for (i, c_index), (j, c_col) in permutations(enumerate(chan), 2):
             # DANGER: Note how we invert c_col and c_index here. This is because
             # c_index (the index of the dataframe) should be the ground-truth.
             res = compare_detection(
@@ -518,8 +521,9 @@ class _DetectionResults:
                 method=method,
                 iou_threshold=iou_threshold,
             )
-            scores.loc[c_index, c_col] = res[score]
-        return scores
+            scores[i, j] = res[score]
+        index = pd.Index(chan, name="Channel")
+        return pd.DataFrame(scores, index=index, columns=index)
 
     def compare_detection(
         self,
@@ -2832,31 +2836,35 @@ def _validate_intervals(events, name):
 
 
 def _starts_within(a, b, inclusive):
-    """Return the (i, j) pairs where b[j] starts within a[i], using sorted searches.
+    """Return the (i, j) pairs where b[j] starts within a[i], with a and b sorted by start.
 
     The start bound is inclusive or exclusive, and the end bound is always exclusive.
     """
-    order = np.argsort(b[:, 0], kind="stable")
-    starts = b[order, 0]
-    lo = np.searchsorted(starts, a[:, 0], side="left" if inclusive else "right")
-    hi = np.searchsorted(starts, a[:, 1], side="left")
+    lo = np.searchsorted(b[:, 0], a[:, 0], side="left" if inclusive else "right")
+    hi = np.searchsorted(b[:, 0], a[:, 1], side="left")
     counts = np.maximum(hi - lo, 0)
     i = np.repeat(np.arange(len(a)), counts)
-    # Position of each pair within its run, to index the sorted b intervals.
+    # Position of each pair within its run of consecutive b intervals.
     offsets = np.arange(counts.sum()) - np.repeat(np.cumsum(counts) - counts, counts)
-    return i, order[np.repeat(lo, counts) + offsets]
+    return i, np.repeat(lo, counts) + offsets
 
 
 def _match_intervals(detected, groundtruth, iou_threshold):
     """Return event masks from a maximum-cardinality matching of overlapping intervals."""
     detected = detected.astype(float, copy=False)
     groundtruth = groundtruth.astype(float, copy=False)
+    # Sorting by start is near-linear for already sorted events, e.g. from _events_by_channel.
+    # Sorted search keys also make np.searchsorted much faster.
+    order_d = np.argsort(detected[:, 0], kind="stable")
+    order_g = np.argsort(groundtruth[:, 0], kind="stable")
+    sorted_d, sorted_g = detected[order_d], groundtruth[order_g]
     # In any pair with a positive overlap, one interval starts within the other. The start bound
     # is inclusive on one side only, so that pairs with the same start are found once. This finds
     # all the candidate pairs without building sample-wise masks or a dense pairwise IoU matrix.
-    rows_d, cols_d = _starts_within(detected, groundtruth, inclusive=True)
-    cols_g, rows_g = _starts_within(groundtruth, detected, inclusive=False)
-    rows, cols = np.concatenate([rows_d, rows_g]), np.concatenate([cols_d, cols_g])
+    rows_d, cols_d = _starts_within(sorted_d, sorted_g, inclusive=True)
+    cols_g, rows_g = _starts_within(sorted_g, sorted_d, inclusive=False)
+    rows = order_d[np.concatenate([rows_d, rows_g])]
+    cols = order_g[np.concatenate([cols_d, cols_g])]
     d, g = detected[rows], groundtruth[cols]
     overlap = np.minimum(d[:, 1], g[:, 1]) - np.maximum(d[:, 0], g[:, 0])
     union = (d[:, 1] - d[:, 0]) + (g[:, 1] - g[:, 0]) - overlap

@@ -978,6 +978,11 @@ def test_compare_detection_intersection():
     # Greedily taking the best IoU would leave only one match instead of two.
     res = compare_detection([[1, 3], [0, 2]], [[1, 3], [2.4, 3.4]], method="intersection")
     assert res["f1"] == 1
+    # Unsorted inputs return the matched events in their input order.
+    res = compare_detection([[10, 11], [0, 3]], [[20, 21], [2, 5]], method="intersection")
+    np.testing.assert_array_equal(res["tp"], [[0, 3]])
+    np.testing.assert_array_equal(res["fp"], [[10, 11]])
+    np.testing.assert_array_equal(res["fn"], [[20, 21]])
     # Duplicated detections cannot both match the same ground-truth event.
     res = compare_detection([[0, 2], [0, 2]], [[0, 2]], method="intersection")
     assert (res["precision"], res["recall"]) == (0.5, 1)
