@@ -709,7 +709,7 @@ In Part 2 (night-level summary agreement), the standard deviation of the differe
 * The **between-subject SD** captures the stable offsets of the device for a given person, e.g. a device that always underestimates the deep sleep of the same participant.
 * The **within-subject SD** captures the night-to-night error.
 
-The LoA combine both, and describe the error that we can expect on a new night of a new person. Their confidence intervals follow `Zou, 2013`_. The regressions behind the proportional bias and heteroscedasticity tests also account for the participant (mixed models, which require `statsmodels`_: ``pip install yasa[stats]``). Their confidence intervals always come from the model rather than from the bootstrap, which is not reliable for a slope with only a handful of participants.
+The LoA combine both, and describe the error that we can expect on a new night of a new person. Their confidence intervals follow `Zou, 2013`_. The bias itself is still the plain mean of all the differences, so participants with more nights weigh more. This follows `Bland and Altman, 2007`_, and differs from a mixed model intercept, which would weigh participants by precision. The regressions behind the proportional bias and heteroscedasticity tests also account for the participant (mixed models, which require `statsmodels`_: ``pip install yasa[stats]``). Their confidence intervals always come from the model rather than from the bootstrap, which is not reliable for a slope with only a handful of participants.
 
 `Parker et al., 2016`_ recommend reporting both components. They are available in :py:attr:`~SleepStatsAgreement.variance_components`:
 
