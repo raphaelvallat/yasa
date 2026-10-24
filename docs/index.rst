@@ -72,6 +72,7 @@ The core dependencies of YASA are:
 
 Some features require optional dependencies (`SleepECG <https://sleepecg.readthedocs.io/>`_,
 `PyRiemann <https://pyriemann.readthedocs.io/>`_,
+`statsmodels <https://www.statsmodels.org/>`_,
 `ipywidgets <https://ipywidgets.readthedocs.io/>`_).
 
 User installation

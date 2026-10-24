@@ -79,8 +79,8 @@ uses the ``scorer`` name to tell the reference from the device in all its output
     ``ref_hyp.evaluate(obs_hyp)`` (see :py:meth:`Hypnogram.evaluate`).
 
     Our dataset has one night per subject. If you have several nights per subject, give each night
-    its own key (e.g. ``"sbj01_night1"``). Keep in mind that the group-level metrics and confidence
-    intervals will then treat each night as independent.
+    its own key (e.g. ``"sbj01_night1"``) and use the ``subjects`` argument to tell YASA which
+    subject each night belongs to (see :ref:`tutorial_evaluation_repeated`).
 
 Data requirements
 ~~~~~~~~~~~~~~~~~
@@ -676,6 +676,54 @@ Keep in mind that the reference is not perfect either. Even two expert scorers d
 on the same PSG recording, which sets a realistic ceiling on the agreement that any device can
 reach (`de Zambotti et al., 2025`_).
 
+.. _tutorial_evaluation_repeated:
+
+Several nights per subject
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Our sample dataset has one night per subject (participant).
+Many validation studies, however, record several nights for each participant. These nights are not independent, and treating every night as if it came from a different person therefore inflates the sample size and may bias the confidence intervals and the p-values of the assumption tests (`Bland and Altman, 2007`_, `Myles and Cui, 2007`_).
+Averaging the nights of each subject before the analysis is not a good solution either. It removes part of the night-to-night error, and the LoA may end up too narrow.
+
+Instead, we can tell YASA that nights come from the same participants with the ``subjects`` argument. In the example below, we simulate three nights for each of four subjects:
+
+.. code-block:: python
+
+    >>> ref_hyps, obs_hyps, subjects = {}, {}, {}
+    >>> for i in range(12):
+    ...     sub = f"sbj{i // 3:02d}"
+    ...     key = f"{sub}_night{i % 3 + 1}"  # e.g. "sbj00_night1"
+    ...     ref_hyps[key] = yasa.simulate_hypnogram(tib=480, scorer="PSG", seed=i)
+    ...     obs_hyps[key] = ref_hyps[key].simulate_similar(scorer="Device", seed=i)
+    ...     subjects[key] = sub
+    >>> ebe = yasa.EpochByEpochAgreement(ref_hyps, obs_hyps, subjects=subjects)
+    >>> ebe
+    <EpochByEpochAgreement | Observed hypnograms scored by Device evaluated against reference
+    hypnograms scored by PSG, 12 sleep sessions from 4 subjects>
+    >>> ssa = yasa.SleepStatsAgreement(ebe.get_sleep_stats())
+
+What changes in Part 1 (epoch-by-epoch statistics)? :py:meth:`~EpochByEpochAgreement.summary` and :py:meth:`~EpochByEpochAgreement.get_confusion_matrix_proportional` now average the nights of each participant first, and then average across participants. This way, every participant counts equally, however many nights they recorded. The bootstrap also resamples participants instead of nights, and the proportional error matrix gets an extra ``n_subjects`` column.
+
+In Part 2 (night-level summary agreement), the standard deviation of the differences between the device and the reference is split into two components, following `Bland and Altman, 2007`_:
+
+* The **between-subject SD** captures the stable offsets of the device for a given person, e.g. a device that always underestimates the deep sleep of the same participant.
+* The **within-subject SD** captures the night-to-night error.
+
+The LoA combine both, and describe the error that we can expect on a new night of a new person. Their confidence intervals follow `Zou, 2013`_. The bias itself is still the plain mean of all the differences, so participants with more nights weigh more. This follows `Bland and Altman, 2007`_, and differs from a mixed model intercept, which would weigh participants by precision. The regressions behind the proportional bias and heteroscedasticity tests also account for the participant (mixed models, which require `statsmodels`_: ``pip install yasa[stats]``). Their confidence intervals always come from the model rather than from the bootstrap, which is not reliable for a slope with only a handful of participants.
+
+`Parker et al., 2016`_ recommend reporting both components. They are available in :py:attr:`~SleepStatsAgreement.variance_components`:
+
+.. code-block:: python
+
+    >>> ssa.variance_components.loc[["TST", "WASO", "N3"]].round(1)
+                sd_between  sd_within  sd_total  n_subjects  n_sessions
+    sleep_stat
+    TST                0.0       55.0      55.0           4          12
+    WASO               0.0       56.8      56.8           4          12
+    N3                 6.8       41.5      42.0           4          12
+
+Here, the between-subject SD is close to zero, which is expected since the simulated nights have no systematic offset per subject. A large between-subject SD means that the device is consistently off for some people. To spot these subject-specific offsets, ``ssa.plot_blandaltman(hue="subject_id")`` gives the nights of each subject the same color.
+
 --------
 
 Summary
@@ -760,6 +808,19 @@ References
 * Bland, J. M., & Altman, D. G. (1999). Measuring agreement in method comparison studies.
   *Statistical Methods in Medical Research*, 8(2), 135–160.
   https://doi.org/10.1177/096228029900800204
+* Bland, J. M., & Altman, D. G. (2007). Agreement between methods of measurement with multiple
+  observations per individual. *Journal of Biopharmaceutical Statistics*, 17(4), 571–582.
+  https://doi.org/10.1080/10543400701329422
+* Myles, P. S., & Cui, J. (2007). Using the Bland-Altman method to measure agreement with repeated
+  measures. *British Journal of Anaesthesia*, 99(3), 309–311. https://doi.org/10.1093/bja/aem214
+* Zou, G. Y. (2013). Confidence interval estimation for the Bland-Altman limits of agreement with
+  multiple observations per individual. *Statistical Methods in Medical Research*, 22(6), 630–642.
+  https://doi.org/10.1177/0962280211402548
+* Parker, R. A., Weir, C. J., Rubio, N., Rabinovich, R., Pinnock, H., Hanley, J., McCloughan, L.,
+  Drost, E. M., Mantoani, L. C., MacNee, W., & McKinstry, B. (2016). Application of mixed effects
+  limits of agreement in the presence of multiple sources of variability: exemplar from the
+  comparison of several devices to measure respiratory rate in COPD patients. *PLoS ONE*, 11(12),
+  e0168321. https://doi.org/10.1371/journal.pone.0168321
 * Euser, A. M., Dekker, F. W., & le Cessie, S. (2008). A practical approach to Bland-Altman plots
   and variation coefficients for log transformed variables. *Journal of Clinical Epidemiology*,
   61(10), 978–982. https://doi.org/10.1016/j.jclinepi.2007.11.003
@@ -772,4 +833,9 @@ References
 .. _de Zambotti et al., 2025: https://doi.org/10.1093/sleepadvances/zpaf063
 .. _Bland and Altman: https://doi.org/10.1177/096228029900800204
 .. _Bland and Altman, 1999: https://doi.org/10.1177/096228029900800204
+.. _Bland and Altman, 2007: https://doi.org/10.1080/10543400701329422
+.. _Myles and Cui, 2007: https://doi.org/10.1093/bja/aem214
+.. _Zou, 2013: https://doi.org/10.1177/0962280211402548
+.. _Parker et al., 2016: https://doi.org/10.1371/journal.pone.0168321
+.. _statsmodels: https://www.statsmodels.org/
 .. _Euser et al., 2008: https://doi.org/10.1016/j.jclinepi.2007.11.003

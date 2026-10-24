@@ -89,3 +89,13 @@ def is_sleepecg_installed():
         import sleepecg  # noqa
     except ImportError:  # pragma: no cover
         raise ImportError("sleepecg needs to be installed. Please use `pip install yasa[heart]`.")
+
+
+def is_statsmodels_installed():
+    """Test if statsmodels is installed."""
+    try:
+        import statsmodels  # noqa
+    except ImportError:  # pragma: no cover
+        raise ImportError(
+            "statsmodels needs to be installed. Please use `pip install yasa[stats]`."
+        )
