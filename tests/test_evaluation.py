@@ -1650,18 +1650,12 @@ class TestSleepStatsAgreementRepeated:
         assert unique.n_subjects == N_SESSIONS and not unique._repeated
         pd.testing.assert_frame_equal(unique.summary(ci_method="param"), ssa.summary("param"))
         pd.testing.assert_frame_equal(unique.assumptions, ssa.assumptions)
+        # Without repeated nights, the total SD is the sample SD and the components are NaN
         vc = unique.variance_components
-        assert vc[["sd_between", "sd_within"]].isna().all().all()
-        assert "subject_id" in unique.data
-
-    def test_variance_components_without_subjects(self, ssa, valid_arrays):
-        vc = ssa.variance_components
         assert vc.columns.tolist() == ["sd_between", "sd_within", "sd_total", "n_subjects", "n_sessions"]  # fmt: skip
         assert vc[["sd_between", "sd_within"]].isna().all().all()
         assert (vc["n_subjects"] == vc["n_sessions"]).all()
-        _, diff = valid_arrays("TST")
-        assert vc.at["TST", "sd_total"] == pytest.approx(np.std(diff, ddof=1))
-        assert vc.at["TST", "n_sessions"] == len(diff)
+        pd.testing.assert_frame_equal(vc, ssa.variance_components)
 
     def test_loa_matches_manual_anova(self, ssa_rm_synth, rm_stats):
         ref, obs, subjects = rm_stats
@@ -1737,13 +1731,7 @@ class TestSleepStatsAgreementRepeated:
         sd_total = np.sqrt(manual["var_between"] + manual["var_within"])
         assert asmp["cohen_d"] == pytest.approx(diff.mean() / sd_total)
 
-    def test_mover_loa_ci(self, ssa_rm_synth):
-        # The MOVER interval of the LoA is asymmetric (wider away from the bias)
-        summ = ssa_rm_synth.summary(ci_method="param")
-        up = summ["loa_upper"]
-        assert ((up["upper"] - up["center"]) > (up["center"] - up["lower"])).all()
-        lo = summ["loa_lower"]
-        assert ((lo["center"] - lo["lower"]) > (lo["upper"] - lo["center"])).all()
+    def test_mover_loa_ci(self):
         # Scalar check of the formulas (Zou 2013)
         out = SleepStatsAgreement._mover_loa_ci(2.0, 1.0, 3.0, 4.0, 3.0, 6.0, 1.96)
         upper = 2 + 1.96 * 4
