@@ -410,6 +410,15 @@ def test_spindles_compare_channels(sp_n2):
     mat_prec = sp_n2.compare_channels(score="precision")
     mat_rec = sp_n2.compare_channels(score="recall")
     assert mat_prec.T.equals(mat_rec)  # tril precision == triu recall
+    # Both triangles match the public function, which validates and sorts each pair itself.
+    starts = {
+        ch: (df["Start"] * 10).round().astype(int) for ch, df in sp_n2.summary().groupby("Channel")
+    }
+    for truth in mat_prec.index:
+        for det in mat_prec.columns:
+            res = compare_detection(starts[det], starts[truth])
+            assert mat_prec.loc[truth, det] == res["precision"]
+            assert mat_rec.loc[truth, det] == res["recall"]
 
 
 def test_spindles_mne(mne_n2n3):
@@ -1043,3 +1052,7 @@ def test_results_compare_intersection():
         detected.compare_detection(reference.assign(Channel=["Cz", None, "Fz"]))
     with pytest.raises(ValueError, match="max_distance_sec"):
         detected.compare_detection(reference, max_distance_sec=0.1, method="intersection")
+    # Parameters are validated even with a single channel, i.e. without any pair to compare.
+    single = SpindlesResults(events.iloc[:1], data[:1], 100, ["Cz"], None, data[:1])
+    with pytest.raises(ValueError, match="iou_threshold"):
+        single.compare_channels(method="intersection", iou_threshold=2)
