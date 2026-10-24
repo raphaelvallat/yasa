@@ -1416,15 +1416,14 @@ class SleepStatsAgreement:
     >>> sstats = eea.get_sleep_stats()
     >>> # Create SleepStatsAgreement instance
     >>> ssa = yasa.SleepStatsAgreement(sstats)
-    >>> ssa.summary(ci_method="param").round(1).head(3)  # doctest: +NORMALIZE_WHITESPACE
-    variable   bias_intercept             bias_mean  ... loa_slope loa_upper
-    interval           center lower upper    center  ...     upper    center lower upper
-    sleep_stat                                       ...
-    %N1                  -5.4 -13.9   3.2       0.3  ...       0.4       6.1   3.7   8.5
-    %N2                 -27.3 -49.1  -5.6      -0.2  ...       0.2      12.4   7.2  17.6
-    %N3                  -9.1 -23.8   5.5       1.4  ...       0.6      20.4  12.6  28.3
-    <BLANKLINE>
-    [3 rows x 24 columns]
+    >>> summary = ssa.summary(ci_method="param").round(1)  # 24 columns, 3 per variable
+    >>> summary[["bias_mean", "loa_lower", "loa_upper"]].head(3)  # doctest: +NORMALIZE_WHITESPACE
+    variable   bias_mean             loa_lower             loa_upper
+    interval      center lower upper    center lower upper    center lower upper
+    sleep_stat
+    %N1              0.3  -1.1   1.6      -5.5  -7.9  -3.1       6.1   3.7   8.5
+    %N2             -0.2  -3.2   2.8     -12.9 -18.1  -7.6      12.4   7.2  17.6
+    %N3              1.4  -3.2   5.9     -17.7 -25.6  -9.8      20.4  12.6  28.3
 
     >>> ssa.report(ci_method="param").head(3)[["Bias [95% CI]", "LoA [95% CI]"]]  # doctest: +SKIP
 

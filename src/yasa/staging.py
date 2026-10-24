@@ -384,7 +384,7 @@ class SleepStaging:
                 features[c] = features[c].astype(int)
 
         # Sort the column names here (same behavior as lightGBM)
-        features.sort_index(axis=1, inplace=True)
+        features = features.sort_index(axis=1)
 
         # Add to self
         self._features = features
