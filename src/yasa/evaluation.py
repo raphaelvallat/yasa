@@ -1519,7 +1519,9 @@ class SleepStatsAgreement:
 
     * The SD of the differences, which defines the limits of agreement, is the total SD of the
       one-way random-effects ANOVA of Bland & Altman (2007), i.e. the SD of a new night of a new
-      subject (see :py:attr:`variance_components`). The bias is the mean of all differences.
+      subject (see :py:attr:`variance_components`). The bias is the unweighted mean of all
+      differences, so that subjects with more nights weigh more, as in Bland & Altman (2007).
+      This differs from the intercept of a mixed model, which weighs subjects by precision.
     * The parametric confidence interval of the bias uses the model-based standard error of the
       bias, with ``n_subjects - 1`` degrees of freedom. The confidence intervals of the limits of
       agreement, LoA half-width and Euser LoA slope use the MOVER method of Zou (2013).
