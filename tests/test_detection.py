@@ -410,6 +410,15 @@ def test_spindles_compare_channels(sp_n2):
     mat_prec = sp_n2.compare_channels(score="precision")
     mat_rec = sp_n2.compare_channels(score="recall")
     assert mat_prec.T.equals(mat_rec)  # tril precision == triu recall
+    # Both triangles match the public function, which validates and sorts each pair itself.
+    starts = {
+        ch: (df["Start"] * 10).round().astype(int) for ch, df in sp_n2.summary().groupby("Channel")
+    }
+    for truth in mat_prec.index:
+        for det in mat_prec.columns:
+            res = compare_detection(starts[det], starts[truth])
+            assert mat_prec.loc[truth, det] == res["precision"]
+            assert mat_rec.loc[truth, det] == res["recall"]
 
 
 def test_spindles_mne(mne_n2n3):

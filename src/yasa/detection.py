@@ -9,7 +9,7 @@ slow-waves, and rapid eye movements from sleep EEG recordings.
 
 import logging
 import types
-from itertools import permutations
+from itertools import combinations
 
 import mne
 import numpy as np
@@ -518,15 +518,19 @@ class _DetectionResults:
             events = {ch: np.unique(ev) for ch, ev in events.items()}
         chan = list(events)
 
-        # A channel always perfectly matches itself, so the diagonal is not computed.
+        # A channel always perfectly matches itself, so the diagonal is not computed. Each pair
+        # of channels is compared only once: swapping the two channels swaps precision and recall
+        # and leaves the F1-score unchanged, so the (j, i) score is the other score of (i, j).
+        swapped = {"precision": "recall", "recall": "precision", "f1": "f1"}
         scores = np.eye(len(chan))
-        for (i, c_index), (j, c_col) in permutations(enumerate(chan), 2):
+        for (i, c_index), (j, c_col) in combinations(enumerate(chan), 2):
             # DANGER: Note how we invert c_col and c_index here. This is because
             # c_index (the index of the dataframe) should be the ground-truth.
             res = _compare_prepared(
                 events[c_col], events[c_index], max_distance, method, iou_threshold
             )
             scores[i, j] = res[score]
+            scores[j, i] = res[swapped[score]]
         index = pd.Index(chan, name="Channel")
         return pd.DataFrame(scores, index=index, columns=index)
 
