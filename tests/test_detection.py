@@ -952,3 +952,94 @@ def test_compare_detection_errors():
     with pytest.raises(AssertionError):
         # max_distance must be a positive integer
         compare_detection(DETECTED, GRNDTRTH, max_distance=-1)
+
+
+def test_compare_detection_intersection():
+    """Interval matching is one-to-one, maximum-cardinality and uses an inclusive IoU threshold."""
+    from scipy.sparse import csr_matrix
+    from scipy.sparse.csgraph import maximum_bipartite_matching
+
+    # Same number of matches as a dense pairwise IoU matrix, on random intervals with ties.
+    rng = np.random.default_rng(42)
+    for _ in range(200):
+        starts = [rng.integers(0, 20, size=n).astype(float) for n in rng.integers(1, 12, size=2)]
+        detected, groundtruth = (np.c_[s, s + rng.integers(1, 6, s.size)] for s in starts)
+        threshold = rng.choice([0, 0.2, 0.5, 1])
+        d, g = detected[:, None], groundtruth[None]
+        overlap = np.minimum(d[..., 1], g[..., 1]) - np.maximum(d[..., 0], g[..., 0])
+        union = (d[..., 1] - d[..., 0]) + (g[..., 1] - g[..., 0]) - overlap
+        graph = csr_matrix((overlap > 0) & (overlap >= threshold * union))
+        n_matches = (maximum_bipartite_matching(graph, perm_type="column") >= 0).sum()
+        res = compare_detection(
+            detected, groundtruth, method="intersection", iou_threshold=threshold
+        )
+        assert len(res["tp"]) == len(groundtruth) - len(res["fn"]) == n_matches
+
+    # Greedily taking the best IoU would leave only one match instead of two.
+    res = compare_detection([[1, 3], [0, 2]], [[1, 3], [2.4, 3.4]], method="intersection")
+    assert res["f1"] == 1
+    # Unsorted inputs return the matched events in their input order.
+    res = compare_detection([[10, 11], [0, 3]], [[20, 21], [2, 5]], method="intersection")
+    np.testing.assert_array_equal(res["tp"], [[0, 3]])
+    np.testing.assert_array_equal(res["fp"], [[10, 11]])
+    np.testing.assert_array_equal(res["fn"], [[20, 21]])
+    # Duplicated detections cannot both match the same ground-truth event.
+    res = compare_detection([[0, 2], [0, 2]], [[0, 2]], method="intersection")
+    assert (res["precision"], res["recall"]) == (0.5, 1)
+    # The threshold is inclusive (IoU = 1 / 5), even far from zero.
+    for shift in [0, 86400]:
+        detected, groundtruth = [[shift, shift + 3]], [[shift + 2, shift + 5]]
+        res = compare_detection(detected, groundtruth, method="intersection", iou_threshold=0.2)
+        assert res["f1"] == 1
+        res = compare_detection(detected, groundtruth, method="intersection", iou_threshold=0.21)
+        assert res["f1"] == 0
+    # Touching intervals never match.
+    assert compare_detection([[0, 1]], [[1, 2]], method="intersection", iou_threshold=0)["f1"] == 0
+    # Empty inputs
+    res = compare_detection([], [[0, 1]], method="intersection")
+    assert res["tp"].shape == res["fp"].shape == (0, 2)
+    assert res["f1"] == 0
+    # Invalid inputs
+    for detected, kwargs in [
+        ([[1, 1]], {}),
+        ([[0, np.nan]], {}),
+        ([0, 1], {}),
+        ([["0", "1"]], {}),
+        ([[0, 1]], {"iou_threshold": 1.5}),
+        ([[0, 1]], {"max_distance": 1}),
+        ([[0, 1]], {"method": "unknown"}),
+    ]:
+        with pytest.raises(ValueError):
+            compare_detection(detected, [[0, 1]], **{"method": "intersection", **kwargs})
+
+
+def test_results_compare_intersection():
+    """The detection results methods compare unrounded intervals and validate DataFrames."""
+    events = pd.DataFrame(
+        {"Start": [0.01, 2, 2, 5], "End": [0.03, 3, 3, 6], "Channel": ["Cz", "Cz", "Cz", "Fz"]}
+    )
+    data = np.zeros((2, 1000))
+    detected = SpindlesResults(events, data, 100, ["Cz", "Fz"], None, data)
+    # Same decisecond as the first detected event, but no overlap.
+    reference = events.iloc[[0, 1, 3]].copy()
+    reference.loc[0, ["Start", "End"]] = [0.04, 0.06]
+    res = detected.compare_detection(reference, method="intersection")
+    assert res.loc["Cz", ["precision", "recall"]].tolist() == [1 / 3, 0.5]
+    assert res.loc["Fz", "f1"] == 1
+    swapped = detected.compare_detection(
+        reference, method="intersection", other_is_groundtruth=False
+    )
+    assert swapped.loc["Cz", ["precision", "recall"]].tolist() == [0.5, 1 / 3]
+    # Nullable columns, e.g. from pd.read_csv(..., dtype_backend="numpy_nullable")
+    nullable = reference.astype({"Start": "Float64", "End": "Float64"})
+    pd.testing.assert_frame_equal(detected.compare_detection(nullable, method="intersection"), res)
+    # Each channel perfectly matches itself, and does not overlap the other channel.
+    scores = detected.compare_channels(method="intersection")
+    np.testing.assert_array_equal(scores.to_numpy(), np.eye(2))
+    with pytest.raises(ValueError, match="End"):
+        detected.compare_detection(reference.drop(columns="End"), method="intersection")
+    # Events without a channel would otherwise be silently excluded from the comparison.
+    with pytest.raises(ValueError, match="missing Channel"):
+        detected.compare_detection(reference.assign(Channel=["Cz", None, "Fz"]))
+    with pytest.raises(ValueError, match="max_distance_sec"):
+        detected.compare_detection(reference, max_distance_sec=0.1, method="intersection")

@@ -9,7 +9,7 @@ slow-waves, and rapid eye movements from sleep EEG recordings.
 
 import logging
 import types
-from itertools import product
+from itertools import permutations
 
 import mne
 import numpy as np
@@ -17,6 +17,8 @@ import pandas as pd
 from mne.filter import filter_data
 from scipy import signal
 from scipy.fftpack import next_fast_len
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import maximum_bipartite_matching
 from scipy.special import erfinv
 from scipy.stats import circmean
 from sklearn.ensemble import IsolationForest
@@ -426,17 +428,39 @@ class _DetectionResults:
         return coinc_mat
 
     @staticmethod
-    def _starts_by_channel(df):
-        """Return a dict with, for each channel, the start of the events in deciseconds.
+    def _events_by_channel(df, method, name):
+        """Return a dict with, for each channel, the events to pass to yasa.compare_detection.
 
-        Start times are rounded to the nearest decisecond (100 ms). This is needed for three
-        reasons: 1) speed up yasa.compare_detection, 2) avoid memory errors and 3) make sure that
-        max_distance works even when the two detections have different sampling frequencies.
+        With ``method="distance"``, these are the start times rounded to the nearest decisecond
+        (100 ms). This is needed for three reasons: 1) speed up yasa.compare_detection, 2) avoid
+        memory errors and 3) make sure that max_distance works even when the two detections have
+        different sampling frequencies. With ``method="intersection"``, these are the validated
+        (Start, End) intervals in seconds, without rounding.
         """
-        starts = (df["Start"] * 10).round().astype(int)
-        return {ch: grp.to_numpy() for ch, grp in starts.groupby(df["Channel"], sort=False)}
+        columns = ["Start", "End"] if method == "intersection" else ["Start"]
+        for column in [*columns, "Channel"]:
+            if column not in df:
+                raise ValueError(f"{name} must contain a {column} column.")
+        # Otherwise, groupby would silently drop these events from the comparison.
+        if df["Channel"].isna().any():
+            raise ValueError(f"{name} must not contain missing Channel values.")
+        by_channel = df.groupby("Channel", sort=False).indices
+        if method == "intersection":
+            # Casting here also supports nullable and pyarrow-backed columns, and turns NA into NaN.
+            events = df[columns].to_numpy(dtype=float, na_value=np.nan)
+            events = _validate_intervals(events, name)
+            # Sort once by start, so that each comparison in compare_channels does not re-sort.
+            by_channel = {
+                ch: indices[np.argsort(events[indices, 0], kind="stable")]
+                for ch, indices in by_channel.items()
+            }
+        else:
+            events = (df["Start"] * 10).round().astype(int).to_numpy()
+        return {ch: events[indices] for ch, indices in by_channel.items()}
 
-    def compare_channels(self, score="f1", max_distance_sec=0):
+    def compare_channels(
+        self, score="f1", max_distance_sec=0, *, method="distance", iou_threshold=0.2
+    ):
         """
         Compare detected {events} across channels.
 
@@ -453,12 +477,20 @@ class _DetectionResults:
             agreement.
         max_distance_sec : float
             The maximum distance between {events}, in seconds, to consider as the same event.
+            Only used with ``method="distance"``.
 
             .. warning:: To reduce computation cost, YASA rounds the start time of each {event}
                 to the nearest decisecond (= 100 ms). This means that the lowest possible
                 resolution is 100 ms, regardless of the sampling frequency of the data. Two
                 {events} starting at 500 ms and 540 ms on their respective channels will therefore
                 always be considered the same event, even when max_distance_sec=0.
+        method : str
+            How to match {events}. ``"distance"`` (default) only compares their start times.
+            ``"intersection"`` compares their full extent, using both the start and end times
+            without rounding. See :py:func:`yasa.compare_detection` for details.
+        iou_threshold : float
+            Minimum overlap for two {events} to match with ``method="intersection"``, measured as
+            the intersection over union (default 0.2).
 
         Returns
         -------
@@ -475,22 +507,36 @@ class _DetectionResults:
         3. Is the agreement better in channels that are close to one another?
         """
         assert score in ["f1", "precision", "recall"], f"Invalid scoring metric: {score}"
-        # TODO: Only the Start of the event is currently supported. Add more flexibility?
-        starts = self._starts_by_channel(self._summary_with_channel())
-        chan = list(starts)
-        max_distance = int(10 * max_distance_sec)
+        _check_method(method, max_distance_sec, "max_distance_sec")
+        events = self._events_by_channel(self._summary_with_channel(), method, "self")
+        chan = list(events)
+        max_distance = round(10 * max_distance_sec)
 
-        scores = pd.DataFrame(index=chan, columns=chan, dtype=float)
-        scores.index.name = "Channel"
-        scores.columns.name = "Channel"
-        for c_index, c_col in product(chan, repeat=2):
+        # A channel always perfectly matches itself, so the diagonal is not computed.
+        scores = np.eye(len(chan))
+        for (i, c_index), (j, c_col) in permutations(enumerate(chan), 2):
             # DANGER: Note how we invert c_col and c_index here. This is because
             # c_index (the index of the dataframe) should be the ground-truth.
-            res = compare_detection(starts[c_col], starts[c_index], max_distance)
-            scores.loc[c_index, c_col] = res[score]
-        return scores
+            res = compare_detection(
+                events[c_col],
+                events[c_index],
+                max_distance,
+                method=method,
+                iou_threshold=iou_threshold,
+            )
+            scores[i, j] = res[score]
+        index = pd.Index(chan, name="Channel")
+        return pd.DataFrame(scores, index=index, columns=index)
 
-    def compare_detection(self, other, max_distance_sec=0, other_is_groundtruth=True):
+    def compare_detection(
+        self,
+        other,
+        max_distance_sec=0,
+        other_is_groundtruth=True,
+        *,
+        method="distance",
+        iou_threshold=0.2,
+    ):
         """
         Compare the detected {events} against either another YASA detection or against custom
         annotations (e.g. ground-truth human scoring).
@@ -506,9 +552,11 @@ class _DetectionResults:
             pandas DataFrame with custom annotations, obtained by another detection method outside
             of YASA, or with manual labelling. If b), the dataframe must contain the "Start"
             column, with the start of each event in seconds from the beginning of the recording.
+            With ``method="intersection"``, it must also contain the "End" column.
             {channel_column}
         max_distance_sec : float
             The maximum distance between {events}, in seconds, to consider as the same event.
+            Only used with ``method="distance"``.
 
             .. warning:: To reduce computation cost, YASA rounds the start time of each {event}
                 to the nearest decisecond (= 100 ms). This means that the lowest possible
@@ -522,6 +570,13 @@ class _DetectionResults:
                 fraction of events in other that were succesfully detected by the current
                 detection, and the precision score is the proportion of detected events by the
                 current detection that are also present in other.
+        method : str
+            How to match {events}. ``"distance"`` (default) only compares their start times.
+            ``"intersection"`` compares their full extent, using both the start and end times
+            without rounding. See :py:func:`yasa.compare_detection` for details.
+        iou_threshold : float
+            Minimum overlap for two {events} to match with ``method="intersection"``, measured as
+            the intersection over union (default 0.2).
 
         Returns
         -------
@@ -543,23 +598,22 @@ class _DetectionResults:
            those obtained with the default parameters?
         3. Which detection thresholds give the highest agreement with the ground-truth scoring?
         """
+        _check_method(method, max_distance_sec, "max_distance_sec")
         if isinstance(other, _DetectionResults):
             groundtruth = other._summary_with_channel()
         elif isinstance(other, pd.DataFrame):
-            assert "Start" in other.columns
             groundtruth = other.copy()
             if "Channel" not in groundtruth and self._channel_label is not None:
                 groundtruth["Channel"] = self._channel_label
-            assert "Channel" in groundtruth.columns
         else:
             raise ValueError(
                 f"Invalid argument other: {other}. It must be a YASA detection output or a Pandas "
-                f"DataFrame with the columns Start and Channels"
+                f"DataFrame with the columns Start, End (with method='intersection') and Channel."
             )
 
-        detected = self._starts_by_channel(self._summary_with_channel())
-        groundtruth = self._starts_by_channel(groundtruth)
-        max_distance = int(10 * max_distance_sec)
+        detected = self._events_by_channel(self._summary_with_channel(), method, "self")
+        groundtruth = self._events_by_channel(groundtruth, method, "other")
+        max_distance = round(10 * max_distance_sec)
 
         # Find channels that are present in both self and other
         chan_both = np.intersect1d(list(detected), list(groundtruth))  # Sort
@@ -573,10 +627,14 @@ class _DetectionResults:
         rows = []
         for chan in chan_both:
             idx_detected, idx_groundtruth = detected[chan], groundtruth[chan]
-            if other_is_groundtruth:
-                res = compare_detection(idx_detected, idx_groundtruth, max_distance)
-            else:
-                res = compare_detection(idx_groundtruth, idx_detected, max_distance)
+            first, second = (
+                (idx_detected, idx_groundtruth)
+                if other_is_groundtruth
+                else (idx_groundtruth, idx_detected)
+            )
+            res = compare_detection(
+                first, second, max_distance, method=method, iou_threshold=iou_threshold
+            )
             rows.append(
                 {
                     "Channel": chan,
@@ -2334,7 +2392,9 @@ class REMResults(_DetectionResults):
             "REMs are detected on the combination of LOC and ROC: there is a single channel."
         )
 
-    def compare_channels(self, score="f1", max_distance_sec=0):
+    def compare_channels(
+        self, score="f1", max_distance_sec=0, *, method="distance", iou_threshold=0.2
+    ):
         """Not available for REMs, which are detected on the combination of LOC and ROC.
 
         Parameters
@@ -2342,6 +2402,10 @@ class REMResults(_DetectionResults):
         score : str
             Unused.
         max_distance_sec : float
+            Unused.
+        method : str
+            Unused.
+        iou_threshold : float
             Unused.
 
         Raises
@@ -2746,7 +2810,79 @@ def art_detect(
 #############################################################################
 
 
-def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
+def _check_method(method, max_distance, name):
+    """Validate the comparison method, and that max_distance is zero with intersection."""
+    if method not in ("distance", "intersection"):
+        raise ValueError("method must be 'distance' or 'intersection'.")
+    if method == "intersection" and (np.ndim(max_distance) != 0 or max_distance != 0):
+        raise ValueError(f"{name} must be zero with method='intersection'.")
+
+
+def _validate_intervals(events, name):
+    """Validate interval coordinates without changing the returned endpoint dtype."""
+    events = np.asarray(events)
+    if events.shape == (0,):
+        events = events.reshape(0, 2)
+    if events.ndim != 2 or events.shape[1] != 2:
+        raise ValueError(f"{name} intervals must have shape (n_events, 2).")
+    if events.size and events.dtype.kind not in "iuf":
+        raise ValueError(f"{name} endpoints must be real numbers.")
+    coordinates = events.astype(float, copy=False)
+    if not np.isfinite(coordinates).all():
+        raise ValueError(f"{name} endpoints must be finite.")
+    if not (coordinates[:, 0] < coordinates[:, 1]).all():
+        raise ValueError(f"{name} intervals must have start < end.")
+    return events
+
+
+def _starts_within(a, b, inclusive):
+    """Return the (i, j) pairs where b[j] starts within a[i], with a and b sorted by start.
+
+    The start bound is inclusive or exclusive, and the end bound is always exclusive.
+    """
+    lo = np.searchsorted(b[:, 0], a[:, 0], side="left" if inclusive else "right")
+    hi = np.searchsorted(b[:, 0], a[:, 1], side="left")
+    counts = np.maximum(hi - lo, 0)
+    i = np.repeat(np.arange(len(a)), counts)
+    # Position of each pair within its run of consecutive b intervals.
+    offsets = np.arange(counts.sum()) - np.repeat(np.cumsum(counts) - counts, counts)
+    return i, np.repeat(lo, counts) + offsets
+
+
+def _match_intervals(detected, groundtruth, iou_threshold):
+    """Return event masks from a maximum-cardinality matching of overlapping intervals."""
+    detected = detected.astype(float, copy=False)
+    groundtruth = groundtruth.astype(float, copy=False)
+    # Sorting by start is near-linear for already sorted events, e.g. from _events_by_channel.
+    # Sorted search keys also make np.searchsorted much faster.
+    order_d = np.argsort(detected[:, 0], kind="stable")
+    order_g = np.argsort(groundtruth[:, 0], kind="stable")
+    sorted_d, sorted_g = detected[order_d], groundtruth[order_g]
+    # In any pair with a positive overlap, one interval starts within the other. The start bound
+    # is inclusive on one side only, so that pairs with the same start are found once. This finds
+    # all the candidate pairs without building sample-wise masks or a dense pairwise IoU matrix.
+    rows_d, cols_d = _starts_within(sorted_d, sorted_g, inclusive=True)
+    cols_g, rows_g = _starts_within(sorted_g, sorted_d, inclusive=False)
+    rows = order_d[np.concatenate([rows_d, rows_g])]
+    cols = order_g[np.concatenate([cols_d, cols_g])]
+    d, g = detected[rows], groundtruth[cols]
+    overlap = np.minimum(d[:, 1], g[:, 1]) - np.maximum(d[:, 0], g[:, 0])
+    union = (d[:, 1] - d[:, 0]) + (g[:, 1] - g[:, 0]) - overlap
+    # Accept roundoff at the inclusive boundary, without an absolute tolerance near zero.
+    keep = (overlap > 0) & (overlap >= iou_threshold * (1 - 1e-9) * union)
+    graph = csr_matrix(
+        (np.ones(keep.sum()), (rows[keep], cols[keep])), shape=(len(detected), len(groundtruth))
+    )
+    matching = maximum_bipartite_matching(graph, perm_type="column")
+    detected_tp = matching >= 0
+    groundtruth_tp = np.zeros(len(groundtruth), dtype=bool)
+    groundtruth_tp[matching[detected_tp]] = True
+    return detected_tp, groundtruth_tp
+
+
+def compare_detection(
+    indices_detection, indices_groundtruth, max_distance=0, *, method="distance", iou_threshold=0.2
+):
     """
     Determine correctness of detected events against ground-truth events.
 
@@ -2755,22 +2891,38 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
     indices_detection : array_like
         Indices of the detected events. For example, this could be the indices of the
         start of the spindles, or the negative peak of the slow-waves. The indices must be in
-        samples, and not in seconds.
+        samples, and not in seconds. With ``method="intersection"``, this is instead an array of
+        shape (n_events, 2) with the start and end of each event, in any unit (e.g. seconds).
     indices_groundtruth : array_like
-        Indices of the ground-truth events, in samples.
+        The ground-truth events, in the same format and unit as ``indices_detection``.
     max_distance : int, optional
         Maximum distance between indices, in samples, to consider as the same event (default = 0).
         For example, if the sampling frequency of the data is 100 Hz, using `max_distance=100` will
         search for a matching event 1 second before or after the current event.
+        Only used with ``method="distance"``.
+    method : str
+        How to match detected and ground-truth events.
+
+        * ``"distance"`` (default): two events match if their indices are within
+          ``max_distance`` of each other. A single event can match several events.
+        * ``"intersection"``: two events match if they overlap enough (see ``iou_threshold``).
+          Unlike ``"distance"``, this takes the duration of the events into account. Each event
+          can match at most one other event, and YASA keeps the pairing with the most matches.
+          This method requires both the start and end of each event.
+    iou_threshold : float
+        Minimum overlap for two events to match with ``method="intersection"`` (default 0.2).
+        The overlap is measured as the intersection over union (IoU), i.e. the duration of the
+        overlap divided by the total duration covered by the two events. It ranges from 0 to 1,
+        where 1 means that the two events are identical. Events that do not overlap never match.
 
     Returns
     -------
     results : dict
         A dictionary with the comparison results:
 
-        * ``tp``: True positives, i.e. actual events detected as events.
-        * ``fp``: False positives, i.e. non-events detected as events.
-        * ``fn``: False negatives, i.e. actual events not detected as events.
+        * ``tp``: True positives, i.e. detected events that match a ground-truth event.
+        * ``fp``: False positives, i.e. detected events with no matching ground-truth event.
+        * ``fn``: False negatives, i.e. ground-truth events with no matching detected event.
         * ``precision``: Precision score, aka positive predictive value (see Notes)
         * ``recall``: Recall score, aka sensitivity (see Notes)
         * ``f1``: F1-score (see Notes)
@@ -2781,7 +2933,7 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
       that match a ground-truth event.
     * The recall score is calculated as (N - FN) / N, where N is the number of ground-truth events,
       i.e. the proportion of ground-truth events that match a detected event. This is the same as
-      TP / (TP + FN) when ``max_distance=0``.
+      TP / (TP + FN) when ``max_distance=0`` or ``method="intersection"``.
     * The F1-score is the harmonic mean of precision and recall.
 
     This function is inspired by the `sleepecg.compare_heartbeats
@@ -2846,24 +2998,43 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
      'precision': 0,
      'recall': 0,
      'f1': 0}
+
+    Compare event intervals directly in seconds, without rounding or resampling:
+
+    >>> res = compare_detection([[0, 3], [10, 11]], [[2, 5]], method="intersection")
+    >>> res["precision"], res["recall"]
+    (0.5, 1.0)
     """
     # Safety check
-    indices_detection = np.asarray(indices_detection, dtype=float)
-    indices_groundtruth = np.asarray(indices_groundtruth, dtype=float)
-    assert indices_detection.ndim == 1, "detection indices must be a 1D list or array."
-    assert indices_groundtruth.ndim == 1, "groundtruth indices must be a 1D list or array."
-    assert np.all(np.mod(indices_detection, 1) == 0), "detection indices must be integers."
-    assert np.all(np.mod(indices_groundtruth, 1) == 0), "groundtruth indices must be integers."
-    assert isinstance(max_distance, int), "max_distance must be 0 or a positive integer."
-    assert max_distance >= 0, "max_distance must be 0 or a positive integer."
-    # Sorted unique indices
-    indices_detection = np.unique(indices_detection.astype(int))
-    indices_groundtruth = np.unique(indices_groundtruth.astype(int))
+    _check_method(method, max_distance, "max_distance")
+    if method == "distance":
+        indices_detection = np.asarray(indices_detection, dtype=float)
+        indices_groundtruth = np.asarray(indices_groundtruth, dtype=float)
+        assert isinstance(max_distance, int), "max_distance must be 0 or a positive integer."
+        assert max_distance >= 0, "max_distance must be 0 or a positive integer."
+        assert indices_detection.ndim == 1, "detection indices must be a 1D list or array."
+        assert indices_groundtruth.ndim == 1, "groundtruth indices must be a 1D list or array."
+        assert np.all(np.mod(indices_detection, 1) == 0), "detection indices must be integers."
+        assert np.all(np.mod(indices_groundtruth, 1) == 0), "groundtruth indices must be integers."
+        # Sorted unique indices
+        indices_detection = np.unique(indices_detection.astype(int))
+        indices_groundtruth = np.unique(indices_groundtruth.astype(int))
+    else:
+        threshold = np.asarray(iou_threshold)
+        if (
+            threshold.ndim != 0
+            or threshold.dtype.kind not in "iuf"
+            or not np.isfinite(threshold)
+            or not 0 <= threshold <= 1
+        ):
+            raise ValueError("iou_threshold must be a finite number between 0 and 1.")
+        indices_detection = _validate_intervals(indices_detection, "detection")
+        indices_groundtruth = _validate_intervals(indices_groundtruth, "groundtruth")
 
     # Handle cases where indices_detection or indices_groundtruth is empty
     if indices_detection.size == 0 or indices_groundtruth.size == 0:
         return dict(
-            tp=np.array([], dtype=int),
+            tp=indices_detection[:0],
             fp=indices_detection,
             fn=indices_groundtruth,
             precision=0,
@@ -2879,10 +3050,14 @@ def compare_detection(indices_detection, indices_groundtruth, max_distance=0):
         has_match[is_valid] = y[idx[is_valid]] <= x[is_valid] + max_distance
         return has_match
 
-    # Confusion matrix. A detected event is a true positive if there is a ground-truth event
-    # within max_distance, and a ground-truth event is a false negative otherwise.
-    is_detected_tp = _has_match(indices_detection, indices_groundtruth)
-    is_groundtruth_tp = _has_match(indices_groundtruth, indices_detection)
+    # Determine which events are matched on each side.
+    if method == "distance":
+        is_detected_tp = _has_match(indices_detection, indices_groundtruth)
+        is_groundtruth_tp = _has_match(indices_groundtruth, indices_detection)
+    else:
+        is_detected_tp, is_groundtruth_tp = _match_intervals(
+            indices_detection, indices_groundtruth, iou_threshold
+        )
     results = {}
     results["tp"] = indices_detection[is_detected_tp]
     results["fp"] = indices_detection[~is_detected_tp]
