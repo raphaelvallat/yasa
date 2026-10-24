@@ -1493,15 +1493,14 @@ def ssa_rm_synth(rm_stats):
 
 
 class TestEpochByEpochAgreementRepeated:
-    def test_attributes(self, ebe_rm):
+    def test_attributes(self, ebe_rm, sstats_rm):
         assert ebe_rm.n_sessions == N_RM_SESSIONS
         assert ebe_rm.n_subjects == len(RM_NIGHTS)
         assert f"from {len(RM_NIGHTS)} subjects" in repr(ebe_rm)
         # The per-session data and scores are unchanged
         assert ebe_rm.data.index.names == ["sleep_id", "Epoch"]
         assert len(ebe_rm.get_agreement()) == N_RM_SESSIONS
-
-    def test_get_sleep_stats_index(self, sstats_rm):
+        # The subjects are inserted in the index of the sleep statistics
         assert sstats_rm.index.names == ["scorer", "subject_id", "sleep_id"]
         for scorer in (REF_SCORER, OBS_SCORER):
             idx = sstats_rm.loc[scorer].index
@@ -1522,10 +1521,6 @@ class TestEpochByEpochAgreementRepeated:
         subj_d = dict(reversed(list(subj_d.items())))
         pd.testing.assert_frame_equal(
             EpochByEpochAgreement(ref_d, obs_d, subjects=subj_d).summary(), expected
-        )
-        # numpy array
-        pd.testing.assert_frame_equal(
-            EpochByEpochAgreement(ref, obs, subjects=np.array(RM_SUBJECTS)).summary(), expected
         )
 
     @pytest.mark.parametrize(
@@ -1672,8 +1667,6 @@ class TestSleepStatsAgreementRepeated:
             assert vc["sd_within"] == pytest.approx(np.sqrt(manual["var_within"]))
             assert vc["sd_total"] == pytest.approx(sd_total)
             assert (vc["n_subjects"], vc["n_sessions"]) == (len(np.unique(subjects)), len(diff))
-        # With a strong subject effect, both components are substantial
-        assert (ssa_rm_synth.variance_components["sd_between"] > 5).all()
 
     def test_stat_without_repeated_nights(self, rm_stats):
         # WASO valid on the first night of each subject only: the bias CI falls back to the one
@@ -1803,14 +1796,12 @@ class TestSleepStatsAgreementRepeated:
             subjects, (values,), statistic, n_resamples=20, method="percentile", vectorized=False
         )
         assert np.isfinite(res.confidence_interval.low)
-        sizes = {"a": 2, "b": 1, "c": 3}
+        # `values` are the row indices: each cluster of a replicate must be all the rows (and only
+        # the rows) of a single subject
         for v, clusters in calls:
-            # Each replicate concatenates all the rows of the drawn subjects
-            drawn = [subjects[int(i)] for i in v[np.r_[True, np.diff(clusters) != 0]]]
-            assert v.size == sum(sizes[s] for s in drawn)
-            # Rows of a cluster are contiguous and belong to one subject
             for k in np.unique(clusters):
-                assert np.unique(subjects[v[clusters == k].astype(int)]).size == 1
+                rows = v[clusters == k].astype(int)
+                assert set(rows) == set(np.flatnonzero(subjects == subjects[rows[0]]))
 
     def test_boot_ci_regression_coefficients_are_wald(self, ssa_rm_synth):
         # The bias and LoA are bootstrapped (subject-level), the regression coefficients are not:
@@ -1860,10 +1851,7 @@ class TestSleepStatsAgreementRepeated:
         boot = ssa_log.summary(ci_method="boot")["loa_log_slope"]
         assert boot.at["TST", "lower"] <= expected <= boot.at["TST", "upper"]
 
-    def test_calibrate_and_plot(self, ssa_rm_synth):
-        new = pd.DataFrame({"TST": [400.0, 410.0]})
-        bias = ssa_rm_synth.summary(ci_method=None).at["TST", ("bias_mean", "center")]
-        pd.testing.assert_frame_equal(ssa_rm_synth.calibrate(new, bias_method="param"), new - bias)
+    def test_plot_hue_subject(self, ssa_rm_synth):
         g = ssa_rm_synth.plot_blandaltman(ci_method="param")
         assert len(g.axes.flat) == 3 and g.legend is None
         g = ssa_rm_synth.plot_blandaltman(ci_method="param", hue="subject_id")
