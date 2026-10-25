@@ -101,6 +101,7 @@ jobs:
             others: >-
               matplotlib==3.10.1 seaborn==0.13.2 antropy==0.1.9 scikit-learn==1.6.1
               lspopt==1.4.0 lightgbm==4.6.0 pooch==1.8.0 sleepecg==0.5.9 pyriemann==0.8
+              statsmodels==0.14.5
             label: "minimum-versions"
 
           # The latest versions are tested in the test job
