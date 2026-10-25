@@ -676,6 +676,24 @@ Keep in mind that the reference is not perfect either. Even two expert scorers d
 on the same PSG recording, which sets a realistic ceiling on the agreement that any device can
 reach (`de Zambotti et al., 2025`_).
 
+Summary
+-------
+
+Here is how we could summarize the performance of the device on this sample of 14 healthy adults:
+
+* It detects 96% of PSG sleep epochs, but only 62% of wake epochs. Its sleep-wake accuracy is 91%
+  (kappa = 0.58).
+* With four stages, it agrees with PSG on 66% of epochs (kappa = 0.45). It detects light sleep
+  best (sensitivity of 79%) and deep sleep worst (44%). More than half of PSG deep sleep is scored
+  as light sleep.
+* Total sleep time is unbiased (+7 minutes), but individual nights can be off by −37 to +51
+  minutes.
+* The device overestimates light sleep by 35 minutes. It underestimates deep sleep by 26 minutes
+  on average, and more so on nights with more deep sleep. WASO and REM sleep are pulled toward the
+  group average.
+
+--------
+
 .. _tutorial_evaluation_repeated:
 
 Several nights per subject
@@ -723,24 +741,6 @@ The LoA combine both, and describe the error that we can expect on a new night o
     N3                 6.8       41.5      42.0           4          12
 
 Here, the between-subject SD is close to zero, which is expected since the simulated nights have no systematic offset per subject. A large between-subject SD means that the device is consistently off for some people. To spot these subject-specific offsets, ``ssa.plot_blandaltman(hue="subject_id")`` gives the nights of each subject the same color.
-
---------
-
-Summary
--------
-
-Here is how we could summarize the performance of the device on this sample of 14 healthy adults:
-
-* It detects 96% of PSG sleep epochs, but only 62% of wake epochs. Its sleep-wake accuracy is 91%
-  (kappa = 0.58).
-* With four stages, it agrees with PSG on 66% of epochs (kappa = 0.45). It detects light sleep
-  best (sensitivity of 79%) and deep sleep worst (44%). More than half of PSG deep sleep is scored
-  as light sleep.
-* Total sleep time is unbiased (+7 minutes), but individual nights can be off by −37 to +51
-  minutes.
-* The device overestimates light sleep by 35 minutes. It underestimates deep sleep by 26 minutes
-  on average, and more so on nights with more deep sleep. WASO and REM sleep are pulled toward the
-  group average.
 
 --------
 

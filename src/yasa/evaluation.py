@@ -2922,9 +2922,7 @@ class SleepStatsAgreement:
             With several nights per subject (``subjects``), the bootstrap resamples subjects
             instead of nights. The regression coefficients (``bias_intercept``, ``bias_slope``,
             ``loa_intercept``, ``loa_slope``) always use the Wald CI of the mixed model with a
-            ``t(n_subjects - 2)`` quantile, even with ``ci_method="boot"``: in our simulations, a
-            bootstrap over 8-20 subjects covered the true slope only 85-90% of the time at the 95%
-            level, whereas the Wald CI was close to nominal.
+            ``t(n_subjects - 2)`` quantile, even with ``ci_method="boot"``.
         sleep_stats : list or None
             List of sleep statistics to include, in the desired row order. Default (None) is to
             include all sleep statistics. Bootstrapped confidence intervals are only computed for

@@ -219,8 +219,8 @@ Full-night spectrogram plot
 
 .. note::
 
-    As of YASA 0.7.0, you can pass the :py:class:`~yasa.Hypnogram` object directly to most YASA functions —
-    upsampling to the data sampling frequency is handled automatically.
+    You can pass the :py:class:`~yasa.Hypnogram` object directly to most YASA functions.
+    Upsampling to the data sampling frequency is handled automatically.
 
 We can plot the hypnogram on top of a multitaper `spectrogram <https://en.wikipedia.org/wiki/Spectrogram>`_ using the :py:func:`~yasa.plot_spectrogram` function, which shows the time-frequency representation of a single EEG channel across the entire night. The x-axis of the spectrogram is time in hours, and the y-axis is the frequency range (from 0 to 25 Hz).
 Warmer colors indicate higher spectral power in this specific frequency band at this specific time for this channel. This kind of plot is very useful to quickly identify periods of NREM sleep (high power in frequencies below 5 Hz and spindle-related activity around ~14 Hz) and REM sleep (almost no power in frequencies below 5 Hz).
