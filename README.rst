@@ -30,6 +30,7 @@
 * Artefact rejection, on single or multi-channel EEG data.
 * Spectral analyses: bandpower, phase-amplitude coupling, 1/f slope, and more!
 * Hypnogram analysis: sleep statistics, stage transitions, visualization, and manipulation.
+* Evaluation of a wearable or a sleep staging algorithm against polysomnography: epoch-by-epoch agreement and Bland-Altman analysis of sleep statistics, following the framework of `Menghini et al. (2021) <https://doi.org/10.1093/sleep/zsaa170>`_.
 
 For more details, try the `tutorials <https://yasa-sleep.org/tutorials/index.html>`_ or read the `FAQ <https://yasa-sleep.org/faq.html>`_.
 

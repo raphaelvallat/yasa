@@ -42,6 +42,7 @@
 * Artefact rejection, on single or multi-channel EEG data.
 * Spectral analyses: bandpower, phase-amplitude coupling, 1/f slope, and more!
 * Hypnogram analysis: sleep statistics, stage transitions, visualization, and manipulation using the :py:class:`~yasa.Hypnogram` class.
+* Evaluation of a wearable or a sleep staging algorithm against polysomnography: epoch-by-epoch agreement and Bland-Altman analysis of sleep statistics with the :py:class:`~yasa.EpochByEpochAgreement` and :py:class:`~yasa.SleepStatsAgreement` classes (see :ref:`tutorial_evaluation`).
 
 For more details, try the :ref:`tutorials` or read the :ref:`faq`.
 
@@ -52,33 +53,11 @@ Installation
 
 YASA is a Python 3 package and is currently tested for Python 3.11+.
 
-Dependencies
-------------
-
-The core dependencies of YASA are:
-
-* `NumPy <https://numpy.org/>`_ >= 2.2.2
-* `SciPy <https://www.scipy.org/>`_ >= 1.15
-* `Pandas <https://pandas.pydata.org/>`_ >= 2.3
-* `Matplotlib <https://matplotlib.org/>`_ >= 3.10.1
-* `Seaborn <https://seaborn.pydata.org/>`_ >= 0.13.2
-* `MNE <https://mne.tools/stable/>`_ >= 1.10
-* `Scikit-learn <https://scikit-learn.org/>`_ >= 1.6.1
-* `LightGBM <https://lightgbm.readthedocs.io/>`_ >= 4.6
-* `Antropy <https://github.com/raphaelvallat/antropy>`_ >= 0.1.9
-* `lspopt <https://github.com/hbldh/lspopt>`_ >= 1.4
-* `joblib <https://joblib.readthedocs.io/>`_
-* `Pooch <https://www.fatiando.org/pooch/>`_ >= 1.8
-
-Some features require optional dependencies (`SleepECG <https://sleepecg.readthedocs.io/>`_,
-`PyRiemann <https://pyriemann.readthedocs.io/>`_,
-`statsmodels <https://www.statsmodels.org/>`_,
-`ipywidgets <https://ipywidgets.readthedocs.io/>`_).
-
 User installation
 -----------------
 
-YASA can be easily installed using pip, conda, or uv:
+YASA can be easily installed using pip, conda, or uv. Some features require optional
+dependencies, which can be installed with the ``full`` extra:
 
 .. tab-set::
 

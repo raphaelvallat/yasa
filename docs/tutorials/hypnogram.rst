@@ -6,7 +6,7 @@ Working with Hypnograms
 .. currentmodule:: yasa
 
 This tutorial introduces the :py:class:`Hypnogram` class, which is the standard way to represent
-and work with sleep hypnograms in YASA (since version 0.7).
+and work with sleep hypnograms in YASA.
 
 .. note::
 
@@ -563,8 +563,8 @@ automatically:
 
 .. tip::
 
-    As of YASA 0.7, most detection functions accept a :py:class:`Hypnogram` object directly.
-    No manual upsampling is needed. Just pass ``hypno=hyp``:
+    Most detection functions accept a :py:class:`Hypnogram` object directly. No manual
+    upsampling is needed. Just pass ``hypno=hyp``:
 
     .. code-block:: python
 
@@ -683,11 +683,6 @@ F1 scores:
     >>> ref = yasa.simulate_hypnogram(tib=480, n_stages=5, scorer="Expert", seed=42)
     >>> obs = yasa.simulate_hypnogram(tib=480, n_stages=5, scorer="Auto",   seed=99)
     >>> agreement = ref.evaluate(obs)  # doctest: +SKIP
-
-.. note::
-
-    :py:meth:`~Hypnogram.evaluate` is experimental and the output format may change in future
-    releases.
 
 --------
 
