@@ -4,6 +4,56 @@ What's new
 ##########
 
 
+v0.8.1 (October 2026)
+---------------------
+
+This is a minor release. Its highlight is the support for repeated measures in the evaluation
+module, for validation studies that record several nights per participant. It also adds a new
+method to compare detected events based on their overlap and fixes a deprecation warning with
+pandas 3.1.
+
+**Evaluation module: support several nights per subject (repeated measures)**
+
+:py:class:`yasa.EpochByEpochAgreement` and :py:class:`yasa.SleepStatsAgreement` accept a new
+``subjects`` argument that tells YASA which participant each night belongs to. The nights of a
+participant are not independent, and treating them as such makes the confidence intervals and
+p-values too small. With ``subjects``, both classes account for the clustering of nights within
+participants, following `Bland & Altman (2007) <https://doi.org/10.1080/10543400701329422>`_,
+`Zou (2013) <https://doi.org/10.1177/0962280211402548>`_ and
+`Parker et al. (2016) <https://doi.org/10.1371/journal.pone.0168321>`_. With one night per
+participant, the results are unchanged. See the new :ref:`tutorial_evaluation_repeated` section
+of the evaluation tutorial. (`PR 279 <https://github.com/raphaelvallat/yasa/pull/279>`_)
+
+**Improvements**
+
+* :py:func:`yasa.compare_detection` and the ``compare_channels`` and ``compare_detection``
+  methods of the detection results accept ``method="intersection"`` to match events based on
+  the overlap of their intervals (intersection over union) instead of the distance between their
+  onsets. This makes it possible to compare detections with different sampling frequencies, and
+  prevents split, merged or duplicate detections from all counting as true positives. The default
+  ``method="distance"`` is unchanged. (`issue 88 <https://github.com/raphaelvallat/yasa/issues/88>`_, `PR 278 <https://github.com/raphaelvallat/yasa/pull/278>`_)
+* ``compare_channels`` is up to 6 times faster, as the events of each channel are now validated
+  and sorted once and each pair of channels is compared once. (`PR 282 <https://github.com/raphaelvallat/yasa/pull/282>`_)
+
+**Bugfixes**
+
+* Fixed a ``Pandas4Warning`` in :py:class:`yasa.SleepStaging` with pandas 3.1, which deprecates
+  the ``inplace`` keyword of ``sort_index``. (`PR 283 <https://github.com/raphaelvallat/yasa/pull/283>`_)
+
+**Dependencies**
+
+* `statsmodels <https://www.statsmodels.org/>`_ is a new optional dependency, required only for
+  the mixed models of :py:class:`yasa.SleepStatsAgreement` with several nights per participant.
+  Install it with ``pip install yasa[stats]`` (included in ``yasa[full]``).
+
+**Contributors**
+
+* `Daria Agafonova <https://github.com/viranovskaya>`_
+* `Raphael Vallat <https://github.com/raphaelvallat>`_
+
+----------------------------------------------------------------------------------------
+
+
 v0.8.0 (October 2026)
 ---------------------
 
