@@ -1799,9 +1799,10 @@ class SleepStatsAgreement:
         ########################################################################
         # Generate standard CIs for parametric Bias and LoA for all sleep stats
         ########################################################################
-        # SE of the bias: SD / sqrt(n) (Bland & Altman 1999), or under the random-intercept model
-        # (Zou 2013) sqrt(var_between * sum(m_i^2) / N^2 + var_within / N), with m_i the number of
-        # sessions of subject i and N the total number of sessions. The critical t has
+        # SE of the bias: SD / sqrt(n) (Bland & Altman 1999), or the variance of the mean of all
+        # differences under the one-way random-effects model, sqrt(var_between * sum(m_i^2) / N^2
+        # + var_within / N), with m_i the number of sessions of subject i and N the total number
+        # of sessions (Zou 2013 instead uses the mean of the subject means). The critical t has
         # n_subjects - 1 degrees of freedom in both cases. A stat without repeated nights after
         # NaN removal has NaN components: fall back to SD / sqrt(n).
         se_bias = sd_diff / np.sqrt(n)
@@ -2306,8 +2307,8 @@ class SleepStatsAgreement:
         msb = np.sum(counts * (means - grand_mean) ** 2) / (n_subjects - 1)
         m0 = (n_pairs - np.sum(counts**2) / n_pairs) / (n_subjects - 1)
         a, b = 1 / m0, 1 - 1 / m0
-        # A negative between-subject estimate (MSB < MSW) is set to zero (Bland & Altman 2007),
-        # so that the total variance is never smaller than the within-subject variance
+        # A negative between-subject estimate (MSB < MSW) is set to zero, as is usual for ANOVA
+        # estimators, so that the total variance is never smaller than the within-subject variance
         return {
             "var_total": max(a * msb + b * msw, msw),
             "var_between": max(0.0, (msb - msw) / m0),
